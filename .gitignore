@@ -1,0 +1,11 @@
+*.tar
+*.pyc
+*.tar.gz
+*.egg-info/
+*.tar.gz
+*.tgz
+build
+/.project
+/.pydevproject
+*.ipynb
+/*.html
