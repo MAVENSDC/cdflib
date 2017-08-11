@@ -211,56 +211,54 @@ class CDF(object):
         mycdf_info['Encoding'] = self._endian()
         mycdf_info['Majority'] = self._major_token(self._majority)
         if self._num_zvariable > 0:
-          mycdf_info['zVariables'] = \
-                                self._get_Variables(self._first_zvariable, \
-                                                    self._num_zvariable)
+            mycdf_info['zVariables'] = self._get_Variables(self._first_zvariable,
+                                                           self._num_zvariable)
         else:
-          mycdf_info['zVariables'] = {}
+            mycdf_info['zVariables'] = {}
         if self._num_rvariable > 0:
-          mycdf_info['rVariables'] = \
-                                self._get_Variables(self._first_rvariable, \
-                                                    self._num_rvariable)
+            mycdf_info['rVariables'] = self._get_Variables(self._first_rvariable,
+                                                           self._num_rvariable)
         else:
-          mycdf_info['rVariables'] = {}
+            mycdf_info['rVariables'] = {}
         mycdf_info['Attributes'] = self._get_Attributes()
         mycdf_info['Copyright'] = self._copyright
         return mycdf_info
 
     def var_info(self, variable):
         self._vxr = 0
-        if isinstance(variable, int) and self._num_zvariable > 0 and \
-           self._num_rvariable > 0:
-           print('This CDF has both r and z variables. Use variable name')
-           return
+        if (isinstance(variable, int) and self._num_zvariable > 0 and 
+            self._num_rvariable > 0):
+            print('This CDF has both r and z variables. Use variable name')
+            return
         if self._num_zvariable > 0:
-          position = self._first_zvariable
-          num_variable = self._num_zvariable
+            position = self._first_zvariable
+            num_variable = self._num_zvariable
         else:
-          position = self._first_rvariable
-          num_variable = self._num_rvariable
+            position = self._first_rvariable
+            num_variable = self._num_rvariable
         if isinstance(variable, str):
             for z in range(0, num_variable):
                 name, vdr_next = self._read_vdr_fast(position)
                 if name.strip() == variable.strip():
-                   vdr_info = self._read_vdr(position)
-                   var = {}
-                   var['Variable'] = name
-                   var['Num'] = z
-                   var['Var_Type'] = self._variable_token(vdr_info['section_type'])
-                   var['Data_Type'] = self._datatype_token(vdr_info['data_type'])
-                   var['Num_Elements'] = vdr_info['num_elements']
-                   var['Num_Dims'] = vdr_info['num_dims']
-                   var['Dim_Sizes'] = vdr_info['dim_sizes']
-                   var['Sparse'] = self._sparse_token(vdr_info['sparse'])
-                   var['Last_Rec'] = vdr_info['max_records']
-                   return var
+                    vdr_info = self._read_vdr(position)
+                    var = {}
+                    var['Variable'] = name
+                    var['Num'] = z
+                    var['Var_Type'] = self._variable_token(vdr_info['section_type'])
+                    var['Data_Type'] = self._datatype_token(vdr_info['data_type'])
+                    var['Num_Elements'] = vdr_info['num_elements']
+                    var['Num_Dims'] = vdr_info['num_dims']
+                    var['Dim_Sizes'] = vdr_info['dim_sizes']
+                    var['Sparse'] = self._sparse_token(vdr_info['sparse'])
+                    var['Last_Rec'] = vdr_info['max_records']
+                    return var
                 else:
-                  position = vdr_next
+                    position = vdr_next
             print('Variable: \''+variable+'\' not found...')
         elif isinstance(variable, int):
             if (variable < 0 or variable > num_variable):
-               print('No variable by this number:',variable)
-               return
+                print('No variable by this number:',variable)
+                return
             for _ in range(0, variable):
                 name, next_vdr = self._read_vdr_fast(position)
                 position = next_vdr
@@ -320,7 +318,7 @@ class CDF(object):
         if to_dict:
             to_np = False
             
-        #Check if an attribute string was given
+        #Get Correct ADR 
         if isinstance(attribute, str):
             if isinstance(entry_num, int):
                 if (self._num_zvariable > 0 and self._num_rvariable > 0):
@@ -329,62 +327,9 @@ class CDF(object):
             for _ in range(0, self._num_att):
                 name, next_adr = self._read_adr_fast(position)
                 if (name.strip() == attribute.strip()):
-                    #Check if valid entry number was given
-                    adr_info = self._read_adr(position)
-                    if adr_info['scope'] == 1:
-                        if not isinstance(entry_num, int):
-                            print('Global entry should be a number')
-                            return
-                        num_entry_string = 'num_gr_entry'
-                        first_entry_string = 'first_gr_entry'
-                        max_entry_string = 'max_gr_entry'
-                    else:
-                        var_num = -1
-                        zvar = False
-                        if isinstance(entry_num, str):
-                            # a zVariable?
-                            positionx = self._first_zvariable
-                            for x in range(0, self._num_zvariable):
-                                name, vdr_next = self._read_vdr_fast(positionx)
-                                if (name.strip() == entry_num.strip()):
-                                    var_num = x
-                                    zvar = True
-                                    break
-                                positionx = vdr_next
-                            if var_num == -1:
-                                # a rVariable?
-                                positionx = self._first_rvariable
-                                for x in range(0, self._num_rvariable):
-                                    name, vdr_next = self._read_vdr_fast(positionx)
-                                    if (name.strip() == entry_num.strip()):
-                                        var_num = x
-                                        break
-                                    positionx = vdr_next
-                            if var_num == -1:
-                                print('No variable by this name:',entry_num)
-                                return
-                            entry_num = var_num
-                        else:
-                            if self._num_zvariable > 0:
-                                zvar = True
-                        if zvar:
-                            num_entry_string = 'num_z_entry'
-                            first_entry_string = 'first_z_entry'
-                            max_entry_string = 'max_z_entry'
-                        else:
-                            num_entry_string = 'num_gr_entry'
-                            first_entry_string = 'first_gr_entry'
-                            max_entry_string = 'max_gr_entry'
-                    if entry_num > adr_info[max_entry_string]:
-                        print('The entry does not exist')
-                        return
-                    return self._get_attdata(adr_info, entry_num, num_entry_string,
-                                          first_entry_string, to_np)
+                    adr_info = self._read_adr(position)   
                 else:
-                    position = next_adr
-            print('No attribute by this name:',attribute)
-            return
-        #Check if an attribute number was given
+                    position = next_adr            
         elif isinstance(attribute, int):
             if (attribute < 0) or (attribute > self._num_att):
                 print('No attribute by this number:',attribute)
@@ -396,49 +341,6 @@ class CDF(object):
                 name, next_adr = self._read_adr_fast(position)
                 position = next_adr
             adr_info = self._read_adr(position)
-            if adr_info['scope'] == 1:
-                num_entry_string = 'num_gr_entry'
-                first_entry_string = 'first_gr_entry'
-                max_entry_string = 'max_gr_entry'
-            else:
-                yy = -1
-                zvar = 0
-                if isinstance(entry_num, str):
-                    positionx = self._first_zvariable
-                    for x in range(0, self._num_zvariable):
-                        name, vdr_next = self._read_vdr_fast(positionx)
-                        if (name.strip() == entry_num.strip()):
-                            yy = x
-                            zvar = 1
-                            break
-                        positionx = vdr_next
-                    if yy == -1:
-                        positionx = self._first_rvariable
-                        for x in range(0, self._num_rvariable):
-                            name, vdr_next = self._read_vdr_fast(positionx)
-                            if (name.strip() == entry_num.strip()):
-                                yy = x
-                                break
-                            positionx = vdr_next
-                    if yy == -1:
-                        print('No variable by this name:',entry_num)
-                        return
-                    entry_num = yy
-                if (zvar == 1):
-                    num_entry_string = 'num_z_entry'
-                    first_entry_string = 'first_z_entry'
-                    max_entry_string = 'max_z_entry'
-                else:
-                    num_entry_string = 'num_gr_entry'
-                    first_entry_string = 'first_gr_entry'
-                    max_entry_string = 'max_gr_entry'
-                #Check if valid entry was given
-            if entry_num > adr_info[max_entry_string]:
-                #print("entry_num=",entry_num," max=",adr_info[max_entry])
-                print('The entry does not exist')
-                return
-            return self._get_attdata(adr_info, entry_num, num_entry_string,
-                                    first_entry_string, to_np)
         else:
             print('Please set attribute keyword equal to the name or ',
                   'number of an attribute')
@@ -446,8 +348,64 @@ class CDF(object):
                 name, next_adr = self._read_adr_fast(position)
                 print('NAME:'+name+' NUMBER: '+str(x))
                 position=next_adr
+                    
+                    
+        #Find the correct entry from entry_num
+        if adr_info['scope'] == 1:
+            if not isinstance(entry_num, int):
+                print('Global entry should be a number')
+                return
+            num_entry_string = 'num_gr_entry'
+            first_entry_string = 'first_gr_entry'
+            max_entry_string = 'max_gr_entry'
+        else:
+            var_num = -1
+            zvar = False
+            if isinstance(entry_num, str):
+                # a zVariable?
+                positionx = self._first_zvariable
+                for x in range(0, self._num_zvariable):
+                    name, vdr_next = self._read_vdr_fast(positionx)
+                    if (name.strip() == entry_num.strip()):
+                        var_num = x
+                        zvar = True
+                        break
+                    positionx = vdr_next
+                if var_num == -1:
+                    # a rVariable?
+                    positionx = self._first_rvariable
+                    for x in range(0, self._num_rvariable):
+                        name, vdr_next = self._read_vdr_fast(positionx)
+                        if (name.strip() == entry_num.strip()):
+                            var_num = x
+                            break
+                        positionx = vdr_next
+                if var_num == -1:
+                    print('No variable by this name:',entry_num)
+                    return
+                entry_num = var_num
+            else:
+                if self._num_zvariable > 0:
+                    zvar = True
+            if zvar:
+                num_entry_string = 'num_z_entry'
+                first_entry_string = 'first_z_entry'
+                max_entry_string = 'max_z_entry'
+            else:
+                num_entry_string = 'num_gr_entry'
+                first_entry_string = 'first_gr_entry'
+                max_entry_string = 'max_gr_entry'
+        if entry_num > adr_info[max_entry_string]:
+            print('The entry does not exist')
+            return
+        return self._get_attdata(adr_info, entry_num, num_entry_string,
+                              first_entry_string, to_np)
 
-    def varinq(self, variable):
+        print('No attribute by this name:',attribute)
+        return
+
+
+    def varinq(self, variable = None):
         position = self._first_zvariable
         if isinstance(variable, str):
             for _ in range(0, self._num_zvariable):
@@ -459,8 +417,8 @@ class CDF(object):
             return
         elif isinstance(variable, int):
             if (variable < 0 or variable > self._num_zvariable):
-               print('No variable by this number:',variable)
-               return
+                print('No variable by this number:',variable)
+                return
             for _ in range(0, variable):
                 name, next_vdr = self._read_vdr_fast(position)
                 position = next_vdr
@@ -475,20 +433,22 @@ class CDF(object):
                 
     def varget(self, variable = None, epoch = None, starttime = None, 
                endtime = None, startrec = None, endrec = None, 
-               to_dict = None):
+               to_dict = False):
         self._vxr = 0
         if (isinstance(variable, int) and self._num_zvariable > 0 and 
             self._num_rvariable > 0):
             print('This CDF has both r and z variables. Use variable name')
             return
-        if (to_dict == None or to_dict != True):
+        
+        to_np = False
+        if (to_dict != True):
             to_np = True
-        else:
-            to_np = False
-        if ((starttime != None or endtime != None) and \
+        
+        if ((starttime != None or endtime != None) and
             (startrec != None or endrec != None)):
             print('Can\'t specify both time and record range')
             return
+        
         if isinstance(variable, str):
             # check for zvariables first
             if self._num_zvariable > 0:
