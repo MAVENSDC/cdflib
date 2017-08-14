@@ -185,11 +185,6 @@ class CDF(object):
         self._rvariables_num_dims = gdr_info['rvariables_num_dims']
         self._rvariables_dim_sizes = gdr_info['rvariables_dim_sizes']
         self._num_att = gdr_info['num_attributes']
-        self._vxr = 0
-        self._vvr = 0
-        self._vvr_offsets = []
-        self._vvr_records = []
-        self._vvr_sprecds = []
 
     def close(self):
         self.file.close()
@@ -225,7 +220,6 @@ class CDF(object):
         return mycdf_info
 
     def var_info(self, variable):
-        self._vxr = 0
         if (isinstance(variable, int) and self._num_zvariable > 0 and 
             self._num_rvariable > 0):
             print('This CDF has both r and z variables. Use variable name')
@@ -434,7 +428,6 @@ class CDF(object):
     def varget(self, variable = None, epoch = None, starttime = None, 
                endtime = None, startrec = None, endrec = None, 
                to_dict = False):
-        self._vxr = 0
         if (isinstance(variable, int) and self._num_zvariable > 0 and 
             self._num_rvariable > 0):
             print('This CDF has both r and z variables. Use variable name')
@@ -507,119 +500,120 @@ class CDF(object):
                     position=next_vdr
 
     def epochrange(self, epoch = None, starttime = None, endtime = None):
-        self._vxr = 0
-        if isinstance(epoch, int) and self._num_zvariable > 0 and \
-           self._num_rvariable > 0:
-           print('This CDF has both r and z variables. Use variable name')
-           return None
+        if (isinstance(epoch, int) and 
+            self._num_zvariable > 0 and 
+            self._num_rvariable > 0):
+            print('This CDF has both r and z variables. Use variable name')
+            return None
         to_np = True
         if isinstance(epoch, str):
             # check for zvariables first
             if self._num_zvariable > 0:
-               position = self._first_zvariable
-               num_variable = self._num_zvariable
-               return self._get_epochrecs(position, num_variable, epoch, \
-                                          starttime, endtime, to_np)
+                position = self._first_zvariable
+                num_variable = self._num_zvariable
+                return self._get_epochrecs(position, num_variable, epoch,
+                                           starttime, endtime, to_np)
             # check for rvariables later
             if self._num_rvariable > 0:
-               position = self._first_rvariable
-               num_variable = self._num_rvariable
-               return self._get_epochrecs(position, num_variable, epoch, \
-                                          starttime, endtime, to_np)
+                position = self._first_rvariable
+                num_variable = self._num_rvariable
+                return self._get_epochrecs(position, num_variable, epoch,
+                                           starttime, endtime, to_np)
             print('No epoch by this name:',epoch)
             return None
         elif isinstance(epoch, int):
             if self._num_zvariable > 0:
-               position = self._first_zvariable
-               num_variable = self._num_zvariable
+                position = self._first_zvariable
+                num_variable = self._num_zvariable
             else:
-               position = self._first_rvariable
-               num_variable = self._num_rvariable
+                position = self._first_rvariable
+                num_variable = self._num_rvariable
             if (epoch < 0 or epoch >= num_variable):
-               print('No epoch by this number:',epoch)
-               return None
+                print('No epoch by this number:',epoch)
+                return None
             for _ in range(0, epoch):
                 name, next_vdr = self._read_vdr_fast(position)
                 position = next_vdr
             vdr_info = self._read_vdr(position)
             if (vdr_info['max_records'] < 0):
-               print('No data is written for this epoch')
-               return None
+                print('No data is written for this epoch')
+                return None
             self._read_vxr(vdr_info['head_vxr'])
             return self._read_epochrecs(vdr_info, starttime, endtime, to_np)
         else:
             print('Please set epoch keyword equal to the name or ',
                   'number of an epoch')
             if self._num_zvariable > 0:
-               position = self._first_zvariable
-               num_variable = self._num_zvariable
-               print('zVariables:')
-               for x in range(0, num_variable):
-                  name, next_vdr = self._read_vdr_fast(position)
-                  print('  NAME: '+name+' NUMBER: '+str(x))
-                  position=next_vdr
+                position = self._first_zvariable
+                num_variable = self._num_zvariable
+                print('zVariables:')
+                for x in range(0, num_variable):
+                    name, next_vdr = self._read_vdr_fast(position)
+                    print('  NAME: '+name+' NUMBER: '+str(x))
+                    position=next_vdr
             if self._num_rvariable > 0:
-               position = self._first_rvariable
-               num_variable = self._num_rvariable
-               print('rVariables:')
-               for x in range(0, num_variable):
-                  name, next_vdr = self._read_vdr_fast(position)
-                  print('  NAME: '+name+' NUMBER: '+str(x))
-                  position=next_vdr
+                position = self._first_rvariable
+                num_variable = self._num_rvariable
+                print('rVariables:')
+                for x in range(0, num_variable):
+                    name, next_vdr = self._read_vdr_fast(position)
+                    print('  NAME: '+name+' NUMBER: '+str(x))
+                    position=next_vdr
 
     def globalattsget(self):
         return self._read_globalatts()
 
     def varattsget(self, variable = None):
-        if isinstance(variable, int) and self._num_zvariable > 0 and \
-           self._num_rvariable > 0:
-           print('This CDF has both r and z variables. Use variable name')
-           return None
+        if (isinstance(variable, int) and 
+            self._num_zvariable > 0 and
+            self._num_rvariable > 0):
+            print('This CDF has both r and z variables. Use variable name')
+            return None
         if isinstance(variable, str):
-           if self._num_zvariable > 0:
-              return self._get_varatts(self._first_zvariable, \
-                                       self._first_zvariable, variable, 1)
-           if self._num_rvariable > 0:
-              return self._get_varatts(self._first_rvariable, \
-                                       self._first_rvariable, variable, 0)
-           print('No variable by this name:',variable)
-           return None
+            if self._num_zvariable > 0:
+                return self._get_varatts(self._first_zvariable,
+                                         self._first_zvariable, variable, 1)
+            if self._num_rvariable > 0:
+                return self._get_varatts(self._first_rvariable,
+                                         self._first_rvariable, variable, 0)
+            print('No variable by this name:',variable)
+            return None
         elif isinstance(variable, int):
-           if self._num_zvariable > 0:
-              position = self._first_zvariable
-              num_variable = self._num_zvariable
-              zVar = 1
-           else:
-              position = self._first_rvariable
-              num_variable = self._num_rvariable
-              zVar = 0
-           if (variable < 0 or variable >= num_variable):
-              print('No variable by this number:',variable)
-              return None
-           for _ in range(0, variable):
-              name, next_vdr = self._read_vdr_fast(position)
-              position = next_vdr
-           vdr_info = self._read_vdr(position)
-           return self._read_varatts(variable, zVar)
+            if self._num_zvariable > 0:
+                position = self._first_zvariable
+                num_variable = self._num_zvariable
+                zVar = 1
+            else:
+                position = self._first_rvariable
+                num_variable = self._num_rvariable
+                zVar = 0
+            if (variable < 0 or variable >= num_variable):
+                print('No variable by this number:',variable)
+                return None
+            for _ in range(0, variable):
+                name, next_vdr = self._read_vdr_fast(position)
+                position = next_vdr
+            vdr_info = self._read_vdr(position)
+            return self._read_varatts(variable, zVar)
         else:
-           print('Please set variable keyword equal to the name or',
-                 '  number of an variable')
-           if self._num_zvariable > 0:
-              position = self._first_zvariable
-              num_variable = self._num_zvariable
-              print('zVariables:')
-              for x in range(0, num_variable):
-                 name, next_vdr = self._read_vdr_fast(position)
-                 print('  NAME: '+name+' NUMBER: '+str(x))
-                 position=next_vdr
-           if self._num_rvariable > 0:
-              position = self._first_rvariable
-              num_variable = self._num_rvariable
-              print('rVariables:')
-              for x in range(0, num_variable):
-                 name, next_vdr = self._read_vdr_fast(position)
-                 print('  NAME: '+name+' NUMBER: '+str(x))
-                 position=next_vdr
+            print('Please set variable keyword equal to the name or',
+                  '  number of an variable')
+            if self._num_zvariable > 0:
+                position = self._first_zvariable
+                num_variable = self._num_zvariable
+                print('zVariables:')
+                for x in range(0, num_variable):
+                    name, next_vdr = self._read_vdr_fast(position)
+                    print('  NAME: '+name+' NUMBER: '+str(x))
+                    position=next_vdr
+            if self._num_rvariable > 0:
+                position = self._first_rvariable
+                num_variable = self._num_rvariable
+                print('rVariables:')
+                for x in range(0, num_variable):
+                    name, next_vdr = self._read_vdr_fast(position)
+                    print('  NAME: '+name+' NUMBER: '+str(x))
+                    position=next_vdr
 
     def _md5_validation(self, file_size):
         '''
@@ -641,19 +635,19 @@ class CDF(object):
         return (md5.hexdigest() == existing_md5)
 
     def _encoding_token(self, encoding):
-        encodings = { 1: 'NETWORK', \
-                      2: 'SUN', \
-                      3: 'VAX', \
-                      4: 'DECSTATION', \
-                      5: 'SGi', \
-                      6: 'IBMPC', \
-                      7: 'IBMRS', \
-                      9: 'PPC', \
-                      11: 'HP', \
-                      12: 'NeXT', \
-                      13: 'ALPHAOSF1', \
-                      14: 'ALPHAVMSd', \
-                      15: 'ALPHAVMSg', \
+        encodings = { 1: 'NETWORK',
+                      2: 'SUN',
+                      3: 'VAX',
+                      4: 'DECSTATION',
+                      5: 'SGi',
+                      6: 'IBMPC',
+                      7: 'IBMRS',
+                      9: 'PPC',
+                      11: 'HP',
+                      12: 'NeXT',
+                      13: 'ALPHAOSF1',
+                      14: 'ALPHAVMSd',
+                      15: 'ALPHAVMSg',
                       16: 'ALPHAVMSi'}
         return encodings[encoding]
 
@@ -663,38 +657,38 @@ class CDF(object):
         return majors[major]
 
     def _scope_token(self, scope):
-        scopes = { 1: 'Global', \
+        scopes = { 1: 'Global',
                    2: 'Variable'}
         return scopes[scope]
 
     def _variable_token(self, variable):
-        variables = { 3: 'rVariable', \
+        variables = { 3: 'rVariable',
                       8: 'zVariable'}
         return variables[variable]
 
     def _datatype_token(self, datatype):
-        datatypes = { 1: 'CDF_INT1', \
-                      2: 'CDF_INT2', \
-                      4: 'CDF_INT4', \
-                      8: 'CDF_INT8', \
-                     11: 'CDF_UINT1', \
-                     12: 'CDF_UINT2', \
-                     14: 'CDF_UINT4', \
-                     21: 'CDF_REAL4', \
-                     22: 'CDF_REAL8', \
-                     31: 'CDF_EPOCH', \
-                     32: 'CDF_EPOCH16', \
-                     33: 'CDF_TIME_TT2000', \
-                     41: 'CDF_BYTE', \
-                     44: 'CDF_FLOAT', \
-                     45: 'CDF_DOUBLE', \
-                     51: 'CDF_CHAR', \
+        datatypes = { 1: 'CDF_INT1',
+                      2: 'CDF_INT2',
+                      4: 'CDF_INT4',
+                      8: 'CDF_INT8',
+                     11: 'CDF_UINT1',
+                     12: 'CDF_UINT2',
+                     14: 'CDF_UINT4',
+                     21: 'CDF_REAL4',
+                     22: 'CDF_REAL8',
+                     31: 'CDF_EPOCH',
+                     32: 'CDF_EPOCH16',
+                     33: 'CDF_TIME_TT2000',
+                     41: 'CDF_BYTE',
+                     44: 'CDF_FLOAT',
+                     45: 'CDF_DOUBLE',
+                     51: 'CDF_CHAR',
                      52: 'CDF_UCHAR' }
         return datatypes[datatype]
 
     def _sparse_token(self, sparse):
-        sparses = { 0: 'No_sparse', \
-                    1: 'Pad_sparse', \
+        sparses = { 0: 'No_sparse',
+                    1: 'Pad_sparse',
                     2: 'Prev_sparse'}
         return sparses[sparse]
 
@@ -740,9 +734,9 @@ class CDF(object):
         cdr_info['version'] = str(version) + '.' + str(release) + '.' + \
                               str(increment)
         if row_majority:
-           cdr_info['majority'] = 1
+            cdr_info['majority'] = 1
         else:
-           cdr_info['majority'] = 2
+            cdr_info['majority'] = 2
         cdr_info['format'] = single_format
         cdr_info['md5'] = md5
         
@@ -1198,7 +1192,8 @@ class CDF(object):
         name = name.replace('\x00', '')
         return name, next_vdr
             
-    def _read_vxr(self, byte_loc):
+    def _read_vxrs(self, byte_loc, vvr_offsets=[], vvr_records=[], vvr_sprecds=[]):
+        
         f = self.file
         f.seek(byte_loc, 0)
         block_size = int.from_bytes(f.read(8),'big', signed=True)
@@ -1207,15 +1202,6 @@ class CDF(object):
         next_vxr_pos = int.from_bytes(f.read(8),'big', signed=True)
         num_ent = int.from_bytes(f.read(4),'big', signed=True)
         num_ent_used = int.from_bytes(f.read(4),'big', signed=True)
-        if self._vxr == 0:    
-            self._vxr = 1
-            self._vvr = 0
-            if (len(self._vvr_offsets)>0):
-                self._vvr_offsets[:] = []
-            if (len(self._vvr_records)>0):
-                self._vvr_records[:] = []
-            if (len(self._vvr_sprecds)>0):
-                self._vvr_sprecds[:] = []
 
         for ix in range(0, num_ent_used):
             f.seek(byte_loc+28+4*ix, 0)
@@ -1228,19 +1214,27 @@ class CDF(object):
             f.seek(type_offset, 0)
             next_type = int.from_bytes(f.read(4),'big', signed=True)
             if next_type == 6: 
-                self._read_vxr(rec_offset)
+                vvr_offsets, vvr_records, vvr_sprecds = self._read_vxr(rec_offset, 
+                                                                       vvr_offsets=vvr_offsets, 
+                                                                       vvr_records=vvr_records, 
+                                                                       vvr_sprecds=vvr_sprecds)
             else: 
-                self._vvr_offsets.append(rec_offset)
-                self._vvr_records.append(num_end-num_start+1)
-                self._vvr_sprecds.append(num_start)
-                self._vvr += 1
+                vvr_offsets.extend(rec_offset)
+                vvr_records.extend(num_end-num_start+1)
+                vvr_sprecds.extend(num_start)
+                
         if next_vxr_pos != 0:
-            self._read_vxr(next_vxr_pos)
-         
+            vvr_offsets, vvr_records, vvr_sprecds = self._read_vxr(rec_offset, 
+                                                                   vvr_offsets=vvr_offsets, 
+                                                                   vvr_records=vvr_records, 
+                                                                   vvr_sprecds=vvr_sprecds)
+            
+        return vvr_offsets, vvr_records, vvr_sprecds
+        
     def _read_vvr(self, vdr_dict, vvr_offs, to_np):
         
         f = self.file
-        for x in range(0, self._vvr):
+        for x in range(0, len(vvr_offs)):
             f.seek(vvr_offs[x], 0)
             block_size = int.from_bytes(f.read(8),'big')
             section_type = int.from_bytes(f.read(4),'big')
@@ -1272,7 +1266,7 @@ class CDF(object):
         numBytes = self._type_size(vdr_dict['data_type'],
                                    vdr_dict['num_elements'])
         numValues = self._num_values(vdr_dict)
-        for x in range(0, self._vvr):
+        for x in range(0, len(vvr_offs)):
             f.seek(vvr_offs[x], 0)
             block_size = int.from_bytes(f.read(8),'big')
             section_type = int.from_bytes(f.read(4),'big')
@@ -1321,7 +1315,7 @@ class CDF(object):
         f = self.file
         numBytes = self._type_size(vdr_dict['data_type'], \
                                    vdr_dict['num_elements'])
-        for x in range(0, self._vvr):
+        for x in range(0, len(vvr_offs)):
             f.seek(vvr_offs[x], 0)
             block_size = int.from_bytes(f.read(8),'big')
             section_type = int.from_bytes(f.read(4),'big')
@@ -1367,7 +1361,7 @@ class CDF(object):
             values = values * vdr_dict['dim_sizes'][y]
         rec_size = values * self._type_size(vdr_dict['data_type'], \
                                             vdr_dict['num_elements'])
-        for x in range(0, self._vvr):
+        for x in range(0, len(vvr_offs)):
             f.seek(vvr_offs[x], 0)
             block_size = int.from_bytes(f.read(8),'big')
             section_type = int.from_bytes(f.read(4),'big')
@@ -1748,22 +1742,22 @@ class CDF(object):
             else:
                 print('This epoch has no written data')
                 return None
-        self._read_vxr(vdr_info['head_vxr'])
+        vvr_offsets, vvr_records, vvr_sprecds = self._read_vxr(vdr_info['head_vxr'])
         if vdr_info['sparse']==0:
             if vdr_info['compression_bool']!=True:
-                data = self._read_vvr(vdr_info, self._vvr_offsets, to_np)
+                data = self._read_vvr(vdr_info, vvr_offsets, to_np)
             else:
-                data = self._read_cvvr(vdr_info, self._vvr_offsets,
-                                     self._vvr_records, to_np)
+                data = self._read_cvvr(vdr_info, vvr_offsets,
+                                       vvr_records, to_np)
         else:
             if vdr_info['compression_bool']!=True:
-                data = self._read_sp_vvr(vdr_info, self._vvr_offsets,
-                                       self._vvr_records, self._vvr_sprecds,
-                                       to_np)
+                data = self._read_sp_vvr(vdr_info, vvr_offsets,
+                                         vvr_records, vvr_sprecds,
+                                         to_np)
             else:
-                data = self._read_sp_cvvr(vdr_info, self._vvr_offsets,
-                                        self._vvr_records, self._vvr_sprecds,
-                                        to_np)
+                data = self._read_sp_cvvr(vdr_info, vvr_offsets,
+                                          vvr_records, vvr_sprecds,
+                                          to_np)
         recs = self._findrangerecords(vdr_info['data_type'], data, starttime,
                                        endtime)
         idx = recs[0]
@@ -1779,21 +1773,21 @@ class CDF(object):
     def _read_vardata(self, vdr_info, epoch, starttime, endtime,
                       startrec, endrec, to_np):
 
-        self._read_vxr(vdr_info['head_vxr'])
+        vvr_offsets, vvr_records, vvr_sprecds = self._read_vxrs(vdr_info['head_vxr'])
         if vdr_info['sparse']==0:
             if vdr_info['compression_bool']!=True:
-                data = self._read_vvr(vdr_info, self._vvr_offsets, to_np)
+                data = self._read_vvr(vdr_info, vvr_offsets, to_np)
             else:
-                data = self._read_cvvr(vdr_info, self._vvr_offsets,
-                                       self._vvr_records, to_np)
+                data = self._read_cvvr(vdr_info, vvr_offsets,
+                                       vvr_records, to_np)
         else:
             if vdr_info['compression_bool']!=True:
-                data = self._read_sp_vvr(vdr_info, self._vvr_offsets,
-                                         self._vvr_records, self._vvr_sprecds,
+                data = self._read_sp_vvr(vdr_info, vvr_offsets,
+                                         vvr_records, vvr_sprecds,
                                          to_np)
             else:
-                data = self._read_sp_cvvr(vdr_info, self._vvr_offsets,
-                                          self._vvr_records, self._vvr_sprecds,
+                data = self._read_sp_cvvr(vdr_info, vvr_offsets,
+                                          vvr_records, vvr_sprecds,
                                           to_np)
         if (vdr_info['record_vary']):
             #Record varying
@@ -1911,7 +1905,6 @@ class CDF(object):
                     return None
                 self._read_vxr(vdr_info['head_vxr'])
                 epochtimes = self.varget(dependVar)
-        self._vxr = 0
         return self._findrangerecords(vdr_info['data_type'], epochtimes,
                                       starttime, endtime)
 
