@@ -398,7 +398,6 @@ class CDF(object):
         print('No attribute by this name:',attribute)
         return
 
-
     def varinq(self, variable = None):
         position = self._first_zvariable
         if isinstance(variable, str):
@@ -428,6 +427,7 @@ class CDF(object):
     def varget(self, variable = None, epoch = None, starttime = None, 
                endtime = None, startrec = None, endrec = None, 
                to_dict = False):
+        
         if (isinstance(variable, int) and self._num_zvariable > 0 and 
             self._num_rvariable > 0):
             print('This CDF has both r and z variables. Use variable name')
@@ -497,7 +497,6 @@ class CDF(object):
                     name, next_vdr = self._read_vdr_fast(position)
                     print('  NAME: '+name+' NUMBER: '+str(x))
                     position=next_vdr
-
 
     def epochrange(self, epoch = None, starttime = None, endtime = None):
         if (isinstance(epoch, int) and 
@@ -1192,7 +1191,7 @@ class CDF(object):
         name = name.replace('\x00', '')
         return name, next_vdr
             
-    def _read_vxrs(self, byte_loc, vvr_offsets=[], vvr_records=[], vvr_sprecds=[]):
+    def _read_vxrs(self, byte_loc, vvr_offsets=[], vvr_start=[], vvr_end=[]):
         
         f = self.file
         f.seek(byte_loc, 0)
@@ -1214,52 +1213,70 @@ class CDF(object):
             f.seek(type_offset, 0)
             next_type = int.from_bytes(f.read(4),'big', signed=True)
             if next_type == 6: 
-                vvr_offsets, vvr_records, vvr_sprecds = self._read_vxrs(rec_offset, 
-                                                                       vvr_offsets=vvr_offsets, 
-                                                                       vvr_records=vvr_records, 
-                                                                       vvr_sprecds=vvr_sprecds)
+                vvr_offsets, vvr_start, vvr_end = self._read_vxrs(rec_offset, 
+                                                                  vvr_offsets=vvr_offsets, 
+                                                                  vvr_start=vvr_start, 
+                                                                  vvr_end=vvr_end)
             else: 
                 vvr_offsets.extend([rec_offset])
-                vvr_records.extend([num_end-num_start+1])
-                vvr_sprecds.extend([num_start])
+                vvr_start.extend([num_start])
+                vvr_end.extend([num_end])
                 
         if next_vxr_pos != 0:
-            vvr_offsets, vvr_records, vvr_sprecds = self._read_vxrs(next_vxr_pos, 
-                                                                   vvr_offsets=vvr_offsets, 
-                                                                   vvr_records=vvr_records, 
-                                                                   vvr_sprecds=vvr_sprecds)
+            vvr_offsets, vvr_start, vvr_end = self._read_vxrs(next_vxr_pos, 
+                                                              vvr_offsets=vvr_offsets, 
+                                                              vvr_start=vvr_start, 
+                                                              vvr_end=vvr_end)
             
-        return vvr_offsets, vvr_records, vvr_sprecds
+        return vvr_offsets, vvr_start, vvr_end
 
-    def _read_sp_vvr(self, vdr_dict, vvr_offs, vvr_recs, vvr_sprcs, to_np):
+    def _read_vvrs(self, vdr_dict, vvr_offs, vvr_start, vvr_end, to_np):
+        '''
+        Reads in all VVRS that are pointed to in the VVR_OFFS array.  
+        
+        Creates a large byte array of all values called "bytes".
+        
+        Decodes the bytes, then returns them.  
+        '''
+        
         
         f = self.file
         numBytes = self._type_size(vdr_dict['data_type'],
                                    vdr_dict['num_elements'])
         numValues = self._num_values(vdr_dict)
-        for x in range(0, len(vvr_offs)):
-            f.seek(vvr_offs[x], 0)
+        bytes = b''
+        
+        for vvr_num in range(0, len(vvr_offs)):
+            f.seek(vvr_offs[vvr_num], 0)
             block_size = int.from_bytes(f.read(8),'big')
             section_type = int.from_bytes(f.read(4),'big')
-            if x==0:
-                if (vvr_sprcs[x] != 0):
-                    fillRecs = vvr_sprcs[x]
-                    bytes = vdr_dict['pad']
-                    for _ in range(1, fillRecs*numValues):
+            if section_type==7:
+                data_size = block_size - 12
+            elif section_type==13:
+                f.read(12)
+                data_size = block_size - 24
+            if vvr_num ==0:
+                if (vvr_start[vvr_num] != 0):
+                    fillRecs = vvr_start[vvr_num]
+                    for _ in range(0, fillRecs*numValues):
                         bytes += vdr_dict['pad']
-                    bytes += f.read(block_size-12)
-                else:
-                    bytes = f.read(block_size-12)
+                if section_type==13:
+                    bytes += gzip.decompress(f.read(data_size))
+                elif section_type==7:
+                    bytes += f.read(data_size)
                 pre_data = bytes[len(bytes)-numBytes*numValues:]
             else:
-                fillRecs = vvr_sprcs[x] - vvr_sprcs[x-1] - 1
+                fillRecs = vvr_start[vvr_num] - vvr_end[vvr_num -1] - 1
                 if (vdr_dict['sparse']==1):
                     for _ in range(0, fillRecs*numValues):
                         bytes += vdr_dict['pad']
                 elif (vdr_dict['sparse']==2):
                     for _ in range(0, fillRecs):
                         bytes += pre_data
-                bytes += f.read(block_size-12)
+                if section_type==13:
+                    bytes += gzip.decompress(f.read(data_size))
+                elif section_type==7:
+                    bytes += f.read(data_size)
                 pre_data = bytes[len(bytes)-numBytes*numValues:]
         
         if (to_np):
@@ -1274,108 +1291,16 @@ class CDF(object):
                                    vdr_dict['num_elements'])
         return y
 
-    def _read_sp_cvvr(self, vdr_dict, vvr_offs, vvr_recs, vvr_sprcs, to_np):
-        
-        f = self.file
-        values = 1
-        for y in range(0, vdr_dict['num_dims']):
-            values = values * vdr_dict['dim_sizes'][y]
-        rec_size = values * self._type_size(vdr_dict['data_type'],
-                                            vdr_dict['num_elements'])
-        for x in range(0, len(vvr_offs)):
-            f.seek(vvr_offs[x], 0)
-            block_size = int.from_bytes(f.read(8),'big')
-            section_type = int.from_bytes(f.read(4),'big')
-            if section_type==7:
-                data_off = 12
-            else:
-                data_off = 24
-            f.seek(vvr_offs[x]+data_off, 0)
-            if x==0:
-                if (vvr_sprcs[x] != 0):
-                    fillRecs = vvr_sprcs[x]
-                    bytes = vdr_dict['pad']
-                    for _ in range(1, fillVals*self._num_values(vdr_dict)):
-                        bytes += vdr_dict['pad']
-                    if data_off == 24:
-                        bytes += gzip.decompress(f.read(block_size-data_off))
-                    else:
-                        bytes += f.read(block_size-data_off)
-                else:
-                    bytes = f.read(block_size-data_off)
-                pre_data = bytes[len(bytes)-numBytes*self._num_values(vdr_dict):]
-            else:
-                if data_off==24:
-                    bytes += gzip.decompress(f.read(block_size-data_off))
-                else:
-                    bytes += f.read(block_size-data_off)
-        if (to_np):
-            y = self._read_data(bytes, vdr_dict['data_type'],
-                                vdr_dict['max_records']+1,
-                                vdr_dict['num_elements'],
-                                dimensions=vdr_dict['dim_sizes'])
-        else:
-            y = self._convert_data(bytes, vdr_dict['data_type'],
-                                   vdr_dict['max_records']+1,
-                                   self._num_values(vdr_dict),
-                                   vdr_dict['num_elements'])
-        return y
-
-    def _read_vvr(self, vdr_dict, vvr_offs, vvr_recs, to_np):
-        
-        #THIS IS CURRENTLY WRITTEN TO ASSUME THE CDF FILE IS PDS4 COMPLIANT
-        f = self.file
-        numBytes = self._type_size(vdr_dict['data_type'],
-                                   vdr_dict['num_elements'])
-        bytes = b''
-        for x in range(0, len(vvr_offs)):
-            f.seek(vvr_offs[x], 0)
-            block_size = int.from_bytes(f.read(8),'big')
-            section_type = int.from_bytes(f.read(4),'big')
-            #could be a VVR (7), or CVVR for a compressed variable
-            if section_type==7:
-                data_off = 12
-            elif section_type==13:
-                data_off = 24
-            f.seek(vvr_offs[x]+data_off, 0)
-            if section_type==13:
-                bytes += gzip.decompress(f.read(block_size-data_off))
-            else:
-                bytes += f.read(block_size-data_off)
-        if (to_np):
-            y = self._read_data(bytes, vdr_dict['data_type'],
-                                vdr_dict['max_records']+1,
-                                vdr_dict['num_elements'],
-                                dimensions=vdr_dict['dim_sizes'])
-        else:
-            if (vdr_dict['data_type'] == 32):
-                y = self._convert_data(bytes, vdr_dict['data_type'], 
-                                       vdr_dict['max_records']+1,
-                                       self._num_values(vdr_dict)*2,
-                                       vdr_dict['num_elements'])
-            else:
-                y = self._convert_data(bytes, vdr_dict['data_type'],
-                                       vdr_dict['max_records']+1,
-                                       self._num_values(vdr_dict),
-                                       vdr_dict['num_elements'])
-        return y
-
-
     def _convert_option(self):
         '''
         Determines how to convert CDF byte ordering to the system 
         byte ordering.  
         '''
         
-        data_endian = 'little'
-        if (self._encoding==1 or self._encoding==2 or self._encoding==5 or
-            self._encoding==7 or self._encoding==9 or self._encoding==11 or
-            self._encoding==12):
-            data_endian = 'big'
-        if sys.byteorder=='little' and data_endian=='big':
+        if sys.byteorder=='little' and self._encoding =='big-endian':
             #big->little
             order = '>'
-        elif sys.byteorder=='big' and data_endian=='little':
+        elif sys.byteorder=='big' and self._encoding =='little-endian':
             #little->big
             order = '<'
         else:
@@ -1385,8 +1310,8 @@ class CDF(object):
 
     def _endian(self):
         '''
-        Determines endianess of the CDF file.  
-        Only used in the __init__() of the file.  
+        Determines endianess of the CDF file
+        Only used in __init__
         '''
         if (self._encoding==1 or self._encoding==2 or self._encoding==5 or 
             self._encoding==7 or self._encoding==9 or self._encoding==11 or
@@ -1732,18 +1657,10 @@ class CDF(object):
     def _read_vardata(self, vdr_info, epoch, starttime, endtime,
                       startrec, endrec, to_np):
 
-        vvr_offsets, vvr_records, vvr_sprecds = self._read_vxrs(vdr_info['head_vxr'], vvr_offsets=[], vvr_records=[], vvr_sprecds=[])
-        if vdr_info['sparse']==0:
-            data = self._read_vvr(vdr_info, vvr_offsets, vvr_records, to_np)
-        else:
-            if vdr_info['compression_bool']!=True:
-                data = self._read_sp_vvr(vdr_info, vvr_offsets,
-                                         vvr_records, vvr_sprecds,
-                                         to_np)
-            else:
-                data = self._read_sp_cvvr(vdr_info, vvr_offsets,
-                                          vvr_records, vvr_sprecds,
-                                          to_np)
+        vvr_offsets, vvr_start, vvr_end = self._read_vxrs(vdr_info['head_vxr'], vvr_offsets=[], vvr_start=[], vvr_end=[])
+
+        data = self._read_vvrs(vdr_info, vvr_offsets, vvr_start, vvr_end, to_np)
+
         if (vdr_info['record_vary']):
             #Record varying
             if (starttime != None or endtime != None):
