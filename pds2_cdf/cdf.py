@@ -1654,17 +1654,33 @@ class CDF(object):
             records.append(idx[len(idx)-1])
             return records
 
-    def _read_vardata(self, vdr_info, epoch, starttime, endtime,
-                      startrec, endrec, to_np):
+    def _read_vardata(self, vdr_info, epoch=None, starttime=None, endtime=None,
+                      startrec=0, endrec=None, to_np=True):
 
-        vvr_offsets, vvr_start, vvr_end = self._read_vxrs(vdr_info['head_vxr'], vvr_offsets=[], vvr_start=[], vvr_end=[])
-
+        #Error checking
+        if (startrec  < 0):
+            print('Invalid start recond')
+            return None
+        
+        if (endrec):
+            if (endrec  < 0) or (endrec > vdr_info['max_records']) or (endrec < startrec):
+                print('Invalid end recond')
+                return None
+        else:
+            endrec = vdr_info['max_records']
+            
+            
+        vvr_offsets, vvr_start, vvr_end = self._read_vxrs(vdr_info['head_vxr'], 
+                                                          vvr_offsets=[], 
+                                                          vvr_start=[], 
+                                                          vvr_end=[])
+        
         data = self._read_vvrs(vdr_info, vvr_offsets, vvr_start, vvr_end, to_np)
 
         if (vdr_info['record_vary']):
             #Record varying
             if (starttime != None or endtime != None):
-                recs = self._findrecords (vdr_info['name'], epoch, starttime, 
+                recs = self._findrecords(vdr_info['name'], epoch, starttime, 
                                           endtime)
                 if (recs == None):
                     return None
@@ -1675,77 +1691,47 @@ class CDF(object):
                         #no records in range
                         return None
                     else:
-                        startrecord = idx[0]
-                        endrecord = idx[len(idx)-1]
+                        startrec = idx[0]
+                        endrec = idx[len(idx)-1]
                 else:
-                    startrecord = recs[0]
-                    endrecord = recs[1]
-            elif (startrec != None or endrec != None):
-                if (startrec != None):
-                    if (startrec  < 0):
-                        print('Invalid start recond')
-                        return None
-                    else:
-                        if (startrec > vdr_info['max_records']):
-                            print('Invalid start record: out of range')
-                            return None
-                        else:
-                            startrecord = startrec
-                else:
-                    startrecord = 0
-                if (endrec != None):
-                    if (endrec  < 0):
-                        print('Invalid end recond')
-                        return None
-                    else:
-                        if (endrec > vdr_info['max_records']):
-                            print('Invalid end record: out of range')
-                            return None
-                        else:
-                            endrecord = endrec
-                else:
-                    endrecord = vdr_info['max_records']
-            else:
-                startrecord = 0
-                endrecord = vdr_info['max_records']
+                    startrec = recs[0]
+                    endrec = recs[1]
         else:
-            #Non-record varying
-            startrecord = 0
-            endrecord = 0
-        if (endrecord < startrecord):
-            print('Invalid start/end record')
-            return None
+            startrec = 0
+            endrec = 0
+            
         if (not to_np):
             new_dict = {}
             new_dict['Rec_Ndim'] = vdr_info['num_dims']
             new_dict['Rec_Shape'] = vdr_info['dim_sizes']
             new_dict['Num_Records'] = vdr_info['max_records'] + 1
-            new_dict['Item_Size'] = self._type_size(vdr_info['data_type'], \
+            new_dict['Item_Size'] = self._type_size(vdr_info['data_type'], 
                                                    vdr_info['num_elements'])
             new_dict['Data_Type'] = self._datatype_token(vdr_info['data_type'])
             if (vdr_info['record_vary']):
                 num_values = self._num_values(vdr_info)
                 if (vdr_info['data_type'] == 32):
-                    data2 = data[num_values*startrecord*2:
-                                 num_values*(endrecord+1)*2]
+                    data2 = data[num_values*startrec*2:
+                                 num_values*(endrec+1)*2]
                     datax = []
-                    totals = num_values*(endrecord-startrecord+1)*2
+                    totals = num_values*(endrec-startrec+1)*2
                     for y in range (0, totals, 2):
                         datax.append(complex(data2[y], data2[y+1]))
                     new_dict['Data'] = datax
                 else:
-                    new_dict['Data'] = data[num_values*startrecord:
-                                            num_values*(endrecord+1)]
+                    new_dict['Data'] = data[num_values*startrec:
+                                            num_values*(endrec+1)]
             else:
                 new_dict['Data'] = data
             return new_dict
         else:
             if (vdr_info['record_vary']):
-                return data[startrecord:endrecord+1]
+                return data[startrec:endrec+1]
             else:
                 return data
 
-    def _findrecords(self, var_name, epoch, starttime, endtime):
+    def _findtimerecords(self, var_name, starttime, endtime, epoch=None):
+        
         if (epoch != None):
             vdr_info = self.varinq(epoch)
             if (vdr_info == None):
@@ -1753,13 +1739,11 @@ class CDF(object):
                 return None
             if (vdr_info['data_type'] == 31 or vdr_info['data_type'] == 32 or
                 vdr_info['data_type'] == 33):
-                self._read_vxr(vdr_info['head_vxr'])
                 epochtimes = self.varget(epoch)
         else:
             vdr_info = self.varinq(var_name)
             if (vdr_info['data_type'] == 31 or vdr_info['data_type'] == 32 or
                 vdr_info['data_type'] == 33):
-                self._read_vxr(vdr_info['head_vxr'])
                 epochtimes = self.varget(var_name)
             else:
                 #acquire depend_0 variable
@@ -1777,6 +1761,7 @@ class CDF(object):
                     return None
                 self._read_vxr(vdr_info['head_vxr'])
                 epochtimes = self.varget(dependVar)
+                
         return self._findrangerecords(vdr_info['data_type'], epochtimes,
                                       starttime, endtime)
 

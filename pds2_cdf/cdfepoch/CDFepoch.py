@@ -92,7 +92,7 @@ CDFepoch.py
 
 import numpy as np, sys, struct, itertools, math
 
-class CDFepoch:
+class CDFepoch(object):
 
     _monthToken = [    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -169,478 +169,476 @@ class CDFepoch:
     currentJDay = -1
     currentLeapSeconds = -1
 
-    def encode (epochs, iso_8601=None):
+    def encode(self, epochs, iso_8601=None):
 
-       if (isinstance(epochs, int) or isinstance(epochs, np.int64)):
-          return CDFepoch.encode_tt2000(epochs, iso_8601)
-       elif (isinstance(epochs, float) or isinstance(epochs, np.float64)):
-          return CDFepoch.encode_epoch(epochs, iso_8601)
-       elif (isinstance(epochs, complex) or isinstance(epochs, np.complex128)):
-          return CDFepoch.encode_epoch16(epochs, iso_8601)
-       elif (isinstance(epochs, list) or isinstance(epochs, np.ndarray)):
-          if (isinstance(epochs[0], int) or isinstance(epochs[0], np.int64)):
-             return CDFepoch.encode_tt2000(epochs, iso_8601)
-          elif (isinstance(epochs[0], float) or \
-                isinstance(epochs[0], np.float64)):
-             return CDFepoch.encode_epoch(epochs, iso_8601)
-          elif (isinstance(epochs[0], complex) or \
-                isinstance(epochs[0], np.complex128)):
-             return CDFepoch.encode_epoch16(epochs, iso_8601)
-          else:
-             print('Bad input')
-             return None
-       else:
-          print('Bad input')
-          return None
+        if (isinstance(epochs, int) or isinstance(epochs, np.int64)):
+            return CDFepoch.encode_tt2000(epochs, iso_8601)
+        elif (isinstance(epochs, float) or isinstance(epochs, np.float64)):
+            return CDFepoch.encode_epoch(epochs, iso_8601)
+        elif (isinstance(epochs, complex) or isinstance(epochs, np.complex128)):
+            return CDFepoch.encode_epoch16(epochs, iso_8601)
+        elif (isinstance(epochs, list) or isinstance(epochs, np.ndarray)):
+            if (isinstance(epochs[0], int) or isinstance(epochs[0], np.int64)):
+                return CDFepoch.encode_tt2000(epochs, iso_8601)
+            elif (isinstance(epochs[0], float) or 
+                  isinstance(epochs[0], np.float64)):
+                return CDFepoch.encode_epoch(epochs, iso_8601)
+            elif (isinstance(epochs[0], complex) or 
+                  isinstance(epochs[0], np.complex128)):
+                return CDFepoch.encode_epoch16(epochs, iso_8601)
+            else:
+                print('Bad input')
+                return None
+        else:
+            print('Bad input')
+            return None
 
-    def breakdown (epochs, to_np=None):
+    def breakdown(self, epochs, to_np=None):
 
-       if (isinstance(epochs, int) or isinstance(epochs, np.int64)):
-          return CDFepoch.breakdown_tt2000(epochs, to_np)
-       elif (isinstance(epochs, float) or isinstance(epochs, np.float64)):
-          return CDFepoch.breakdown_epoch(epochs, to_np)
-       elif (isinstance(epochs, complex) or isinstance(epochs, np.complex128)):
-          return CDFepoch.breakdown_epoch16(epochs, to_np)
-       elif (isinstance(epochs, list) or isinstance(epochs, np.ndarray)):
-          if (isinstance(epochs[0], int) or isinstance(epochs[0], np.int64)):
-             return CDFepoch.breakdown_tt2000(epochs, to_np)
-          elif (isinstance(epochs[0], float) or \
-                isinstance(epochs[0], np.float64)):
-             return CDFepoch.breakdown_epoch(epochs, to_np)
-          elif (isinstance(epochs[0], complex) or \
-                isinstance(epochs[0], np.complex128)):
-             return CDFepoch.breakdown_epoch16(epochs, to_np)
-          else:
-             print('Bad input')
-             return None
-       else:
-          print('Bad input')
-          return None
+        if (isinstance(epochs, int) or isinstance(epochs, np.int64)):
+            return CDFepoch.breakdown_tt2000(epochs, to_np)
+        elif (isinstance(epochs, float) or isinstance(epochs, np.float64)):
+            return CDFepoch.breakdown_epoch(epochs, to_np)
+        elif (isinstance(epochs, complex) or isinstance(epochs, np.complex128)):
+            return CDFepoch.breakdown_epoch16(epochs, to_np)
+        elif (isinstance(epochs, list) or isinstance(epochs, np.ndarray)):
+            if (isinstance(epochs[0], int) or isinstance(epochs[0], np.int64)):
+                return CDFepoch.breakdown_tt2000(epochs, to_np)
+            elif (isinstance(epochs[0], float) or 
+                 isinstance(epochs[0], np.float64)):
+                return CDFepoch.breakdown_epoch(epochs, to_np)
+            elif (isinstance(epochs[0], complex) or
+                     isinstance(epochs[0], np.complex128)):
+                return CDFepoch.breakdown_epoch16(epochs, to_np)
+            else:
+                print('Bad input')
+                return None
+        else:
+            print('Bad input')
+            return None
 
-    def compute (datetimes, to_np=None):
+    def compute(self, datetimes, to_np=None):
 
-       if (not isinstance(datetimes, list) and \
+        if (not isinstance(datetimes, list) and
            not isinstance(datetimes, np.ndarray)):
-          print('datetime must be in list form')
-          return None
-       if (isinstance(datetimes[0], int)):
-          items = len(datetimes)
-          if (items == 7):
-             return CDFepoch.compute_epoch(datetimes, to_np)
-          elif (items == 10):
-             return CDFepoch.compute_epoch16(datetimes, to_np)
-          elif (items == 9):
-             return CDFepoch.compute_tt2000(datetimes, to_np)
-          else:
-             print('Unknown input')
-             return None
-       elif (isinstance(datetimes[0], list) or \
-             isinstance(datetimes[0], np.ndarray)):
-          items = len(datetimes[0])
-          if (items == 7):
-             return CDFepoch.compute_epoch(datetimes, to_np)
-          elif (items == 10):
-             return CDFepoch.compute_epoch16(datetimes, to_np)
-          elif (items == 9):
-             return CDFepoch.compute_tt2000(datetimes, to_np)
-          else:
-             print('Unknown input')
-             return None
-       else:
-          print('Unknown input')
-          return None
+            print('datetime must be in list form')
+            return None
+        if (isinstance(datetimes[0], int)):
+            items = len(datetimes)
+            if (items == 7):
+                return CDFepoch.compute_epoch(datetimes, to_np)
+            elif (items == 10):
+                return CDFepoch.compute_epoch16(datetimes, to_np)
+            elif (items == 9):
+                return CDFepoch.compute_tt2000(datetimes, to_np)
+            else:
+                print('Unknown input')
+                return None
+        elif (isinstance(datetimes[0], list) or
+              isinstance(datetimes[0], np.ndarray)):
+            items = len(datetimes[0])
+            if (items == 7):
+                return CDFepoch.compute_epoch(datetimes, to_np)
+            elif (items == 10):
+                return CDFepoch.compute_epoch16(datetimes, to_np)
+            elif (items == 9):
+                return CDFepoch.compute_tt2000(datetimes, to_np)
+            else:
+                print('Unknown input')
+                return None
+        else:
+            print('Unknown input')
+            return None
 
-    def findepochrange(epochs, starttime = None, endtime = None):
+    def findepochrange(self, epochs, starttime = None, endtime = None):
 
         if (isinstance(epochs, float) or isinstance(epochs, np.float64)):
-           return CDFepoch.epochrange_epoch(epoch, starttime, endtime)
+            return CDFepoch.epochrange_epoch(epochs, starttime, endtime)
         elif (isinstance(epochs, int) or isinstance(epochs, np.int64)):
-           return CDFepoch.epochrange_tt2000(epoch, starttime, endtime)
+            return CDFepoch.epochrange_tt2000(epochs, starttime, endtime)
         elif (isinstance(epochs, complex) or isinstance(epochs, np.complex128)):
-           return CDFepoch.epochrange_epoch16(epoch, starttime, endtime)
+            return CDFepoch.epochrange_epoch16(epochs, starttime, endtime)
         elif (isinstance(epochs, list)  or isinstance(epochs, np.ndarray)):
-           if (isinstance(epochs[0], float) or \
+            if (isinstance(epochs[0], float) or
                isinstance(epochs[0], np.float64)):
-              return CDFepoch.epochrange_epoch(epochs, starttime, endtime)
-           elif (isinstance(epochs[0], int) or \
+                return CDFepoch.epochrange_epoch(epochs, starttime, endtime)
+            elif (isinstance(epochs[0], int) or
                isinstance(epochs[0], np.int64)):
-              return CDFepoch.epochrange_tt2000(epochs, starttime, endtime)
-           elif (isinstance(epochs[0], complex) or \
+                return CDFepoch.epochrange_tt2000(epochs, starttime, endtime)
+            elif (isinstance(epochs[0], complex) or
                isinstance(epochs[0], np.complex128)):
-              return CDFepoch.epochrange_epoch16(epochs, starttime, endtime)
-           else:
-              print('Bad input')
-              return None
-        else:
-           print('Bad input')
-           return None
-
-    def encode_tt2000 (tt2000, iso_8601=None):
-    
-       if (isinstance(tt2000, int) or isinstance(tt2000, np.int64)):
-          new_tt2000 = [tt2000]
-       elif (isinstance(tt2000, list) or isinstance(tt2000, np.ndarray)):
-          new_tt2000 = tt2000
-       else:
-          print('type...',type(tt2000))
-          print('Bad input')
-          return None
-       count = len(new_tt2000)
-       encodeds = []
-       for x in range (0, count):
-          nanoSecSinceJ2000 = new_tt2000[x]
-          if nanoSecSinceJ2000 == CDFepoch.FILLED_TT2000_VALUE:
-             if (iso_8601 == None or iso_8601 != False):
-                return '9999-12-31T23:59:59.999999999'
-             else:
-                return '31-Dec-9999 23:59:59.999.999.999'
-          if nanoSecSinceJ2000 == CDFepoch.DEFAULT_TT2000_PADVALUE:
-             if (iso_8601 == None or iso_8601 != False):
-                return '0000-01-01T00:00:00.000000000'
-             else:
-                return '01-Jan-0000 00:00:00.000.000.000'
-          datetime = CDFepoch.breakdown_tt2000(nanoSecSinceJ2000)
-          ly = datetime[0]
-          lm = datetime[1]
-          ld = datetime[2]
-          lh = datetime[3]
-          ln = datetime[4]
-          ls = datetime[5]
-          ll = datetime[6]
-          lu = datetime[7]
-          la = datetime[8]
-          if (iso_8601 == None or iso_8601 != False):
-             # yyyy-mm-ddThh:mm:ss.mmmuuunnn 
-             encoded = str(ly).zfill(4)
-             encoded += '-'
-             encoded += str(lm).zfill(2)
-             encoded += '-'
-             encoded += str(ld).zfill(2)
-             encoded += 'T'
-             encoded += str(lh).zfill(2)
-             encoded += ':'
-             encoded += str(ln).zfill(2)
-             encoded += ':'
-             encoded += str(ls).zfill(2)
-             encoded += '.'
-             encoded += str(ll).zfill(3)
-             encoded += str(lu).zfill(3)
-             encoded += str(la).zfill(3)
-          else:
-             # dd-mmm-yyyy hh:mm:ss.mmm.uuu.nnn 
-             encoded = str(ld).zfill(2)
-             encoded += '-'
-             encoded += CDFepoch._monthToken[lm-1]
-             encoded += '-'
-             encoded += str(ly).zfill(4)
-             encoded += ' '
-             encoded += str(lh).zfill(2)
-             encoded += ':'
-             encoded += str(ln).zfill(2)
-             encoded += ':'
-             encoded += str(ls).zfill(2)
-             encoded += '.'
-             encoded += str(ll).zfill(3)
-             encoded += '.'
-             encoded += str(lu).zfill(3)
-             encoded += '.'
-             encoded += str(la).zfill(3)
-
-          if (count == 1):
-             return encoded
-          else:
-             encodeds.append(encoded)
-       return encodeds
-
-    def breakdown_tt2000 (tt2000, to_np=None):
-
-       if (isinstance(tt2000, int) or isinstance(tt2000, np.int64)):
-          new_tt2000 = [tt2000]
-       elif (isinstance(tt2000, list) or isinstance(tt2000, np.ndarray)):
-          new_tt2000 = tt2000
-       else:
-          print('Bad input data')
-          return None
-       count = len(new_tt2000)
-       toutcs = []
-       for x in range (0, count):
-          nanoSecSinceJ2000 = new_tt2000[x]
-          toPlus = 0.0
-          t3 = nanoSecSinceJ2000
-          datx = CDFepoch._LeapSecondsfromJ2000 (nanoSecSinceJ2000)
-          if (nanoSecSinceJ2000 > 0):
-            secSinceJ2000 = int(nanoSecSinceJ2000/CDFepoch.SECinNanoSecsD)
-            nansec = int(nanoSecSinceJ2000 - secSinceJ2000 * \
-                                             CDFepoch.SECinNanoSecs)
-            secSinceJ2000 = secSinceJ2000 - 32
-            secSinceJ2000 = secSinceJ2000 + 43200
-            nansec = nansec - 184000000
-          else:
-            nanoSecSinceJ2000 = nanoSecSinceJ2000 + CDFepoch.T12hinNanoSecs
-            nanoSecSinceJ2000 = nanoSecSinceJ2000 - CDFepoch.dTinNanoSecs
-            secSinceJ2000 = int(nanoSecSinceJ2000/CDFepoch.SECinNanoSecsD)
-            nansec = int(nanoSecSinceJ2000 - secSinceJ2000 * \
-                                             CDFepoch.SECinNanoSecs)
-          if (nansec < 0):
-            nansec = CDFepoch.SECinNanoSecs + nansec
-            secSinceJ2000 = secSinceJ2000 - 1
-       
-          t2 = secSinceJ2000 * CDFepoch.SECinNanoSecs + nansec
-
-          if (datx[0] > 0.0):
-            secSinceJ2000 = secSinceJ2000 - int(datx[0])
-            epoch = CDFepoch.J2000Since0AD12hSec + secSinceJ2000
-            if (datx[1] == 0.0):
-              date1 = CDFepoch._EPOCHbreakdownTT2000 (epoch)
+                return CDFepoch.epochrange_epoch16(epochs, starttime, endtime)
             else:
-              epoch = epoch - 1
-              date1 = CDFepoch._EPOCHbreakdownTT2000 (epoch)
-              date1[5] = date1[5] + 1
-            ye1 = date1[0]
-            mo1 = date1[1]
-            da1 = date1[2]
-            ho1 = date1[3]
-            mi1 = date1[4]
-            se1 = date1[5]
-          else:
-            epoch = secSinceJ2000 + CDFepoch.J2000Since0AD12hSec
-            xdate1 = CDFepoch._EPOCHbreakdownTT2000 (epoch)
-            tmpNanosecs = CDFepoch.compute_tt2000 (xdate1[0], \
-                                                   xdate1[1], \
-                                                   xdate1[2], \
-                                                   xdate1[3], \
-                                                   xdate1[4], \
-                                                   xdate1[5], \
-                                                   0, 0, nansec)
-            if (tmpNanosecs != t3):
-              dat0 = LeapSecondsfromYMD (xdate1[0], xdate1[1], xdate1[2])
-              tmpx = t2 - int(dat0 * CDFepoch.SECinNanoSecs)
-              tmpy = int(double(tmpx/CDFepoch.SECinNanoSecsD))
-              nansec = int(tmpx - tmpy * CDFepoch.SECinNanoSecs)
-              if (nansec < 0):
-                nansec = CDFepoch.SECinNanoSecs + nansec
-                tmpy = tmpy - 1
-              epoch = tmpy + CDFepoch.J2000Since0AD12hSec
-              xdate1 = CDFepoch._EPOCHbreakdownTT2000 (epoch)
-              tmpNanosecs = CDFepoch.compute_tt2000 (xdate1[0], \
-                                                     xdate1[1], \
-                                                     xdate1[2], \
-                                                     xdate1[3], \
-                                                     xdate1[4], \
-                                                     xdate1[5], \
-                                                     0, 0, nansec);
-              if (tmpNanosecs != t3):
-                dat0 = LeapSecondsfromYMD (xdate1[0], xdate1[1], xdate1[2])
-                tmpx = t2 - int(dat0 * CDFepoch.SECinNanoSecs)
-                tmpy = int((1.0*tmpx)/CDFepoch.SECinNanoSecsD)
-                nansec = int(tmpx - tmpy * CDFepoch.SECinNanoSecs)
-                if (nansec < 0):
-                  nansec = CDFepoch.SECinNanoSecs + nansec
-                  tmpy = tmpy - 1
-                epoch = tmpy + CDFepoch.J2000Since0AD12hSec
-                xdate1 = CDFepoch._EPOCHbreakdownTT2000 (epoch)
-                tmpNanosecs = CDFepoch.compute_tt2000 (xdate1[0], \
-                                                       xdate1[1], \
-                                                       xdate1[2], \
-                                                       xdate1[3], \
-                                                       xdate1[4], \
-                                                       xdate1[5], \
-                                                       0, 0, nansec);
-            ye1 = int(xdate1[0])
-            mo1 = int(xdate1[1])
-            da1 = int(xdate1[2])
-            ho1 = int(xdate1[3])
-            mi1 = int(xdate1[4])
-            se1 = int(xdate1[5])
-          ml1 = int(nansec / 1000000)
-          tmp1 = nansec - 1000000 * ml1
-          if (ml1 > 1000):
-            ml1 = ml1 - 1000
-            se1 = se1 + 1
-          ma1 = int(tmp1 / 1000)
-          na1 = int(tmp1 - 1000 * ma1)
-          datetime = []
-          datetime.append(ye1)
-          datetime.append(mo1)
-          datetime.append(da1)
-          datetime.append(ho1)
-          datetime.append(mi1)
-          datetime.append(se1)
-          datetime.append(ml1)
-          datetime.append(ma1)
-          datetime.append(na1)
-          if (count == 1):
-             if (to_np == None):
-                return datetime
-             else:
-                return np.array(datetime)
-          else:
-             toutcs.append(datetime)
-       if (to_np == None):
-          return toutcs
-       else:
-          return np.array(toutcs)
-    
-    def compute_tt2000 (datetimes, to_np=None):
-    
-       if (not isinstance(datetimes, list)):
-          print('datetime must be in list form')
-          return None
-       if (isinstance(datetimes[0], int)):
-          new_datetimes= [datetimes]
-          count = 1
-       else:
-          count = len(datetimes)
-          new_datetimes= datetimes
-       nanoSecSinceJ2000s = []
-       for x in range (0, count):
-          datetime = new_datetimes[x]
-          year = int(datetime[0])
-          month = int(datetime[1])
-          items = len(datetime)
-          if (items > 8):
-             day = int(datetime[2])
-             hour = int(datetime[3])
-             minute = int(datetime[4])
-             second = int(datetime[5])
-             msec = int(datetime[6])
-             usec = int(datetime[7])
-             nsec = int(datetime[8])
-          elif (items == 8):
-             day = int(datetime[2])
-             hour = int(datetime[3])
-             minute = int(datetime[4])
-             second = int(datetime[5])
-             msec = int(datetime[6])
-             usec = int(datetime[7])
-             nsec = int(1000.0 * (datetime[7] - usec))
-          elif (items == 7):
-             day = int(datetime[2])
-             hour = int(datetime[3])
-             minute = int(datetime[4])
-             second = int(datetime[5])
-             msec = int(datetime[6])
-             xxx = float(1000.0 * (datetime[6] - msec))
-             usec = int(xxx)
-             nsec = int(1000.0 * (xxx - usec))
-          elif (items == 6):
-             day = int(datetime[2])
-             hour = int(datetime[3])
-             minute = int(datetime[4])
-             second = int(datetime[5])
-             xxx = float(1000.0 * (datetime[5] - second))
-             msec = int(xxx)
-             xxx = float(1000.0 * (xxx - msec))
-             usec = int(xxx)
-             nsec = int(1000.0 * (xxx - usec))
-          elif (items == 5):
-             day = int(datetime[2])
-             hour = int(datetime[3])
-             minute = int(datetime[4])
-             xxx = float(60.0 * (datetime[4] - minute))
-             second = int(xxx)
-             xxx = float(1000.0 * (xxx - second))
-             msec = int(xxx)
-             xxx = float(1000.0 * (xxx - msec))
-             usec = int(xxx)
-             nsec = int(1000.0 * (xxx - usec))
-          elif (items == 4):
-             day = int(datetime[2])
-             hour = int(datetime[3])
-             xxx = float(60.0 * (datetime[3] - hour))
-             minute = int(xxx)
-             xxx = float(60.0 * (xxx - minute))
-             second = int(xxx)
-             xxx = float(1000.0 * (xxx - second))
-             msec = int(xxx)
-             xxx = float(1000.0 * (xxx - msec))
-             usec = int(xxx)
-             nsec = int(1000.0 * (xxx - usec))
-          elif (items == 3):
-             day = int(datetime[2])
-             xxx = float(24.0 * (datetime[2] - day))
-             hour = int(xxx)
-             xxx = float(60.0 * (xxx - hour))
-             minute = int(xxx)
-             xxx = float(60.0 * (xxx - minute))
-             second = int(xxx)
-             xxx = float(1000.0 * (xxx - second))
-             msec = int(xxx)
-             xxx = float(1000.0 * (xxx - msec))
-             usec = int(xxx)
-             nsec = int(1000.0 * (xxx - usec))
-          else:
-             print('Invalid tt2000 components')
-             return None
-          if (month == 0):
-             month = 1
-          if (year == 9999 and month == 12 and day == 31 and hour == 23 and \
-              minute == 59 and second == 59 and msec == 999 and \
-              usec == 999 and nsec == 999):
-             nanoSecSinceJ2000 = CDFepoch.FILLED_TT2000_VALUE 
-          elif (year == 0 and month == 1 and day == 1 and hour == 0 and \
-                minute == 0 and second == 0 and msec == 0 and usec == 0 and \
-                nsec == 0):
-             nanoSecSinceJ2000 = CDFepoch.DEFAULT_TT2000_PADVALUE
-          else:
-             iy = 10000000 * month + 10000 * day + year
-             if (iy != CDFepoch.currentDay):
-                CDFepoch.currentDay = iy
-                CDFepoch.currentLeapSeconds = \
-                              CDFepoch._LeapSecondsfromYMD(year, month, day)
-                CDFepoch.currentJDay = CDFepoch._JulianDay(year,month,day)
-             jd = CDFepoch.currentJDay
-             jd = jd - CDFepoch.JulianDateJ2000_12h
-             subDayinNanoSecs = int(hour*CDFepoch.HOURinNanoSecs+\
-                                    minute*CDFepoch.MINUTEinNanoSecs+\
-                                    second*CDFepoch.SECinNanoSecs+msec*1000000+\
-                                    usec*1000+nsec)
-             nanoSecSinceJ2000 = int(jd * CDFepoch.DAYinNanoSecs + \
-                                     subDayinNanoSecs)
-             t2 = int(CDFepoch.currentLeapSeconds * CDFepoch.SECinNanoSecs)
-             if (nanoSecSinceJ2000 < 0):
-                nanoSecSinceJ2000 = int(nanoSecSinceJ2000 + t2)
-                nanoSecSinceJ2000 = int(nanoSecSinceJ2000 + \
-                                        CDFepoch.dTinNanoSecs)
-                nanoSecSinceJ2000 = int(nanoSecSinceJ2000 - \
-                                        CDFepoch.T12hinNanoSecs)
-             else:
-                nanoSecSinceJ2000 = int(nanoSecSinceJ2000 - \
-                                        CDFepoch.T12hinNanoSecs)
-                nanoSecSinceJ2000 = int(nanoSecSinceJ2000 + t2)
-                nanoSecSinceJ2000 = int(nanoSecSinceJ2000 + \
-                                        CDFepoch.dTinNanoSecs)
-          if (count == 1):
-             if (to_np == None):
-                return int(nanoSecSinceJ2000)
-             else:
-                return np.array(int(nanoSecSinceJ2000))
-          else:
-             nanoSecSinceJ2000s.append(int(nanoSecSinceJ2000))  
-       if (to_np == None):
-          return nanoSecSinceJ2000s
-       else:
-          return np.array(nanoSecSinceJ2000s)
+                print('Bad input')
+                return None
+        else:
+            print('Bad input')
+            return None
 
-    def _LeapSecondsfromYMD (year, month, day):
+    def encode_tt2000(self, tt2000, iso_8601=None):
     
-       j = -1
-       m = 12 * year + month
-       for i, line in reversed(list(enumerate(CDFepoch.LTS))):
-          n = 12 * CDFepoch.LTS[i][0] + CDFepoch.LTS[i][1]
-          if (m >= n):
-             j = i
-             break
-       if (j == -1):
-          return 0.0
-       da = CDFepoch.LTS[j][3]
-       if (j < CDFepoch.NERA1):
-          jda = CDFepoch._JulianDay (year, month, day)
-          da =  da + ((jda - MJDbase) - CDFepoch.LTS[j][4]) * \
-                CDFepoch.LTS[j][5]
-       return da
+        if (isinstance(tt2000, int) or isinstance(tt2000, np.int64)):
+            new_tt2000 = [tt2000]
+        elif (isinstance(tt2000, list) or isinstance(tt2000, np.ndarray)):
+            new_tt2000 = tt2000
+        else:
+            print('type...',type(tt2000))
+            print('Bad input')
+            return None
+        count = len(new_tt2000)
+        encodeds = []
+        for x in range (0, count):
+            nanoSecSinceJ2000 = new_tt2000[x]
+            if nanoSecSinceJ2000 == CDFepoch.FILLED_TT2000_VALUE:
+                if (iso_8601 == None or iso_8601 != False):
+                    return '9999-12-31T23:59:59.999999999'
+                else:
+                    return '31-Dec-9999 23:59:59.999.999.999'
+            if nanoSecSinceJ2000 == CDFepoch.DEFAULT_TT2000_PADVALUE:
+                if (iso_8601 == None or iso_8601 != False):
+                    return '0000-01-01T00:00:00.000000000'
+                else:
+                    return '01-Jan-0000 00:00:00.000.000.000'
+            datetime = CDFepoch.breakdown_tt2000(nanoSecSinceJ2000)
+            ly = datetime[0]
+            lm = datetime[1]
+            ld = datetime[2]
+            lh = datetime[3]
+            ln = datetime[4]
+            ls = datetime[5]
+            ll = datetime[6]
+            lu = datetime[7]
+            la = datetime[8]
+            if (iso_8601 == None or iso_8601 != False):
+                # yyyy-mm-ddThh:mm:ss.mmmuuunnn 
+                encoded = str(ly).zfill(4)
+                encoded += '-'
+                encoded += str(lm).zfill(2)
+                encoded += '-'
+                encoded += str(ld).zfill(2)
+                encoded += 'T'
+                encoded += str(lh).zfill(2)
+                encoded += ':'
+                encoded += str(ln).zfill(2)
+                encoded += ':'
+                encoded += str(ls).zfill(2)
+                encoded += '.'
+                encoded += str(ll).zfill(3)
+                encoded += str(lu).zfill(3)
+                encoded += str(la).zfill(3)
+            else:
+                # dd-mmm-yyyy hh:mm:ss.mmm.uuu.nnn 
+                encoded = str(ld).zfill(2)
+                encoded += '-'
+                encoded += CDFepoch._monthToken[lm-1]
+                encoded += '-'
+                encoded += str(ly).zfill(4)
+                encoded += ' '
+                encoded += str(lh).zfill(2)
+                encoded += ':'
+                encoded += str(ln).zfill(2)
+                encoded += ':'
+                encoded += str(ls).zfill(2)
+                encoded += '.'
+                encoded += str(ll).zfill(3)
+                encoded += '.'
+                encoded += str(lu).zfill(3)
+                encoded += '.'
+                encoded += str(la).zfill(3)
+        
+            if (count == 1):
+                return encoded
+            else:
+                encodeds.append(encoded)
+        return encodeds
+
+    def breakdown_tt2000(self, tt2000, to_np=None):
+
+        if (isinstance(tt2000, int) or isinstance(tt2000, np.int64)):
+            new_tt2000 = [tt2000]
+        elif (isinstance(tt2000, list) or isinstance(tt2000, np.ndarray)):
+            new_tt2000 = tt2000
+        else:
+            print('Bad input data')
+            return None
+        count = len(new_tt2000)
+        toutcs = []
+        for x in range (0, count):
+            nanoSecSinceJ2000 = new_tt2000[x]
+            toPlus = 0.0
+            t3 = nanoSecSinceJ2000
+            datx = CDFepoch._LeapSecondsfromJ2000(nanoSecSinceJ2000)
+            if (nanoSecSinceJ2000 > 0):
+                secSinceJ2000 = int(nanoSecSinceJ2000/CDFepoch.SECinNanoSecsD)
+                nansec = int(nanoSecSinceJ2000 - secSinceJ2000 * 
+                                              CDFepoch.SECinNanoSecs)
+                secSinceJ2000 = secSinceJ2000 - 32
+                secSinceJ2000 = secSinceJ2000 + 43200
+                nansec = nansec - 184000000
+            else:
+                nanoSecSinceJ2000 = nanoSecSinceJ2000 + CDFepoch.T12hinNanoSecs
+                nanoSecSinceJ2000 = nanoSecSinceJ2000 - CDFepoch.dTinNanoSecs
+                secSinceJ2000 = int(nanoSecSinceJ2000/CDFepoch.SECinNanoSecsD)
+                nansec = int(nanoSecSinceJ2000 - secSinceJ2000 *
+                                              CDFepoch.SECinNanoSecs)
+            if (nansec < 0):
+                nansec = CDFepoch.SECinNanoSecs + nansec
+                secSinceJ2000 = secSinceJ2000 - 1
+        
+            t2 = secSinceJ2000 * CDFepoch.SECinNanoSecs + nansec
+        
+            if (datx[0] > 0.0):
+                secSinceJ2000 = secSinceJ2000 - int(datx[0])
+                epoch = CDFepoch.J2000Since0AD12hSec + secSinceJ2000
+                if (datx[1] == 0.0):
+                    date1 = self._EPOCHbreakdownTT2000 (epoch)
+                else:
+                    epoch = epoch - 1
+                    date1 = self._EPOCHbreakdownTT2000 (epoch)
+                    date1[5] = date1[5] + 1
+                ye1 = date1[0]
+                mo1 = date1[1]
+                da1 = date1[2]
+                ho1 = date1[3]
+                mi1 = date1[4]
+                se1 = date1[5]
+            else:
+                epoch = secSinceJ2000 + CDFepoch.J2000Since0AD12hSec
+                xdate1 = self._EPOCHbreakdownTT2000 (epoch)
+                tmpNanosecs = CDFepoch.compute_tt2000 (xdate1[0],
+                                                       xdate1[1],
+                                                       xdate1[2],
+                                                       xdate1[3],
+                                                       xdate1[4],
+                                                       xdate1[5],
+                                                       0, 0, nansec)
+                if (tmpNanosecs != t3):
+                    dat0 = self._LeapSecondsfromYMD(self, xdate1[0], xdate1[1], xdate1[2])
+                    tmpx = t2 - int(dat0 * CDFepoch.SECinNanoSecs)
+                    tmpy = int(float(tmpx/CDFepoch.SECinNanoSecsD))
+                    nansec = int(tmpx - tmpy * CDFepoch.SECinNanoSecs)
+                if (nansec < 0):
+                    nansec = CDFepoch.SECinNanoSecs + nansec
+                    tmpy = tmpy - 1
+                    epoch = tmpy + CDFepoch.J2000Since0AD12hSec
+                    xdate1 = self._EPOCHbreakdownTT2000(epoch)
+                    tmpNanosecs = CDFepoch.compute_tt2000(xdate1[0], 
+                                                          xdate1[1], 
+                                                          xdate1[2], 
+                                                          xdate1[3], 
+                                                          xdate1[4], 
+                                                          xdate1[5], 
+                                                          0, 0, nansec)
+                if (tmpNanosecs != t3):
+                    dat0 = self._LeapSecondsfromYMD(xdate1[0], xdate1[1], xdate1[2])
+                    tmpx = t2 - int(dat0 * CDFepoch.SECinNanoSecs)
+                    tmpy = int((1.0*tmpx)/CDFepoch.SECinNanoSecsD)
+                    nansec = int(tmpx - tmpy * CDFepoch.SECinNanoSecs)
+                    if (nansec < 0):
+                        nansec = CDFepoch.SECinNanoSecs + nansec
+                        tmpy = tmpy - 1
+                    epoch = tmpy + CDFepoch.J2000Since0AD12hSec
+                    xdate1 = self._EPOCHbreakdownTT2000 (epoch)
+                    tmpNanosecs = CDFepoch.compute_tt2000(xdate1[0],
+                                                        xdate1[1],
+                                                        xdate1[2],
+                                                        xdate1[3],
+                                                        xdate1[4],
+                                                        xdate1[5],
+                                                        0, 0, nansec);
+                ye1 = int(xdate1[0])
+                mo1 = int(xdate1[1])
+                da1 = int(xdate1[2])
+                ho1 = int(xdate1[3])
+                mi1 = int(xdate1[4])
+                se1 = int(xdate1[5])
+            ml1 = int(nansec / 1000000)
+            tmp1 = nansec - 1000000 * ml1
+            if (ml1 > 1000):
+                ml1 = ml1 - 1000
+                se1 = se1 + 1
+            ma1 = int(tmp1 / 1000)
+            na1 = int(tmp1 - 1000 * ma1)
+            datetime = []
+            datetime.append(ye1)
+            datetime.append(mo1)
+            datetime.append(da1)
+            datetime.append(ho1)
+            datetime.append(mi1)
+            datetime.append(se1)
+            datetime.append(ml1)
+            datetime.append(ma1)
+            datetime.append(na1)
+            if (count == 1):
+                if (to_np == None):
+                    return datetime
+                else:
+                    return np.array(datetime)
+            else:
+                toutcs.append(datetime)
+        if (to_np == None):
+            return toutcs
+        else:
+            return np.array(toutcs)
     
-    def _LeapSecondsfromJ2000 (nanosecs):
+    def compute_tt2000(self, datetimes, to_np=None):
+    
+        if (not isinstance(datetimes, list)):
+            print('datetime must be in list form')
+            return None
+        if (isinstance(datetimes[0], int)):
+            new_datetimes= [datetimes]
+            count = 1
+        else:
+            count = len(datetimes)
+            new_datetimes= datetimes
+        nanoSecSinceJ2000s = []
+        for x in range (0, count):
+            datetime = new_datetimes[x]
+            year = int(datetime[0])
+            month = int(datetime[1])
+            items = len(datetime)
+            if (items > 8):
+                day = int(datetime[2])
+                hour = int(datetime[3])
+                minute = int(datetime[4])
+                second = int(datetime[5])
+                msec = int(datetime[6])
+                usec = int(datetime[7])
+                nsec = int(datetime[8])
+            elif (items == 8):
+                day = int(datetime[2])
+                hour = int(datetime[3])
+                minute = int(datetime[4])
+                second = int(datetime[5])
+                msec = int(datetime[6])
+                usec = int(datetime[7])
+                nsec = int(1000.0 * (datetime[7] - usec))
+            elif (items == 7):
+                day = int(datetime[2])
+                hour = int(datetime[3])
+                minute = int(datetime[4])
+                second = int(datetime[5])
+                msec = int(datetime[6])
+                xxx = float(1000.0 * (datetime[6] - msec))
+                usec = int(xxx)
+                nsec = int(1000.0 * (xxx - usec))
+            elif (items == 6):
+                day = int(datetime[2])
+                hour = int(datetime[3])
+                minute = int(datetime[4])
+                second = int(datetime[5])
+                xxx = float(1000.0 * (datetime[5] - second))
+                msec = int(xxx)
+                xxx = float(1000.0 * (xxx - msec))
+                usec = int(xxx)
+                nsec = int(1000.0 * (xxx - usec))
+            elif (items == 5):
+                day = int(datetime[2])
+                hour = int(datetime[3])
+                minute = int(datetime[4])
+                xxx = float(60.0 * (datetime[4] - minute))
+                second = int(xxx)
+                xxx = float(1000.0 * (xxx - second))
+                msec = int(xxx)
+                xxx = float(1000.0 * (xxx - msec))
+                usec = int(xxx)
+                nsec = int(1000.0 * (xxx - usec))
+            elif (items == 4):
+                day = int(datetime[2])
+                hour = int(datetime[3])
+                xxx = float(60.0 * (datetime[3] - hour))
+                minute = int(xxx)
+                xxx = float(60.0 * (xxx - minute))
+                second = int(xxx)
+                xxx = float(1000.0 * (xxx - second))
+                msec = int(xxx)
+                xxx = float(1000.0 * (xxx - msec))
+                usec = int(xxx)
+                nsec = int(1000.0 * (xxx - usec))
+            elif (items == 3):
+                day = int(datetime[2])
+                xxx = float(24.0 * (datetime[2] - day))
+                hour = int(xxx)
+                xxx = float(60.0 * (xxx - hour))
+                minute = int(xxx)
+                xxx = float(60.0 * (xxx - minute))
+                second = int(xxx)
+                xxx = float(1000.0 * (xxx - second))
+                msec = int(xxx)
+                xxx = float(1000.0 * (xxx - msec))
+                usec = int(xxx)
+                nsec = int(1000.0 * (xxx - usec))
+            else:
+                print('Invalid tt2000 components')
+                return None
+            if (month == 0):
+                month = 1
+            if (year == 9999 and month == 12 and day == 31 and hour == 23 and
+                minute == 59 and second == 59 and msec == 999 and
+                usec == 999 and nsec == 999):
+                nanoSecSinceJ2000 = CDFepoch.FILLED_TT2000_VALUE 
+            elif (year == 0 and month == 1 and day == 1 and hour == 0 and
+                  minute == 0 and second == 0 and msec == 0 and usec == 0 and
+                  nsec == 0):
+                nanoSecSinceJ2000 = CDFepoch.DEFAULT_TT2000_PADVALUE
+            else:
+                iy = 10000000 * month + 10000 * day + year
+                if (iy != CDFepoch.currentDay):
+                    CDFepoch.currentDay = iy
+                    CDFepoch.currentLeapSeconds = CDFepoch._LeapSecondsfromYMD(year, month, day)
+                    CDFepoch.currentJDay = CDFepoch._JulianDay(year,month,day)
+                jd = CDFepoch.currentJDay
+                jd = jd - CDFepoch.JulianDateJ2000_12h
+                subDayinNanoSecs = int(hour*CDFepoch.HOURinNanoSecs+
+                                       minute*CDFepoch.MINUTEinNanoSecs+
+                                       second*CDFepoch.SECinNanoSecs+msec*1000000+
+                                       usec*1000+nsec)
+                nanoSecSinceJ2000 = int(jd * CDFepoch.DAYinNanoSecs + 
+                                        subDayinNanoSecs)
+                t2 = int(CDFepoch.currentLeapSeconds * CDFepoch.SECinNanoSecs)
+                if (nanoSecSinceJ2000 < 0):
+                    nanoSecSinceJ2000 = int(nanoSecSinceJ2000 + t2)
+                    nanoSecSinceJ2000 = int(nanoSecSinceJ2000 + 
+                                            CDFepoch.dTinNanoSecs)
+                    nanoSecSinceJ2000 = int(nanoSecSinceJ2000 - 
+                                            CDFepoch.T12hinNanoSecs)
+                else:
+                    nanoSecSinceJ2000 = int(nanoSecSinceJ2000 - 
+                                            CDFepoch.T12hinNanoSecs)
+                    nanoSecSinceJ2000 = int(nanoSecSinceJ2000 + t2)
+                    nanoSecSinceJ2000 = int(nanoSecSinceJ2000 + 
+                                            CDFepoch.dTinNanoSecs)
+            if (count == 1):
+                if (to_np == None):
+                    return int(nanoSecSinceJ2000)
+                else:
+                    return np.array(int(nanoSecSinceJ2000))
+            else:
+                nanoSecSinceJ2000s.append(int(nanoSecSinceJ2000))  
+        if (to_np == None):
+            return nanoSecSinceJ2000s
+        else:
+            return np.array(nanoSecSinceJ2000s)
+
+    def _LeapSecondsfromYMD(self, year, month, day):
+    
+        j = -1
+        m = 12 * year + month
+        for i, _ in reversed(list(enumerate(CDFepoch.LTS))):
+            n = 12 * CDFepoch.LTS[i][0] + CDFepoch.LTS[i][1]
+            if (m >= n):
+                j = i
+                break
+        if (j == -1):
+            return 0.0
+        da = CDFepoch.LTS[j][3]
+        if (j < CDFepoch.NERA1):
+            jda = CDFepoch._JulianDay(year, month, day)
+            da =  da + ((jda - self.MJDbase) - CDFepoch.LTS[j][4]) * CDFepoch.LTS[j][5]
+        return da
+    
+    def _LeapSecondsfromJ2000(self, nanosecs):
     
       da = []
       da.append(0.0)
@@ -660,7 +658,7 @@ class CDFepoch:
       da[0] = CDFepoch.LTS[j][3];
       return da;
     
-    def _LoadLeapNanoSecondsTable ():
+    def _LoadLeapNanoSecondsTable(self):
     
        CDFepoch.NST = []
        for ix in range(0, CDFepoch.NERA1):
@@ -672,7 +670,7 @@ class CDFepoch:
                                                         0, 0, 0, 0, 0, 0]))
 
 
-    def _EPOCHbreakdownTT2000 (epoch):
+    def _EPOCHbreakdownTT2000(self, epoch):
     
        second_AD = epoch;
        minute_AD = second_AD / 60.0;
@@ -700,7 +698,7 @@ class CDFepoch:
        date.append(int(second_AD % 60.0))
        return date;
 
-    def epochrange_tt2000(epochs, starttime = None, endtime = None):
+    def epochrange_tt2000(self, epochs, starttime = None, endtime = None):
 
         if (isinstance(epochs, int) or isinstance(epochs, np.int64)):
            new2_epochs = [epochs]
@@ -744,7 +742,7 @@ class CDFepoch:
         return np.where(np.logical_and(new_epochs>=stime, new_epochs<=etime))
 
 
-    def encode_epoch16(epochs, iso_8601=None):
+    def encode_epoch16(self, epochs, iso_8601=None):
 
         if (isinstance(epochs, complex) or \
             isinstance(epochs, np.complex128)):
@@ -771,7 +769,7 @@ class CDFepoch:
               encodeds.append(encoded)
         return encodeds
 	
-    def _encodex_epoch16(epoch16, iso_8601=None): 
+    def _encodex_epoch16(self, epoch16, iso_8601=None): 
 
         components = CDFepoch.breakdown_epoch16(epoch16)
         if (iso_8601 == None or iso_8601 != False):
@@ -815,14 +813,14 @@ class CDFepoch:
            encoded += str(components[9]).zfill(3)
         return encoded
 
-    def _JulianDay (y, m, d):
+    def _JulianDay(self, y, m, d):
 
         a1 = int(7*(int(y+int((m+9)/12)))/4)
         a2 = int(3*(int(int(y+int((m-9)/7))/100)+1)/4)
         a3 = int(275*m/9)
         return (367*y - a1 - a2 + a3 + d + 1721029)
 
-    def compute_epoch16(datetimes, to_np=None):
+    def compute_epoch16(self, datetimes, to_np=None):
 
         if (not isinstance(datetimes, list)):
            print('Bad input')
@@ -989,7 +987,7 @@ class CDFepoch:
         else:
            return np.array(epochs)
 
-    def breakdown_epoch16 (epochs, to_np=None):
+    def breakdown_epoch16(self, epochs, to_np=None):
 
         if (isinstance(epochs, complex) or \
             isinstance(epochs, np.complex128)):
@@ -1067,7 +1065,7 @@ class CDFepoch:
         else:
            return np.array(components)
     
-    def _computeEpoch16 (y, m, d, h, mn, s, ms, msu, msn, msp):
+    def _computeEpoch16(self, y, m, d, h, mn, s, ms, msu, msn, msp):
     
         if (m == 0):
            daysSince0AD = CDFepoch._JulianDay(y,1,1) + (d-1) - 1721060
@@ -1108,7 +1106,7 @@ class CDFepoch:
         else:
           return epoch
 
-    def epochrange_epoch16(epochs, starttime = None, endtime = None):
+    def epochrange_epoch16(self, epochs, starttime = None, endtime = None):
 
         if (isinstance(epochs, complex) or isinstance(epochs, np.complex128)):
            new_epochs = [epochs]
@@ -1206,7 +1204,7 @@ class CDFepoch:
            indx.append(int(count/2)-1)
         return indx
 
-    def encode_epoch(epochs, iso_8601=None):
+    def encode_epoch(self, epochs, iso_8601=None):
 
         if (isinstance(epochs, float) or isinstance(epochs, np.float64)):
            new_epochs = [epochs]
@@ -1231,7 +1229,7 @@ class CDFepoch:
            encodeds.append(encoded)
         return encodeds
 
-    def _encodex_epoch(epoch, iso_8601=None):
+    def _encodex_epoch(self, epoch, iso_8601=None):
 
         components = CDFepoch.breakdown_epoch(epoch)
         if (iso_8601 == None or iso_8601 != False):
@@ -1266,7 +1264,7 @@ class CDFepoch:
            encoded += str(components[6]).zfill(3)
         return encoded
 
-    def compute_epoch(dates, to_np=None):
+    def compute_epoch(self, dates, to_np=None):
 
         if (not isinstance(dates, list)):
            print('Bad input')
@@ -1368,7 +1366,7 @@ class CDFepoch:
         else:
            return np.array(epochs)
 
-    def _computeEpoch (y, m, d, h, mn, s, ms):
+    def _computeEpoch(self, y, m, d, h, mn, s, ms):
 
         if (m == 0):
            daysSince0AD = CDFepoch._JulianDay(y,1,1) + (d-1) - 1721060
@@ -1387,7 +1385,7 @@ class CDFepoch:
         else:
           return msecFromEpoch
 
-    def breakdown_epoch (epochs, to_np=None):
+    def breakdown_epoch(self, epochs, to_np=None):
 
         if (isinstance(epochs, float) or isinstance(epochs, np.float64)):
            new_epochs = [epochs]
@@ -1449,7 +1447,7 @@ class CDFepoch:
         else:
            return np.array(components)
 
-    def epochrange_epoch(epochs, starttime = None, endtime = None):
+    def epochrange_epoch(self, epochs, starttime = None, endtime = None):
 
         if (isinstance(epochs, float) or isinstance(epochs, np.float64)):
            new2_epochs = [epochs]
