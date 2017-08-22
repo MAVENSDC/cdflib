@@ -141,6 +141,7 @@ class CDF(object):
             except:
                 print('CDF:',path,' not found')
                 return
+            
         self.file = f
         self.file.seek(0)
         magic_number = f.read(4).hex()
@@ -191,16 +192,6 @@ class CDF(object):
 
     def cdf_info(self):
         mycdf_info = {}
-        #print('  CDF           : '+'\''+self._path+'\'')
-        #print('  Version       : '+self._version)
-        #print('  Encoding      : '+str(self._encoding)+' ('+\
-        #                           self._encoding_token(self._encoding)+')')
-        #print('  Majority      : '+str(self._majority)+' ('+\
-        #                           self._major_token(self._majority)+')')
-        #print('  Num_zVariables: '+str(self._num_zvariable))
-        #print('  Num_rVariables: '+str(self._num_rvariable))
-        #print('  Num_Attributes: '+str(self._num_att))
-        #print('  Copyright     : '+self._copyright)
         mycdf_info['CDF'] = self._path
         mycdf_info['Version'] = self._version
         mycdf_info['Encoding'] = self._endian()
@@ -425,8 +416,8 @@ class CDF(object):
                 position=next_vdr
                 
     def varget(self, variable = None, epoch = None, starttime = None, 
-               endtime = None, startrec = None, endrec = None, 
-               to_dict = False):
+               endtime = None, startrec = 0, endrec = None, 
+               to_dict = False, record_only=False):
         
         if (isinstance(variable, int) and self._num_zvariable > 0 and 
             self._num_rvariable > 0):
@@ -448,15 +439,17 @@ class CDF(object):
                 position = self._first_zvariable
                 num_variable = self._num_zvariable
                 return self._get_vardata(position, num_variable, variable,
-                                         epoch, starttime, endtime, startrec,
-                                         endrec, to_np)
+                                         epoch=epoch, starttime=starttime, endtime=endtime, 
+                                         startrec=startrec, endrec=endrec, to_np=to_np, 
+                                         record_only=record_only)
             # check for rvariables later
             if self._num_rvariable > 0:
                 position = self._first_rvariable
                 num_variable = self._num_rvariable
                 return self._get_vardata(position, num_variable, variable,
-                                         epoch, starttime, endtime, startrec,
-                                         endrec, to_np)
+                                         epoch=epoch, starttime=starttime, endtime=endtime, 
+                                         startrec=startrec, endrec=endrec, to_np=to_np, 
+                                         record_only=record_only)
             print('No variable by this name:',variable)
             return
         elif isinstance(variable, int):
@@ -476,8 +469,8 @@ class CDF(object):
             if (vdr_info['max_records'] < 0):
                 print('No data is written for this variable')
                 return None
-            return self._read_vardata(vdr_info, epoch, starttime, endtime,
-                                      startrec, endrec, to_np)
+            return self._read_vardata(vdr_info, epoch=epoch, starttime=starttime, endtime=endtime,
+                                      startrec=startrec, endrec=endrec, to_np=to_np, record_only=record_only)
         else:
             print('Please set variable keyword equal to the name or ',
                   'number of an variable')
@@ -499,65 +492,7 @@ class CDF(object):
                     position=next_vdr
 
     def epochrange(self, epoch = None, starttime = None, endtime = None):
-        if (isinstance(epoch, int) and 
-            self._num_zvariable > 0 and 
-            self._num_rvariable > 0):
-            print('This CDF has both r and z variables. Use variable name')
-            return None
-        to_np = True
-        if isinstance(epoch, str):
-            # check for zvariables first
-            if self._num_zvariable > 0:
-                position = self._first_zvariable
-                num_variable = self._num_zvariable
-                return self._get_epochrecs(position, num_variable, epoch,
-                                           starttime, endtime, to_np)
-            # check for rvariables later
-            if self._num_rvariable > 0:
-                position = self._first_rvariable
-                num_variable = self._num_rvariable
-                return self._get_epochrecs(position, num_variable, epoch,
-                                           starttime, endtime, to_np)
-            print('No epoch by this name:',epoch)
-            return None
-        elif isinstance(epoch, int):
-            if self._num_zvariable > 0:
-                position = self._first_zvariable
-                num_variable = self._num_zvariable
-            else:
-                position = self._first_rvariable
-                num_variable = self._num_rvariable
-            if (epoch < 0 or epoch >= num_variable):
-                print('No epoch by this number:',epoch)
-                return None
-            for _ in range(0, epoch):
-                name, next_vdr = self._read_vdr_fast(position)
-                position = next_vdr
-            vdr_info = self._read_vdr(position)
-            if (vdr_info['max_records'] < 0):
-                print('No data is written for this epoch')
-                return None
-            self._read_vxr(vdr_info['head_vxr'])
-            return self._read_epochrecs(vdr_info, starttime, endtime, to_np)
-        else:
-            print('Please set epoch keyword equal to the name or ',
-                  'number of an epoch')
-            if self._num_zvariable > 0:
-                position = self._first_zvariable
-                num_variable = self._num_zvariable
-                print('zVariables:')
-                for x in range(0, num_variable):
-                    name, next_vdr = self._read_vdr_fast(position)
-                    print('  NAME: '+name+' NUMBER: '+str(x))
-                    position=next_vdr
-            if self._num_rvariable > 0:
-                position = self._first_rvariable
-                num_variable = self._num_rvariable
-                print('rVariables:')
-                for x in range(0, num_variable):
-                    name, next_vdr = self._read_vdr_fast(position)
-                    print('  NAME: '+name+' NUMBER: '+str(x))
-                    position=next_vdr
+        return self.varget(variable=epoch, starttime=starttime, endtime=endtime, record_only=True)
 
     def globalattsget(self):
         return self._read_globalatts()
@@ -1582,21 +1517,9 @@ class CDF(object):
         print('The entry does not exist')
         return
  
-    def _get_epochrecs(self, position, num_variable, epoch, 
-                       starttime, endtime, to_np):
-
-        for _ in range(0, num_variable):
-            name, vdr_next = self._read_vdr_fast(position)
-            if name.strip() == epoch.strip():
-                vdr_info = self._read_vdr(position)
-                if (vdr_info['max_records'] < 0):
-                    print('No data is written for this epoch')
-                    return
-                return self._read_epochrecs(vdr_info, starttime, endtime, to_np)
-            position = vdr_next
-
-    def _get_vardata(self, position, num_variable, variable, epoch,
-                     starttime, endtime, startrec, endrec, to_np):
+    def _get_vardata(self, position, num_variable, variable,
+                     starttime=None, endtime=None, startrec=0, 
+                     endrec=None, to_np=False, epoch=None, record_only=False):
 
         for _ in range(0, num_variable):
             name, vdr_next = self._read_vdr_fast(position)
@@ -1605,64 +1528,23 @@ class CDF(object):
                 if (vdr_info['max_records'] < 0):
                     print('No data is written for this variable')
                     return
-                return self._read_vardata(vdr_info, epoch, starttime,
-                                        endtime, startrec, endrec, to_np)
+                return self._read_vardata(vdr_info, starttime=starttime,
+                                          endtime=endtime, startrec=startrec, endrec=endrec, 
+                                          to_np=to_np, epoch=epoch, record_only=record_only)
             position = vdr_next
         print('No variable by this name:',variable)
         return None
 
-    def _read_epochrecs(self, vdr_info, starttime, endtime, to_np):
-
-        if (vdr_info['data_type'] != 31 and vdr_info['data_type'] != 32 and \
-            vdr_info['data_type'] != 33):
-            print('This variable is not one of the CDF epoch types')
-            return None
-        if (starttime == None):
-            if (vdr_info['max_records'] > 0):
-                records = []
-                records.append(0)
-                records.append(vdr_info['max_records'])
-                return records
-            else:
-                print('This epoch has no written data')
-                return None
-        vvr_offsets, vvr_records, vvr_sprecds = self._read_vxr(vdr_info['head_vxr'])
-        if vdr_info['sparse']==0:
-            if vdr_info['compression_bool']!=True:
-                data = self._read_vvr(vdr_info, vvr_offsets, to_np)
-            else:
-                data = self._read_cvvr(vdr_info, vvr_offsets,
-                                       vvr_records, to_np)
-        else:
-            if vdr_info['compression_bool']!=True:
-                data = self._read_sp_vvr(vdr_info, vvr_offsets,
-                                         vvr_records, vvr_sprecds,
-                                         to_np)
-            else:
-                data = self._read_sp_cvvr(vdr_info, vvr_offsets,
-                                          vvr_records, vvr_sprecds,
-                                          to_np)
-        recs = self._findrangerecords(vdr_info['data_type'], data, starttime,
-                                       endtime)
-        idx = recs[0]
-        if (len(idx) == 0):
-            #no records in range
-            return None
-        else:
-            records = []
-            records.append(idx[0])
-            records.append(idx[len(idx)-1])
-            return records
-
     def _read_vardata(self, vdr_info, epoch=None, starttime=None, endtime=None,
-                      startrec=0, endrec=None, to_np=True):
+                      startrec=0, endrec=None, to_np=True, record_only = False):
 
         #Error checking
-        if (startrec  < 0):
-            print('Invalid start recond')
-            return None
+        if startrec:
+            if (startrec  < 0):
+                print('Invalid start recond')
+                return None
         
-        if (endrec):
+        if endrec:
             if (endrec  < 0) or (endrec > vdr_info['max_records']) or (endrec < startrec):
                 print('Invalid end recond')
                 return None
@@ -1680,8 +1562,7 @@ class CDF(object):
         if (vdr_info['record_vary']):
             #Record varying
             if (starttime != None or endtime != None):
-                recs = self._findrecords(vdr_info['name'], epoch, starttime, 
-                                          endtime)
+                recs = self._findtimerecords(vdr_info['name'], starttime, endtime, epoch = epoch)
                 if (recs == None):
                     return None
                 if (isinstance(recs, tuple)):
@@ -1699,6 +1580,9 @@ class CDF(object):
         else:
             startrec = 0
             endrec = 0
+            
+        if record_only:
+            return [startrec, endrec]
             
         if (not to_np):
             new_dict = {}
@@ -1768,7 +1652,8 @@ class CDF(object):
     def _findrangerecords(self, data_type, epochtimes, starttime, endtime):
         if (data_type == 31 or data_type == 32 or data_type == 33):
             #CDF_EPOCH or CDF_EPOCH16 or CDF_TIME_TT2000
-            recs = cdfepoch.findepochrange(epochtimes, starttime, endtime)
+            newEpoch = cdfepoch()
+            recs = newEpoch.findepochrange(epochtimes, starttime, endtime)
         else:
             print('Not a CDF epoch type...')
             return None
