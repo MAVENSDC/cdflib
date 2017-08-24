@@ -141,7 +141,8 @@ class CDF(object):
             except:
                 print('CDF:',path,' not found')
                 return
-            
+        
+        self.cdfepoch = cdfepoch()
         self.file = f
         self.file.seek(0)
         magic_number = f.read(4).hex()
@@ -176,7 +177,7 @@ class CDF(object):
         self._path = path
         self._version = cdr_info['version']
         self._encoding = cdr_info['encoding']
-        self._majority = cdr_info['majority']
+        self._majority = self._major_token(cdr_info['majority'])
         self._copyright = cdr_info['copyright']
         self._first_zvariable = gdr_info['first_zvariable']
         self._first_rvariable = gdr_info['first_rvariable']
@@ -194,78 +195,26 @@ class CDF(object):
         mycdf_info = {}
         mycdf_info['CDF'] = self._path
         mycdf_info['Version'] = self._version
-        mycdf_info['Encoding'] = self._endian()
-        mycdf_info['Majority'] = self._major_token(self._majority)
-        if self._num_zvariable > 0:
-            mycdf_info['zVariables'] = self._get_Variables(self._first_zvariable,
-                                                           self._num_zvariable)
-        else:
-            mycdf_info['zVariables'] = {}
-        if self._num_rvariable > 0:
-            mycdf_info['rVariables'] = self._get_Variables(self._first_rvariable,
-                                                           self._num_rvariable)
-        else:
-            mycdf_info['rVariables'] = {}
-        mycdf_info['Attributes'] = self._get_Attributes()
+        mycdf_info['Encoding'] = self._encoding
+        mycdf_info['Majority'] = self._majority
+        mycdf_info['rVariables'], mycdf_info['zVariables'] = self._get_varnames()
+        mycdf_info['Attributes'] = self._get_attnames()
         mycdf_info['Copyright'] = self._copyright
         return mycdf_info
 
-    def var_info(self, variable):
-        if (isinstance(variable, int) and self._num_zvariable > 0 and 
-            self._num_rvariable > 0):
-            print('This CDF has both r and z variables. Use variable name')
-            return
-        if self._num_zvariable > 0:
-            position = self._first_zvariable
-            num_variable = self._num_zvariable
-        else:
-            position = self._first_rvariable
-            num_variable = self._num_rvariable
-        if isinstance(variable, str):
-            for z in range(0, num_variable):
-                name, vdr_next = self._read_vdr_fast(position)
-                if name.strip() == variable.strip():
-                    vdr_info = self._read_vdr(position)
-                    var = {}
-                    var['Variable'] = name
-                    var['Num'] = z
-                    var['Var_Type'] = self._variable_token(vdr_info['section_type'])
-                    var['Data_Type'] = self._datatype_token(vdr_info['data_type'])
-                    var['Num_Elements'] = vdr_info['num_elements']
-                    var['Num_Dims'] = vdr_info['num_dims']
-                    var['Dim_Sizes'] = vdr_info['dim_sizes']
-                    var['Sparse'] = self._sparse_token(vdr_info['sparse'])
-                    var['Last_Rec'] = vdr_info['max_records']
-                    return var
-                else:
-                    position = vdr_next
-            print('Variable: \''+variable+'\' not found...')
-        elif isinstance(variable, int):
-            if (variable < 0 or variable > num_variable):
-                print('No variable by this number:',variable)
-                return
-            for _ in range(0, variable):
-                name, next_vdr = self._read_vdr_fast(position)
-                position = next_vdr
-            vdr_info = self._read_vdr(position)
-            var = {}
-            var['Variable'] = vdr_info['name']
-            var['Num'] = vdr_info['variable_number']
-            var['Var_Type'] = self._variable_token(vdr_info['section_type'])
-            var['Data_Type'] = self._datatype_token(vdr_info['data_type'])
-            var['Num_Elements'] = vdr_info['num_elements']
-            var['Num_Dims'] = vdr_info['num_dims']
-            var['Dim_Sizes'] = vdr_info['dim_sizes']
-            var['Sparse'] = self._sparse_token(vdr_info['sparse'])
-            var['Last_Rec'] = vdr_info['max_records']
-            return var
-        else:
-            print('Please set variable keyword equal to the name or ',
-                  'number of an variable')
-            for x in range(0, num_variable):
-                name, next_vdr = self._read_vdr_fast(position)
-                print('NAME: '+name+' NUMBER: '+str(x))
-                position=next_vdr
+    def varinq(self, variable):
+        vdr_info = self.varget(variable=variable, inq=True)
+        var = {}
+        var['Variable'] = vdr_info['name']
+        var['Num'] = vdr_info['variable_number']
+        var['Var_Type'] = self._variable_token(vdr_info['section_type'])
+        var['Data_Type'] = self._datatype_token(vdr_info['data_type'])
+        var['Num_Elements'] = vdr_info['num_elements']
+        var['Num_Dims'] = vdr_info['num_dims']
+        var['Dim_Sizes'] = vdr_info['dim_sizes']
+        var['Sparse'] = self._sparse_token(vdr_info['sparse'])
+        var['Last_Rec'] = vdr_info['max_records']
+        return var
 
     def attinq(self, attribute = None):
         position = self._first_adr
@@ -288,10 +237,11 @@ class CDF(object):
         else:
             print('Please set attribute keyword equal to the name or ',
                   'number of an attribute')
+            
+            attrs = self._get_attnames()
             for x in range(0, self._num_att):
-                name, next_adr = self._read_adr_fast(position)
-                print('NAME: '+name+' NUMBER: '+str(x))
-                position=next_adr
+                name = list(attrs[x].keys())[0]
+                print('NAME: ' + name + ' NUMBER: ' + str(x) + ' SCOPE: ' + attrs[x][name])
                 
     def attget(self, attribute = None, entry_num = None, to_dict = False):
         
@@ -384,40 +334,14 @@ class CDF(object):
             print('The entry does not exist')
             return
         return self._get_attdata(adr_info, entry_num, num_entry_string,
-                              first_entry_string, to_np)
+                                 first_entry_string, to_np)
 
         print('No attribute by this name:',attribute)
         return
-
-    def varinq(self, variable = None):
-        position = self._first_zvariable
-        if isinstance(variable, str):
-            for _ in range(0, self._num_zvariable):
-                name, vdr_next = self._read_vdr_fast(position)
-                if name.strip() == variable.strip():
-                    return self._read_vdr(position)
-                position = vdr_next
-            print('No variable by this name:',variable)
-            return
-        elif isinstance(variable, int):
-            if (variable < 0 or variable > self._num_zvariable):
-                print('No variable by this number:',variable)
-                return
-            for _ in range(0, variable):
-                name, next_vdr = self._read_vdr_fast(position)
-                position = next_vdr
-            return self._read_vdr(position)
-        else:
-            print('Please set variable keyword equal to the name or ',
-                  'number of an variable')
-            for x in range(0, self._num_zvariable):
-                name, next_vdr = self._read_vdr_fast(position)
-                print('NAME: '+name+' NUMBER: '+str(x))
-                position=next_vdr
-                
+        
     def varget(self, variable = None, epoch = None, starttime = None, 
                endtime = None, startrec = 0, endrec = None, 
-               to_dict = False, record_only=False):
+               to_dict = False, record_only=False, inq=False):
         
         if (isinstance(variable, int) and self._num_zvariable > 0 and 
             self._num_rvariable > 0):
@@ -434,68 +358,79 @@ class CDF(object):
             return
         
         if isinstance(variable, str):
-            # check for zvariables first
-            if self._num_zvariable > 0:
-                position = self._first_zvariable
-                num_variable = self._num_zvariable
-                return self._get_vardata(position, num_variable, variable,
-                                         epoch=epoch, starttime=starttime, endtime=endtime, 
-                                         startrec=startrec, endrec=endrec, to_np=to_np, 
-                                         record_only=record_only)
-            # check for rvariables later
-            if self._num_rvariable > 0:
+            #Check z variables for the name, then r variables
+            position = self._first_zvariable
+            num_variables = self._num_zvariable
+            for _ in range (0,1):
+                for _ in range(0, num_variables):
+                    name, vdr_next = self._read_vdr_fast(position)
+                    if name.strip() == variable.strip():
+                        vdr_info = self._read_vdr(position)
+                        break
+                    position = vdr_next
                 position = self._first_rvariable
-                num_variable = self._num_rvariable
-                return self._get_vardata(position, num_variable, variable,
-                                         epoch=epoch, starttime=starttime, endtime=endtime, 
-                                         startrec=startrec, endrec=endrec, to_np=to_np, 
-                                         record_only=record_only)
-            print('No variable by this name:',variable)
-            return
+                num_variables = self._num_rvariable
         elif isinstance(variable, int):
             if self._num_zvariable > 0:
                 position = self._first_zvariable
                 num_variable = self._num_zvariable
-            else:
+            elif self._num_rvariable > 0:
                 position = self._first_rvariable
                 num_variable = self._num_rvariable
             if (variable < 0 or variable >= num_variable):
                 print('No variable by this number:',variable)
-                return None
+                return 
             for _ in range(0, variable):
                 name, next_vdr = self._read_vdr_fast(position)
                 position = next_vdr
             vdr_info = self._read_vdr(position)
-            if (vdr_info['max_records'] < 0):
-                print('No data is written for this variable')
-                return None
-            return self._read_vardata(vdr_info, epoch=epoch, starttime=starttime, endtime=endtime,
-                                      startrec=startrec, endrec=endrec, to_np=to_np, record_only=record_only)
         else:
             print('Please set variable keyword equal to the name or ',
                   'number of an variable')
-            if self._num_zvariable > 0:
-                position = self._first_zvariable
-                num_variable = self._num_zvariable
-                print('zVariables:')
-                for x in range(0, num_variable):
-                    name, next_vdr = self._read_vdr_fast(position)
-                    print('  NAME: '+name+' NUMBER: '+str(x))
-                    position=next_vdr
-            if self._num_rvariable > 0:
-                position = self._first_rvariable
-                num_variable = self._num_rvariable
-                print('rVariables:')
-                for x in range(0, num_variable):
-                    name, next_vdr = self._read_vdr_fast(position)
-                    print('  NAME: '+name+' NUMBER: '+str(x))
-                    position=next_vdr
+            rvars, zvars = self._get_varnames()
+            print("RVARIABLES: ")
+            for x in rvars:
+                print("NAME: " + rvars[x] + " NUMBER: " +str(x))
+            print("ZVARIABLES: ")
+            for x in zvars:
+                print("NAME: " + zvars[x] + " NUMBER: " +str(x))
+            return 
+        
+        if inq:
+            return vdr_info
+        else:
+            if (vdr_info['max_records'] < 0):
+                    print('No data is written for this variable')
+                    return
+            return self._read_vardata(vdr_info, epoch=epoch, starttime=starttime, endtime=endtime,
+                                      startrec=startrec, endrec=endrec, to_np=to_np, record_only=record_only)
 
     def epochrange(self, epoch = None, starttime = None, endtime = None):
         return self.varget(variable=epoch, starttime=starttime, endtime=endtime, record_only=True)
 
     def globalattsget(self):
-        return self._read_globalatts()
+        byte_loc = self._first_adr
+        return_dict = None
+        for _ in range(0, self._num_att):
+            adr_info = self._read_adr(byte_loc)
+            if (adr_info['scope'] != 1):
+                byte_loc = adr_info['next_adr_location']
+                continue
+            entries = []
+            if (adr_info['num_gr_entry'] == 0):
+                continue
+            for _ in range(0, adr_info['num_gr_entry']):
+                entry, _, _, _, next_aedr, _ = self._read_aedr(adr_info['first_gr_entry'], to_np=True)
+                entries.append(entry)
+                byte_loc = next_aedr
+
+            if (entries != None):
+                if (return_dict == None):
+                    return_dict = {}
+                return_dict[adr_info['name']] = entries
+            byte_loc = adr_info['next_adr_location']
+ 
+        return return_dict
 
     def varattsget(self, variable = None):
         if (isinstance(variable, int) and 
@@ -530,24 +465,16 @@ class CDF(object):
             vdr_info = self._read_vdr(position)
             return self._read_varatts(variable, zVar)
         else:
-            print('Please set variable keyword equal to the name or',
-                  '  number of an variable')
-            if self._num_zvariable > 0:
-                position = self._first_zvariable
-                num_variable = self._num_zvariable
-                print('zVariables:')
-                for x in range(0, num_variable):
-                    name, next_vdr = self._read_vdr_fast(position)
-                    print('  NAME: '+name+' NUMBER: '+str(x))
-                    position=next_vdr
-            if self._num_rvariable > 0:
-                position = self._first_rvariable
-                num_variable = self._num_rvariable
-                print('rVariables:')
-                for x in range(0, num_variable):
-                    name, next_vdr = self._read_vdr_fast(position)
-                    print('  NAME: '+name+' NUMBER: '+str(x))
-                    position=next_vdr
+            print('Please set variable keyword equal to the name or ',
+                  'number of an variable')
+            rvars, zvars = self._get_varnames()
+            print("RVARIABLES: ")
+            for x in rvars:
+                print("NAME: " + rvars[x] + " NUMBER: " +str(x))
+            print("ZVARIABLES: ")
+            for x in zvars:
+                print("NAME: " + zvars[x] + " NUMBER: " +str(x))
+            return 
 
     def _md5_validation(self, file_size):
         '''
@@ -626,12 +553,42 @@ class CDF(object):
                     2: 'Prev_sparse'}
         return sparses[sparse]
 
+    def _get_varnames(self):
+        zvars = []
+        rvars = []
+        if self._num_zvariable > 0:
+            position = self._first_zvariable
+            num_variable = self._num_zvariable
+            for _ in range(0, num_variable):
+                name, next_vdr = self._read_vdr_fast(position)
+                zvars.append(name)
+                position=next_vdr
+        if self._num_rvariable > 0:
+            position = self._first_rvariable
+            num_variable = self._num_rvariable
+            for _ in range(0, num_variable):
+                name, next_vdr = self._read_vdr_fast(position)
+                rvars.append(name)
+                position=next_vdr
+        return rvars, zvars
+
+    def _get_attnames(self):
+        attrs = []
+        attr = {}
+        position = self._first_adr
+        for _ in range(0, self._num_att):
+            adr_info = self._read_adr(position)
+            attr[adr_info['name']] = self._scope_token(int(adr_info['scope']))
+            attrs.append(attr) 
+            position=adr_info['next_adr_location']
+        return attrs
+
     def _read_cdr(self, byte_loc):
         f = self.file
         f.seek(byte_loc, 0)
         block_size = int.from_bytes(f.read(8),'big')
-        section_type = int.from_bytes(f.read(4),'big')
-        gdr_loc=int.from_bytes(f.read(8),'big')
+        _ = int.from_bytes(f.read(4),'big') #Section Type
+        _ = int.from_bytes(f.read(8),'big') #GDR Location
         version=int.from_bytes(f.read(4),'big')
         release=int.from_bytes(f.read(4),'big')
         encoding = int.from_bytes(f.read(4),'big')
@@ -650,23 +607,20 @@ class CDF(object):
         single_format = (flag_bits[30]=='1')
         md5 = (flag_bits[29]=='1' and flag_bits[28]=='1')
 
-        nothing1 = int.from_bytes(f.read(4),'big')
-        nothing2 = int.from_bytes(f.read(4),'big')
+        _ = int.from_bytes(f.read(4),'big') #Nothing
+        _ = int.from_bytes(f.read(4),'big') #Nothing
         increment = int.from_bytes(f.read(4),'big')
-        nothing3=int.from_bytes(f.read(4),'big')
-        nothing4=int.from_bytes(f.read(4),'big')
-        #Copyright, we will always be here at byte 64.  We know the length of the CDR from the GDR offset,
-        #so the length to read is 320-64, or 256
+        _ = int.from_bytes(f.read(4),'big') #Nothing
+        _ = int.from_bytes(f.read(4),'big') #Nothing
+        
         length_of_copyright = byte_loc+(block_size-64)
-        #print('length copyright=',length_of_copyright)
-        copyright = f.read(length_of_copyright).decode('utf-8')
-        copyright = copyright.replace('\x00', '')
+        cdfcopyright = f.read(length_of_copyright).decode('utf-8')
+        cdfcopyright = cdfcopyright.replace('\x00', '')
         
         cdr_info={}
         cdr_info['encoding'] = encoding
-        cdr_info['copyright'] = copyright
-        cdr_info['version'] = str(version) + '.' + str(release) + '.' + \
-                              str(increment)
+        cdr_info['copyright'] = cdfcopyright
+        cdr_info['version'] = str(version) + '.' + str(release) + '.' + str(increment)
         if row_majority:
             cdr_info['majority'] = 1
         else:
@@ -679,22 +633,21 @@ class CDF(object):
     def _read_gdr(self, byte_loc):
         f = self.file
         f.seek(byte_loc, 0)
-        block_size = int.from_bytes(f.read(8),'big')
-        section_type = int.from_bytes(f.read(4),'big')
+        _ = int.from_bytes(f.read(8),'big') #Block Size
+        _ = int.from_bytes(f.read(4),'big') #Section Type
         first_rvariable = int.from_bytes(f.read(8),'big', signed=True)
         first_zvariable = int.from_bytes(f.read(8),'big', signed=True)
         first_adr = int.from_bytes(f.read(8),'big', signed=True)
         eof = int.from_bytes(f.read(8),'big', signed=True)
         num_rvariable = int.from_bytes(f.read(4),'big', signed=True)
         num_att = int.from_bytes(f.read(4),'big', signed=True)
-        rMaxRec = int.from_bytes(f.read(4),'big', signed=True)
+        _ = int.from_bytes(f.read(4),'big', signed=True) #R Variable Max Record
         num_rdim = int.from_bytes(f.read(4),'big', signed=True)
         num_zvariable = int.from_bytes(f.read(4),'big', signed=True)
-        first_unused = int.from_bytes(f.read(8),'big', signed=True)
-        nothing1 = int.from_bytes(f.read(4),'big', signed=True)
-        #YYYMMDD form
-        leapsecondlastupdate = int.from_bytes(f.read(4),'big', signed=True)
-        nothing2 = int.from_bytes(f.read(4),'big', signed=True)
+        _ = int.from_bytes(f.read(8),'big', signed=True) #Nothing
+        _ = int.from_bytes(f.read(4),'big', signed=True) #Nothing
+        _ = int.from_bytes(f.read(4),'big', signed=True) #Leap Second Lat Update
+        _ = int.from_bytes(f.read(4),'big', signed=True) #Nothing
         
         #rDimSizes, depends on Number of dimensions for r variables
         #A bunch of 4 byte integers in a row.  Length is (size of GDR) - 84
@@ -723,118 +676,56 @@ class CDF(object):
                 vdr_info = self._read_vdr(position)
                 return self._read_varatts(vdr_info['variable_number'], zVar)
             position = vdr_next
-
-    def _read_globalatts(self):
-        f = self.file
-        byte_loc = self._first_adr
-        return_dict = None
-        for _ in range(0, self._num_att):
-            f.seek(byte_loc+28, 0)
-            scope = int.from_bytes(f.read(4),'big', signed=True)
-            f.seek(byte_loc+12, 0)
-            next_adr_loc = int.from_bytes(f.read(8),'big', signed=True)
-            if (scope != 1):
-                #skip variable
-                byte_loc = next_adr_loc
-                continue
-            f.seek(byte_loc+20, 0)
-            entry_head = int.from_bytes(f.read(8),'big', signed=True)
-            f.seek(byte_loc+36, 0)
-            num_entry = int.from_bytes(f.read(4),'big', signed=True)
-            f.seek(byte_loc+68, 0) 
-            name = str(f.read(256).decode('utf-8'))
-            name = name.replace('\x00', '')
-            entry = self._get_gaedr(entry_head, num_entry)
-            if (entry != None):
-                if (return_dict == None):
-                    return_dict = {}
-                return_dict[name] = entry
-            byte_loc = next_adr_loc
- 
-        return return_dict
-
+             
     def _read_varatts(self, var_num, zVar):
-        f = self.file
         byte_loc = self._first_adr
-        return_dict = None
-        for _ in range(0, self._num_att):
-            f.seek(byte_loc+28, 0)
-            scope = int.from_bytes(f.read(4),'big', signed=True)
-            num = int.from_bytes(f.read(4),'big', signed=True)
-            f.seek(byte_loc+12, 0)
-            next_adr_loc = int.from_bytes(f.read(8),'big', signed=True)
-            if (scope == 1):
-                #skip global
-                byte_loc = next_adr_loc
+        return_dict = {}
+        for i in range(0, self._num_att):
+            if i == 30:
+                asdfda = 2
+            adr_info = self._read_adr(byte_loc)
+            if (adr_info['scope'] == 1):
+                byte_loc = adr_info['next_adr_location']
                 continue
-            if (zVar == 1):
-                f.seek(byte_loc+48, 0)
-                entry_head = int.from_bytes(f.read(8),'big', signed=True)
-                num_entry = int.from_bytes(f.read(4),'big', signed=True)
+            if (zVar):
+                byte_loc = adr_info['first_z_entry']
+                num_entry = adr_info['num_z_entry']
             else:
-                f.seek(byte_loc+20, 0)
-                entry_head = int.from_bytes(f.read(8),'big', signed=True)
-                f.seek(byte_loc+36, 0)
-                num_entry = int.from_bytes(f.read(4),'big', signed=True)
-            f.seek(byte_loc+68, 0) 
-            #Name
-            name = str(f.read(256).decode('utf-8'))
-            name = name.replace('\x00', '')
-            entry = self._get_vaedr(entry_head, num_entry, var_num)
-            if (entry != None):
-                if (return_dict == None):
-                    return_dict = {}
-                return_dict[name] = entry
-            byte_loc = next_adr_loc
- 
+                byte_loc = adr_info['first_gr_entry']
+                num_entry = adr_info['num_gr_entry']
+            for _ in range(0, num_entry):
+                possible_entry, _, _, _, next_aedr, entry_num = self._read_aedr(byte_loc, to_np=False)
+                byte_loc = next_aedr
+                if (entry_num != var_num):
+                    continue
+                entry = possible_entry
+            if (entry != None):                   
+                return_dict[adr_info['name']] = entry
+            byte_loc = adr_info['next_adr_location']
         return return_dict
 
     def _read_adr(self, byte_loc):
         f = self.file
         f.seek(byte_loc, 0)
-        block_size = int.from_bytes(f.read(8),'big')
-        #Type of internal record
-        section_type = int.from_bytes(f.read(4),'big')
-        
-        #Position of next ADR
+        _ = int.from_bytes(f.read(8),'big') #Block Size
+        _ = int.from_bytes(f.read(4),'big') #Section Type
         next_adr_loc = int.from_bytes(f.read(8),'big', signed=True)
-        
-        #Position of next agrADR
         position_next_gr_entry = int.from_bytes(f.read(8),'big', signed=True)
-        
-        #Scope, 1 is global 2 is variable
         scope = int.from_bytes(f.read(4),'big', signed=True)
-        
-        #This attributes number
         num = int.from_bytes(f.read(4),'big', signed=True)
-        
-        #Number of grEntries
         num_gr_entry=int.from_bytes(f.read(4),'big', signed=True)
-        
-        #Maximum number of grEntries
         MaxEntry=int.from_bytes(f.read(4),'big', signed=True)
-        
-        #Literally nothing
-        empty1 = int.from_bytes(f.read(4),'big', signed=True)
-        
-        #File offset to first Attribute zEntry Descriptor Record
+        _ = int.from_bytes(f.read(4),'big', signed=True) #Nothing
         position_next_z_entry =int.from_bytes(f.read(8),'big', signed=True)
-        #Number of z entries
         num_z_entry=int.from_bytes(f.read(4),'big', signed=True)
-        
-        #Maximum number of z entries
         MaxZEntry= int.from_bytes(f.read(4),'big', signed=True)
+        _ = int.from_bytes(f.read(4),'big', signed=True) #Nothing
         
-        #Literally nothing
-        empty2 = int.from_bytes(f.read(4),'big', signed=True)
-        
-        #Name
         name = str(f.read(256).decode('utf-8'))
         name = name.replace('\x00', '')
         
         #Build the return dictionary
         return_dict = {}
-        #return_dict['section_type'] = section_type
         return_dict['scope'] = scope
         return_dict['next_adr_location'] = next_adr_loc
         return_dict['attribute_number'] = num
@@ -896,99 +787,26 @@ class CDF(object):
             num_strings = 1
            
         #Literally nothing
-        nothing1 = int.from_bytes(f.read(4),'big', signed=True)
-        nothing2 = int.from_bytes(f.read(4),'big', signed=True)
-        nothing3 = int.from_bytes(f.read(4),'big', signed=True)
-        nothing4 = int.from_bytes(f.read(4),'big', signed=True)
+        _ = int.from_bytes(f.read(4),'big', signed=True) #Nothing
+        _ = int.from_bytes(f.read(4),'big', signed=True) #Nothing
+        _ = int.from_bytes(f.read(4),'big', signed=True) #Nothing
+        _ = int.from_bytes(f.read(4),'big', signed=True) #Nothing
         
         #Always will have 56 bytes before the data
         byte_stream = f.read(block_size - 56)
         if (to_np):
-            entry = self._read_data(byte_stream, data_type, 1, num_elements)
+            if num_strings == 1:
+                entry = str(byte_stream[0:num_elements].decode('utf-8'))
+            else:
+                entry = str(byte_stream[0:num_elements].decode('utf-8')).split('\\N ')
         else:
             if (data_type == 51 or data_type == 52):
                 entry = str(byte_stream[0:num_elements].decode('utf-8'))
             else:
-                if (data_type == 32):
-                    #Data type 32 is Epoch16, which is always 2 doubles
-                    entry = self._convert_data(byte_stream, data_type, 1,
-                                               2, num_elements)
-                else:
-                    entry = self._convert_data(byte_stream, data_type, 1,
-                                               1, num_elements)
+                entry = self._convert_data(byte_stream, data_type, 1, 1, num_elements)
         
-        return entry, data_type, num_elements, num_strings
-             
-    def _get_gaedr(self, byte_loc, num_entry):
-        f = self.file
-        if (num_entry == 0):
-            return None
-        return_dict = {}
-        for _ in range(0, num_entry):
-            f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(8),'big')
-            f.seek(byte_loc+12, 0)
-            next_aedr = int.from_bytes(f.read(8),'big', signed=True)
-            f.seek(byte_loc+24, 0)
-            data_type = int.from_bytes(f.read(4),'big', signed=True)
-            num = int.from_bytes(f.read(4),'big', signed=True)
-            num_elements = int.from_bytes(f.read(4),'big', signed=True)
-            num_strings = int.from_bytes(f.read(4),'big', signed=True)
-            if (num_strings < 1):
-                num_strings = 1
-            f.seek(byte_loc+56, 0)
-            byte_stream = f.read(block_size - 56)
-            if (data_type == 51 or data_type == 52):
-                if num_strings == 1:
-                    return_dict[num] = str(byte_stream[0:num_elements].
-                                           decode('utf-8'))
-                else:
-                    return_dict[num] = str(byte_stream[0:num_elements].
-                                           decode('utf-8')).split('\\N ')
-            else:
-                if (data_type == 32):
-                    return_dict[num] = self._convert_data(byte_stream, data_type,
-                                                          1, 2, num_elements)
-                else:
-                    return_dict[num] = self._convert_data(byte_stream, data_type,
-                                                          1, 1, num_elements)
-            byte_loc = next_aedr
-        return return_dict
-        
-    def _get_vaedr(self, byte_loc, num_entry, var_num):
-        f = self.file
-        for _ in range(0, num_entry):
-            f.seek(byte_loc+28, 0)
-            entry_num = int.from_bytes(f.read(4),'big', signed=True)
-            if (entry_num != var_num):
-                f.seek(byte_loc+12, 0)
-                byte_loc = int.from_bytes(f.read(8),'big', signed=True)
-                continue
-            f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(8),'big')
-            f.seek(byte_loc+24, 0)
-            data_type = int.from_bytes(f.read(4),'big', signed=True)
-            f.seek(byte_loc+32, 0)
-            num_elements = int.from_bytes(f.read(4),'big', signed=True)
-            num_strings = int.from_bytes(f.read(4),'big', signed=True)
-            if (num_strings < 1):
-                num_strings = 1
-            f.seek(byte_loc+56, 0)
-            byte_stream = f.read(block_size - 56)
-            if (data_type == 51 or data_type == 52):
-                if num_strings == 1:
-                    return str(byte_stream[0:num_elements].decode('utf-8'))
-                else:
-                    return str(byte_stream[0:num_elements].decode('utf-8')).split('\\N ')
-            else:
-                if (data_type == 32):
-                    return self._convert_data(byte_stream, data_type, 1,
-                                           2, num_elements)
-                else:
-                    return self._convert_data(byte_stream, data_type, 1,
-                                           1, num_elements)
-        return None
-        
+        return entry, data_type, num_elements, num_strings, next_aedr, entry_num
+               
     def _read_vdr(self, byte_loc):
         f = self.file
         f.seek(byte_loc, 0)
@@ -1014,9 +832,9 @@ class CDF(object):
         compression_bool = (flag_bits[29]=='1') 
         
         sparse = int.from_bytes(f.read(4),'big', signed=True)
-        nothing1 = int.from_bytes(f.read(4),'big', signed=True)
-        nothing2 = int.from_bytes(f.read(4),'big', signed=True)
-        nothing3 = int.from_bytes(f.read(4),'big', signed=True)
+        _ = int.from_bytes(f.read(4),'big', signed=True) #Nothing
+        _ = int.from_bytes(f.read(4),'big', signed=True) #Nothing
+        _ = int.from_bytes(f.read(4),'big', signed=True) #Nothing 
     
         num_elements = int.from_bytes(f.read(4),'big', signed=True)
         
@@ -1085,38 +903,7 @@ class CDF(object):
         return_dict['sparse'] = sparse
         
         return return_dict
-            
-    def _get_Attributes(self):
-        f = self.file
-        attrs = {}
-        byte_loc = self._first_adr
-        for x in range(0, self._num_att):
-            f.seek(byte_loc+12, 0)
-            next_adr = int.from_bytes(f.read(8),'big', signed=True)
-            f.seek(byte_loc+28, 0)
-            scope = int.from_bytes(f.read(4),'big', signed=True)
-            f.seek(byte_loc+68, 0)
-            name = str(f.read(256).decode('utf-8'))
-            name = name.replace('\x00', '')
-            attr = {}
-            attr[name] = self._scope_token(int(scope))
-            attrs[x] = attr 
-            byte_loc = next_adr
-        return attrs
-            
-    def _get_Variables(self, byte_loc, num_vars):
-        f = self.file
-        vars = {}
-        for x in range(0, num_vars):
-            f.seek(byte_loc+12, 0)
-            next_vdr = int.from_bytes(f.read(8),'big', signed=True)
-            f.seek(byte_loc+84, 0)
-            name = str(f.read(256).decode('utf-8'))
-            name = name.replace('\x00', '')
-            vars[x] = name
-            byte_loc = next_vdr
-        return vars
-            
+                   
     def _read_vdr_fast(self, byte_loc):
         f = self.file
         f.seek(byte_loc+12, 0)
@@ -1130,9 +917,8 @@ class CDF(object):
         
         f = self.file
         f.seek(byte_loc, 0)
-        block_size = int.from_bytes(f.read(8),'big', signed=True)
-        #Type of internal record
-        section_type = int.from_bytes(f.read(4),'big')
+        _ = int.from_bytes(f.read(8),'big', signed=True) # Block Size
+        _ = int.from_bytes(f.read(4),'big') # Record Type
         next_vxr_pos = int.from_bytes(f.read(8),'big', signed=True)
         num_ent = int.from_bytes(f.read(4),'big', signed=True)
         num_ent_used = int.from_bytes(f.read(4),'big', signed=True)
@@ -1517,7 +1303,7 @@ class CDF(object):
         print('The entry does not exist')
         return
  
-    def _get_vardata(self, position, num_variable, variable,
+    def _find_varnum(self, position, num_variable, variable,
                      starttime=None, endtime=None, startrec=0, 
                      endrec=None, to_np=False, epoch=None, record_only=False):
 
@@ -1652,8 +1438,7 @@ class CDF(object):
     def _findrangerecords(self, data_type, epochtimes, starttime, endtime):
         if (data_type == 31 or data_type == 32 or data_type == 33):
             #CDF_EPOCH or CDF_EPOCH16 or CDF_TIME_TT2000
-            newEpoch = cdfepoch()
-            recs = newEpoch.findepochrange(epochtimes, starttime, endtime)
+            recs = self.cdfepoch.findepochrange(epochtimes, starttime, endtime)
         else:
             print('Not a CDF epoch type...')
             return None

@@ -3,8 +3,7 @@ import pytplot
 import numpy as np
 
 swea_cdf_file = pds2_cdf.CDF("C:/temp/rbsp-a-rbspice_lev-3_esrhelt_20170619_v1.1.9-00.cdf")
-
-print(swea_cdf_file.epochrange(epoch='Epoch'))
+print(swea_cdf_file.varattsget(variable='Epoch'))
 #asdf = swea_cdf_file.attget("UNITS",4)
 #print(asdf)
 #swea_cdf_file.close()
