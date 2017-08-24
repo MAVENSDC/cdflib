@@ -410,7 +410,7 @@ class CDF(object):
 
     def globalattsget(self):
         byte_loc = self._first_adr
-        return_dict = None
+        return_dict = {}
         for _ in range(0, self._num_att):
             adr_info = self._read_adr(byte_loc)
             if (adr_info['scope'] != 1):
@@ -420,13 +420,11 @@ class CDF(object):
             if (adr_info['num_gr_entry'] == 0):
                 continue
             for _ in range(0, adr_info['num_gr_entry']):
-                entry, _, _, _, next_aedr, _ = self._read_aedr(adr_info['first_gr_entry'], to_np=True)
+                entry, _, _, _, next_aedr, _ = self._read_aedr(adr_info['first_gr_entry'])
                 entries.append(entry)
                 byte_loc = next_aedr
 
-            if (entries != None):
-                if (return_dict == None):
-                    return_dict = {}
+            if (entries != []):
                 return_dict[adr_info['name']] = entries
             byte_loc = adr_info['next_adr_location']
  
@@ -681,8 +679,8 @@ class CDF(object):
         byte_loc = self._first_adr
         return_dict = {}
         for i in range(0, self._num_att):
-            if i == 30:
-                asdfda = 2
+            if i==30:
+                asdfdsa=2
             adr_info = self._read_adr(byte_loc)
             if (adr_info['scope'] == 1):
                 byte_loc = adr_info['next_adr_location']
@@ -694,12 +692,10 @@ class CDF(object):
                 byte_loc = adr_info['first_gr_entry']
                 num_entry = adr_info['num_gr_entry']
             for _ in range(0, num_entry):
-                possible_entry, _, _, _, next_aedr, entry_num = self._read_aedr(byte_loc, to_np=False)
+                entry, _, _, _, next_aedr, entry_num = self._read_aedr(byte_loc)
                 byte_loc = next_aedr
                 if (entry_num != var_num):
-                    continue
-                entry = possible_entry
-            if (entry != None):                   
+                    continue          
                 return_dict[adr_info['name']] = entry
             byte_loc = adr_info['next_adr_location']
         return return_dict
@@ -762,17 +758,13 @@ class CDF(object):
         
         return entry_num, next_aedr
              
-    def _read_aedr(self, byte_loc, to_np):
+    def _read_aedr(self, byte_loc):
         f = self.file
         f.seek(byte_loc, 0)
         block_size = int.from_bytes(f.read(8),'big')
-        section_type = int.from_bytes(f.read(4),'big')     
-        next_aedr = int.from_bytes(f.read(8),'big', signed=True)
-        
-        #Attribute number, should be zero for first one
-        att_num = int.from_bytes(f.read(4),'big', signed=True)
-        
-        #Data type of this attribute
+        _ = int.from_bytes(f.read(4),'big') #Section Type
+        next_aedr = int.from_bytes(f.read(8),'big', signed=True)  
+        _ = int.from_bytes(f.read(4),'big', signed=True) #Attribute number
         data_type = int.from_bytes(f.read(4),'big', signed=True)
         
         #Variable number or global entry number
@@ -782,6 +774,7 @@ class CDF(object):
         #Length of string if string, otherwise its the number of numbers
         num_elements = int.from_bytes(f.read(4),'big', signed=True)
 
+        #Supposed to be reserved space
         num_strings = int.from_bytes(f.read(4),'big', signed=True)
         if (num_strings < 1):
             num_strings = 1
@@ -794,16 +787,10 @@ class CDF(object):
         
         #Always will have 56 bytes before the data
         byte_stream = f.read(block_size - 56)
-        if (to_np):
-            if num_strings == 1:
-                entry = str(byte_stream[0:num_elements].decode('utf-8'))
-            else:
-                entry = str(byte_stream[0:num_elements].decode('utf-8')).split('\\N ')
-        else:
-            if (data_type == 51 or data_type == 52):
-                entry = str(byte_stream[0:num_elements].decode('utf-8'))
-            else:
-                entry = self._convert_data(byte_stream, data_type, 1, 1, num_elements)
+
+        #entry = self._convert_data(byte_stream, data_type, 1, 1, num_elements)
+        
+        entry = self._read_data(byte_stream, data_type, 1, num_elements)
         
         return entry, data_type, num_elements, num_strings, next_aedr, entry_num
                
@@ -1000,16 +987,10 @@ class CDF(object):
                     bytes += f.read(data_size)
                 pre_data = bytes[len(bytes)-numBytes*numValues:]
         
-        if (to_np):
-            y = self._read_data(bytes, vdr_dict['data_type'],
-                               vdr_dict['max_records']+1,
-                               vdr_dict['num_elements'],
-                               dimensions=vdr_dict['dim_sizes'])
-        else:
-            y = self._convert_data(bytes, vdr_dict['data_type'], 
-                                   vdr_dict['max_records']+1,
-                                   self._num_values(vdr_dict),
-                                   vdr_dict['num_elements'])
+        y = self._read_data(bytes, vdr_dict['data_type'],
+                           vdr_dict['max_records']+1,
+                           vdr_dict['num_elements'],
+                           dimensions=vdr_dict['dim_sizes'])
         return y
 
     def _convert_option(self):
@@ -1106,8 +1087,7 @@ class CDF(object):
             num_values = num_values*2
         
         if (data_type == 51 or data_type == 52):
-            return [data[i:i+num_elems].decode('utf-8') for i in
-                    range(0, num_recs*num_values*num_elems, num_elems)]
+            return [data[i:i+num_elems].decode('utf-8') for i in range(0, num_recs*num_values*num_elems, num_elems)]
         else:
             tofrom = self._convert_option()
             dt_string = self._convert_type(data_type)
@@ -1117,25 +1097,6 @@ class CDF(object):
                                            data[0:num_recs*num_values*value_len]))
 
     def _read_data(self, bytes, data_type, num_recs, num_elems, dimensions=None):
-        ##DATA TYPES
-        #
-        #1 - 1 byte signed int
-        #2 - 2 byte signed int
-        #4 - 4 byte signed int
-        #8 - 8 byte signed int
-        #11 - 1 byte unsigned int
-        #12 - 2 byte unsigned int
-        #14 - 4 byte unsigned int
-        #41 - same as 1
-        #21 - 4 byte float
-        #22 - 8 byte float (double)
-        #44 - same as 21
-        #45 - same as 22
-        #31 - double representing milliseconds
-        #32 - 2 doubles representing milliseconds
-        #33 - 8 byte signed integer representing nanoseconds from J2000
-        #51 - signed character
-        #52 - unsigned character
         
         
         #NEED TO CONSTRUCT DATA TYPES FOR ARRAYS
@@ -1143,9 +1104,6 @@ class CDF(object):
         #SOMETHING LIKE:
         #
         #  dt = np.dtype('>(48,4,16)f4')
-        
-        #TODO:
-        #Do += for all data_types
         
         squeeze_needed = False
         dt_string = self._convert_option()
@@ -1204,9 +1162,7 @@ class CDF(object):
                 dt_string += 'd'
             elif (data_type == 32):
                 dt_string += 'c16'
-            else:
-                print('NOT IMPLEMENTED!!!')
-                return
+
             dt = np.dtype(dt_string)
             ret = np.frombuffer(bytes, dtype=dt, count=num_recs*num_elems)
             ret.setflags('WRITEABLE')
@@ -1274,7 +1230,7 @@ class CDF(object):
         for _ in range(0, adr_info[num_entry]):
             got_entry_num, next_aedr = self._read_aedr_fast(position)
             if entry_num == got_entry_num:
-                value, data_type, num_elms, num_strs = self._read_aedr(position, to_np)
+                value, data_type, num_elms, num_strs = self._read_aedr(position)
                 if (not to_np):
                     new_dict = {}
                     new_dict['Item_Size'] = self._type_size(data_type, num_elms)
