@@ -124,7 +124,6 @@ Sample use -
 
 import numpy as np
 import sys
-import struct
 import gzip
 import hashlib
 import pds2_cdf.cdfepoch.CDFepoch as cdfepoch
@@ -166,9 +165,8 @@ class CDF(object):
             f.close()
             return
 
-        if cdr_info['encoding']==3 or cdr_info['encoding']==14 or \
-           cdr_info['encoding']==15:
-            print('This package does not support CDFs with this '+\
+        if cdr_info['encoding']==3 or cdr_info['encoding']==14 or cdr_info['encoding']==15:
+            print('This package does not support CDFs with this '+
                   self._encoding_token(cdr_info['encoding'])+' encoding') 
             f.close()
             return
@@ -243,15 +241,10 @@ class CDF(object):
                 name = list(attrs[x].keys())[0]
                 print('NAME: ' + name + ' NUMBER: ' + str(x) + ' SCOPE: ' + attrs[x][name])
                 
-    def attget(self, attribute = None, entry_num = None, to_dict = False):
+    def attget(self, attribute = None, entry_num = None):
         
         #Starting position
         position = self._first_adr
-        
-        #Return Dictionary or Numpy
-        to_np = True
-        if to_dict:
-            to_np = False
             
         #Get Correct ADR 
         if isinstance(attribute, str):
@@ -334,23 +327,20 @@ class CDF(object):
             print('The entry does not exist')
             return
         return self._get_attdata(adr_info, entry_num, num_entry_string,
-                                 first_entry_string, to_np)
+                                 first_entry_string)
 
         print('No attribute by this name:',attribute)
         return
         
     def varget(self, variable = None, epoch = None, starttime = None, 
                endtime = None, startrec = 0, endrec = None, 
-               to_dict = False, record_only=False, inq=False):
+               record_only=False, inq=False):
         
         if (isinstance(variable, int) and self._num_zvariable > 0 and 
             self._num_rvariable > 0):
             print('This CDF has both r and z variables. Use variable name')
             return
         
-        to_np = False
-        if (to_dict != True):
-            to_np = True
         
         if ((starttime != None or endtime != None) and
             (startrec != None or endrec != None)):
@@ -403,7 +393,7 @@ class CDF(object):
                     print('No data is written for this variable')
                     return
             return self._read_vardata(vdr_info, epoch=epoch, starttime=starttime, endtime=endtime,
-                                      startrec=startrec, endrec=endrec, to_np=to_np, record_only=record_only)
+                                      startrec=startrec, endrec=endrec, record_only=record_only)
 
     def epochrange(self, epoch = None, starttime = None, endtime = None):
         return self.varget(variable=epoch, starttime=starttime, endtime=endtime, record_only=True)
@@ -420,9 +410,9 @@ class CDF(object):
             if (adr_info['num_gr_entry'] == 0):
                 continue
             for _ in range(0, adr_info['num_gr_entry']):
-                entry, _, _, _, next_aedr, _ = self._read_aedr(adr_info['first_gr_entry'])
-                entries.append(entry)
-                byte_loc = next_aedr
+                aedr_info = self._read_aedr(adr_info['first_gr_entry'])
+                entries.append(aedr_info['entry'])
+                byte_loc = aedr_info['next_aedr']
 
             if (entries != []):
                 return_dict[adr_info['name']] = entries
@@ -678,9 +668,7 @@ class CDF(object):
     def _read_varatts(self, var_num, zVar):
         byte_loc = self._first_adr
         return_dict = {}
-        for i in range(0, self._num_att):
-            if i==30:
-                asdfdsa=2
+        for _ in range(0, self._num_att):
             adr_info = self._read_adr(byte_loc)
             if (adr_info['scope'] == 1):
                 byte_loc = adr_info['next_adr_location']
@@ -692,11 +680,11 @@ class CDF(object):
                 byte_loc = adr_info['first_gr_entry']
                 num_entry = adr_info['num_gr_entry']
             for _ in range(0, num_entry):
-                entry, _, _, _, next_aedr, entry_num = self._read_aedr(byte_loc)
-                byte_loc = next_aedr
-                if (entry_num != var_num):
+                aedr_info = self._read_aedr(byte_loc)
+                byte_loc = aedr_info['next_aedr']
+                if (aedr_info['entry_num'] != var_num):
                     continue          
-                return_dict[adr_info['name']] = entry
+                return_dict[adr_info['name']] = aedr_info['entry']
             byte_loc = adr_info['next_adr_location']
         return return_dict
 
@@ -787,12 +775,18 @@ class CDF(object):
         
         #Always will have 56 bytes before the data
         byte_stream = f.read(block_size - 56)
-
-        #entry = self._convert_data(byte_stream, data_type, 1, 1, num_elements)
         
         entry = self._read_data(byte_stream, data_type, 1, num_elements)
         
-        return entry, data_type, num_elements, num_strings, next_aedr, entry_num
+        return_dict = {}
+        return_dict['entry'] = entry
+        return_dict['data_type'] = data_type
+        return_dict['num_elements'] = num_elements
+        return_dict['num_strings'] = num_strings
+        return_dict['next_aedr'] = next_aedr
+        return_dict['entry_num'] = entry_num
+        
+        return return_dict
                
     def _read_vdr(self, byte_loc):
         f = self.file
@@ -942,9 +936,9 @@ class CDF(object):
         '''
         Reads in all VVRS that are pointed to in the VVR_OFFS array.  
         
-        Creates a large byte array of all values called "bytes".
+        Creates a large byte array of all values called "byte_stream".
         
-        Decodes the bytes, then returns them.  
+        Decodes the byte_stream, then returns them.  
         '''
         
         
@@ -952,7 +946,7 @@ class CDF(object):
         numBytes = self._type_size(vdr_dict['data_type'],
                                    vdr_dict['num_elements'])
         numValues = self._num_values(vdr_dict)
-        bytes = b''
+        byte_stream = b''
         
         for vvr_num in range(0, len(vvr_offs)):
             f.seek(vvr_offs[vvr_num], 0)
@@ -967,30 +961,31 @@ class CDF(object):
                 if (vvr_start[vvr_num] != 0):
                     fillRecs = vvr_start[vvr_num]
                     for _ in range(0, fillRecs*numValues):
-                        bytes += vdr_dict['pad']
+                        byte_stream += vdr_dict['pad']
                 if section_type==13:
-                    bytes += gzip.decompress(f.read(data_size))
+                    byte_stream += gzip.decompress(f.read(data_size))
                 elif section_type==7:
-                    bytes += f.read(data_size)
-                pre_data = bytes[len(bytes)-numBytes*numValues:]
+                    byte_stream += f.read(data_size)
+                pre_data = byte_stream[len(byte_stream)-numBytes*numValues:]
             else:
                 fillRecs = vvr_start[vvr_num] - vvr_end[vvr_num -1] - 1
                 if (vdr_dict['sparse']==1):
                     for _ in range(0, fillRecs*numValues):
-                        bytes += vdr_dict['pad']
+                        byte_stream += vdr_dict['pad']
                 elif (vdr_dict['sparse']==2):
                     for _ in range(0, fillRecs):
-                        bytes += pre_data
+                        byte_stream += pre_data
                 if section_type==13:
-                    bytes += gzip.decompress(f.read(data_size))
+                    byte_stream += gzip.decompress(f.read(data_size))
                 elif section_type==7:
-                    bytes += f.read(data_size)
-                pre_data = bytes[len(bytes)-numBytes*numValues:]
+                    byte_stream += f.read(data_size)
+                pre_data = byte_stream[len(byte_stream)-numBytes*numValues:]
         
-        y = self._read_data(bytes, vdr_dict['data_type'],
+        y = self._read_data(byte_stream, vdr_dict['data_type'],
                            vdr_dict['max_records']+1,
                            vdr_dict['num_elements'],
                            dimensions=vdr_dict['dim_sizes'])
+
         return y
 
     def _convert_option(self):
@@ -999,10 +994,10 @@ class CDF(object):
         byte ordering.  
         '''
         
-        if sys.byteorder=='little' and self._encoding =='big-endian':
+        if sys.byteorder=='little' and self._endian() =='big-endian':
             #big->little
             order = '>'
-        elif sys.byteorder=='big' and self._encoding =='little-endian':
+        elif sys.byteorder=='big' and self._endian() =='little-endian':
             #little->big
             order = '<'
         else:
@@ -1022,81 +1017,7 @@ class CDF(object):
         else:
             return 'little-endian'
 
-    def _convert_type(self, data_type):
-        '''
-        CDF data types to python struct data types
-        '''
-        if (data_type == 1) or (data_type == 41):
-            dt_string = 'b'
-        elif data_type == 2:
-            dt_string = 'h'
-        elif data_type == 4:
-            dt_string = 'i'
-        elif (data_type == 8) or (data_type == 33):
-            dt_string = 'q'
-        elif data_type == 11:
-            dt_string = 'B'
-        elif data_type == 12:
-            dt_string = 'H'
-        elif data_type == 14:
-            dt_string = 'I'
-        elif (data_type == 21) or (data_type == 44):
-            dt_string = 'f'
-        elif (data_type == 22) or (data_type == 45) or (data_type == 31):
-            dt_string = 'd'
-        elif (data_type == 32):
-            dt_string = 'd'
-        elif (data_type == 51) or (data_type == 52):
-            dt_string = 's'
-        return dt_string
-
-    def _default_pad(self, data_type):
-        '''
-        The default pad values by CDF data type 
-        '''
-        order = self._convert_option()
-        if (data_type == 1) or (data_type == 41):
-            pad_value = struct.pack(order+'b', -127)
-        elif data_type == 2:
-            pad_value = struct.pack(order+'h', -32767)
-        elif data_type == 4:
-            pad_value = struct.pack(order+'i', -2147483647)
-        elif (data_type == 8) or (data_type == 33):
-            pad_value = struct.pack(order+'q', -9223372036854775807)
-        elif data_type == 11:
-            pad_value = struct.pack(order+'B', 254)
-        elif data_type == 12:
-            pad_value = struct.pack(order+'H', 65534)
-        elif data_type == 14:
-            pad_value = struct.pack(order+'I', 4294967294)
-        elif (data_type == 21) or (data_type == 44):
-            pad_value = struct.pack(order+'f', -1.0E30)
-        elif (data_type == 22) or (data_type == 45) or (data_type == 31):
-            pad_value = struct.pack(order+'d', -1.0E30)
-        elif (data_type == 32):
-            pad_value = struct.pack(order+'d', -1.0E30)
-        elif (data_type == 51) or (data_type == 52):
-            pad_value = struct.pack(order+'c', ' ')
-        return pad_value
-
-    def _convert_data(self, data, data_type, num_recs, num_values, num_elems):
-        '''
-        Converts byte stream data of type data_type to a list of data.
-        '''
-        if data_type == 32:
-            num_values = num_values*2
-        
-        if (data_type == 51 or data_type == 52):
-            return [data[i:i+num_elems].decode('utf-8') for i in range(0, num_recs*num_values*num_elems, num_elems)]
-        else:
-            tofrom = self._convert_option()
-            dt_string = self._convert_type(data_type)
-            form = tofrom + str(num_recs*num_values*num_elems) + dt_string
-            value_len = self._type_size(data_type, num_elems)
-            return list(struct.unpack_from(form, 
-                                           data[0:num_recs*num_values*value_len]))
-
-    def _read_data(self, bytes, data_type, num_recs, num_elems, dimensions=None):
+    def _read_data(self, byte_stream, data_type, num_recs, num_elems, dimensions=None):
         
         
         #NEED TO CONSTRUCT DATA TYPES FOR ARRAYS
@@ -1123,19 +1044,19 @@ class CDF(object):
         if data_type==52 or data_type==51:
             #string
             if dimensions==None:
-                ret = bytes[0:num_recs*num_elems].decode('utf-8')
+                ret = byte_stream[0:num_recs*num_elems].decode('utf-8')
             else:
                 count = 1
                 for x in range (0, len(dimensions)):
                     count = count * dimensions[x]
                 strings = []
                 if (len(dimensions) == 0):
-                    strings =  [bytes[i:i+num_elems].decode('utf-8') for i in
+                    strings =  [byte_stream[i:i+num_elems].decode('utf-8') for i in
                                 range(0, num_recs*count*num_elems, num_elems)]
                 else:
                     for x in range (0, num_recs):
                         onerec = []
-                        onerec =  [bytes[i:i+num_elems].decode('utf-8') for i in
+                        onerec =  [byte_stream[i:i+num_elems].decode('utf-8') for i in
                                    range(x*count*num_elems, (x+1)*count*num_elems,
                                         num_elems)]
                         strings.append(onerec)
@@ -1164,7 +1085,7 @@ class CDF(object):
                 dt_string += 'c16'
 
             dt = np.dtype(dt_string)
-            ret = np.frombuffer(bytes, dtype=dt, count=num_recs*num_elems)
+            ret = np.frombuffer(byte_stream, dtype=dt, count=num_recs*num_elems)
             ret.setflags('WRITEABLE')
         
         if squeeze_needed:
@@ -1172,47 +1093,6 @@ class CDF(object):
             
         return ret
 
-    def _type_size(self, data_type, num_elms):
-        ##DATA TYPES
-        #
-        #1 - 1 byte signed int
-        #2 - 2 byte signed int
-        #4 - 4 byte signed int
-        #8 - 8 byte signed int
-        #11 - 1 byte unsigned int
-        #12 - 2 byte unsigned int
-        #14 - 4 byte unsigned int
-        #41 - same as 1
-        #21 - 4 byte float
-        #22 - 8 byte float (double)
-        #44 - same as 21
-        #45 - same as 22
-        #31 - double representing milliseconds
-        #32 - 2 doubles representing milliseconds
-        #33 - 8 byte signed integer representing nanoseconds from J2000
-        #51 - signed character
-        #52 - unsigned character
-        
-        if (data_type == 1) or (data_type == 11) or (data_type == 41):
-            return 1
-        elif (data_type == 2) or (data_type == 12):
-            return 2
-        elif (data_type == 4) or (data_type == 14):
-            return 4
-        elif (data_type == 8) or (data_type == 33):
-            return 8
-        elif (data_type == 21) or (data_type == 44):
-            return 4
-        elif (data_type == 22) or (data_type == 31) or (data_type == 45):
-            return 8
-        elif (data_type == 32):
-            return 16
-        elif (data_type == 51) or (data_type == 52):
-            return num_elms
-        else:
-            print('NOT IMPLEMENTED!!!')
-            return 0
-    
     def _num_values(self, vdr_dict):
         '''
         Returns the number of values from a given VDR dictionary
@@ -1225,35 +1105,35 @@ class CDF(object):
             values = values * vdr_dict['dim_sizes'][x]
         return values
     
-    def _get_attdata(self, adr_info, entry_num, num_entry, first_entry, to_np):
+    def _get_attdata(self, adr_info, entry_num, num_entry, first_entry):
         position = adr_info[first_entry]
         for _ in range(0, adr_info[num_entry]):
             got_entry_num, next_aedr = self._read_aedr_fast(position)
             if entry_num == got_entry_num:
-                value, data_type, num_elms, num_strs = self._read_aedr(position)
+                aedr_info = self._read_aedr(position)
                 if (not to_np):
                     new_dict = {}
-                    new_dict['Item_Size'] = self._type_size(data_type, num_elms)
-                    new_dict['Data_Type'] = self._datatype_token(data_type)
-                    if (data_type == 51 or data_type == 52):
-                        new_dict['Num_Items'] = num_strs
+                    new_dict['Item_Size'] = self._type_size(aedr_info['data_type'], aedr_info['num_elments'])
+                    new_dict['Data_Type'] = self._datatype_token(aedr_info['data_type'])
+                    if (aedr_info['data_type'] == 51 or aedr_info['data_type'] == 52):
+                        new_dict['Num_Items'] = aedr_info['num_strings']
                     else:
-                        new_dict['Num_Items'] = num_elms
-                    if (data_type == 51 or data_type == 52) and (num_strs > 1):
-                        new_dict['Data'] = value.split('\\N ')
-                    elif (data_type == 32):
-                        new_dict['Data'] = complex(value[0], value[1])
+                        new_dict['Num_Items'] = aedr_info['num_elments']
+                    if (aedr_info['data_type'] == 51 or aedr_info['data_type'] == 52) and (aedr_info['num_strings'] > 1):
+                        new_dict['Data'] = aedr_info['value'].split('\\N ')
+                    elif (aedr_info['data_type'] == 32):
+                        new_dict['Data'] = complex(aedr_info['value'][0], aedr_info['value'][1])
                     else:
-                        new_dict['Data'] = value
+                        new_dict['Data'] = aedr_info['value']
                     return new_dict
                 else:
-                    if (data_type == 51 or data_type == 52):
-                        if (num_strs > 1):
-                            return value.split('\\N ')
+                    if (aedr_info['data_type'] == 51 or aedr_info['data_type'] == 52):
+                        if (aedr_info['num_strings'] > 1):
+                            return aedr_info['value'].split('\\N ')
                         else:
-                            return value
+                            return aedr_info['value']
                     else:
-                        return value
+                        return aedr_info['value']
             else:
                 position = next_aedr
         print('The entry does not exist')
@@ -1400,3 +1280,122 @@ class CDF(object):
             return None
         return recs
 
+#
+#These functions below were developed by Michael Liu as a way to convert byte
+#streams to values without using numpy. Unfortunately, I could not get them to
+#work with variables that had multiple dimensions.  
+#
+# import struct
+#
+#     def _type_size(self, data_type, num_elms):
+#         ##DATA TYPES
+#         #
+#         #1 - 1 byte signed int
+#         #2 - 2 byte signed int
+#         #4 - 4 byte signed int
+#         #8 - 8 byte signed int
+#         #11 - 1 byte unsigned int
+#         #12 - 2 byte unsigned int
+#         #14 - 4 byte unsigned int
+#         #41 - same as 1
+#         #21 - 4 byte float
+#         #22 - 8 byte float (double)
+#         #44 - same as 21
+#         #45 - same as 22
+#         #31 - double representing milliseconds
+#         #32 - 2 doubles representing milliseconds
+#         #33 - 8 byte signed integer representing nanoseconds from J2000
+#         #51 - signed character
+#         #52 - unsigned character
+#         
+#         if (data_type == 1) or (data_type == 11) or (data_type == 41):
+#             return 1
+#         elif (data_type == 2) or (data_type == 12):
+#             return 2
+#         elif (data_type == 4) or (data_type == 14):
+#             return 4
+#         elif (data_type == 8) or (data_type == 33):
+#             return 8
+#         elif (data_type == 21) or (data_type == 44):
+#             return 4
+#         elif (data_type == 22) or (data_type == 31) or (data_type == 45):
+#             return 8
+#         elif (data_type == 32):
+#             return 16
+#         elif (data_type == 51) or (data_type == 52):
+#             return num_elms
+
+
+#     def _convert_type(self, data_type):
+#         '''
+#         CDF data types to python struct data types
+#         '''
+#         if (data_type == 1) or (data_type == 41):
+#             dt_string = 'b'
+#         elif data_type == 2:
+#             dt_string = 'h'
+#         elif data_type == 4:
+#             dt_string = 'i'
+#         elif (data_type == 8) or (data_type == 33):
+#             dt_string = 'q'
+#         elif data_type == 11:
+#             dt_string = 'B'
+#         elif data_type == 12:
+#             dt_string = 'H'
+#         elif data_type == 14:
+#             dt_string = 'I'
+#         elif (data_type == 21) or (data_type == 44):
+#             dt_string = 'f'
+#         elif (data_type == 22) or (data_type == 45) or (data_type == 31):
+#             dt_string = 'd'
+#         elif (data_type == 32):
+#             dt_string = 'd'
+#         elif (data_type == 51) or (data_type == 52):
+#             dt_string = 's'
+#         return dt_string
+# 
+#     def _default_pad(self, data_type):
+#         '''
+#         The default pad values by CDF data type 
+#         '''
+#         order = self._convert_option()
+#         if (data_type == 1) or (data_type == 41):
+#             pad_value = struct.pack(order+'b', -127)
+#         elif data_type == 2:
+#             pad_value = struct.pack(order+'h', -32767)
+#         elif data_type == 4:
+#             pad_value = struct.pack(order+'i', -2147483647)
+#         elif (data_type == 8) or (data_type == 33):
+#             pad_value = struct.pack(order+'q', -9223372036854775807)
+#         elif data_type == 11:
+#             pad_value = struct.pack(order+'B', 254)
+#         elif data_type == 12:
+#             pad_value = struct.pack(order+'H', 65534)
+#         elif data_type == 14:
+#             pad_value = struct.pack(order+'I', 4294967294)
+#         elif (data_type == 21) or (data_type == 44):
+#             pad_value = struct.pack(order+'f', -1.0E30)
+#         elif (data_type == 22) or (data_type == 45) or (data_type == 31):
+#             pad_value = struct.pack(order+'d', -1.0E30)
+#         elif (data_type == 32):
+#             pad_value = struct.pack(order+'d', -1.0E30)
+#         elif (data_type == 51) or (data_type == 52):
+#             pad_value = struct.pack(order+'c', ' ')
+#         return pad_value
+# 
+#     def _convert_data(self, data, data_type, num_recs, num_values, num_elems):
+#         '''
+#         Converts byte stream data of type data_type to a list of data.
+#         '''
+#         if data_type == 32:
+#             num_values = num_values*2
+#         
+#         if (data_type == 51 or data_type == 52):
+#             return [data[i:i+num_elems].decode('utf-8') for i in range(0, num_recs*num_values*num_elems, num_elems)]
+#         else:
+#             tofrom = self._convert_option()
+#             dt_string = self._convert_type(data_type)
+#             form = tofrom + str(num_recs*num_values*num_elems) + dt_string
+#             value_len = self._type_size(data_type, num_elems)
+#             return list(struct.unpack_from(form, 
+#                                            data[0:num_recs*num_values*value_len]))
