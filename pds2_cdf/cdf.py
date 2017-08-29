@@ -332,12 +332,10 @@ class CDF(object):
         return self._get_attdata(adr_info, entry_num, adr_info[num_entry_string],
                                  adr_info[first_entry_string])
 
-        print('No attribute by this name:',attribute)
-        return
         
     def varget(self, variable = None, epoch = None, starttime = None, 
                endtime = None, startrec = 0, endrec = None, 
-               record_only=False, inq=False):
+               record_range_only=False, inq=False, expand=False):
         
         if (isinstance(variable, int) and self._num_zvariable > 0 and 
             self._num_rvariable > 0):
@@ -400,10 +398,10 @@ class CDF(object):
                     print('No data is written for this variable')
                     return
             return self._read_vardata(vdr_info, epoch=epoch, starttime=starttime, endtime=endtime,
-                                      startrec=startrec, endrec=endrec, record_only=record_only)
+                                      startrec=startrec, endrec=endrec, record_range_only=record_range_only, expand=expand)
 
     def epochrange(self, epoch = None, starttime = None, endtime = None):
-        return self.varget(variable=epoch, starttime=starttime, endtime=endtime, record_only=True)
+        return self.varget(variable=epoch, starttime=starttime, endtime=endtime, record_range_only=True)
 
     def globalattsget(self):
         byte_loc = self._first_adr
@@ -928,7 +926,7 @@ class CDF(object):
             
         return vvr_offsets, vvr_start, vvr_end
 
-    def _read_vvrs(self, vdr_dict, vvr_offs, vvr_start, vvr_end, to_np):
+    def _read_vvrs(self, vdr_dict, vvr_offs, vvr_start, vvr_end):
         '''
         Reads in all VVRS that are pointed to in the VVR_OFFS array.  
         
@@ -1162,27 +1160,10 @@ class CDF(object):
                 position = next_aedr
         print('The entry does not exist')
         return
- 
-    def _find_varnum(self, position, num_variable, variable,
-                     starttime=None, endtime=None, startrec=0, 
-                     endrec=None, to_np=False, epoch=None, record_only=False):
-
-        for _ in range(0, num_variable):
-            name, vdr_next = self._read_vdr_fast(position)
-            if name.strip() == variable.strip():
-                vdr_info = self._read_vdr(position)
-                if (vdr_info['max_records'] < 0):
-                    print('No data is written for this variable')
-                    return
-                return self._read_vardata(vdr_info, starttime=starttime,
-                                          endtime=endtime, startrec=startrec, endrec=endrec, 
-                                          to_np=to_np, epoch=epoch, record_only=record_only)
-            position = vdr_next
-        print('No variable by this name:',variable)
-        return None
 
     def _read_vardata(self, vdr_info, epoch=None, starttime=None, endtime=None,
-                      startrec=0, endrec=None, to_np=True, record_only = False):
+                      startrec=0, endrec=None, to_np=True, record_range_only = False,
+                      expand = False):
 
         #Error checking
         if startrec:
@@ -1203,7 +1184,7 @@ class CDF(object):
                                                           vvr_start=[], 
                                                           vvr_end=[])
         
-        data = self._read_vvrs(vdr_info, vvr_offsets, vvr_start, vvr_end, to_np)
+        data = self._read_vvrs(vdr_info, vvr_offsets, vvr_start, vvr_end)
 
         if (vdr_info['record_vary']):
             #Record varying
@@ -1227,10 +1208,10 @@ class CDF(object):
             startrec = 0
             endrec = 0
             
-        if record_only:
+        if record_range_only:
             return [startrec, endrec]
             
-        if (not to_np):
+        if (expand):
             new_dict = {}
             new_dict['Rec_Ndim'] = vdr_info['num_dims']
             new_dict['Rec_Shape'] = vdr_info['dim_sizes']
@@ -1239,18 +1220,7 @@ class CDF(object):
                                                    vdr_info['num_elements'])
             new_dict['Data_Type'] = self._datatype_token(vdr_info['data_type'])
             if (vdr_info['record_vary']):
-                num_values = self._num_values(vdr_info)
-                if (vdr_info['data_type'] == 32):
-                    data2 = data[num_values*startrec*2:
-                                 num_values*(endrec+1)*2]
-                    datax = []
-                    totals = num_values*(endrec-startrec+1)*2
-                    for y in range (0, totals, 2):
-                        datax.append(complex(data2[y], data2[y+1]))
-                    new_dict['Data'] = datax
-                else:
-                    new_dict['Data'] = data[num_values*startrec:
-                                            num_values*(endrec+1)]
+                new_dict['Data'] = data[startrec:endrec+1]
             else:
                 new_dict['Data'] = data
             return new_dict
