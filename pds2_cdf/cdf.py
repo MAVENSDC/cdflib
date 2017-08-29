@@ -126,7 +126,7 @@ import numpy as np
 import sys
 import gzip
 import hashlib
-import pds2_cdf.cdfepoch.CDFepoch as cdfepoch
+import pds2_cdf
 
 class CDF(object):
     def __init__(self, path, validate=None):
@@ -141,7 +141,6 @@ class CDF(object):
                 print('CDF:',path,' not found')
                 return
         
-        self.cdfepoch = cdfepoch()
         self.file = f
         self.file.seek(0)
         magic_number = f.read(4).hex()
@@ -202,11 +201,15 @@ class CDF(object):
 
     def varinq(self, variable):
         vdr_info = self.varget(variable=variable, inq=True)
+        if vdr_info == None:
+                print("Variable name not found.")
+                return
         var = {}
         var['Variable'] = vdr_info['name']
         var['Num'] = vdr_info['variable_number']
         var['Var_Type'] = self._variable_token(vdr_info['section_type'])
-        var['Data_Type'] = self._datatype_token(vdr_info['data_type'])
+        var['data_type'] = vdr_info['data_type']
+        var['data_type_description'] = self._datatype_token(vdr_info['data_type'])
         var['Num_Elements'] = vdr_info['num_elements']
         var['Num_Dims'] = vdr_info['num_dims']
         var['Dim_Sizes'] = vdr_info['dim_sizes']
@@ -281,7 +284,7 @@ class CDF(object):
         #Find the correct entry from entry_num
         if adr_info['scope'] == 1:
             if not isinstance(entry_num, int):
-                print('Global entry should be a number')
+                print('Global entry should be an integer')
                 return
             num_entry_string = 'num_gr_entry'
             first_entry_string = 'first_gr_entry'
@@ -326,8 +329,8 @@ class CDF(object):
         if entry_num > adr_info[max_entry_string]:
             print('The entry does not exist')
             return
-        return self._get_attdata(adr_info, entry_num, num_entry_string,
-                                 first_entry_string)
+        return self._get_attdata(adr_info, entry_num, adr_info[num_entry_string],
+                                 adr_info[first_entry_string])
 
         print('No attribute by this name:',attribute)
         return
@@ -343,23 +346,27 @@ class CDF(object):
         
         
         if ((starttime != None or endtime != None) and
-            (startrec != None or endrec != None)):
+            (startrec != 0 or endrec != None)):
             print('Can\'t specify both time and record range')
             return
         
         if isinstance(variable, str):
             #Check z variables for the name, then r variables
-            position = self._first_zvariable
-            num_variables = self._num_zvariable
-            for _ in range (0,1):
+            position = self._first_rvariable
+            num_variables = self._num_rvariable
+            vdr_info = None
+            for _ in [0,1]:
                 for _ in range(0, num_variables):
                     name, vdr_next = self._read_vdr_fast(position)
                     if name.strip() == variable.strip():
                         vdr_info = self._read_vdr(position)
                         break
                     position = vdr_next
-                position = self._first_rvariable
-                num_variables = self._num_rvariable
+                position = self._first_zvariable
+                num_variables = self._num_zvariable
+            if vdr_info == None:
+                print("Variable name not found.")
+                return
         elif isinstance(variable, int):
             if self._num_zvariable > 0:
                 position = self._first_zvariable
@@ -421,36 +428,33 @@ class CDF(object):
         return return_dict
 
     def varattsget(self, variable = None):
-        if (isinstance(variable, int) and 
-            self._num_zvariable > 0 and
-            self._num_rvariable > 0):
+        if (isinstance(variable, int) and self._num_zvariable > 0 and self._num_rvariable > 0):
             print('This CDF has both r and z variables. Use variable name')
             return None
         if isinstance(variable, str):
-            if self._num_zvariable > 0:
-                return self._get_varatts(self._first_zvariable,
-                                         self._first_zvariable, variable, 1)
-            if self._num_rvariable > 0:
-                return self._get_varatts(self._first_rvariable,
-                                         self._first_rvariable, variable, 0)
+            position = self._first_rvariable
+            num_variables = self._num_rvariable
+            for zVar in [0,1]:
+                for _ in range(0, num_variables):
+                    name, vdr_next = self._read_vdr_fast(position)
+                    if name.strip() == variable.strip():
+                        vdr_info = self._read_vdr(position)
+                        return self._read_varatts(vdr_info['variable_number'], zVar)
+                    position = vdr_next
+                position = self._first_zvariable
+                num_variables = self._num_zvariable
             print('No variable by this name:',variable)
             return None
         elif isinstance(variable, int):
             if self._num_zvariable > 0:
-                position = self._first_zvariable
                 num_variable = self._num_zvariable
-                zVar = 1
+                zVar = True
             else:
-                position = self._first_rvariable
                 num_variable = self._num_rvariable
-                zVar = 0
+                zVar = False
             if (variable < 0 or variable >= num_variable):
                 print('No variable by this number:',variable)
                 return None
-            for _ in range(0, variable):
-                name, next_vdr = self._read_vdr_fast(position)
-                position = next_vdr
-            vdr_info = self._read_vdr(position)
             return self._read_varatts(variable, zVar)
         else:
             print('Please set variable keyword equal to the name or ',
@@ -656,14 +660,6 @@ class CDF(object):
         gdr_info['eof'] = eof
         
         return gdr_info
-    
-    def _get_varatts(self, position, num_variable, variable, zVar):
-        for _ in range(0, num_variable):
-            name, vdr_next = self._read_vdr_fast(position)
-            if name.strip() == variable.strip():
-                vdr_info = self._read_vdr(position)
-                return self._read_varatts(vdr_info['variable_number'], zVar)
-            position = vdr_next
              
     def _read_varatts(self, var_num, zVar):
         byte_loc = self._first_adr
@@ -1017,8 +1013,45 @@ class CDF(object):
         else:
             return 'little-endian'
 
+    def _type_size(self, data_type, num_elms):
+        ##DATA TYPES
+        #
+        #1 - 1 byte signed int
+        #2 - 2 byte signed int
+        #4 - 4 byte signed int
+        #8 - 8 byte signed int
+        #11 - 1 byte unsigned int
+        #12 - 2 byte unsigned int
+        #14 - 4 byte unsigned int
+        #41 - same as 1
+        #21 - 4 byte float
+        #22 - 8 byte float (double)
+        #44 - same as 21
+        #45 - same as 22
+        #31 - double representing milliseconds
+        #32 - 2 doubles representing milliseconds
+        #33 - 8 byte signed integer representing nanoseconds from J2000
+        #51 - signed character
+        #52 - unsigned character
+         
+        if (data_type == 1) or (data_type == 11) or (data_type == 41):
+            return 1
+        elif (data_type == 2) or (data_type == 12):
+            return 2
+        elif (data_type == 4) or (data_type == 14):
+            return 4
+        elif (data_type == 8) or (data_type == 33):
+            return 8
+        elif (data_type == 21) or (data_type == 44):
+            return 4
+        elif (data_type == 22) or (data_type == 31) or (data_type == 45):
+            return 8
+        elif (data_type == 32):
+            return 16
+        elif (data_type == 51) or (data_type == 52):
+            return num_elms
+
     def _read_data(self, byte_stream, data_type, num_recs, num_elems, dimensions=None):
-        
         
         #NEED TO CONSTRUCT DATA TYPES FOR ARRAYS
         #
@@ -1082,7 +1115,7 @@ class CDF(object):
             elif (data_type == 22) or (data_type == 45) or (data_type == 31):
                 dt_string += 'd'
             elif (data_type == 32):
-                dt_string += 'c16'
+                dt_string+= 'c'
 
             dt = np.dtype(dt_string)
             ret = np.frombuffer(byte_stream, dtype=dt, count=num_recs*num_elems)
@@ -1106,34 +1139,25 @@ class CDF(object):
         return values
     
     def _get_attdata(self, adr_info, entry_num, num_entry, first_entry):
-        position = adr_info[first_entry]
-        for _ in range(0, adr_info[num_entry]):
+        position = first_entry
+        for _ in range(0, num_entry):
             got_entry_num, next_aedr = self._read_aedr_fast(position)
             if entry_num == got_entry_num:
                 aedr_info = self._read_aedr(position)
-                if (not to_np):
-                    new_dict = {}
-                    new_dict['Item_Size'] = self._type_size(aedr_info['data_type'], aedr_info['num_elments'])
-                    new_dict['Data_Type'] = self._datatype_token(aedr_info['data_type'])
-                    if (aedr_info['data_type'] == 51 or aedr_info['data_type'] == 52):
-                        new_dict['Num_Items'] = aedr_info['num_strings']
-                    else:
-                        new_dict['Num_Items'] = aedr_info['num_elments']
-                    if (aedr_info['data_type'] == 51 or aedr_info['data_type'] == 52) and (aedr_info['num_strings'] > 1):
-                        new_dict['Data'] = aedr_info['value'].split('\\N ')
-                    elif (aedr_info['data_type'] == 32):
-                        new_dict['Data'] = complex(aedr_info['value'][0], aedr_info['value'][1])
-                    else:
-                        new_dict['Data'] = aedr_info['value']
-                    return new_dict
+                return_dict = {}
+                return_dict['Item_Size'] = self._type_size(aedr_info['data_type'], aedr_info['num_elements'])
+                return_dict['Data_Type'] = self._datatype_token(aedr_info['data_type'])
+                if (aedr_info['data_type'] == 51 or aedr_info['data_type'] == 52):
+                    return_dict['Num_Items'] = aedr_info['num_strings']
                 else:
-                    if (aedr_info['data_type'] == 51 or aedr_info['data_type'] == 52):
-                        if (aedr_info['num_strings'] > 1):
-                            return aedr_info['value'].split('\\N ')
-                        else:
-                            return aedr_info['value']
-                    else:
-                        return aedr_info['value']
+                    return_dict['Num_Items'] = aedr_info['num_elements']
+                if (aedr_info['data_type'] == 51 or aedr_info['data_type'] == 52) and (aedr_info['num_strings'] > 1):
+                    return_dict['Data'] = aedr_info['entry'].split('\\N ')
+                elif (aedr_info['data_type'] == 32):
+                    return_dict['Data'] = complex(aedr_info['value'][0], aedr_info['value'][1])
+                else:
+                    return_dict['Data'] = aedr_info['entry']
+                return return_dict
             else:
                 position = next_aedr
         print('The entry does not exist')
@@ -1274,7 +1298,7 @@ class CDF(object):
     def _findrangerecords(self, data_type, epochtimes, starttime, endtime):
         if (data_type == 31 or data_type == 32 or data_type == 33):
             #CDF_EPOCH or CDF_EPOCH16 or CDF_TIME_TT2000
-            recs = self.cdfepoch.findepochrange(epochtimes, starttime, endtime)
+            recs = pds2_cdf.cdfepoch.findepochrange(epochtimes, starttime, endtime)
         else:
             print('Not a CDF epoch type...')
             return None
@@ -1287,43 +1311,6 @@ class CDF(object):
 #
 # import struct
 #
-#     def _type_size(self, data_type, num_elms):
-#         ##DATA TYPES
-#         #
-#         #1 - 1 byte signed int
-#         #2 - 2 byte signed int
-#         #4 - 4 byte signed int
-#         #8 - 8 byte signed int
-#         #11 - 1 byte unsigned int
-#         #12 - 2 byte unsigned int
-#         #14 - 4 byte unsigned int
-#         #41 - same as 1
-#         #21 - 4 byte float
-#         #22 - 8 byte float (double)
-#         #44 - same as 21
-#         #45 - same as 22
-#         #31 - double representing milliseconds
-#         #32 - 2 doubles representing milliseconds
-#         #33 - 8 byte signed integer representing nanoseconds from J2000
-#         #51 - signed character
-#         #52 - unsigned character
-#         
-#         if (data_type == 1) or (data_type == 11) or (data_type == 41):
-#             return 1
-#         elif (data_type == 2) or (data_type == 12):
-#             return 2
-#         elif (data_type == 4) or (data_type == 14):
-#             return 4
-#         elif (data_type == 8) or (data_type == 33):
-#             return 8
-#         elif (data_type == 21) or (data_type == 44):
-#             return 4
-#         elif (data_type == 22) or (data_type == 31) or (data_type == 45):
-#             return 8
-#         elif (data_type == 32):
-#             return 16
-#         elif (data_type == 51) or (data_type == 52):
-#             return num_elms
 
 
 #     def _convert_type(self, data_type):
