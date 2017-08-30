@@ -121,7 +121,7 @@ Sample use -
 @author: Bryan Harter
 """
 
-
+import os
 import numpy as np
 import sys
 import gzip
@@ -149,6 +149,18 @@ class CDF(object):
             return
         compressed_bool = f.read(4).hex()
         self._compressed = not (compressed_bool == '0000ffff')
+        
+        self._reading_compressed_file  = False
+        if self._compressed:
+            new_path = self._uncompress_file(path)
+            if new_path == None:
+                print("Decompression was unsuccessful.  Only GZIP compression is currently supported.")
+                f.close()
+                return
+            self.file= open(new_path, 'rb')
+            path = new_path
+            self.file.seek(0)
+            self._reading_compressed_file = True
         
         cdr_info = self._read_cdr(self.file.tell())
         gdr_info = self._read_gdr(self.file.tell())
@@ -184,10 +196,15 @@ class CDF(object):
         self._rvariables_num_dims = gdr_info['rvariables_num_dims']
         self._rvariables_dim_sizes = gdr_info['rvariables_dim_sizes']
         self._num_att = gdr_info['num_attributes']
-
+    
+    def __del__(self):
+        self.close()
+    
     def close(self):
         self.file.close()
-
+        if self._reading_compressed_file:
+            os.remove(self._path)
+            
     def cdf_info(self):
         mycdf_info = {}
         mycdf_info['CDF'] = self._path
@@ -466,6 +483,52 @@ class CDF(object):
                 print("NAME: " + zvars[x] + " NUMBER: " +str(x))
             return 
 
+    def _uncompress_file(self, path):
+        f = self.file
+        data_start, data_size, cType, cParams = self._read_ccr(8)
+        if cType != 5:
+            return
+        
+        f.seek(data_start)
+        decompressed_data =  gzip.decompress(f.read(data_size))
+        
+        self.close()
+        
+        directory, filename = os.path.split(path)
+        new_filename = filename+".gunzip"
+        new_path = os.path.join(directory, new_filename)
+        with open(new_path, 'wb') as newfile:
+            newfile.write(decompressed_data)
+        
+        return new_path
+        
+    def _read_ccr(self, byte_loc):
+        f = self.file
+        f.seek(byte_loc, 0)
+        block_size = int.from_bytes(f.read(8),'big')
+        _ = int.from_bytes(f.read(4),'big') #Section Type
+        cproffset = int.from_bytes(f.read(8),'big') #GDR Location
+        _ = int.from_bytes(f.read(8),'big') #Size of file uncompressed
+        _ = int.from_bytes(f.read(4),'big') #Reserved
+        
+        data_start = self.file.tell()
+        data_size = block_size - 32
+        cType, cParams = self._read_cpr(cproffset)
+        
+        return data_start, data_size, cType, cParams
+
+    def _read_cpr(self,byte_loc):
+        f = self.file
+        f.seek(byte_loc, 0)
+        _ = int.from_bytes(f.read(8),'big') #Block Size, doesn't matter currently
+        _ = int.from_bytes(f.read(4),'big') #Section Type
+        cType = int.from_bytes(f.read(4),'big') 
+        _ = int.from_bytes(f.read(4),'big') #Reserved
+        _ = int.from_bytes(f.read(4),'big') #parameter count, must be 1
+        cParams = int.from_bytes(f.read(4),'big') 
+        
+        return cType, cParams
+
     def _md5_validation(self, file_size):
         '''
         Verifies the MD5 checksum.  
@@ -603,7 +666,7 @@ class CDF(object):
         _ = int.from_bytes(f.read(4),'big') #Nothing
         _ = int.from_bytes(f.read(4),'big') #Nothing
         
-        length_of_copyright = byte_loc+(block_size-64)
+        length_of_copyright = (block_size-56)
         cdfcopyright = f.read(length_of_copyright).decode('utf-8')
         cdfcopyright = cdfcopyright.replace('\x00', '')
         
