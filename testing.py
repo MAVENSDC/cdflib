@@ -21,4 +21,4 @@ sta_file= pds2_cdf.CDF("C:/temp/mavencdfs/mvn_sta_l2_db-1024tof_20170725_v01_r05
 #swe_file= pds2_cdf.CDF("C:/temp/mavencdfs/mvn_swe_l2_svyspec_20170725_v04_r04.cdf")
 #swi_file= pds2_cdf.CDF("C:/temp/mavencdfs/mvn_swi_l2_onboardsvyspec_20170725_v01_r00.cdf")
 
-sta_file.cdf_info()
+print(sta_file.globalattsget())

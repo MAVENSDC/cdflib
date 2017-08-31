@@ -159,7 +159,7 @@ class CDF(object):
                 return
             self.file= open(new_path, 'rb')
             path = new_path
-            self.file.seek(0)
+            self.file.seek(8)
             self._reading_compressed_file = True
         
         cdr_info = self._read_cdr(self.file.tell())
@@ -296,7 +296,7 @@ class CDF(object):
                 name, next_adr = self._read_adr_fast(position)
                 print('NAME:'+name+' NUMBER: '+str(x))
                 position=next_adr
-                    
+            return
                     
         #Find the correct entry from entry_num
         if adr_info['scope'] == 1:
@@ -498,6 +498,8 @@ class CDF(object):
         new_filename = filename+".gunzip"
         new_path = os.path.join(directory, new_filename)
         with open(new_path, 'wb') as newfile:
+            newfile.write(bytearray.fromhex('cdf30001'))
+            newfile.write(bytearray.fromhex('0000ffff'))
             newfile.write(decompressed_data)
         
         return new_path
@@ -641,7 +643,7 @@ class CDF(object):
         f.seek(byte_loc, 0)
         block_size = int.from_bytes(f.read(8),'big')
         _ = int.from_bytes(f.read(4),'big') #Section Type
-        _ = int.from_bytes(f.read(8),'big') #GDR Location
+        testing = int.from_bytes(f.read(8),'big') #GDR Location
         version=int.from_bytes(f.read(4),'big')
         release=int.from_bytes(f.read(4),'big')
         encoding = int.from_bytes(f.read(4),'big')
