@@ -239,7 +239,7 @@ class CDF(object):
         if isinstance(attribute, str):
             for _ in range(0, self._num_att):
                 name, next_adr = self._read_adr_fast(position)
-                if name.strip() == attribute.strip():
+                if name.strip().lower() == attribute.strip().lower():
                     return self._read_adr(position)
                 position = next_adr
             print('No attribute by this name:',attribute)
@@ -267,17 +267,18 @@ class CDF(object):
         position = self._first_adr
             
         #Get Correct ADR 
+        adr_info = None
         if isinstance(attribute, str):
-            if isinstance(entry_num, int):
-                if (self._num_zvariable > 0 and self._num_rvariable > 0):
-                    print('This CDF has both r and z variables. Use variable name')
-                    return
             for _ in range(0, self._num_att):
                 name, next_adr = self._read_adr_fast(position)
-                if (name.strip() == attribute.strip()):
-                    adr_info = self._read_adr(position)   
+                if (name.strip().lower() == attribute.strip().lower()):
+                    adr_info = self._read_adr(position)
+                    break   
                 else:
-                    position = next_adr            
+                    position = next_adr 
+            if adr_info == None:
+                print("Attribute not found.")
+                return
         elif isinstance(attribute, int):
             if (attribute < 0) or (attribute > self._num_att):
                 print('No attribute by this number:',attribute)
@@ -314,7 +315,7 @@ class CDF(object):
                 positionx = self._first_zvariable
                 for x in range(0, self._num_zvariable):
                     name, vdr_next = self._read_vdr_fast(positionx)
-                    if (name.strip() == entry_num.strip()):
+                    if (name.strip().lower() == entry_num.strip().lower()):
                         var_num = x
                         zvar = True
                         break
@@ -324,7 +325,7 @@ class CDF(object):
                     positionx = self._first_rvariable
                     for x in range(0, self._num_rvariable):
                         name, vdr_next = self._read_vdr_fast(positionx)
-                        if (name.strip() == entry_num.strip()):
+                        if (name.strip().lower() == entry_num.strip().lower()):
                             var_num = x
                             break
                         positionx = vdr_next
@@ -333,6 +334,9 @@ class CDF(object):
                     return
                 entry_num = var_num
             else:
+                if (self._num_zvariable > 0 and self._num_rvariable > 0):
+                    print('This CDF has both r and z variables. Use variable name')
+                    return
                 if self._num_zvariable > 0:
                     zvar = True
             if zvar:
@@ -373,7 +377,7 @@ class CDF(object):
             for _ in [0,1]:
                 for _ in range(0, num_variables):
                     name, vdr_next = self._read_vdr_fast(position)
-                    if name.strip() == variable.strip():
+                    if name.strip().lower() == variable.strip().lower():
                         vdr_info = self._read_vdr(position)
                         break
                     position = vdr_next
@@ -402,10 +406,10 @@ class CDF(object):
             rvars, zvars = self._get_varnames()
             print("RVARIABLES: ")
             for x in rvars:
-                print("NAME: " + rvars[x] + " NUMBER: " +str(x))
+                print("NAME: "+str(x))
             print("ZVARIABLES: ")
             for x in zvars:
-                print("NAME: " + zvars[x] + " NUMBER: " +str(x))
+                print("NAME: "+str(x))
             return 
         
         if inq:
@@ -452,7 +456,7 @@ class CDF(object):
             for zVar in [0,1]:
                 for _ in range(0, num_variables):
                     name, vdr_next = self._read_vdr_fast(position)
-                    if name.strip() == variable.strip():
+                    if name.strip().lower() == variable.strip().lower():
                         vdr_info = self._read_vdr(position)
                         return self._read_varatts(vdr_info['variable_number'], zVar)
                     position = vdr_next
@@ -477,10 +481,10 @@ class CDF(object):
             rvars, zvars = self._get_varnames()
             print("RVARIABLES: ")
             for x in rvars:
-                print("NAME: " + rvars[x] + " NUMBER: " +str(x))
+                print("NAME: "+ str(x))
             print("ZVARIABLES: ")
             for x in zvars:
-                print("NAME: " + zvars[x] + " NUMBER: " +str(x))
+                print("NAME: " + str(x))
             return 
 
     def _uncompress_file(self, path):
@@ -1185,7 +1189,11 @@ class CDF(object):
             ret.setflags('WRITEABLE')
         
         if squeeze_needed:
-            ret = np.squeeze(ret)
+            ret = np.squeeze(ret, axis=(ret.ndim-1))
+            
+        #Put the data into system byte order
+        if self._convert_option() != '=':
+            ret = ret.byteswap().newbyteorder()
             
         return ret
 
@@ -1285,13 +1293,19 @@ class CDF(object):
                                                    vdr_info['num_elements'])
             new_dict['Data_Type'] = self._datatype_token(vdr_info['data_type'])
             if (vdr_info['record_vary']):
-                new_dict['Data'] = data[startrec:endrec+1]
+                if startrec==endrec:
+                    new_dict['Data'] = data[startrec]
+                else:
+                    new_dict['Data'] = data[startrec:endrec+1]
             else:
                 new_dict['Data'] = data
             return new_dict
         else:
             if (vdr_info['record_vary']):
-                return data[startrec:endrec+1]
+                if startrec==endrec:
+                    return data[startrec]
+                else:
+                    return data[startrec:endrec+1]
             else:
                 return data
 
@@ -1318,14 +1332,13 @@ class CDF(object):
                           'for variable:',var_name)
                     print('Use \'epoch\' argument to specify its time-based variable')
                     return None
-                vdr_info = self.varinq(dependVar)
+                vdr_info = self.varinq(dependVar['Data'])
                 if (vdr_info['data_type'] != 31 and vdr_info['data_type'] != 32
                     and vdr_info['data_type'] != 33):
                     print('Corresponding variable from \'DEPEND_0\' attribute ',
                           'for variable:',var_name,' is not a CDF epoch type')
                     return None
-                self._read_vxr(vdr_info['head_vxr'])
-                epochtimes = self.varget(dependVar)
+                epochtimes = self.varget(dependVar['Data'])
                 
         return self._findrangerecords(vdr_info['data_type'], epochtimes,
                                       starttime, endtime)
