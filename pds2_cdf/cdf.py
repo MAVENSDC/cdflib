@@ -204,6 +204,7 @@ class CDF(object):
         self.file.close()
         if self._reading_compressed_file:
             os.remove(self._path)
+            self._reading_compressed_file = False
             
     def cdf_info(self):
         mycdf_info = {}
@@ -1126,7 +1127,12 @@ class CDF(object):
         #
         #  dt = np.dtype('>(48,4,16)f4')
         
-        squeeze_needed = False
+        squeeze_needed = False 
+        #If the dimension is [n], it needs to be [n,1]
+        #for the numpy dtype.  This requires us to squeeze
+        #the matrix later, to get rid of this extra dimension.  
+        
+        
         dt_string = self._convert_option()
         if dimensions!=None:
             if (len(dimensions) == 1):
@@ -1190,7 +1196,7 @@ class CDF(object):
         
         if squeeze_needed:
             ret = np.squeeze(ret, axis=(ret.ndim-1))
-            
+        
         #Put the data into system byte order
         if self._convert_option() != '=':
             ret = ret.byteswap().newbyteorder()
@@ -1298,7 +1304,7 @@ class CDF(object):
                 else:
                     new_dict['Data'] = data[startrec:endrec+1]
             else:
-                new_dict['Data'] = data
+                new_dict['Data'] = data[0]
             return new_dict
         else:
             if (vdr_info['record_vary']):
@@ -1307,7 +1313,7 @@ class CDF(object):
                 else:
                     return data[startrec:endrec+1]
             else:
-                return data
+                return data[0]
 
     def _findtimerecords(self, var_name, starttime, endtime, epoch=None):
         
