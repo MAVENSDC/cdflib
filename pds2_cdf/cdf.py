@@ -118,7 +118,7 @@ Sample use -
     x = swea_cdf_file.varget('NameOfVariable')
     swea_cdf_file.close()
 
-@author: Bryan Harter
+@author: Bryan Harter, Michael Liu
 """
 
 import os
