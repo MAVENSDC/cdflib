@@ -112,8 +112,8 @@ Get epoch range:    epochrange( epoch, [starttime=None, endtime=None])
 
 Sample use - 
 
-    import pds_cdf
-    swea_cdf_file = pds_cdf.CDF('/path/to/swea_file.cdf')
+    import cdflib
+    swea_cdf_file = cdflib.CDF('/path/to/swea_file.cdf')
     swea_cdf_file.cdf_info()
     x = swea_cdf_file.varget('NameOfVariable')
     swea_cdf_file.close()
@@ -126,7 +126,7 @@ import numpy as np
 import sys
 import gzip
 import hashlib
-import pds2_cdf
+import cdflib
 
 class CDF(object):
     def __init__(self, path, validate=None):
@@ -1352,7 +1352,7 @@ class CDF(object):
     def _findrangerecords(self, data_type, epochtimes, starttime, endtime):
         if (data_type == 31 or data_type == 32 or data_type == 33):
             #CDF_EPOCH or CDF_EPOCH16 or CDF_TIME_TT2000
-            recs = pds2_cdf.cdfepoch.findepochrange(epochtimes, starttime, endtime)
+            recs = cdflib.cdfepoch.findepochrange(epochtimes, starttime, endtime)
         else:
             print('Not a CDF epoch type...')
             return None
