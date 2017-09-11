@@ -4,54 +4,51 @@ without needing to install the CDF NASA library.
 CDF Inquiry:  cdf_info()
               Returns a dictionary that shows the basic CDF information. This
               information includes
-		+-----------+--------------------------------------------------------------------------------+
-		| CDF       | the name of the CDF                                                            |
-		+-----------+--------------------------------------------------------------------------------+
-		| Version   | the version of the CDF                                                         |
-		+-----------+--------------------------------------------------------------------------------+
-		| Encoding  | the endianness of the CDF                                                      |
-		+-----------+--------------------------------------------------------------------------------+
-		| Majority  | the row/column majority                                                        |
-		+-----------+--------------------------------------------------------------------------------+
-		| zVariables| the dictionary for zVariable numbers and their corresponding names             |
-		+-----------+--------------------------------------------------------------------------------+
-		| rVariables| the dictionary for rVariable numbers and their corresponding names             |
-		+-----------+--------------------------------------------------------------------------------+
-		| Attributes| the dictionary for attribute numbers and their corresponding names and scopes  |
-		+-----------+--------------------------------------------------------------------------------+
+		+---------------+--------------------------------------------------------------------------------+
+		| ['CDF']       | the name of the CDF                                                            |
+		+---------------+--------------------------------------------------------------------------------+
+		| ['Version']   | the version of the CDF                                                         |
+		+---------------+--------------------------------------------------------------------------------+
+		| ['Encoding']  | the endianness of the CDF                                                      |
+		+---------------+--------------------------------------------------------------------------------+
+		| ['Majority']  | the row/column majority                                                        |
+		+---------------+--------------------------------------------------------------------------------+
+		| ['zVariables']| the dictionary for zVariable numbers and their corresponding names             |
+		+---------------+--------------------------------------------------------------------------------+
+		| ['rVariables']| the dictionary for rVariable numbers and their corresponding names             |
+		+---------------+--------------------------------------------------------------------------------+
+		| ['Attributes']| the dictionary for attribute numbers and their corresponding names and scopes  |
+		+---------------+--------------------------------------------------------------------------------+
 			  
-			  
-              ['CDF']: the name of the CDF
-              ['Version']: the version of the CDF
-              ['Encoding']: the endianness of the CDF
-              ['Majority']: the row/column majority
-              ['zVariables']: the dictionary for zVariable numbers and their
-                              corresponding names
-              ['rVariables']: the dictionary for rVariable numbers and their
-                              corresponding names
-              ['Attributes']: the dictionary for attribute numbers and their
-                              corresponding names and scopes
 
-
-Variable Information:
-              var_info(variable)
+Variable Information: var_info(variable)
               Returns a dictionary that shows the basic variable information.
               This information includes:
-              ['Variable']: the name of the variable
-              ['Num']: the variable number
-              ['Var_Type']: the variable type: zVariable or rVariable
-              ['Data_Type']: the variable's CDF data type
-              ['Num_Elements']: the number of elements of the variable
-              ['Num_Dims']: the dimensionality of the variable record
-              ['Dim_Sizes']: the shape of the variable record
-              ['Sparse']: the variable's record sparseness
-              ['Last_Rec']: the maximum written record number (0-based)
+		+-----------------+--------------------------------------------------------------------------------+
+		| ['Variable']    | the name of the variable                                                       |
+		+-----------------+--------------------------------------------------------------------------------+
+		| ['Num']         | the variable number                                                            |
+		+-----------------+--------------------------------------------------------------------------------+
+		| ['Var_Type']    | the variable type: zVariable or rVariable                                      |
+		+-----------------+--------------------------------------------------------------------------------+
+		| ['Data_Type']   | the variable's CDF data type                                                   |
+		+-----------------+--------------------------------------------------------------------------------+
+		| ['Num_Elements']| the number of elements of the variable                                         |
+		+-----------------+--------------------------------------------------------------------------------+
+		| ['Num_Dims']    | the dimensionality of the variable record                                      |
+		+-----------------+--------------------------------------------------------------------------------+
+		| ['Dim_Sizes']   | the shape of the variable record                                               |
+		+-----------------+--------------------------------------------------------------------------------+
+		| ['Sparse']      | the variable's record sparseness                                               |
+		+-----------------+--------------------------------------------------------------------------------+
+		| ['Last_Rec']    | the maximum written record number (0-based)                                    |
+		+-----------------+--------------------------------------------------------------------------------+	  
 
 
 Attribute Inquiry:  attinq( attribute )
                     Returns a python dictionary of attribute information
                    
-Get Attribute(s):   attget( attribute, entry_number|variable_name [,to_dict=True] )
+Get Single Attribute: attget( attribute, entry_number|variable_name [,to_dict=True] )
                     Returns the value of the attribute at the entry number
                     provided.  For a variable attribute, variable name can be
                     used, instead of its corresponding entry number. By
@@ -65,13 +62,13 @@ Get Attribute(s):   attget( attribute, entry_number|variable_name [,to_dict=True
                     ['Data']: retrieved attribute data as a scalar value, a
                               list of values or a string
 
-                    varattsget(variable)
-                    Unlike attget, which returns a single attribute entry value,
-                    this function returns all of the variable attribute entries,
-                    in a dictionary (in the form of 'attribute': value pair) for
-                    a variable. If there is no entry found, None is returned.
+Get All Variable Attributes:  varattsget(variable)
+								Unlike attget, which returns a single attribute entry value,
+								this function returns all of the variable attribute entries,
+								in a dictionary (in the form of 'attribute': value pair) for
+								a variable. If there is no entry found, None is returned.
                    
-                    globalattsget()
+Get All Global Attributes:  globalattsget()
                     This function returns all of the global attribute entries,
                     in a dictionary (in the form of 'attribute': {entry: value}
                     pair) from a CDF. If there is no entry found, None is
