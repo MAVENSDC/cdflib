@@ -1,10 +1,23 @@
 This is a python script to read CDF V3 files
 without needing to install the CDF NASA library.  
 
-CDF Inquiry:  cdf_info()
+##########
+CDF Class
+##########
+
+To open a CDF file, create a new CDF class variable::
+	import pds_cdf
+	
+    swea_cdf_file = pds_cdf.CDF('/path/to/swea_file.cdf')
+	
+Then, you can call the following commands on the variable below.  For example::
+
+	x = swea_cdf_file.varget("NameOfVariable", startrec = 0, endrec = 150)
+
+cdf_info()
 =============
-              Returns a dictionary that shows the basic CDF information. This
-              information includes
+              CDF Inquiry.  Returns a dictionary that shows the basic CDF information. 
+			  This information includes
 		+---------------+--------------------------------------------------------------------------------+
 		| ['CDF']       | the name of the CDF                                                            |
 		+---------------+--------------------------------------------------------------------------------+
@@ -22,9 +35,9 @@ CDF Inquiry:  cdf_info()
 		+---------------+--------------------------------------------------------------------------------+
 			  
 
-Variable Information: varinq(variable)
+varinq(variable)
 =============
-              Returns a dictionary that shows the basic variable information.
+              Variable Information.  Returns a dictionary that shows the basic variable information.
               This information includes:
 		+-----------------+--------------------------------------------------------------------------------+
 		| ['Variable']    | the name of the variable                                                       |
@@ -47,17 +60,16 @@ Variable Information: varinq(variable)
 		+-----------------+--------------------------------------------------------------------------------+	  
 
 
-Attribute Inquiry:  attinq( attribute = None)
+attinq( attribute = None)
 =============
-                    Returns a python dictionary of attribute information.  If no attribute is provided,
-					a list of all attributes is printed.  
+                    Attribute Inquiry.  Returns a python dictionary of attribute information.  
+					If no attribute is provided, a list of all attributes is printed.  
                    
-Get Single Attribute: attget( attribute = None, entry_num = None )
+attget( attribute = None, entry_num = None )
 =============
-                    Returns the value of the attribute at the entry number
-                    provided. A variable name can be used instead of its 
-					corresponding entry number. A dictionary is returned
-                    with the following defined keys:
+                    Get Single Attribute.  Returns the value of the attribute at the entry 
+					number provided. A variable name can be used instead of its corresponding 
+					entry number. A dictionary is returned with the following defined keys:
 
 		+-----------------+--------------------------------------------------------------------------------+
 		| ['Item_Size']   | the number of bytes for each entry value                                       |
@@ -69,24 +81,27 @@ Get Single Attribute: attget( attribute = None, entry_num = None )
 		| ['Data']        | retrieved attribute data as a scalar value, a numpy array or a string          |
 		+-----------------+--------------------------------------------------------------------------------+
 
-Get All Variable Attributes:  varattsget(variable = None)
+varattsget(variable = None)
 =============
+								Get All Variable Attributes. 
 								Unlike attget, which returns a single attribute entry value,
 								this function returns all of the variable attribute entries,
 								in a dictionary (in the form of 'attribute': value pair) for
 								a variable. If there is no entry found, None is returned.
 								If no variable name is provided, a list of variables are printed.  
                    
-Get All Global Attributes:  globalattsget()
+globalattsget()
 =============
-                    This function returns all of the global attribute entries,
+                    Get All Global Attributes.  
+					This function returns all of the global attribute entries,
                     in a dictionary (in the form of 'attribute': {entry: value}
                     pair) from a CDF. If there is no entry found, None is
                     returned.
                    
-Get Variable:       varget( variable = None, [epoch=None], [[starttime=None, endtime=None] | [startrec=0, endrec = None]], [,expand=True])
+varget( variable = None, [epoch=None], [[starttime=None, endtime=None] | [startrec=0, endrec = None]], [,expand=True])
 =============
-                    Returns the variable data. Variable can be entered either
+                    Get Variable.  
+					Returns the variable data. Variable can be entered either
                     a name or a variable number. By default, it returns a
                     'numpy.ndarray' or 'list' class object, depending on the
                     data type, with the variable data and its specification.
@@ -122,27 +137,34 @@ Get Variable:       varget( variable = None, [epoch=None], [[starttime=None, end
 Note: CDF's CDF_EPOCH16 data type uses 2 8-byte doubles for each data value.
       In Python, each vale is presented as a complex or numpy.complex128.
 
-Get epoch range:    epochrange( epoch, [starttime=None, endtime=None])
+epochrange( epoch, [starttime=None, endtime=None])
 =============
-                    Returns a list of the record numbers, representing the
+                    Get epoch range. 
+					Returns a list of the record numbers, representing the
                     corresponding starting and ending records within the time
                     range from the epoch data. A None is returned if there is no
                     data either written or found in the time range.
 
+					
+##########
+CDF Epoch 
+##########
+
 This module also imports CDFepoch that handles CDF-based epochs.
 
-    There are three (3) epoch data types in CDD: CDF_EPOCH, CDF_EPOCH16 and 
-    CDF_TIME_TT2000. CDF_EPOCH is milliseconds since Year 0. CDF_EPOCH16
-    is picoseconds since Year 0. CDF_TIME_TT2000 (TT2000 as short) is 
-    nanoseconds since J2000 with leap seconds. CDF_EPOCH is a single double
-    (as float in Python), CDF_EPOCH16 is 2-doubles (as complex in Python),
-    and TT2000 is 8-byte integer (as int in Python). In Numpy, they are 
-    np.float64, np.complex128 and np.int64, respectively. All these epoch
-    values can come from from CDF.varget function.
+There are three (3) epoch data types in CDD: CDF_EPOCH, CDF_EPOCH16 and 
+CDF_TIME_TT2000. CDF_EPOCH is milliseconds since Year 0. CDF_EPOCH16
+is picoseconds since Year 0. CDF_TIME_TT2000 (TT2000 as short) is 
+nanoseconds since J2000 with leap seconds. CDF_EPOCH is a single double
+(as float in Python), CDF_EPOCH16 is 2-doubles (as complex in Python),
+and TT2000 is 8-byte integer (as int in Python). In Numpy, they are 
+np.float64, np.complex128 and np.int64, respectively. All these epoch
+values can come from from CDF.varget function.
 
-    Four main functions are provided:
+Four main functions are provided:
 
-      encode (epochs, iso_8601=None) :
+encode (epochs, iso_8601=False)
+=============
          Encodes the epoch(s) into UTC string(s).
          For CDF_EPOCH: The input should be either a float or list of floats
                         (in numpy, a np.float64 or a np.ndarray of np.float64)
@@ -165,7 +187,8 @@ This module also imports CDFepoch that handles CDF-based epochs.
                      Or, if iso_8601 is set to False,
                      02-Feb-2008 06:08:10.012.014.016
 
-      breakdown (epochs, to_np=None):
+breakdown (epochs, to_np=False)
+=============
          Breaks down the epoch(s) into UTC components. 
          For CDF_EPOCH: they are 7 date/time components: year, month, day,
                         hour, minute, second, and millisecond
@@ -177,10 +200,8 @@ This module also imports CDFepoch that handles CDF-based epochs.
                      nanosecond.
          Specify to_np to True, if the result should be in numpy array.
 
-      compute (datetimes, to_np=None)
-      compute_epoch (datetimes, to_np=None)
-      compute_epoch16 (datetimes, to_np=None)
-      compute_tt2000 (datetimes, to_np=None)
+compute[_epoch/_epoch16/_tt200] (datetimes, to_np=False)
+=============
          Computes the provided date/time components into CDF epoch value(s).
          For computing into CDF_EPOCH value, each date/time elements should 
          have exactly seven (7) components, as year, month, day, hour, minute,
@@ -205,7 +226,8 @@ This module also imports CDFepoch that handles CDF-based epochs.
          not the 9th, can be a float that can have a fraction of the unit.
          Specify to_np to True, if the result should be in numpy class.
 
-      findepochrange (epochs, starttime=None, endtime=None)
+findepochrange (epochs, starttime=None, endtime=None)
+=============
          Finds the record range within the start and end time from values 
          of a CDF epoch data type. It returns a list of record numbers. 
          If the start time is not provided, then it is 
@@ -215,14 +237,4 @@ This module also imports CDFepoch that handles CDF-based epochs.
          should have the proper number of date/time components, corresponding
          to the epoch's data type.
 
-Sample use - 
-
-    import pds_cdf
-	
-    swea_cdf_file = pds_cdf.CDF('/path/to/swea_file.cdf')
-	
-    x = swea_cdf_file.varget("NameOfVariable")
-
-    swea_cdf_file.close()
-
-Author: Bryan Harter
+Author: Bryan Harter, Michael Liu
