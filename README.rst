@@ -4,21 +4,21 @@ without needing to install the CDF NASA library.
 CDF Inquiry:  cdf_info()
               Returns a dictionary that shows the basic CDF information. This
               information includes
-+-------+------------------------------------------------------------------------------------+
-| CDF   | the name of the CDF                                                                |
-+-------+------------------------------------------------------------------------------------+
-| Version  | the version of the CDF                                                          |
-+-------+------------------------------------------------------------------------------------+
-| Encoding  | the endianness of the CDF                                                      |
-+-------+------------------------------------------------------------------------------------+
-| Majority | the row/column majority                                                         |
-+-------+------------------------------------------------------------------------------------+
-| zVariables  | the dictionary for zVariable numbers and their corresponding names           |
-+-------+------------------------------------------------------------------------------------+
-| rVariables  | the dictionary for rVariable numbers and their corresponding names           |
-+-------+------------------------------------------------------------------------------------+
-| Attributes | the dictionary for attribute numbers and their corresponding names and scopes |
-+-------+------------------------------------------------------------------------------------+
+		+-----------+--------------------------------------------------------------------------------+
+		| CDF       | the name of the CDF                                                            |
+		+-----------+--------------------------------------------------------------------------------+
+		| Version   | the version of the CDF                                                         |
+		+-----------+--------------------------------------------------------------------------------+
+		| Encoding  | the endianness of the CDF                                                      |
+		+-----------+--------------------------------------------------------------------------------+
+		| Majority  | the row/column majority                                                        |
+		+-----------+--------------------------------------------------------------------------------+
+		| zVariables| the dictionary for zVariable numbers and their corresponding names             |
+		+-----------+--------------------------------------------------------------------------------+
+		| rVariables| the dictionary for rVariable numbers and their corresponding names             |
+		+-----------+--------------------------------------------------------------------------------+
+		| Attributes| the dictionary for attribute numbers and their corresponding names and scopes  |
+		+-----------+--------------------------------------------------------------------------------+
 			  
 			  
               ['CDF']: the name of the CDF
