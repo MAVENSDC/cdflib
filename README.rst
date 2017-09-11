@@ -2,6 +2,7 @@ This is a python script to read CDF V3 files
 without needing to install the CDF NASA library.  
 
 CDF Inquiry:  cdf_info()
+=============
               Returns a dictionary that shows the basic CDF information. This
               information includes
 		+---------------+--------------------------------------------------------------------------------+
@@ -22,6 +23,7 @@ CDF Inquiry:  cdf_info()
 			  
 
 Variable Information: varinq(variable)
+=============
               Returns a dictionary that shows the basic variable information.
               This information includes:
 		+-----------------+--------------------------------------------------------------------------------+
@@ -46,10 +48,12 @@ Variable Information: varinq(variable)
 
 
 Attribute Inquiry:  attinq( attribute = None)
+=============
                     Returns a python dictionary of attribute information.  If no attribute is provided,
 					a list of all attributes is printed.  
                    
 Get Single Attribute: attget( attribute = None, entry_num = None )
+=============
                     Returns the value of the attribute at the entry number
                     provided. A variable name can be used instead of its 
 					corresponding entry number. A dictionary is returned
@@ -66,6 +70,7 @@ Get Single Attribute: attget( attribute = None, entry_num = None )
 		+-----------------+--------------------------------------------------------------------------------+
 
 Get All Variable Attributes:  varattsget(variable = None)
+=============
 								Unlike attget, which returns a single attribute entry value,
 								this function returns all of the variable attribute entries,
 								in a dictionary (in the form of 'attribute': value pair) for
@@ -73,14 +78,14 @@ Get All Variable Attributes:  varattsget(variable = None)
 								If no variable name is provided, a list of variables are printed.  
                    
 Get All Global Attributes:  globalattsget()
+=============
                     This function returns all of the global attribute entries,
                     in a dictionary (in the form of 'attribute': {entry: value}
                     pair) from a CDF. If there is no entry found, None is
                     returned.
                    
-Get Variable:       varget( variable = None, [epoch=None], [[starttime=None, 
-                            endtime=None] | [startrec=0, endrec = None]],
-                            [,expand=True])
+Get Variable:       varget( variable = None, [epoch=None], [[starttime=None, endtime=None] | [startrec=0, endrec = None]], [,expand=True])
+=============
                     Returns the variable data. Variable can be entered either
                     a name or a variable number. By default, it returns a
                     'numpy.ndarray' or 'list' class object, depending on the
@@ -118,6 +123,7 @@ Note: CDF's CDF_EPOCH16 data type uses 2 8-byte doubles for each data value.
       In Python, each vale is presented as a complex or numpy.complex128.
 
 Get epoch range:    epochrange( epoch, [starttime=None, endtime=None])
+=============
                     Returns a list of the record numbers, representing the
                     corresponding starting and ending records within the time
                     range from the epoch data. A None is returned if there is no
