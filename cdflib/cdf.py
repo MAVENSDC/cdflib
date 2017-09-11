@@ -490,7 +490,7 @@ class CDF(object):
 
     def _uncompress_file(self, path):
         f = self.file
-        data_start, data_size, cType, cParams = self._read_ccr(8)
+        data_start, data_size, cType, _ = self._read_ccr(8)
         if cType != 5:
             return
         

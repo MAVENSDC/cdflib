@@ -21,7 +21,7 @@ CDF Inquiry:  cdf_info()
 		+---------------+--------------------------------------------------------------------------------+
 			  
 
-Variable Information: var_info(variable)
+Variable Information: varinq(variable)
               Returns a dictionary that shows the basic variable information.
               This information includes:
 		+-----------------+--------------------------------------------------------------------------------+
@@ -45,28 +45,32 @@ Variable Information: var_info(variable)
 		+-----------------+--------------------------------------------------------------------------------+	  
 
 
-Attribute Inquiry:  attinq( attribute )
-                    Returns a python dictionary of attribute information
+Attribute Inquiry:  attinq( attribute = None)
+                    Returns a python dictionary of attribute information.  If no attribute is provided,
+					a list of all attributes is printed.  
                    
-Get Single Attribute: attget( attribute, entry_number|variable_name [,to_dict=True] )
+Get Single Attribute: attget( attribute = None, entry_num = None )
                     Returns the value of the attribute at the entry number
-                    provided.  For a variable attribute, variable name can be
-                    used, instead of its corresponding entry number. By
-                    default, it returns a 'numpy.ndarray', 'list' or 'str' 
-                    class object, depending on the attribute data and its data
-                    type. If to_dict is set as True, a dictionary is returned
+                    provided. A variable name can be used instead of its 
+					corresponding entry number. A dictionary is returned
                     with the following defined keys:
-                    ['Item_Size']: the number of bytes for each entry value
-                    ['Num_Items']: total number of values extracted
-                    ['Data_Type']: the CDF data type
-                    ['Data']: retrieved attribute data as a scalar value, a
-                              list of values or a string
 
-Get All Variable Attributes:  varattsget(variable)
+		+-----------------+--------------------------------------------------------------------------------+
+		| ['Item_Size']   | the number of bytes for each entry value                                       |
+		+-----------------+--------------------------------------------------------------------------------+
+		| ['Num_Items']   | total number of values extracted                                               |
+		+-----------------+--------------------------------------------------------------------------------+
+		| ['Data_Type']   | the CDF data type                                                              |
+		+-----------------+--------------------------------------------------------------------------------+
+		| ['Data']        | retrieved attribute data as a scalar value, a numpy array or a string          |
+		+-----------------+--------------------------------------------------------------------------------+
+
+Get All Variable Attributes:  varattsget(variable = None)
 								Unlike attget, which returns a single attribute entry value,
 								this function returns all of the variable attribute entries,
 								in a dictionary (in the form of 'attribute': value pair) for
 								a variable. If there is no entry found, None is returned.
+								If no variable name is provided, a list of variables are printed.  
                    
 Get All Global Attributes:  globalattsget()
                     This function returns all of the global attribute entries,
@@ -74,25 +78,28 @@ Get All Global Attributes:  globalattsget()
                     pair) from a CDF. If there is no entry found, None is
                     returned.
                    
-Variable Inquiry:   varinq( variable )
-                    Returns a python dictionary of variable information 
-                   
-Get Variable:       varget( variable, [epoch=None], [[starttime=None, 
-                            endtime=None] | [startrec=None, endrec = None]],
-                            [,to_dict=True])
+Get Variable:       varget( variable = None, [epoch=None], [[starttime=None, 
+                            endtime=None] | [startrec=0, endrec = None]],
+                            [,expand=True])
                     Returns the variable data. Variable can be entered either
                     a name or a variable number. By default, it returns a
                     'numpy.ndarray' or 'list' class object, depending on the
                     data type, with the variable data and its specification.
-                    If to_dict is set as True, a dictionary is returned
+                    
+					If "expand" is set as True, a dictionary is returned
                     with the following defined keys for the output:
-                    ['Rec_Ndim']: the dimension number of each variable record
-                    ['Rec_Shape']: the shape of the variable record dimensions
-                    ['Num_Records']: the number of the retrieved records
-                    ['Item_Size']: the number of bytes for each data value
-                    ['Data_Type']: the CDF data type
-                    ['Data']: retrieved variable data, a list of values
-                              reflecting how they are stored in the file.
+		+-----------------+--------------------------------------------------------------------------------+
+		| ['Rec_Ndim']    | the dimension number of each variable record                                   |
+		+-----------------+--------------------------------------------------------------------------------+
+		| ['Rec_Shape']   | the shape of the variable record dimensions                                    |
+		+-----------------+--------------------------------------------------------------------------------+
+		| ['Num_Records'] | the number of the retrieved records                                            |
+		+-----------------+--------------------------------------------------------------------------------+
+		| ['Data_Type']   | the CDF data type                                                              |
+		+-----------------+--------------------------------------------------------------------------------+
+		| ['Data']        | retrieved variable data                                                        |
+		+-----------------+--------------------------------------------------------------------------------+
+		
                     By default, the full variable data is returned. To acquire
                     only a portion of the data for a record-varying variable,
                     either the time or record (0-based) range can be specified.
@@ -129,7 +136,7 @@ This module also imports CDFepoch that handles CDF-based epochs.
 
     Four main functions are provided:
 
-      encode (epochs, iso_8601=None)
+      encode (epochs, iso_8601=None) :
          Encodes the epoch(s) into UTC string(s).
          For CDF_EPOCH: The input should be either a float or list of floats
                         (in numpy, a np.float64 or a np.ndarray of np.float64)
@@ -152,7 +159,7 @@ This module also imports CDFepoch that handles CDF-based epochs.
                      Or, if iso_8601 is set to False,
                      02-Feb-2008 06:08:10.012.014.016
 
-      breakdown (epochs, to_np=None)
+      breakdown (epochs, to_np=None):
          Breaks down the epoch(s) into UTC components. 
          For CDF_EPOCH: they are 7 date/time components: year, month, day,
                         hour, minute, second, and millisecond
@@ -162,7 +169,7 @@ This module also imports CDFepoch that handles CDF-based epochs.
          For TT2000: they are 9 date/time components: year, month, day,
                      hour, minute, second, millisecond, microsecond, 
                      nanosecond.
-         Specify to_np to True, if the result should be in numpy class.
+         Specify to_np to True, if the result should be in numpy array.
 
       compute (datetimes, to_np=None)
       compute_epoch (datetimes, to_np=None)
