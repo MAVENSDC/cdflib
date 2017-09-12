@@ -4,7 +4,7 @@ This is a python script to read CDF V3 files without needing to install the CDF 
 CDF Class
 ##########
 
-
+test
 	import pds_cdf
 	swea_cdf_file = pds_cdf.CDF('/path/to/swea_file.cdf')
 	
