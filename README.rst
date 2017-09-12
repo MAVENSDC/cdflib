@@ -5,9 +5,9 @@ without needing to install the CDF NASA library.
 CDF Class
 ##########
 
+
 To open a CDF file, create a new CDF class variable::
 	import pds_cdf
-	
     swea_cdf_file = pds_cdf.CDF('/path/to/swea_file.cdf')
 	
 Then, you can call the following commands on the variable below.  For example::
@@ -16,7 +16,7 @@ Then, you can call the following commands on the variable below.  For example::
 
 cdf_info()
 =============
-CDF Inquiry.  Returns a dictionary that shows the basic CDF information. 
+Returns a dictionary that shows the basic CDF information. 
 This information includes
 		+---------------+--------------------------------------------------------------------------------+
 		| ['CDF']       | the name of the CDF                                                            |
@@ -37,8 +37,7 @@ This information includes
 
 varinq(variable)
 =============
-Variable Information.  Returns a dictionary that shows the basic variable information.
-This information includes:
+Returns a dictionary that shows the basic variable information.  This information includes:
 		+-----------------+--------------------------------------------------------------------------------+
 		| ['Variable']    | the name of the variable                                                       |
 		+-----------------+--------------------------------------------------------------------------------+
@@ -62,13 +61,11 @@ This information includes:
 
 attinq( attribute = None)
 =============
-Attribute Inquiry.  Returns a python dictionary of attribute information.  
-If no attribute is provided, a list of all attributes is printed.  
+Returns a python dictionary of attribute information.  If no attribute is provided, a list of all attributes is printed.  
                    
 attget( attribute = None, entry_num = None )
 =============
-Get Single Attribute.  Returns the value of the attribute at the entry 
-number provided. A variable name can be used instead of its corresponding 
+Returns the value of the attribute at the entry number provided. A variable name can be used instead of its corresponding 
 entry number. A dictionary is returned with the following defined keys:
 
 		+-----------------+--------------------------------------------------------------------------------+
@@ -98,9 +95,10 @@ in a dictionary (in the form of 'attribute': {entry: value}
 pair) from a CDF. If there is no entry found, None is
 returned.
                    
-varget( variable = None, [epoch=None], [[starttime=None, endtime=None] | [startrec=0, endrec = None]], [,expand=True])
+varget( variable = None, [epoch=None], [[starttime=None, endtime=None] 
 =============
-Get Variable.  
+| [startrec=0, endrec = None]], [,expand=True])
+=============
 Returns the variable data. Variable can be entered either
 a name or a variable number. By default, it returns a
 'numpy.ndarray' or 'list' class object, depending on the
@@ -134,8 +132,7 @@ data type is assumed. If either the start or end record is not
 specified, the range starts at 0 or/and ends at the last of the
 written data.  
 
-Note: CDF's CDF_EPOCH16 data type uses 2 8-byte doubles for each data value.
-      In Python, each vale is presented as a complex or numpy.complex128.
+Note: CDF's CDF_EPOCH16 data type uses 2 8-byte doubles for each data value.  In Python, each vale is presented as a complex or numpy.complex128.
 
 epochrange( epoch, [starttime=None, endtime=None])
 =============
@@ -150,54 +147,63 @@ data either written or found in the time range.
 CDF Epoch 
 ##########
 
-This module also imports CDFepoch that handles CDF-based epochs.
+importing cdflib also imports the module CDFepoch, which handles CDF-based epochs.
 
 There are three (3) epoch data types in CDD: CDF_EPOCH, CDF_EPOCH16 and 
-CDF_TIME_TT2000. CDF_EPOCH is milliseconds since Year 0. CDF_EPOCH16
-is picoseconds since Year 0. CDF_TIME_TT2000 (TT2000 as short) is 
-nanoseconds since J2000 with leap seconds. CDF_EPOCH is a single double
-(as float in Python), CDF_EPOCH16 is 2-doubles (as complex in Python),
-and TT2000 is 8-byte integer (as int in Python). In Numpy, they are 
-np.float64, np.complex128 and np.int64, respectively. All these epoch
-values can come from from CDF.varget function.
+CDF_TIME_TT2000. 
+
+CDF_EPOCH is milliseconds since Year 0. 
+
+CDF_EPOCH16 is picoseconds since Year 0. 
+
+CDF_TIME_TT2000 (TT2000 as short) is nanoseconds since J2000 with leap seconds. 
+
+CDF_EPOCH is a single double(as float in Python), CDF_EPOCH16 is 2-doubles (as complex in Python),
+and TT2000 is 8-byte integer (as int in Python). In Numpy, they are np.float64, np.complex128 and np.int64, respectively. 
+All these epoch values can come from from CDF.varget function.
 
 Four main functions are provided:
 
 encode (epochs, iso_8601=False)
 =============
 Encodes the epoch(s) into UTC string(s).
-For CDF_EPOCH: The input should be either a float or list of floats
-			(in numpy, a np.float64 or a np.ndarray of np.float64)
-			Each epoch is encoded, by default to a ISO 8601 form:
-			2004-05-13T15:08:11.022 
-			Or, if iso_8601 is set to False,
-			13-May-2004 15:08:11.022
-For CDF_EPOCH16: The input should be either a complex or list of 
-			  complex
-			  (in numpy, a np.complex128 or a np.ndarray of 
-			   np.complex128)
-			  Each epoch is encoded, by default to a ISO 8601 form:
-			  2004-05-13T15:08:11.022033044055 
-			  Or, if iso_8601 is set to False,
-			  13-May-2004 15:08:11.022.033.044.055
-For TT2000: The input should be either a int or list of ints
-		 (in numpy, a np.int64 or a np.ndarray of np.int64)
-		 Each epoch is encoded, by default to a ISO 8601 form:
-		 2008-02-02T06:08:10.10.012014016
-		 Or, if iso_8601 is set to False,
-		 02-Feb-2008 06:08:10.012.014.016
+	For CDF_EPOCH: 
+				The input should be either a float or list of floats
+				(in numpy, a np.float64 or a np.ndarray of np.float64)
+				Each epoch is encoded, by default to a ISO 8601 form:
+				2004-05-13T15:08:11.022 
+				Or, if iso_8601 is set to False,
+				13-May-2004 15:08:11.022
+	For CDF_EPOCH16: 
+				  The input should be either a complex or list of 
+				  complex(in numpy, a np.complex128 or a np.ndarray of np.complex128)
+				  Each epoch is encoded, by default to a ISO 8601 form:
+				  2004-05-13T15:08:11.022033044055 
+				  Or, if iso_8601 is set to False,
+				  13-May-2004 15:08:11.022.033.044.055
+	For TT2000: 
+			 The input should be either a int or list of ints
+			 (in numpy, a np.int64 or a np.ndarray of np.int64)
+			 Each epoch is encoded, by default to a ISO 8601 form:
+			 2008-02-02T06:08:10.10.012014016
+			 Or, if iso_8601 is set to False,
+			 02-Feb-2008 06:08:10.012.014.016
 
 breakdown (epochs, to_np=False)
 =============
 Breaks down the epoch(s) into UTC components. 
-For CDF_EPOCH: they are 7 date/time components: year, month, day,
-			hour, minute, second, and millisecond
-For CDF_EPOCH16: they are 10 date/time components: year, month, day,
-			  hour, minute, second, and millisecond, microsecond,
-			  nanosecond, and picosecond.
-For TT2000: they are 9 date/time components: year, month, day,
-		 hour, minute, second, millisecond, microsecond, 
-		 nanosecond.
+	For CDF_EPOCH: 
+				they are 7 date/time components: year, month, day,
+				hour, minute, second, and millisecond
+	For CDF_EPOCH16: 
+				  they are 10 date/time components: year, month, day,
+				  hour, minute, second, and millisecond, microsecond,
+				  nanosecond, and picosecond.
+	For TT2000: 
+			 they are 9 date/time components: year, month, day,
+			 hour, minute, second, millisecond, microsecond, 
+			 nanosecond.
+			 
 Specify to_np to True, if the result should be in numpy array.
 
 compute[_epoch/_epoch16/_tt200] (datetimes, to_np=False)
