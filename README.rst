@@ -1,5 +1,4 @@
-This is a python script to read CDF V3 files
-without needing to install the CDF NASA library.  
+This is a python script to read CDF V3 files without needing to install the CDF NASA library.  
 
 ##########
 CDF Class
@@ -7,7 +6,7 @@ CDF Class
 
 
 To open a CDF file, create a new CDF class variable::
-	import pds_cdf
+    import pds_cdf
     swea_cdf_file = pds_cdf.CDF('/path/to/swea_file.cdf')
 	
 Then, you can call the following commands on the variable below.  For example::
@@ -95,9 +94,7 @@ in a dictionary (in the form of 'attribute': {entry: value}
 pair) from a CDF. If there is no entry found, None is
 returned.
                    
-varget( variable = None, [epoch=None], [[starttime=None, endtime=None] 
-=============
-| [startrec=0, endrec = None]], [,expand=True])
+varget( variable = None, [epoch=None], [[starttime=None, endtime=None] | [startrec=0, endrec = None]], [,expand=True])
 =============
 Returns the variable data. Variable can be entered either
 a name or a variable number. By default, it returns a
