@@ -37,7 +37,8 @@ This information includes
 varinq(variable)
 =============
 	
-Returns a dictionary that shows the basic variable information.  This information includes
+Returns a dictionary that shows the basic variable information.  
+This information includes
 		+-----------------+--------------------------------------------------------------------------------+
 		| ['Variable']    | the name of the variable                                                       |
 		+-----------------+--------------------------------------------------------------------------------+
@@ -56,7 +57,7 @@ Returns a dictionary that shows the basic variable information.  This informatio
 		| ['Sparse']      | the variable's record sparseness                                               |
 		+-----------------+--------------------------------------------------------------------------------+
 		| ['Last_Rec']    | the maximum written record number (0-based)                                    |
-		+-----------------+--------------------------------------------------------------------------------+	  
+		+-----------------+--------------------------------------------------------------------------------+
 
 
 attinq( attribute = None)
@@ -83,7 +84,7 @@ entry number. A dictionary is returned with the following defined keys
 varattsget(variable = None)
 =============
 	
-Get All Variable Attributes. 
+Gets all variable attributes. 
 Unlike attget, which returns a single attribute entry value,
 this function returns all of the variable attribute entries,
 in a dictionary (in the form of 'attribute': value pair) for
@@ -93,7 +94,7 @@ If no variable name is provided, a list of variables are printed.
 globalattsget()
 =============
 	
-Get All Global Attributes.  
+Gets all global attributes.  
 This function returns all of the global attribute entries,
 in a dictionary (in the form of 'attribute': {entry: value}
 pair) from a CDF. If there is no entry found, None is
@@ -134,7 +135,7 @@ data type is assumed. If either the start or end record is not
 specified, the range starts at 0 or/and ends at the last of the
 written data.  
 
-Note: CDF's CDF_EPOCH16 data type uses 2 8-byte doubles for each data value.  In Python, each vale is presented as a complex or numpy.complex128.
+Note: CDF's CDF_EPOCH16 data type uses 2 8-byte doubles for each data value.  In Python, each value is presented as a complex or numpy.complex128.
 
 epochrange( epoch, [starttime=None, endtime=None])
 =============
@@ -217,45 +218,46 @@ compute[_epoch/_epoch16/_tt200] (datetimes, to_np=False)
 
 Computes the provided date/time components into CDF epoch value(s).
 
-For CDF_EPOCH: 
-	For computing into CDF_EPOCH value, each date/time elements should 
-	have exactly seven (7) components, as year, month, day, hour, minute,
-	second and millisecond, in a list. For example:
-	[[2017,1,1,1,1,1,111],[2017,2,2,2,2,2,222]]
-	Or, call function compute_epoch directly, instead, with at least three
-	(3) first (up to seven) components. The last component, if
-	not the 7th, can be a float that can have a fraction of the unit.
+	For CDF_EPOCH: 
+		For computing into CDF_EPOCH value, each date/time elements should 
+		have exactly seven (7) components, as year, month, day, hour, minute,
+		second and millisecond, in a list. For example:
+		[[2017,1,1,1,1,1,111],[2017,2,2,2,2,2,222]]
+		Or, call function compute_epoch directly, instead, with at least three
+		(3) first (up to seven) components. The last component, if
+		not the 7th, can be a float that can have a fraction of the unit.
 
-For CDF_EPOCH16:
-	They should have exactly ten (10) components, as year, 
-	month, day, hour, minute, second, millisecond, microsecond, nanosecond 
-	and picosecond, in a list. For example:
-	[[2017,1,1,1,1,1,123,456,789,999],[2017,2,2,2,2,2,987,654,321,999]]
-	Or, call function compute_epoch directly, instead, with at least three
-	(3) first (up to ten) components. The last component, if
-	not the 10th, can be a float that can have a fraction of the unit.
+	For CDF_EPOCH16:
+		They should have exactly ten (10) components, as year, 
+		month, day, hour, minute, second, millisecond, microsecond, nanosecond 
+		and picosecond, in a list. For example:
+		[[2017,1,1,1,1,1,123,456,789,999],[2017,2,2,2,2,2,987,654,321,999]]
+		Or, call function compute_epoch directly, instead, with at least three
+		(3) first (up to ten) components. The last component, if
+		not the 10th, can be a float that can have a fraction of the unit.
 
-For TT2000:
-	Each TT2000 typed date/time should have exactly nine (9) components, as 
-	year, month, day, hour, minute, second, millisecond, microsecond, 
-	and nanosecond, in a list.  For example:
-	[[2017,1,1,1,1,1,123,456,789],[2017,2,2,2,2,2,987,654,321]]
-	Or, call function compute_tt2000 directly, instead, with at least three
-	(3) first (up to nine) components. The last component, if
-	not the 9th, can be a float that can have a fraction of the unit.
+	For TT2000:
+		Each TT2000 typed date/time should have exactly nine (9) components, as 
+		year, month, day, hour, minute, second, millisecond, microsecond, 
+		and nanosecond, in a list.  For example:
+		[[2017,1,1,1,1,1,123,456,789],[2017,2,2,2,2,2,987,654,321]]
+		Or, call function compute_tt2000 directly, instead, with at least three
+		(3) first (up to nine) components. The last component, if
+		not the 9th, can be a float that can have a fraction of the unit.
 
 Specify to_np to True, if the result should be in numpy class.
 
 findepochrange (epochs, starttime=None, endtime=None)
 =============
 
-	Finds the record range within the start and end time from values 
-	of a CDF epoch data type. It returns a list of record numbers. 
-	If the start time is not provided, then it is 
-	assumed to be the minimum possible value. If the end time is not 
-	provided, then the maximum possible value is assumed. The epoch is
-	assumed to be in the chronological order. The start and end times
-	should have the proper number of date/time components, corresponding
-	to the epoch's data type.
+Finds the record range within the start and end time from values 
+of a CDF epoch data type. It returns a list of record numbers. 
+If the start time is not provided, then it is 
+assumed to be the minimum possible value. If the end time is not 
+provided, then the maximum possible value is assumed. The epoch is
+assumed to be in the chronological order. The start and end times
+should have the proper number of date/time components, corresponding
+to the epoch's data type.
 
-Author: Bryan Harter, Michael Liu
+
+Authors: Bryan Harter, Michael Liu
