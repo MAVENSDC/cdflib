@@ -4,13 +4,17 @@ This is a python script to read CDF V3 files without needing to install the CDF 
 CDF Class
 ##########
 
-test
-	import pds_cdf
-	swea_cdf_file = pds_cdf.CDF('/path/to/swea_file.cdf')
+To begin accessing the data within a CDF file, first create a new CDF class.  
+This can be done with the following commands::
+	import cdflib
 	
-Then, you can call the following commands on the variable below.  For example::
+	cdf_file = cdflib.CDF('/path/to/cdf_file.cdf')
+	
+Then, you can call various functions on the variable.  For example::
 
-	x = swea_cdf_file.varget("NameOfVariable", startrec = 0, endrec = 150)
+	x = cdf_file.varget("NameOfVariable", startrec = 0, endrec = 150)
+
+This command will return all data inside of the variable "Variable1", from records 0 to 150.  Below is a list of the 8 different functions you can call.   
 
 cdf_info()
 =============
