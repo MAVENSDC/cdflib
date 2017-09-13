@@ -275,11 +275,13 @@ to the epoch's data type.
 Caveats
 ##########
 
--This library currently only handles the GZIP compression for both variables and files.  The other 3 compression types (RLE, HUFF, AHUFF) are not yet supported.
--This module assumes VXRs list records in order.  For example the pointer to records 0-100 comes first, followed by 100-200, then 200-300, etc.  While nearly all CDF files have the records in order, there is no requirement for this.  
--The variable type "EPOCH16" is being stored as a np.complex128 type.  The real component is the first double, and the imaginary component is the second.  
+Here is a list of things to take note of before using cdflib.  
 
+- This library currently only handles the GZIP compression for both variables and files.  The other 3 compression types (RLE, HUFF, AHUFF) are not yet supported.
 
+- This module assumes VXRs list records in order.  For example the pointer to records 0-100 comes first, followed by 100-200, then 200-300, etc.  While nearly all CDF files have the records in order, there is no requirement for this.  
+
+- The variable type "EPOCH16" is being stored as a np.complex128 type.  The real component is the first double, and the imaginary component is the second.  
 
 
 
