@@ -157,8 +157,7 @@ CDFepoch
 ##########
 
 Importing cdflib also imports the module CDFepoch, which handles CDF-based epochs.  
-The following functions can be used to convert back and forth between different ways to display the date.  
-
+The following functions can be used to convert back and forth between different ways to display the date.
 You can call these functions like so::
 	import cdflib
 	
@@ -279,7 +278,7 @@ Here is a list of things to take note of before using cdflib.
 
 - This library currently only handles the GZIP compression for both variables and files.  The other 3 compression types (RLE, HUFF, AHUFF) are not yet supported.
 
-- This module assumes VXRs list records in order.  For example the pointer to records 0-100 comes first, followed by 100-200, then 200-300, etc.  While nearly all CDF files have the records in order, there is no requirement for this.  
+- This module assumes VXRs list the VVRs in order.  For example the pointer to records 0-100 comes first, followed by 101-200, then 201-300, etc.  While nearly all CDF files have the records in order, there is no requirement for this.  
 
 - The variable type "EPOCH16" is being stored as a np.complex128 type.  The real component is the first double, and the imaginary component is the second.  
 
