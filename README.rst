@@ -149,14 +149,22 @@ corresponding starting and ending records within the time
 range from the epoch data. A None is returned if there is no
 data either written or found in the time range.
 
-					
+
+
+
 ##########
-CDF Epoch 
+CDFepoch 
 ##########
 
-Importing cdflib also imports the module CDFepoch, which handles CDF-based epochs.
+Importing cdflib also imports the module CDFepoch, which handles CDF-based epochs.  
+The following functions can be used to convert back and forth between different ways to display the date.  
 
-There are three (3) epoch data types in CDD: CDF_EPOCH, CDF_EPOCH16 and 
+You can call these functions like so::
+	import cdflib
+	
+	cdf_file = cdflib.cdfepoch.compute_epoch16([2017,1,1,1,1,1,111])
+
+There are three (3) epoch data types in CDF: CDF_EPOCH, CDF_EPOCH16 and 
 CDF_TIME_TT2000. 
 
 - CDF_EPOCH is milliseconds since Year 0. 
@@ -262,6 +270,18 @@ provided, then the maximum possible value is assumed. The epoch is
 assumed to be in the chronological order. The start and end times
 should have the proper number of date/time components, corresponding
 to the epoch's data type.
+
+##########
+Caveats
+##########
+
+-This library currently only handles the GZIP compression for both variables and files.  The other 3 compression types (RLE, HUFF, AHUFF) are not yet supported.
+-This module assumes VXRs list records in order.  For example the pointer to records 0-100 comes first, followed by 100-200, then 200-300, etc.  While nearly all CDF files have the records in order, there is no requirement for this.  
+-The variable type "EPOCH16" is being stored as a np.complex128 type.  The real component is the first double, and the imaginary component is the second.  
+
+
+
+
 
 
 Authors: Bryan Harter, Michael Liu
