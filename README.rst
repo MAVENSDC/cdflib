@@ -1,5 +1,11 @@
 This is a python script to read CDF V3 files without needing to install the CDF NASA library.  
 
+You will need Python version 3, as well as the Numpy library to use this module.  
+
+To install, open up your terminal/command prompt, and type::
+
+	pip install cdflib
+
 ##########
 CDF Class
 ##########
