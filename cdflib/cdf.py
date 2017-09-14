@@ -1,114 +1,161 @@
-"""
-pds_cdf.py
+'''
+This is a python script to read CDF V3 files without needing to install the CDF NASA library.  
 
-    This is a python script to read CDF files
-without needing to install the CDF NASA library.
-    This Python code only supports V3 CDFs (not compressed at the CDF-level).
-    This code is based on Python 3. 
+You will need Python version 3, as well as the Numpy library to use this module.  
 
-    Creates a CDF file variable, and then access the variable with 
-the commands:
+To install, open up your terminal/command prompt, and type::
 
-CDF Inquiry:  cdf_info()
-              Returns a dictionary that shows the basic CDF information. This
-              information includes:
-              ['CDF']: the name of the CDF
-              ['Version']: the version of the CDF
-              ['Encoding']: the endianness of the CDF
-              ['Majority']: the row/column majority
-              ['zVariables']: the dictionary for zVariable numbers and their
-                              corresponding names
-              ['rVariables']: the dictionary for rVariable numbers and their
-                              corresponding names
-              ['Attributes']: the dictionary for attribute numbers and their
-                              corresponding names and scopes
+    pip install cdflib
+
+##########
+CDF Class
+##########
+
+To begin accessing the data within a CDF file, first create a new CDF class.  
+This can be done with the following commands::
+    import cdflib
+    
+    cdf_file = cdflib.CDF('/path/to/cdf_file.cdf')
+    
+Then, you can call various functions on the variable.  For example::
+
+    x = cdf_file.varget("NameOfVariable", startrec = 0, endrec = 150)
+
+This command will return all data inside of the variable "Variable1", from records 0 to 150.  Below is a list of the 8 different functions you can call.   
+
+cdf_info()
+=============
+    
+Returns a dictionary that shows the basic CDF information. 
+This information includes
+        +---------------+--------------------------------------------------------------------------------+
+        | ['CDF']       | the name of the CDF                                                            |
+        +---------------+--------------------------------------------------------------------------------+
+        | ['Version']   | the version of the CDF                                                         |
+        +---------------+--------------------------------------------------------------------------------+
+        | ['Encoding']  | the endianness of the CDF                                                      |
+        +---------------+--------------------------------------------------------------------------------+
+        | ['Majority']  | the row/column majority                                                        |
+        +---------------+--------------------------------------------------------------------------------+
+        | ['zVariables']| the dictionary for zVariable numbers and their corresponding names             |
+        +---------------+--------------------------------------------------------------------------------+
+        | ['rVariables']| the dictionary for rVariable numbers and their corresponding names             |
+        +---------------+--------------------------------------------------------------------------------+
+        | ['Attributes']| the dictionary for attribute numbers and their corresponding names and scopes  |
+        +---------------+--------------------------------------------------------------------------------+
+          
+
+varinq(variable)
+=============
+    
+Returns a dictionary that shows the basic variable information.  
+This information includes
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Variable']    | the name of the variable                                                       |
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Num']         | the variable number                                                            |
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Var_Type']    | the variable type: zVariable or rVariable                                      |
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Data_Type']   | the variable's CDF data type                                                   |
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Num_Elements']| the number of elements of the variable                                         |
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Num_Dims']    | the dimensionality of the variable record                                      |
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Dim_Sizes']   | the shape of the variable record                                               |
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Sparse']      | the variable's record sparseness                                               |
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Last_Rec']    | the maximum written record number (0-based)                                    |
+        +-----------------+--------------------------------------------------------------------------------+
 
 
-Variable Information:
-              var_info(variable)
-              Returns a dictionary that shows the basic variable information.
-              This information includes:
-              ['Variable']: the name of the variable
-              ['Num']: the variable number
-              ['Var_Type']: the variable type: zVariable or rVariable
-              ['Data_Type']: the variable's CDF data type
-              ['Num_Elements']: the number of elements of the variable
-              ['Num_Dims']: the dimensionality of the variable record
-              ['Dim_Sizes']: the shape of the variable record
-              ['Sparse']: the variable's record sparseness
-              ['Last_Rec']: the maximum written record number (0-based)
-
-
-Attribute Inquiry:  attinq( attribute )
-                    Returns a python dictionary of attribute information
+attinq( attribute = None)
+=============
+    
+Returns a python dictionary of attribute information.  If no attribute is provided, a list of all attributes is printed.  
                    
-Get Attribute(s):   attget( attribute, entry_number|variable_name [,to_dict=True] )
-                    Returns the value of the attribute at the entry number
-                    provided.  For a variable attribute, variable name can be
-                    used, instead of its corresponding entry number. By
-                    default, it returns a 'numpy.ndarray', 'list' or 'str' 
-                    class object, depending on the attribute data and its data
-                    type. If to_dict is set as True, a dictionary is returned
-                    with the following defined keys:
-                    ['Item_Size']: the number of bytes for each entry value
-                    ['Num_Items']: total number of values extracted
-                    ['Data_Type']: the CDF data type
-                    ['Data']: retrieved attribute data as a scalar value, a
-                              list of values or a string
+attget( attribute = None, entry = None )
+=============
+    
+Returns the value of the attribute at the entry number provided. A variable name can be used instead of its corresponding 
+entry number. A dictionary is returned with the following defined keys
 
-                    varattsget(variable)
-                    Unlike attget, which returns a single attribute entry value,
-                    this function returns all of the variable attribute entries,
-                    in a dictionary (in the form of 'attribute': value pair) for
-                    a variable. If there is no entry found, None is returned.
-                   
-                    globalattsget()
-                    This function returns all of the global attribute entries,
-                    in a dictionary (in the form of 'attribute': {entry: value}
-                    pair) from a CDF. If there is no entry found, None is
-                    returned.
-                   
-Variable Inquiry:   varinq( variable )
-                    Returns a python dictionary of variable information 
-                   
-Get Variable:       varget( variable, [epoch=None], [[starttime=None, 
-                            endtime=None] | [startrec=None, endrec = None]],
-                            [,to_dict=True])
-                    Returns the variable data. Variable can be entered either
-                    a name or a variable number. By default, it returns a
-                    'numpy.ndarray' or 'list' class object, depending on the
-                    data type, with the variable data and its specification.
-                    If to_dict is set as True, a dictionary is returned
-                    with the following defined keys for the output:
-                    ['Rec_Ndim']: the dimension number of each variable record
-                    ['Rec_Shape']: the shape of the variable record dimensions
-                    ['Num_Records']: the number of the retrieved records
-                    ['Item_Size']: the number of bytes for each data value
-                    ['Data_Type']: the CDF data type
-                    ['Data']: retrieved variable data, a list of values
-                              reflecting how they are stored in the file.
-                    By default, the full variable data is returned. To acquire
-                    only a portion of the data for a record-varying variable,
-                    either the time or record (0-based) range can be specified.
-                    'epoch' can be used to specify which time variable this 
-                    variable depends on and is to be searched for the time range.
-                    For the ISTP-compliant CDFs, the time variable will come from
-                    the attribute 'DEPEND_0' from this variable. The function will
-                    automatically search for it thus no need to specify 'epoch'.
-                    If either the start or end time is not specified,
-                    the possible minimum or maximum value for the specific epoch
-                    data type is assumed. If either the start or end record is not
-                    specified, the range starts at 0 or/and ends at the last of the
-                    written data.  
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Item_Size']   | the number of bytes for each entry value                                       |
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Num_Items']   | total number of values extracted                                               |
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Data_Type']   | the CDF data type                                                              |
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Data']        | retrieved attribute data as a scalar value, a numpy array or a string          |
+        +-----------------+--------------------------------------------------------------------------------+
 
-Note: CDF's CDF_EPOCH16 data type uses 2 8-byte doubles for each data value.
-      In Python, each vale is presented as a complex or numpy.complex128.
+varattsget(variable = None)
+=============
+    
+Gets all variable attributes. 
+Unlike attget, which returns a single attribute entry value,
+this function returns all of the variable attribute entries,
+in a dictionary (in the form of 'attribute': value pair) for
+a variable. If there is no entry found, None is returned.
+If no variable name is provided, a list of variables are printed.  
+               
+globalattsget()
+=============
+    
+Gets all global attributes.  
+This function returns all of the global attribute entries,
+in a dictionary (in the form of 'attribute': {entry: value}
+pair) from a CDF. If there is no entry found, None is
+returned.
+                   
+varget( variable = None, [epoch=None], [[starttime=None, endtime=None] | [startrec=0, endrec = None]], [,expand=True])
+=============
+Returns the variable data. Variable can be entered either
+a name or a variable number. By default, it returns a
+'numpy.ndarray' or 'list' class object, depending on the
+data type, with the variable data and its specification.
 
-Get epoch range:    epochrange( epoch, [starttime=None, endtime=None])
-                    Returns a list of the record numbers, representing the
-                    corresponding starting and ending records within the time
-                    range from the epoch data. A None is returned if there is no
-                    data either written or found in the time range.
+If "expand" is set as True, a dictionary is returned
+with the following defined keys for the output
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Rec_Ndim']    | the dimension number of each variable record                                   |
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Rec_Shape']   | the shape of the variable record dimensions                                    |
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Num_Records'] | the number of the retrieved records                                            |
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Data_Type']   | the CDF data type                                                              |
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Data']        | retrieved variable data                                                        |
+        +-----------------+--------------------------------------------------------------------------------+
+        
+By default, the full variable data is returned. To acquire
+only a portion of the data for a record-varying variable,
+either the time or record (0-based) range can be specified.
+'epoch' can be used to specify which time variable this 
+variable depends on and is to be searched for the time range.
+For the ISTP-compliant CDFs, the time variable will come from
+the attribute 'DEPEND_0' from this variable. The function will
+automatically search for it thus no need to specify 'epoch'.
+If either the start or end time is not specified,
+the possible minimum or maximum value for the specific epoch
+data type is assumed. If either the start or end record is not
+specified, the range starts at 0 or/and ends at the last of the
+written data.  
+
+Note: CDF's CDF_EPOCH16 data type uses 2 8-byte doubles for each data value.  In Python, each value is presented as a complex or numpy.complex128.
+
+epochrange( epoch, [starttime=None, endtime=None])
+=============
+Get epoch range. 
+Returns a list of the record numbers, representing the
+corresponding starting and ending records within the time
+range from the epoch data. A None is returned if there is no
+data either written or found in the time range.
+
 
 Sample use - 
 
@@ -119,7 +166,8 @@ Sample use -
     swea_cdf_file.close()
 
 @author: Bryan Harter, Michael Liu
-"""
+'''
+
 
 import os
 import numpy as np
@@ -262,7 +310,7 @@ class CDF(object):
                 name = list(attrs[x].keys())[0]
                 print('NAME: ' + name + ' NUMBER: ' + str(x) + ' SCOPE: ' + attrs[x][name])
                 
-    def attget(self, attribute = None, entry_num = None):
+    def attget(self, attribute = None, entry = None):
         
         #Starting position
         position = self._first_adr
@@ -284,7 +332,7 @@ class CDF(object):
             if (attribute < 0) or (attribute > self._num_att):
                 print('No attribute by this number:',attribute)
                 return
-            if not isinstance(entry_num, int):
+            if not isinstance(entry, int):
                 print('Entry has to be a number...')
                 return
             for _ in range(0, attribute):
@@ -300,23 +348,24 @@ class CDF(object):
                 position=next_adr
             return
                     
-        #Find the correct entry from entry_num
+        #Find the correct entry from the "entry" variable
         if adr_info['scope'] == 1:
-            if not isinstance(entry_num, int):
+            if not isinstance(entry, int):
                 print('Global entry should be an integer')
                 return
             num_entry_string = 'num_gr_entry'
             first_entry_string = 'first_gr_entry'
             max_entry_string = 'max_gr_entry'
+            entry_num = entry
         else:
             var_num = -1
             zvar = False
-            if isinstance(entry_num, str):
+            if isinstance(entry, str):
                 # a zVariable?
                 positionx = self._first_zvariable
                 for x in range(0, self._num_zvariable):
                     name, vdr_next = self._read_vdr_fast(positionx)
-                    if (name.strip().lower() == entry_num.strip().lower()):
+                    if (name.strip().lower() == entry.strip().lower()):
                         var_num = x
                         zvar = True
                         break
@@ -326,12 +375,12 @@ class CDF(object):
                     positionx = self._first_rvariable
                     for x in range(0, self._num_rvariable):
                         name, vdr_next = self._read_vdr_fast(positionx)
-                        if (name.strip().lower() == entry_num.strip().lower()):
+                        if (name.strip().lower() == entry.strip().lower()):
                             var_num = x
                             break
                         positionx = vdr_next
                 if var_num == -1:
-                    print('No variable by this name:',entry_num)
+                    print('No variable by this name:',entry)
                     return
                 entry_num = var_num
             else:
@@ -340,6 +389,7 @@ class CDF(object):
                     return
                 if self._num_zvariable > 0:
                     zvar = True
+                entry_num = entry
             if zvar:
                 num_entry_string = 'num_z_entry'
                 first_entry_string = 'first_z_entry'
@@ -348,7 +398,7 @@ class CDF(object):
                 num_entry_string = 'num_gr_entry'
                 first_entry_string = 'first_gr_entry'
                 max_entry_string = 'max_gr_entry'
-        if entry_num > adr_info[max_entry_string]:
+        if entry > adr_info[max_entry_string]:
             print('The entry does not exist')
             return
         return self._get_attdata(adr_info, entry_num, adr_info[num_entry_string],
