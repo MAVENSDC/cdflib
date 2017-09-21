@@ -398,7 +398,7 @@ class CDF(object):
                 num_entry_string = 'num_gr_entry'
                 first_entry_string = 'first_gr_entry'
                 max_entry_string = 'max_gr_entry'
-        if entry > adr_info[max_entry_string]:
+        if entry_num > adr_info[max_entry_string]:
             print('The entry does not exist')
             return
         return self._get_attdata(adr_info, entry_num, adr_info[num_entry_string],

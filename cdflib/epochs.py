@@ -25,7 +25,7 @@ All these epoch values can come from from CDF.varget function.
 
 Four main functions are provided 
 
-encode (epochs, iso_8601=False)
+encode (epochs, iso_8601=True)
 =============
 
 Encodes the epoch(s) into UTC string(s).
@@ -222,7 +222,7 @@ class CDFepoch(object):
             print('Bad input')
             return None
 
-    def breakdown(self, epochs, to_np=None):
+    def breakdown(self, epochs, to_np=False):
 
         if (isinstance(epochs, int) or isinstance(epochs, np.int64)):
             return self.breakdown_tt2000(epochs, to_np)
@@ -246,7 +246,21 @@ class CDFepoch(object):
             print('Bad input')
             return None
 
-    def compute(self, datetimes, to_np=None):
+    def unixtime(self, epochs, to_np=False):
+        import datetime
+        time_list = self.breakdown(epochs, to_np=False)
+        unixtime = [] 
+        for t in time_list:
+            del t[8:]
+            if len(t) == 8:
+                t[7] = (t[6]*1000)+t[7]
+                del t[7]
+            else:
+                t[6] = 1000*t[6]
+            unixtime.append(datetime.datetime(*t).replace(tzinfo=datetime.timezone.utc).timestamp())
+        return np.array(unixtime) if to_np else unixtime
+
+    def compute(self, datetimes, to_np=False):
 
         if (not isinstance(datetimes, list) and
            not isinstance(datetimes, np.ndarray)):
@@ -381,7 +395,7 @@ class CDFepoch(object):
                 encodeds.append(encoded)
         return encodeds
 
-    def breakdown_tt2000(self, tt2000, to_np=None):
+    def breakdown_tt2000(self, tt2000, to_np=False):
 
         if (isinstance(tt2000, int) or isinstance(tt2000, np.int64)):
             new_tt2000 = [tt2000]
@@ -499,18 +513,18 @@ class CDFepoch(object):
             datetime.append(ma1)
             datetime.append(na1)
             if (count == 1):
-                if (to_np == None):
+                if not to_np:
                     return datetime
                 else:
                     return np.array(datetime)
             else:
                 toutcs.append(datetime)
-        if (to_np == None):
+        if not to_np:
             return toutcs
         else:
             return np.array(toutcs)
     
-    def compute_tt2000(self, datetimes, to_np=None):
+    def compute_tt2000(self, datetimes, to_np=False):
     
         if (not isinstance(datetimes, list)):
             print('datetime must be in list form')
@@ -639,13 +653,13 @@ class CDFepoch(object):
                     nanoSecSinceJ2000 = int(nanoSecSinceJ2000 + 
                                             self.dTinNanoSecs)
             if (count == 1):
-                if (to_np == None):
+                if not to_np:
                     return int(nanoSecSinceJ2000)
                 else:
                     return np.array(int(nanoSecSinceJ2000))
             else:
                 nanoSecSinceJ2000s.append(int(nanoSecSinceJ2000))  
-        if (to_np == None):
+        if not to_np:
             return nanoSecSinceJ2000s
         else:
             return np.array(nanoSecSinceJ2000s)
@@ -849,7 +863,7 @@ class CDFepoch(object):
         a3 = int(275*m/9)
         return (367*y - a1 - a2 + a3 + d + 1721029)
 
-    def compute_epoch16(self, datetimes, to_np=None):
+    def compute_epoch16(self, datetimes, to_np=False):
 
         if (not isinstance(datetimes, list)):
             print('Bad input')
@@ -1003,18 +1017,18 @@ class CDFepoch(object):
                 epoch.append(epoch16_1)
             cepoch = complex(epoch[0], epoch[1])
             if (count == 1):
-                if (to_np == None):
+                if not to_np:
                     return cepoch
                 else:
                     return np.array(cepoch)
             else:
                 epochs.append(cepoch)
-        if (to_np == None):
+        if not to_np:
             return epochs
         else:
             return np.array(epochs)
 
-    def breakdown_epoch16(self, epochs, to_np=None):
+    def breakdown_epoch16(self, epochs, to_np=False):
 
         if (isinstance(epochs, complex) or 
             isinstance(epochs, np.complex128)):
@@ -1081,13 +1095,13 @@ class CDFepoch(object):
                 component.append(component_8)
                 component.append(component_9)
             if (count == 1):
-                if (to_np == None):
+                if not to_np:
                     return component
                 else:
                     return np.array(component)
             else:
                 components.append(component)
-        if (to_np == None):
+        if not to_np:
             return components
         else:
             return np.array(components)
@@ -1290,7 +1304,7 @@ class CDFepoch(object):
             encoded += str(components[6]).zfill(3)
         return encoded
 
-    def compute_epoch(self, dates, to_np=None):
+    def compute_epoch(self, dates, to_np=False):
 
         if (not isinstance(dates, list)):
             print('Bad input')
@@ -1381,12 +1395,12 @@ class CDFepoch(object):
             else:
                 msecInDay = (3600000 * hour) + (60000 * minute) + (1000 * second) + msec
             if (count == 1):
-                if (to_np == None):
+                if not to_np:
                     return (86400000.0*daysSince0AD+msecInDay)
                 else:
                     return np.array((86400000.0*daysSince0AD+msecInDay))
             epochs.append(86400000.0*daysSince0AD+msecInDay)
-        if (to_np == None):
+        if not to_np:
             return epochs
         else:
             return np.array(epochs)
