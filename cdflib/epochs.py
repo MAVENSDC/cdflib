@@ -23,7 +23,7 @@ CDF_EPOCH is a single double(as float in Python), CDF_EPOCH16 is 2-doubles (as c
 and TT2000 is 8-byte integer (as int in Python). In Numpy, they are np.float64, np.complex128 and np.int64, respectively. 
 All these epoch values can come from from CDF.varget function.
 
-Four main functions are provided 
+Five main functions are provided 
 
 encode (epochs, iso_8601=True)
 =============
@@ -51,6 +51,14 @@ Encodes the epoch(s) into UTC string(s).
              2008-02-02T06:08:10.10.012014016
              Or, if iso_8601 is set to False,
              02-Feb-2008 06:08:10.012.014.016
+
+unixtime (epochs, to_np=False)
+=============
+
+Encodes the epoch(s) into seconds after 1970-01-01.  Precision is only 
+kept to the nearest microsecond.  
+
+If to_np is True, then the values will be returned in a numpy array.  
 
 breakdown (epochs, to_np=False)
 =============
