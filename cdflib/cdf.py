@@ -1060,8 +1060,10 @@ class CDF(object):
         numBytes = self._type_size(vdr_dict['data_type'],
                                    vdr_dict['num_elements'])
         numValues = self._num_values(vdr_dict)
-        byte_stream = b''
         
+        #Set size of byte_stream beforehand, otherwise its SUPER slow
+        byte_stream = bytearray(numBytes*numValues*(vdr_dict['max_records']+1))
+        current_pos = 0
         for vvr_num in range(0, len(vvr_offs)):
             f.seek(vvr_offs[vvr_num], 0)
             block_size = int.from_bytes(f.read(8),'big')
@@ -1075,25 +1077,35 @@ class CDF(object):
                 if (vvr_start[vvr_num] != 0):
                     fillRecs = vvr_start[vvr_num]
                     for _ in range(0, fillRecs*numValues):
-                        byte_stream += vdr_dict['pad']
+                        uncompressed_bytes = bytearray(vdr_dict['pad'])
+                        byte_stream[current_pos:current_pos+len(uncompressed_bytes)] = uncompressed_bytes
+                        current_pos+=len(uncompressed_bytes)-1
                 if section_type==13:
-                    byte_stream += gzip.decompress(f.read(data_size))
+                    uncompressed_bytes = gzip.decompress(f.read(data_size))
                 elif section_type==7:
-                    byte_stream += f.read(data_size)
-                pre_data = byte_stream[len(byte_stream)-numBytes*numValues:]
+                    uncompressed_bytes = f.read(data_size)
+                byte_stream[current_pos:current_pos+len(uncompressed_bytes)] = uncompressed_bytes
+                current_pos+=len(uncompressed_bytes)-1
+                pre_data = uncompressed_bytes[len(uncompressed_bytes)-numBytes*numValues:]
             else:
                 fillRecs = vvr_start[vvr_num] - vvr_end[vvr_num -1] - 1
                 if (vdr_dict['sparse']==1):
                     for _ in range(0, fillRecs*numValues):
-                        byte_stream += vdr_dict['pad']
+                        uncompressed_bytes = bytearray(vdr_dict['pad'])
+                        byte_stream[current_pos:current_pos+len(uncompressed_bytes)] = uncompressed_bytes
+                        current_pos+=len(uncompressed_bytes)-1
                 elif (vdr_dict['sparse']==2):
                     for _ in range(0, fillRecs):
-                        byte_stream += pre_data
+                        uncompressed_bytes = pre_data
+                        byte_stream[current_pos:current_pos+len(uncompressed_bytes)] = uncompressed_bytes
+                        current_pos+=len(uncompressed_bytes)-1
                 if section_type==13:
-                    byte_stream += gzip.decompress(f.read(data_size))
+                    uncompressed_bytes = gzip.decompress(f.read(data_size))
                 elif section_type==7:
-                    byte_stream += f.read(data_size)
-                pre_data = byte_stream[len(byte_stream)-numBytes*numValues:]
+                    uncompressed_bytes = f.read(data_size)
+                byte_stream[current_pos:current_pos+len(uncompressed_bytes)] = uncompressed_bytes
+                current_pos+=len(uncompressed_bytes)-1
+                pre_data = uncompressed_bytes[len(uncompressed_bytes)-numBytes*numValues:]
         
         y = self._read_data(byte_stream, vdr_dict['data_type'],
                            vdr_dict['max_records']+1,
