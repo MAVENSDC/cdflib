@@ -467,7 +467,7 @@ class CDF(object):
             return vdr_info
         else:
             if (vdr_info['max_records'] < 0):
-                    print('No data is written for this variable')
+                    #print('No data is written for this variable')
                     return
             return self._read_vardata(vdr_info, epoch=epoch, starttime=starttime, endtime=endtime,
                                       startrec=startrec, endrec=endrec, record_range_only=record_range_only, expand=expand)
@@ -1079,13 +1079,13 @@ class CDF(object):
                     for _ in range(0, fillRecs*numValues):
                         uncompressed_bytes = bytearray(vdr_dict['pad'])
                         byte_stream[current_pos:current_pos+len(uncompressed_bytes)] = uncompressed_bytes
-                        current_pos+=len(uncompressed_bytes)-1
+                        current_pos+=len(uncompressed_bytes)
                 if section_type==13:
                     uncompressed_bytes = gzip.decompress(f.read(data_size))
                 elif section_type==7:
                     uncompressed_bytes = f.read(data_size)
                 byte_stream[current_pos:current_pos+len(uncompressed_bytes)] = uncompressed_bytes
-                current_pos+=len(uncompressed_bytes)-1
+                current_pos+=len(uncompressed_bytes)
                 pre_data = uncompressed_bytes[len(uncompressed_bytes)-numBytes*numValues:]
             else:
                 fillRecs = vvr_start[vvr_num] - vvr_end[vvr_num -1] - 1
@@ -1093,18 +1093,18 @@ class CDF(object):
                     for _ in range(0, fillRecs*numValues):
                         uncompressed_bytes = bytearray(vdr_dict['pad'])
                         byte_stream[current_pos:current_pos+len(uncompressed_bytes)] = uncompressed_bytes
-                        current_pos+=len(uncompressed_bytes)-1
+                        current_pos+=len(uncompressed_bytes)
                 elif (vdr_dict['sparse']==2):
                     for _ in range(0, fillRecs):
                         uncompressed_bytes = pre_data
                         byte_stream[current_pos:current_pos+len(uncompressed_bytes)] = uncompressed_bytes
-                        current_pos+=len(uncompressed_bytes)-1
+                        current_pos+=len(uncompressed_bytes)
                 if section_type==13:
                     uncompressed_bytes = gzip.decompress(f.read(data_size))
                 elif section_type==7:
                     uncompressed_bytes = f.read(data_size)
                 byte_stream[current_pos:current_pos+len(uncompressed_bytes)] = uncompressed_bytes
-                current_pos+=len(uncompressed_bytes)-1
+                current_pos+=len(uncompressed_bytes)
                 pre_data = uncompressed_bytes[len(uncompressed_bytes)-numBytes*numValues:]
         
         y = self._read_data(byte_stream, vdr_dict['data_type'],
