@@ -341,12 +341,12 @@ class CDFepoch(object):
         for x in range (0, count):
             nanoSecSinceJ2000 = new_tt2000[x]
             if nanoSecSinceJ2000 == self.FILLED_TT2000_VALUE:
-                if (iso_8601 == None or iso_8601 != False):
+                if iso_8601 is None or iso_8601 is not False:
                     return '9999-12-31T23:59:59.999999999'
                 else:
                     return '31-Dec-9999 23:59:59.999.999.999'
             if nanoSecSinceJ2000 == self.DEFAULT_TT2000_PADVALUE:
-                if (iso_8601 == None or iso_8601 != False):
+                if iso_8601 is None or iso_8601 is not False:
                     return '0000-01-01T00:00:00.000000000'
                 else:
                     return '01-Jan-0000 00:00:00.000.000.000'
@@ -360,7 +360,7 @@ class CDFepoch(object):
             ll = datetime[6]
             lu = datetime[7]
             la = datetime[8]
-            if (iso_8601 == None or iso_8601 != False):
+            if (iso_8601 is None or iso_8601 is not False):
                 # yyyy-mm-ddThh:mm:ss.mmmuuunnn 
                 encoded = str(ly).zfill(4)
                 encoded += '-'
@@ -695,7 +695,7 @@ class CDFepoch(object):
         da.append(0.0)
         da.append(0.0)
         j = -1;
-        if (self.NST == None):
+        if self.NST is None:
             self._LoadLeapNanoSecondsTable()
         for i, _ in reversed(list(enumerate(self.NST))):
             if (nanosecs >= self.NST[i]):
@@ -763,7 +763,7 @@ class CDFepoch(object):
         else:
             print('Bad data')
             return None
-        if (starttime == None):
+        if starttime is None:
             stime = int(-9223372036854775807)
         else:
             if (isinstance(starttime, int) or isinstance(starttime, np.int64)):
@@ -773,7 +773,7 @@ class CDFepoch(object):
             else:
                 print('Bad start time')
                 return None
-        if (endtime != None):
+        if endtime is not None:
             if (isinstance(endtime, int) or isinstance(endtime, np.int64)):
                 etime = endtime
             elif (isinstance(endtime, list)):
@@ -808,7 +808,7 @@ class CDFepoch(object):
         for x in range(0, count):
             #complex
             if ((new_epochs[x].real == -1.0E31) and (new_epochs[x].imag == -1.0E31)):
-                if (iso_8601 == None or iso_8601 != False):
+                if iso_8601 is None or iso_8601 is not False:
                     encode = '9999-12-31T23:59:59.999999999999'
                 else:
                     encoded = '31-Dec-9999 23:59:59.999.999.999.999'
@@ -823,7 +823,7 @@ class CDFepoch(object):
     def _encodex_epoch16(self, epoch16, iso_8601=None): 
 
         components = self.breakdown_epoch16(epoch16)
-        if (iso_8601 == None or iso_8601 != False):
+        if iso_8601 is None or iso_8601 is not False:
             # year-mm-ddThh:mm:ss.mmmuuunnnppp 
             encoded = str(components[0]).zfill(4) 
             encoded += '-'
@@ -1168,7 +1168,7 @@ class CDFepoch(object):
         else:
             print('Bad data')
             return None
-        if (starttime == None):
+        if starttime is None:
             stime = []
             stime.append(-1.0E31)
             stime.append(-1.0E31)
@@ -1186,7 +1186,7 @@ class CDFepoch(object):
             else:
                 print('Bad start time')
                 return None
-        if (endtime != None):
+        if endtime is not None:
             if (isinstance(endtime, complex) or
                isinstance(endtime, np.complex128)):
                 etime = []
@@ -1508,7 +1508,7 @@ class CDFepoch(object):
         else:
             print('Bad data')
             return None
-        if (starttime == None):
+        if starttime is None:
             stime = 0.0
         else:
             if (isinstance(starttime, float) or isinstance(starttime, int) or
@@ -1519,7 +1519,7 @@ class CDFepoch(object):
             else:
                 print('Bad start time')
                 return None
-        if (endtime != None):
+        if endtime is not None:
             if (isinstance(endtime, float) or isinstance(endtime, int) or 
                 isinstance(endtime, np.float64)):
                 etime = endtime
