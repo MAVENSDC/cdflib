@@ -360,7 +360,7 @@ class CDFepoch(object):
             ll = datetime[6]
             lu = datetime[7]
             la = datetime[8]
-            if (iso_8601 is None or iso_8601 is not False):
+            if iso_8601 is None or iso_8601 is not False:
                 # yyyy-mm-ddThh:mm:ss.mmmuuunnn 
                 encoded = str(ly).zfill(4)
                 encoded += '-'
