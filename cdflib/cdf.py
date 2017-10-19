@@ -201,7 +201,7 @@ class CDF(object):
         self._reading_compressed_file  = False
         if self._compressed:
             new_path = self._uncompress_file(path)
-            if new_path == None:
+            if new_path is None:
                 print("Decompression was unsuccessful.  Only GZIP compression is currently supported.")
                 f.close()
                 return
@@ -213,7 +213,7 @@ class CDF(object):
         cdr_info = self._read_cdr(self.file.tell())
         gdr_info = self._read_gdr(self.file.tell())
 
-        if cdr_info['md5'] and (validate != None):
+        if cdr_info['md5'] and validate is not None:
             if not self._md5_validation(gdr_info['eof']):
                 print('This file fails the md5 checksum....')
                 f.close()
@@ -267,7 +267,7 @@ class CDF(object):
 
     def varinq(self, variable):
         vdr_info = self.varget(variable=variable, inq=True)
-        if vdr_info == None:
+        if vdr_info is None:
                 print("Variable name not found.")
                 return
         var = {}
@@ -325,7 +325,7 @@ class CDF(object):
                     break   
                 else:
                     position = next_adr 
-            if adr_info == None:
+            if adr_info is None:
                 print("Attribute not found.")
                 return
         elif isinstance(attribute, int):
@@ -404,19 +404,17 @@ class CDF(object):
         return self._get_attdata(adr_info, entry_num, adr_info[num_entry_string],
                                  adr_info[first_entry_string])
 
-        
     def varget(self, variable = None, epoch = None, starttime = None, 
                endtime = None, startrec = 0, endrec = None, 
                record_range_only=False, inq=False, expand=False):
         
-        if (isinstance(variable, int) and self._num_zvariable > 0 and 
-            self._num_rvariable > 0):
+        if (isinstance(variable, int) and self._num_zvariable > 0 and
+                    self._num_rvariable > 0):
             print('This CDF has both r and z variables. Use variable name')
             return
-        
-        
-        if ((starttime != None or endtime != None) and
-            (startrec != 0 or endrec != None)):
+
+        if ((starttime is not None or endtime is not None) and
+                (startrec != 0 or endrec is not None)):
             print('Can\'t specify both time and record range')
             return
         
@@ -434,7 +432,7 @@ class CDF(object):
                     position = vdr_next
                 position = self._first_zvariable
                 num_variables = self._num_zvariable
-            if vdr_info == None:
+            if vdr_info is None:
                 print("Variable name not found.")
                 return
         elif isinstance(variable, int):
@@ -1196,7 +1194,7 @@ class CDF(object):
         
         
         dt_string = self._convert_option()
-        if dimensions!=None:
+        if dimensions is not None:
             if (len(dimensions) == 1):
                 dimensions.append(1)
                 squeeze_needed = True
@@ -1211,7 +1209,7 @@ class CDF(object):
 
         if data_type==52 or data_type==51:
             #string
-            if dimensions==None:
+            if dimensions is None:
                 ret = byte_stream[0:num_recs*num_elems].decode('utf-8')
             else:
                 count = 1
@@ -1329,11 +1327,11 @@ class CDF(object):
 
         if (vdr_info['record_vary']):
             #Record varying
-            if (starttime != None or endtime != None):
+            if starttime is not None or endtime is not None:
                 recs = self._findtimerecords(vdr_info['name'], starttime, endtime, epoch = epoch)
-                if (recs == None):
+                if recs is None:
                     return None
-                if (isinstance(recs, tuple)):
+                if isinstance(recs, tuple):
                     # back from np.where command for CDF_EPOCH and TT2000
                     idx = recs[0]
                     if (len(idx) == 0):
@@ -1379,9 +1377,9 @@ class CDF(object):
 
     def _findtimerecords(self, var_name, starttime, endtime, epoch=None):
         
-        if (epoch != None):
+        if epoch is not None:
             vdr_info = self.varinq(epoch)
-            if (vdr_info == None):
+            if vdr_info is None:
                 print('Epoch not found')
                 return None
             if (vdr_info['data_type'] == 31 or vdr_info['data_type'] == 32 or
@@ -1395,7 +1393,7 @@ class CDF(object):
             else:
                 #acquire depend_0 variable
                 dependVar = self.attget('DEPEND_0', var_name)
-                if (dependVar == None):
+                if dependVar is None:
                     print('No corresponding epoch from \'DEPEND_0\' attribute ',
                           'for variable:',var_name)
                     print('Use \'epoch\' argument to specify its time-based variable')
