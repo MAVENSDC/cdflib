@@ -245,9 +245,9 @@ class CDF(object):
             self.file = None
             return
         if magic_number == 'cdf30001':
-           cdfversion = 3
+            cdfversion = 3
         else:
-           cdfversion = 2
+            cdfversion = 2
         compressed_bool = f.read(4).hex()
         self._compressed = not (compressed_bool == '0000ffff')
         self._reading_compressed_file  = False
