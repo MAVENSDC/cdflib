@@ -932,13 +932,16 @@ class CDF(object):
                     print(' [ [rec_#1, rec_#2, rec_#3,    ],') 
                     print('   [data_#1, data_#2, data_#3, ....] ]');
                     return
+                
+                #Format data into: [[recstart1, recend1, data1], 
+                #                   [recstart2,recend2,data2], ...]
                 var_data = self._make_sparse_blocks(var_spec, var_data[0],
                                                   var_data[1])
-                blocks = len(var_data)
-                for x in range (0, blocks):
+
+                for block in var_data:
                     varMaxRec = self._write_var_data_sparse(f, zVar, varNum,
                                                             dataType, numElems,
-                                                            recVary, var_data[x])
+                                                            recVary, block)
             #Update GDR MaxRec if writing an r variable
             if not zVar:
                 # GDR's rMaxRec
@@ -1131,6 +1134,8 @@ class CDF(object):
             blocks = math.ceil(recs / blockingfactor)
             nEntries = CDF.NUM_VXR_ENTRIES
             VXRhead = None
+            
+            #Loop through blocks, create VVRs/CVVRs
             for x in range(0, blocks):
                 startrec = x * blockingfactor
                 startloc = startrec * numValues * dataTypeSize
@@ -1189,10 +1194,9 @@ class CDF(object):
                 newvxrhead, newvxrtail = self._add_vxr_levels_r(f, VXRhead,
                                                                  numVXRs)
                 self._update_offset_value(f, vdr_offset+28, 8, newvxrhead)
-                self._update_offset_value(f, vdr_offset+36, 8, VXRoffset)
-                vxroff = VXRhead
+                self._update_offset_value(f, vdr_offset+36, 8, newvxrtail)
         else:
-            #Create one VVR and VXR
+            #Create one VVR and VXR, with one VXR entry
             offset = self._write_vvr(f, data)
             VXRoffset = self._write_vxr(f)
             usedEntries = self._use_vxrentry(f, VXRoffset, 0, recs-1, offset)
@@ -1205,64 +1209,120 @@ class CDF(object):
 
     def _write_var_data_sparse(self, f, zVar, var, dataType, numElems, recVary,
                                oneblock):
+        '''
+        Writes a VVR and a VXR for this block of sparse data
+        
+        Parameters:
+            f : file
+                The open CDF file
+            zVar : bool
+                True if this is for a z variable
+            var : int
+                The variable number
+            dataType : int
+                The CDF data type of this variable
+            numElems : str
+                The number of elements in each record
+            recVary : bool
+                True if the value varies across records
+            oneblock: list
+                A list of data in the form [startrec, endrec, [data]]
+        
+        Returns:
+            recend : int
+                Just the "endrec" value input by the user in "oneblock"
+        '''
+        
         rec_start = oneblock[0]
         rec_end = oneblock[1]
         indata = oneblock[2]
         numValues = self._num_values(zVar, var)
-        recs, data = self._convert_data(dataType, numElems, numValues, indata)
-        if (zVar == True):
-           vdr_offset = self.zvarsinfo[var][1]
+        
+        #Convert oneblock[2] into a byte stream
+        _, data = self._convert_data(dataType, numElems, numValues, indata)
+        
+        #Gather dimension information
+        if zVar:
+            vdr_offset = self.zvarsinfo[var][1]
         else:
-           vdr_offset = self.rvarsinfo[var][1]
+            vdr_offset = self.rvarsinfo[var][1]
+            
+        #Write one VVR
         offset = self._write_vvr(f, data)
         f.seek(vdr_offset+28, 0)
-        vxrHead = int.from_bytes(f.read(8),'big', signed=True)
-        vxrTail = int.from_bytes(f.read(8),'big', signed=True)
+        
+        #Get first VXR
+        vxrOne = int.from_bytes(f.read(8),'big', signed=True)
         foundSpot = 0
-        vxrOne = vxrHead
-        #nEntries = CDF.NUM_VXR_ENTRIES
         usedEntries = 0
         currentVXR = 0
-        while (foundSpot == 0 and vxrOne != -1 and vxrOne != 0):
-           # have a VXR
-           f.seek(vxrOne, 0)
-           currentVXR = f.tell()
-           f.seek(vxrOne+12, 0)
-           vxrNext = int.from_bytes(f.read(8),'big', signed=True)
-           nEntries = int.from_bytes(f.read(4),'big', signed=True)
-           usedEntries = int.from_bytes(f.read(4),'big', signed=True)
-           if (usedEntries == nEntries):
-              # all entries are used -- check the next vxr in link
-              vxrOne = vxrNext
-           else:
-              # found a vxr with an vailable entry spot
-              foundSpot = 1
+        
+        #Search through VXRs to find an open one
+        while (foundSpot == 0 and vxrOne > 0):
+            # have a VXR
+            f.seek(vxrOne, 0)
+            currentVXR = f.tell()
+            f.seek(vxrOne+12, 0)
+            vxrNext = int.from_bytes(f.read(8),'big', signed=True)
+            nEntries = int.from_bytes(f.read(4),'big', signed=True)
+            usedEntries = int.from_bytes(f.read(4),'big', signed=True)
+            if (usedEntries == nEntries):
+                # all entries are used -- check the next vxr in link
+                vxrOne = vxrNext
+            else:
+                # found a vxr with an vailable entry spot
+                foundSpot = 1
+              
         # vxrOne == 0 from vdr's vxrhead vxrOne == -1 from a vxr's vxrnext
         if (vxrOne == 0 or vxrOne == -1):
-           # no available vxr... create a new one
-           currentVXR = self._create_vxr(f, rec_start, rec_end, vdr_offset,
-                                         currentVXR, offset)
+            # no available vxr... create a new one
+            currentVXR = self._create_vxr(f, rec_start, rec_end, vdr_offset,
+                                          currentVXR, offset)
         else:
-           self._use_vxrentry(f, currentVXR, rec_start, rec_end, offset)
-        # VDR's MaxRec
+            self._use_vxrentry(f, currentVXR, rec_start, rec_end, offset)
+        
+        # Modify the VDR's MaxRec if needed
         f.seek(vdr_offset+24, 0)
         recNumc = int.from_bytes(f.read(4),'big', signed=True)
         if (rec_end > recNumc):
-           self._update_offset_value(f, vdr_offset+24, 4, rec_end)
+            self._update_offset_value(f, vdr_offset+24, 4, rec_end)
+            
+        
         return rec_end
 
     def _create_vxr(self, f, recStart, recEnd, currentVDR, priorVXR, vvrOffset):
-
+        '''
+        Create a VXR AND use a VXR
+        
+        Parameters:
+            f : file
+                The open CDF file
+            recStart : int
+                The start record of this block
+            recEnd : int
+                The ending record of this block
+            currentVDR : int
+                The byte location of the variables VDR
+            priorVXR : int
+                The byte location of the previous VXR
+            vvrOffset : int
+                The byte location of ther VVR
+        
+        Returns:
+            vxroffset : int
+                The byte location of the created vxr
+        
+        '''
         # add a VXR, use an entry, and link it to the prior VXR if it exists 
         vxroffset = self._write_vxr(f)
         usedEntries = self._use_vxrentry(f, vxroffset, recStart, recEnd,
                                          vvrOffset)
         if (priorVXR == 0):
-           # VDR's VXRhead
-           self._update_offset_value(f, currentVDR+28, 8, vxroffset)
+            # VDR's VXRhead
+            self._update_offset_value(f, currentVDR+28, 8, vxroffset)
         else:
-           # VXR's next
-           self._update_offset_value(f, priorVXR+12, 8, vxroffset)
+            # VXR's next
+            self._update_offset_value(f, priorVXR+12, 8, vxroffset)
         # VDR's VXRtail
         self._update_offset_value(f, currentVDR+36, 8, vxroffset)
         return vxroffset
@@ -1291,42 +1351,75 @@ class CDF(object):
         return usedEntries
  
     def _add_vxr_levels_r (self, f, vxrhead, numVXRs):
-        # build a new level of VXRs... make VXRs more tree-like
-        newVXRs = int(numVXRs / CDF.NUM_VXRlvl_ENTRIES)
+        '''
+        Build a new level of VXRs... make VXRs more tree-like
+        
+        From: 
+        
+        VXR1 -> VXR2 -> VXR3 -> VXR4 -> ... -> VXRn
+        
+        To:
+                           new VXR1
+                         /    |    \
+                        VXR2 VXR3 VXR4
+                       /      |      \
+                             ...
+                    VXR5  ..........  VXRn
+                        
+        Parameters: 
+            f : file
+                The open CDF file
+            vxrhead : int
+                The byte location of the first VXR for a variable
+            numVXRs : int
+                The total number of VXRs
+        
+        Returns:
+            newVXRhead : int
+                The byte location of the newest VXR head
+            newvxroff : int
+                The byte location of the last VXR head
+
+        '''
+        newNumVXRs = int(numVXRs / CDF.NUM_VXRlvl_ENTRIES)
         remaining = int(numVXRs % CDF.NUM_VXRlvl_ENTRIES)
         vxroff = vxrhead
+        prevxroff = -1
         if (remaining != 0):
-           newVXRs += 1
+            newNumVXRs += 1
         CDF.level += 1
-        for x in range (0, newVXRs):
-          newvxroff = self._write_vxr(f, numEntries=CDF.NUM_VXRlvl_ENTRIES)
-          if (x > 0):
-             self._update_offset_value(f, prevxroff+12, 8, newvxroff)
-          else:
-             newvxrhead = newvxroff
-          prevxroff = newvxroff
-          if (x == (newVXRs - 1)):
-             if (remaining == 0):
+        for x in range(0, newNumVXRs):
+            newvxroff = self._write_vxr(f, numEntries=CDF.NUM_VXRlvl_ENTRIES)
+            if (x > 0):
+                self._update_offset_value(f, prevxroff+12, 8, newvxroff)
+            else:
+                newvxrhead = newvxroff
+            prevxroff = newvxroff
+            if (x == (newNumVXRs - 1)):
+                if (remaining == 0):
+                    endEntry = CDF.NUM_VXRlvl_ENTRIES
+                else:
+                    endEntry = remaining
+            else:
                 endEntry = CDF.NUM_VXRlvl_ENTRIES
-             else:
-                endEntry = remaining
-          else:
-             endEntry = CDF.NUM_VXRlvl_ENTRIES
-          for y in range (0, endEntry):
-             recFirst, recLast = self._get_recrange(f, vxroff)
-             usedEntries = self._use_vxrentry(f, newvxroff, recFirst, recLast,
-                                              vxroff)
-             vxroff = self._read_offset_value (f, vxroff+12, 8)
+            for _ in range(0, endEntry):
+                recFirst, recLast = self._get_recrange(f, vxroff)
+                usedEntries = self._use_vxrentry(f, newvxroff, recFirst, recLast,
+                                                 vxroff)
+                vxroff = self._read_offset_value(f, vxroff+12, 8)
         vxroff = vxrhead
-        # break the horizontal link 
-        for x in range (0, numVXRs):
-          nvxroff = self._read_offset_value(f, vxroff+12, 8)
-          self._update_offset_value(f, vxroff+12, 8, 0)
-          vxroff = nvxroff
-        if (newVXRs > CDF.NUM_VXRlvl_ENTRIES):
-           return self._add_vxr_levels_r (f, newvxrhead, newVXRs)
+        
+        #Break the horizontal links 
+        for x in range(0, numVXRs):
+            nvxroff = self._read_offset_value(f, vxroff+12, 8)
+            self._update_offset_value(f, vxroff+12, 8, 0)
+            vxroff = nvxroff
+        
+        #Iterate this process if we're over NUM_VXRlvl_ENTRIES
+        if (newNumVXRs > CDF.NUM_VXRlvl_ENTRIES):
+            return self._add_vxr_levels_r (f, newvxrhead, newNumVXRs)
         else:
-           return newvxrhead, newvxroff
+            return newvxrhead, newvxroff
 
     def _update_vdr_vxrheadtail(self, f, vdr_offset, VXRoffset):
         '''
@@ -1338,7 +1431,10 @@ class CDF(object):
         self._update_offset_value(f, vdr_offset+36, 8, VXRoffset)
 
     def _get_recrange(self, f, VXRoffset):
-        # find the first and last record numbers pointed by the VXR
+        '''
+        Finds the first and last record numbers pointed by the VXR
+        Assumes the VXRs are in order
+        '''
         f.seek(VXRoffset+20)
         # Num entries
         numEntries = int.from_bytes(f.read(4),'big', signed=True)
@@ -2443,157 +2539,210 @@ class CDF(object):
 
     def _checklistofNums(obj): # @NoSelf
         if (isinstance(obj, list) or isinstance(obj, tuple)):
-           return bool(obj) and all(isinstance(elem, numbers.Number)
+            return bool(obj) and all(isinstance(elem, numbers.Number)
                                     for elem in obj)
         else:
-           return isinstance(obj, numbers.Number)
+            return isinstance(obj, numbers.Number)
 
     def _md5_compute(self, f):
+        '''
+        Computes the checksum of the file
+        '''
         md5 = hashlib.md5()
         block_size = 16384
         f.seek(0, 2)
         remaining = f.tell()
         f.seek(0)
         while (remaining > block_size):
-           data = f.read(block_size)
-           remaining = remaining - block_size
-           md5.update(data)
+            data = f.read(block_size)
+            remaining = remaining - block_size
+            md5.update(data)
         if (remaining > 0):
-           data = f.read(remaining)
-           md5.update(data)
+            data = f.read(remaining)
+            md5.update(data)
         return md5.digest()
 
     def _make_blocks(records): # @NoSelf
-        # Organizes the physical records into blocks in a list by
-        # placing consecutive physical records into a single block, so
-        # lesser VXRs will be created.
-        #   [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...]  
+        '''
+        Organizes the physical records into blocks in a list by
+        placing consecutive physical records into a single block, so
+        lesser VXRs will be created.
+          [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...]  
+        
+        Parameters:
+            records: list
+                A list of records that there is data for
+        
+        Returns: 
+            sparse_blocks: list of list
+                A list of ranges we have physical values for.
+        
+        Example:
+            Input: [1,2,3,4,10,11,12,13,50,51,52,53]
+            Output: [[1,4],[10,13],[50,53]]
+        '''
+        
         sparse_blocks = []
         total = len(records)
         if (total == 0):
             return []
+        
         x = 0
         while (x < total):
-           recstart = records[x]
-           y = x
-           recnum = recstart
-           while ((y+1) < total):
-              y = y + 1
-              nextnum = records[y]
-              diff = nextnum - recnum
-              if (diff == 1):
-                 recnum = nextnum
-              else:
-                 y = y - 1
-                 break
-           ablock = []
-           ablock.append(recstart)
-           if ((y+1)==total):
-             recend = records[total-1]
-           else:
-             recend = records[y]
-           x = y + 1
-           ablock.append(recend)
-           sparse_blocks.append(ablock)
+            recstart = records[x]
+            y = x
+            recnum = recstart
+            
+            #Find the location in the records before the next gap
+            #Call this value "y"
+            while ((y+1) < total):
+                y = y + 1
+                nextnum = records[y]
+                diff = nextnum - recnum
+                if (diff == 1):
+                    recnum = nextnum
+                else:
+                    y = y - 1
+                    break
+            
+            #Put the values of the records into "ablock", append to sparse_blocks
+            ablock = []
+            ablock.append(recstart)
+            if ((y+1)==total):
+                recend = records[total-1]
+            else:
+                recend = records[y]
+            x = y + 1
+            ablock.append(recend)
+            sparse_blocks.append(ablock)
+           
         return sparse_blocks
 
     def _make_sparse_blocks(self, variable, records, data):
-        # Handles the data for the variable with sparse records. 
-        # Organizes the physical record numbers into blocks in a list:
-        #   [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...]  
-        # Place consecutive physical records into a signle block
-        # variable: the variable dictionary, with 'Num_Dims', 'Dim_Sizes',
-        #           'Data_Type', 'Num_Elements' key words, typically
-        #           returned from a call to cdf read's varinq('variable',
-        #                                                     expand=True)
-        # records: a list of physical records 
-        # data: bytes array, numpy.ndarray or list of str form with all physical
-        #       data or embedded virtual data (returned from call to
-        #       varget('variable') for a sparse variable)
+        '''
+        Handles the data for the variable with sparse records. 
+        Organizes the physical record numbers into blocks in a list:
+          [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...]  
+        Place consecutive physical records into a single block
+        
+        If all records are physical, this calls _make_sparse_blocks_with_physical
+        
+        If any records are virtual, this calls _make_sparse_blocks_with_virtual
+        
+        Parameters:
+            variable : dict
+                the variable dictionary, with 'Num_Dims', 'Dim_Sizes',
+                'Data_Type', 'Num_Elements' key words, typically
+                returned from a call to cdf read's varinq('variable',
+                expand=True)
+                
+            records : list
+                a list of physical records 
+                
+            data : varies
+                bytes array, numpy.ndarray or list of str form with all physical
+                data or embedded virtual data (returned from call to
+                varget('variable') for a sparse variable)
+                
+        Returns: 
+            sparse_blocks: list
+                A list of sparse records/data in the form
+                [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...] 
+        '''
+        
         if (isinstance(data, dict)):
             try:
-               data = data['Data']
+                data = data['Data']
             except:   
-               print('Unknown dictionary.... Skip')
-               return None
+                print('Unknown dictionary.... Skip')
+                return None
         if (isinstance(data, np.ndarray)):
             if (len(records) == len(data)):
-               # All are physical data
-               return self._make_sparse_blocks_with_physical(variable, records,
-                                                             data)
+                # All are physical data
+                return self._make_sparse_blocks_with_physical(variable, records,
+                                                              data)
             elif (len(records) < len(data)):
-               # There are some virtual data
-               return self._make_sparse_blocks_with_virtual(variable, records,
-                                                            data)
-            else:
-               print('Invalid sparse data... ',
-                     'Less data than the specified records... Skip')
-        elif (isinstance(data, bytes)):
-            y = len(records)
-            for z in range(0, variable['Num_Dims']):
-                y = y * variable['Dim_Sizes'][z]
-            if (y == len(data)):
-               # All are physical data
-               return self._make_sparse_blocks_with_physical(variable, records,
+                # There are some virtual data
+                return self._make_sparse_blocks_with_virtual(variable, records,
                                                              data)
-            elif (y < len(data)):
-               # There are some virtual data
-               return self._make_sparse_blocks_with_virtual(variable, records,
-                                                            data)
             else:
-               print('Invalid sparse data... ',
-                     'Less data than the specified records... Skip')
+                print('Invalid sparse data... ',
+                      'Less data than the specified records... Skip')
+        elif (isinstance(data, bytes)):
+            record_length = len(records)
+            for z in range(0, variable['Num_Dims']):
+                record_length = record_length * variable['Dim_Sizes'][z]
+            if (record_length == len(data)):
+                # All are physical data
+                return self._make_sparse_blocks_with_physical(variable, records,
+                                                              data)
+            elif (record_length < len(data)):
+                # There are some virtual data
+                return self._make_sparse_blocks_with_virtual(variable, records,
+                                                             data)
+            else:
+                print('Invalid sparse data... ',
+                      'Less data than the specified records... Skip')
         elif (isinstance(data, list)):
             data_1 = data[0]
             if (isinstance(data_1, list)):
-               if not (all(isinstance(el, str) for el in data_1)):
-                  print('Can not handle list data.... ',
-                        'Only support list of str... Skip')
-                  return None
+                if not (all(isinstance(el, str) for el in data_1)):
+                    print('Can not handle list data.... ',
+                          'Only support list of str... Skip')
+                    return
             else:
-               if not (all(isinstance(el, str) for el in data)):
-                  print('Can not handle list data.... ',
-                        'Only support list of str... Skip')
-                  return None
-            y = len(records)
+                if not (all(isinstance(el, str) for el in data)):
+                    print('Can not handle list data.... ',
+                          'Only support list of str... Skip')
+                    return
+            record_length = len(records)
             for z in range(0, variable['Num_Dims']):
-                y = y * variable['Dim_Sizes'][z]
-            if (y == len(data)):
-               # All are physical data
-               return self._make_sparse_blocks_with_physical(variable, records,
+                record_length = record_length * variable['Dim_Sizes'][z]
+            if (record_length == len(data)):
+                # All are physical data
+                return self._make_sparse_blocks_with_physical(variable, records,
                                                              data)
-            elif (y < len(data)):
-               # There are some virtual data
-               return self._make_sparse_blocks_with_virtual(variable, records,
+            elif (record_length < len(data)):
+                # There are some virtual data
+                return self._make_sparse_blocks_with_virtual(variable, records,
                                                             data)
             else:
-               print('Invalid sparse data... ',
-                     'Less data than the specified records... Skip')
+                print('Invalid sparse data... ',
+                      'Less data than the specified records... Skip')
         else:
             print('Invalid sparse data... ',
                   'Less data than the specified records... Skip')
-        return None
+        return
 
     def _make_sparse_blocks_with_virtual(self, variable, records, data):
-        # Handles the data for the variable with sparse records. 
-        # Organizes the physical record numbers into blocks in a list:
-        #   [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...]  
-        # Place consecutive physical records into a signle block
-        # variable: the variable, returned from varinq('variable', expand=True)
-        # records: a list of physical records 
-        # data: bytes array, numpy.ndarray or list of str form with vitual data 
-        #       embedded, returned from varget('variable') call
+        '''
+        Handles the data for the variable with sparse records. 
+        Organizes the physical record numbers into blocks in a list:
+          [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...]  
+        Place consecutive physical records into a single block
+        
+        Parameters:
+            variable: dict
+                the variable, returned from varinq('variable', expand=True)
+            records: list
+                a list of physical records 
+            data: varies
+                bytes array, numpy.ndarray or list of str form with vitual data 
+                embedded, returned from varget('variable') call
+        '''
+        
+        #Gather the ranges for which we have physical data
         sparse_blocks = CDF._make_blocks(records)
-        blocks = len(sparse_blocks)
+        
         sparse_data = []
         if (isinstance(data, np.ndarray)):
-            for x in range (0, blocks):
+            for sblock in sparse_blocks:
                 # each block in this list: [starting_rec#, ending_rec#, data]
                 asparse = []
-                asparse.append(sparse_blocks[x][0])
-                asparse.append(sparse_blocks[x][1])
-                starting=sparse_blocks[x][0]
-                ending=sparse_blocks[x][1]+1
+                asparse.append(sblock[0])
+                asparse.append(sblock[1])
+                starting=sblock[0]
+                ending=sblock[1]+1
                 asparse.append(data[starting:ending])
                 sparse_data.append(asparse)
             return sparse_data
@@ -2602,27 +2751,27 @@ class CDF(object):
             for z in range(0, variable['Num_Dims']):
                 y = y * variable['Dim_Sizes'][z]
             y = y * CDF._datatype_size(variable['Data_Type'],variable['Num_Elements'])
-            for x in range (0, blocks):
+            for x in sparse_blocks:
                 # each block in this list: [starting_rec#, ending_rec#, data]
                 asparse = []
-                asparse.append(sparse_blocks[x][0])
-                asparse.append(sparse_blocks[x][1])
-                starting=sparse_blocks[x][0]*y
-                ending=(sparse_blocks[x][1]+1)*y
+                asparse.append(sblock[0])
+                asparse.append(sblock[1])
+                starting=sblock[0]*y
+                ending=(sblock[1]+1)*y
                 asparse.append(data[starting:ending]) 
                 sparse_data.append(asparse)
             return sparse_data
         elif (isinstance(data, list)):
-            for x in range (0, blocks):
+            for x in sparse_blocks:
                 # each block in this list: [starting_rec#, ending_rec#, data]
                 asparse = []
-                asparse.append(sparse_blocks[x][0])
-                asparse.append(sparse_blocks[x][1])
+                asparse.append(sblock[0])
+                asparse.append(sblock[1])
                 records = sparse_blocks[x][1] - sparse_blocks[x][0] + 1
                 datax = []
-                ist = sparse_blocks[x][0]
+                ist = sblock[0]
                 for z in range(0, records):
-                   datax.append(data[ist+z])
+                    datax.append(data[ist+z])
                 asparse.append(datax) 
                 sparse_data.append(asparse)
             return sparse_data
@@ -2633,32 +2782,41 @@ class CDF(object):
     def _make_sparse_blocks_with_physical(self, variable, records, data):
         # All records are physical... just a single block
         #   [[0,end_rec,data]]
+        
+        #Determine if z variable
         if (variable['Var_Type'].lower() == 'zvariable'):
-           zVar = True
+            zVar = True
         else:
-           zVar = False
-        if (zVar):
-           numDims = len(variable['Dim_Sizes'])
-           numValues = 1
-           for x in range (0, numDims):
-             numValues = numValues * variable['Dim_Sizes'][x]
-        else:
-           for x in range (0, numDims):
-             if (variable['Dim_Vary'][x] != 0):
+            zVar = False
+            
+        #Determine dimension information
+        if zVar:
+            numDims = len(variable['Dim_Sizes'])
+            numValues = 1
+            for x in range (0, numDims):
                 numValues = numValues * variable['Dim_Sizes'][x]
+        else:
+            for x in range (0, numDims):
+                if (variable['Dim_Vary'][x] != 0):
+                    numValues = numValues * variable['Dim_Sizes'][x]
+                    
+        #Determine blocks
         sparse_blocks = CDF._make_blocks(records)
+        
+        #Create a list in the form of [[0,100, [data]], ...]
         sparse_data = []
         recStart = 0
-        for x in range (0, len(sparse_blocks)):
-           asparse = []
-           recs = sparse_blocks[x]
-           asparse.append(recs[0])
-           asparse.append(recs[1])
-           totalRecs = recs[1] - recs[0] + 1
-           recEnd = recStart + totalRecs
-           asparse.append(data[recStart:recEnd])
-           sparse_data.append(asparse)
-           recStart = recStart + totalRecs
+        for sblock in sparse_blocks:
+            asparse = []
+            recs = sblock
+            asparse.append(recs[0])
+            asparse.append(recs[1])
+            totalRecs = recs[1] - recs[0] + 1
+            recEnd = recStart + totalRecs
+            asparse.append(data[recStart:recEnd])
+            sparse_data.append(asparse)
+            recStart = recStart + totalRecs
+            
         return sparse_data
 
     def getVersion(): # @NoSelf
