@@ -275,6 +275,7 @@ import binascii
 import os.path 
 import cdflib.epochs as cdfepoch
 import numbers
+import math
 
 class CDF(object):
 
@@ -502,18 +503,22 @@ class CDF(object):
         f.write(binascii.unhexlify(CDF.V3magicNUMBER_1))
         f.write(binascii.unhexlify(CDF.V3magicNUMBER_2))
         
-        self.zvarsinfo = {}
+        #Dictionary objects, these contains name, offset, and dimension information
+        self.zvarsinfo = {} 
         self.rvarsinfo = {}
+        
+        #Dictionary object, contains name, offset, and scope (global or variable)
         self.attrsinfo = {}
-        self.gattrs = []
-        self.vattrs = []
-        self.attrs = []
-        self.zvars = []
-        self.rvars = []
-        self.checksum = checksum
-        self.compression = cdf_compression
-        self.num_rdim = num_rdim
-        self.rdim_sizes = rdim_sizes
+        
+        self.gattrs = [] #List of global attributes
+        self.vattrs = [] # List of variable attributes
+        self.attrs = [] # List of ALL attributes
+        self.zvars = [] #List of z variable names 
+        self.rvars = [] # List of r variable names
+        self.checksum = checksum #Boolean, whether or not to include the checksum at the end
+        self.compression = cdf_compression # Compression level (or True/False)
+        self.num_rdim = num_rdim # Number of r dimensions 
+        self.rdim_sizes = rdim_sizes # Size of r dimensions
         
         self.cdr_head = self._write_cdr(f, major, self._encoding, checksum)
         self.gdr_head = self._write_gdr(f)
@@ -553,6 +558,9 @@ class CDF(object):
             self.file2 = None
 
     def write_globalattrs(self, globalAttrs):
+        '''
+        Creates ADRs from "globalAttrs", as well as corresponding AEDRs.  
+        '''
         if not (isinstance(globalAttrs, dict)):
             print('Global attribute(s) not in dictionary form.... Stop')
             return
@@ -567,11 +575,12 @@ class CDF(object):
                 print('Attribute: ',attr,' already defined as a variable ',
                       'attribute... Skip')
                 continue
-            attrNum, offsetA = self._write_adr(f, True, attr)
+            attrNum, offsetADR = self._write_adr(f, True, attr)
             entries = 0
             if (entry == None):
                 continue
             entryNumMaX = -1
+            poffset = -1
             for entryNum, value in entry.items():
                 if (entryNumMaX < entryNum):
                     entryNumMaX = entryNum
@@ -619,6 +628,152 @@ class CDF(object):
                             numElems, dataType = CDF._datatype_define(value[0]) 
                             numElems = len(value)
                     else:
+                        #Length greater than 2, so it is all data.  
+                        data = value
+                        numElems, dataType = CDF._datatype_define(value[0])
+                        numElems = len(value)
+                else:
+                    #Just one value
+                    data = value
+                    numElems, dataType = CDF._datatype_define(value) 
+                    if (numElems is None):
+                        print('Unknown data.... Skip')
+                        return
+                    
+                offset = self._write_aedr(f, True, attrNum, entryNum, data,
+                                          dataType, numElems, None)
+                if (entries == 0):
+                    # ADR's AgrEDRhead
+                    self._update_offset_value(f, offsetADR+20, 8, offset)
+                else:
+                    # ADR's ADRnext
+                    self._update_offset_value(f, poffset+12, 8, offset)
+                    
+                poffset = offset
+                entries = entries + 1
+            # ADR's NgrEntries
+            self._update_offset_value(f, offsetADR+36, 4, entries)
+            # ADR's MAXgrEntry
+            self._update_offset_value(f, offsetADR+40, 4, entryNumMaX)
+
+    def write_variableattrs(self, variableAttrs):
+
+        if not (isinstance(variableAttrs, dict)):
+            print('Variable attribute(s) not in dictionary form.... Stop')
+            return
+        dataType = None
+        numElems = None
+        f = self.file
+        for attr, attrs in variableAttrs.items():
+            if not (isinstance(attr, str)):
+                print('Attribute name should be a string... Stop')
+                return
+            if (attr in self.gattrs):
+                print('Variable attribute: ',attr,
+                      ' is already a global variable... Stop')
+                return
+            if (attr in self.vattrs):
+                attrNum = self.vattrs.index(attr)
+                offsetA = self.attrsinfo[attrNum][2]
+            else:
+                attrNum, offsetA = self._write_adr(f, False, attr)
+            entries = 0
+            if (attrs == None):
+                continue
+            if not (isinstance(attrs, dict)):
+                print('An attribute''s attribute(s) not in dictionary form.... ',
+                      'Stop')
+                return
+            entryNumX = -1
+            poffset=-1
+            for entryID, value in attrs.items():
+                if (isinstance(entryID, str) and (not (entryID in self.zvars) or
+                    not (entryID in self.rvars))):
+                    print('The variable: ', entryID, 
+                          'not found in the CDF.... Stop')
+                    return
+                if (isinstance(entryID, numbers.Number) and 
+                   (len(self.zvars) > 0 and len(self.rvars) > 0)):
+                    print('The variable: ', entryID, 
+                          'can not be used as the CDF has ',
+                          'both zVariables and rVariables.... Stop')
+                    return
+                if (isinstance(entryID, str)):
+                    try:
+                        entryNum = self.zvars.index(entryID)
+                        zVar = True
+                    except:
+                        try:
+                            entryNum = self.rvars.index(entryID)
+                            zVar = False
+                        except:
+                            print('Variable name: ', entryID, ' not found... Stop')
+                            return
+                else:
+                    entryNum = int(entryID)
+                    if (len(self.zvars) > 0 and len(self.rvars) > 0):
+                        print('Can not use integer form for variable id as there ',
+                              'are both zVariables and rVaribales... Stop')
+                        return
+                    if (len(self.zvars) > 0):
+                        if (entryNum >= len(self.zvars)):
+                            print('Variable id: ', entryID, ' not found... Stop')
+                            return
+                        else:
+                            zVar = True
+                    else:
+                        if (entryNum >= len(self.rvars)):
+                            print('Variable id: ', entryID, ' not found... Stop')
+                            return
+                        else:
+                            zVar = False
+                if (entryNum > entryNumX):
+                    entryNumX = entryNum
+                if (isinstance(value, list) or isinstance(value, tuple)):
+                    if (len(value) == 2):
+                        value2 = value[1]
+                        dataType = CDF._datatype_token(value2)
+                        if (dataType > 0):
+                            data = value[0]
+                            if (dataType == CDF.CDF_CHAR or \
+                                dataType == CDF.CDF_UCHAR):
+                                if (isinstance(data, list) or 
+                                    isinstance(data, tuple)):
+                                    print('Invalid variable attribute value.... Skip')
+                                    return
+                                numElems = len(data)
+                            elif (dataType == CDF.CDF_EPOCH or \
+                                  dataType == CDF.CDF_EPOCH16
+                                  or dataType == CDF.CDF_TIME_TT2000):
+                                cvalue = []
+                                if (isinstance(data, list) or
+                                    isinstance(data, tuple)):
+                                    numElems = len(data)
+                                    for x in range(0, numElems):
+                                        if (isinstance(data[x], str)):
+                                            avalue = cdfepoch.CDFepoch.parse(data[x])
+                                        else:
+                                            avalue = data[x]
+                                        if (dataType == CDF.CDF_EPOCH16):
+                                            cvalue.append(avalue.real)
+                                            cvalue.append(avalue.imag)
+                                        else:
+                                            cvalue.append(avalue)
+                                            data = cvalue
+                                else:
+                                    if (isinstance(data, str)):
+                                        data = cdfepoch.CDFepoch.parse(data)
+                                    numElems = 1
+                            else:
+                                if (isinstance(data, list) or isinstance(data, tuple)):
+                                    numElems = len(data) 
+                                else:
+                                    numElems = 1
+                        else:
+                            data = value
+                            numElems, dataType = CDF._datatype_define(value[0]) 
+                            numElems = len(value)
+                    else:
                         data = value
                         numElems, dataType = CDF._datatype_define(value[0])
                         numElems = len(value)
@@ -628,493 +783,424 @@ class CDF(object):
                     if (numElems is None):
                         print('Unknown data.... Skip')
                         return
-                offset = self._write_aedr(f, True, attrNum, entryNum, data,
-                                        dataType, numElems, None)
+                offset = self._write_aedr(f, False, attrNum, entryNum, data,
+                                          dataType, numElems, zVar)
                 if (entries == 0):
-                    # ADR's AgrEDRhead
-                    self._update_offset_value(f, offsetA+20, 8, offset)
+                    if (zVar == True):
+                        # ADR's AzEDRhead
+                        self._update_offset_value(f, offsetA+48, 8, offset)
+                    else:
+                        # ADR's AgrEDRhead
+                        self._update_offset_value(f, offsetA+20, 8, offset)
                 else:
                     # ADR's ADRnext
                     self._update_offset_value(f, poffset+12, 8, offset)
                 poffset = offset
                 entries = entries + 1
-            # ADR's NgrEntries
-            self._update_offset_value(f, offsetA+36, 4, entries)
-            # ADR's MAXgrEntry
-            self._update_offset_value(f, offsetA+40, 4, entryNumMaX)
-
-    def write_variableattrs(self, variableAttrs):
-
-        if not (isinstance(variableAttrs, dict)):
-           print('Variable attribute(s) not in dictionary form.... Stop')
-           return
-        dataType = None
-        numElems = None
-        f = self.file
-        for attr, attrs in variableAttrs.items():
-           if not (isinstance(attr, str)):
-              print('Attribute name should be a string... Stop')
-              return
-           if (attr in self.gattrs):
-              print('Variable attribute: ',attr,
-                    ' is already a global variable... Stop')
-              return
-           if (attr in self.vattrs):
-              attrNum = self.vattrs.index(attr)
-              offsetA = self.attrsinfo[attrNum][2]
-           else:
-              attrNum, offsetA = self._write_adr(f, False, attr)
-           entries = 0
-           if (attrs == None):
-              continue
-           if not (isinstance(attrs, dict)):
-              print('An attribute''s attribute(s) not in dictionary form.... ',
-                    'Stop')
-              return
-           entryNumX = -1
-           for entryID, value in attrs.items():
-              if (isinstance(entryID, str) and (not (entryID in self.zvars) or
-                                                not (entryID in self.rvars))):
-                 print('The variable: ', entryID, 
-                       'not found in the CDF.... Stop')
-                 return
-              if (isinstance(entryID, numbers.Number) and 
-                  (len(self.zvars) > 0 and len(self.rvars) > 0)):
-                 print('The variable: ', entryID, 
-                       'can not be used as the CDF has ',
-                       'both zVariables and rVariables.... Stop')
-                 return
-              if (isinstance(entryID, str)):
-                 try:
-                   entryNum = self.zvars.index(entryID)
-                   zVar = True
-                 except:
-                    try:
-                       entryNum = self.rvars.index(entryID)
-                       zVar = False
-                    except:
-                       print('Variable name: ', entryID, ' not found... Stop')
-                       return
-              else:
-                 entryNum = int(entryID)
-                 if (len(self.zvars) > 0 and len(self.rvars) > 0):
-                    print('Can not use integer form for variable id as there ',
-                          'are both zVariables and rVaribales... Stop')
-                    return
-                 if (len(self.zvars) > 0):
-                    if (entryNum >= len(self.zvars)):
-                       print('Variable id: ', entryID, ' not found... Stop')
-                       return
-                    else:
-                       zVar = True
-                 else:
-                    if (entryNum >= len(self.rvars)):
-                       print('Variable id: ', entryID, ' not found... Stop')
-                       return
-                    else:
-                       zVar = False
-              if (entryNum > entryNumX):
-                 entryNumX = entryNum
-              if (isinstance(value, list) or isinstance(value, tuple)):
-                 if (len(value) == 2):
-                    value2 = value[1]
-                    dataType = CDF._datatype_token(value2)
-                    if (dataTyp > 0):
-                       data = value[0]
-                       if (dataType == CDF.CDF_CHAR or \
-                           dataType == CDF.CDF_UCHAR):
-                          if (isinstance(data, list) or 
-                              isinstance(data, tuple)):
-                             print('Invalid variable attribute value.... Skip')
-                             return
-                          numElems = len(data)
-                       elif (dataType == CDF.CDF_EPOCH or \
-                             dataType == CDF.CDF_EPOCH16
-                             or dataType == CDF.CDF_TIME_TT2000):
-                          cvalue = []
-                          if (isinstance(data, list) or
-                              isinstance(data, tuple)):
-                             numElems = len(data)
-                             for x in range(0, numElems):
-                                if (isinstance(data[x], str)):
-                                   avalue = cdfepoch.CDFepoch.parse(data[x])
-                                else:
-                                   avalue = data[x]
-                                if (dataType == CDF.CDF_EPOCH16):
-                                   cvalue.append(avalue.real)
-                                   cvalue.append(avalue.imag)
-                                else:
-                                   cvalue.append(avalue)
-                             data = cvalue
-                          else:
-                             if (isinstance(data, str)):
-                                data = cdfepoch.CDFepoch.parse(data)
-                             numElems = 1
-                       else:
-                          if (isinstance(data, list) or isinstance(data, tuple)):
-                             numElems = len(data) 
-                          else:
-                             numElems = 1
-                    else:
-                       data = value
-                       numElems, dataType = CDF._datatype_define(value[0]) 
-                       numElems = len(value)
-                 else:
-                    data = value
-                    numElems, dataType = CDF._datatype_define(value[0])
-                    numElems = len(value)
-              else:
-                 data = value
-                 numElems, dataType = CDF._datatype_define(value) 
-                 if (numElems is None):
-                    print('Unknown data.... Skip')
-                    return
-              offset = self._write_aedr(f, False, attrNum, entryNum, data,
-                                        dataType, numElems, zVar)
-              if (entries == 0):
-                 if (zVar == True):
-                    # ADR's AzEDRhead
-                    self._update_offset_value(f, offsetA+48, 8, offset)
-                 else:
-                    # ADR's AgrEDRhead
-                    self._update_offset_value(f, offsetA+20, 8, offset)
-              else:
-                 # ADR's ADRnext
-                 self._update_offset_value(f, poffset+12, 8, offset)
-              poffset = offset
-              entries = entries + 1
-           if (zVar == True):
-              # ADR's NzEntries
-              self._update_offset_value(f, offsetA+56, 4, entries)
-              # ADR's MAXzEntry
-              self._update_offset_value(f, offsetA+60, 4, entryNumX)
-           else:
-              # ADR's NgrEntries
-              self._update_offset_value(f, offsetA+36, 4, entries)
-              # ADR's MAXgrEntry
-              self._update_offset_value(f, offsetA+40, 4, entryNumX)
-
+            if (zVar == True):
+                # ADR's NzEntries
+                self._update_offset_value(f, offsetA+56, 4, entries)
+                # ADR's MAXzEntry
+                self._update_offset_value(f, offsetA+60, 4, entryNumX)
+            else:
+                # ADR's NgrEntries
+                self._update_offset_value(f, offsetA+36, 4, entries)
+                # ADR's MAXgrEntry
+                self._update_offset_value(f, offsetA+40, 4, entryNumX)
+                
     def write_var(self, var_spec, var_attrs=None, var_data=None):
-
+        '''
+        
+        '''
         if (not isinstance(var_spec, dict)):
-           print('Variable should be in dictionary form... Stop')
-           return
+            print('Variable should be in dictionary form... Stop')
+            return
         f = self.file
-        try:
-           dataType = var_spec['Data_Type']
-           numElems = int(var_spec['Num_Elements'])
-           name = var_spec['Variable']
-           recVary = var_spec['Rec_Vary']
+        #Get variable info from var_spec
+        try: 
+            dataType = var_spec['Data_Type']
+            numElems = int(var_spec['Num_Elements'])
+            name = var_spec['Variable']
+            recVary = var_spec['Rec_Vary']
         except:
-           print('Missing/invalid required spec for creating variable... Stop')
-           return -1
-        try:
-           var_type = var_spec['Var_Type']
-           if (var_type.lower() == 'zvariable'):
-              zVar = True
-           else:
-              var_spec['Var_Type'] = 'rVariable'
-              zVar = False
+            print('Missing/invalid required spec for creating variable... Stop')
+            return -1
+        #Get whether or not it is a z variable 
+        try: 
+            var_type = var_spec['Var_Type']
+            if (var_type.lower() == 'zvariable'):
+                zVar = True
+            else:
+                var_spec['Var_Type'] = 'rVariable'
+                zVar = False
         except:
-           var_spec['Var_Type'] = 'zVariable'
-           zVar = True
-        if (zVar == True):
-           try:
-              dimSizes = var_spec['Dim_Sizes']
-              numDims = len(dimSizes)
-              dimVary = []
-              for _ in range (0, numDims):
-                dimVary.append(True)
-           except:
-              print('Missing/invalid required spec for creating variable... ',
-                    'Stop')
-              return -1
+            var_spec['Var_Type'] = 'zVariable'
+            zVar = True
+        #If its a z variable, get the dimension info
+        #Otherwise, use r variable info
+        if zVar:
+            try: 
+                dimSizes = var_spec['Dim_Sizes']
+                numDims = len(dimSizes)
+                dimVary = []
+                for _ in range (0, numDims):
+                    dimVary.append(True)
+            except:
+                print('Missing/invalid required spec for creating variable... ',
+                      'Stop')
+                return -1
         else:
-           dimSizes = self.rdim_sizes
-           numDims = self.num_rdim
-           try:
-              dimVary = var_spec['Dim_Vary']
-              if (len(dimVary) != numDims):
-                 print('Invalid Dim_Vary size for the rVariable... Stop')
-                 return -1
-           except:
-              print('Missing/invalid required spec for Dim_Vary for ',
-                    'rVariable... Stop')
-              return -1
-        try:
-           sparse = CDF._sparse_token(var_spec['Sparse'])
+            dimSizes = self.rdim_sizes
+            numDims = self.num_rdim
+            try:
+                dimVary = var_spec['Dim_Vary']
+                if (len(dimVary) != numDims):
+                    print('Invalid Dim_Vary size for the rVariable... Stop')
+                    return -1
+            except:
+                print('Missing/invalid required spec for Dim_Vary for ',
+                     'rVariable... Stop')
+                return -1
+        #Get Sparseness info 
+        try: 
+            sparse = CDF._sparse_token(var_spec['Sparse'])
         except:
-           sparse = 0
-        try:
-           compression = var_spec['Compress']
-           if (isinstance(compression, int)):
-              if (compression < 0 or compression > 9):
-                 compression = 0
-           else:
-              if (compression == True):
-                 compression = 6
-              if (compression == False):
-                 compression = 0
+            sparse = 0
+        #Get compression info
+        try: 
+            compression = var_spec['Compress']
+            if (isinstance(compression, int)):
+                if (compression < 0 or compression > 9):
+                    compression = 0
+            else:
+                if (compression == True):
+                    compression = 6
+                if (compression == False):
+                    compression = 0
         except:
-           compression = 6
+            compression = 6
+        #Get blocking factor
         try:
-           blockingfactor = int(var_spec['Block_Factor'])
+            blockingfactor = int(var_spec['Block_Factor'])
         except:
-           blockingfactor = None
+            blockingfactor = None
+        #Get pad value
         try:
-           pad = var_spec['Pad']
-           if (isinstance(pad, list) or isinstance(pad, tuple)):
-              pad = pad[0]
+            pad = var_spec['Pad']
+            if (isinstance(pad, list) or isinstance(pad, tuple)):
+                pad = pad[0]
         except:
-           pad = None
+            pad = None
         if (name in self.zvars or name in self.rvars):
-           print('Variable: ', name, 'already exists..... Stop')
-           return
+            print('Variable: ', name, 'already exists..... Stop')
+            return
         varNum, offset = self._write_vdr(f, dataType, numElems, numDims,
                                          dimSizes, name, dimVary, recVary,
                                          sparse, blockingfactor, compression,
                                          pad, zVar)
-        if (zVar == True):
-           if (len(self.zvars) == 1):
-              # GDR's zVDRhead
-              self._update_offset_value(f, self.gdr_head+20, 8, offset)
+        #Update the GDR pointers if needed
+        if zVar:
+            if (len(self.zvars) == 1):
+                # GDR's zVDRhead
+                self._update_offset_value(f, self.gdr_head+20, 8, offset)
         else:
-           if (len(self.rvars) == 1):
-              # GDR's rVDRhead
-              self._update_offset_value(f, self.gdr_head+12, 8, offset)
+            if (len(self.rvars) == 1):
+                # GDR's rVDRhead
+                self._update_offset_value(f, self.gdr_head+12, 8, offset)
+                
+        #Write the variable attributes
         if not (var_attrs is None):
-           status = self._write_var_attrs(f, varNum, var_attrs, zVar)
-           if (status == -1):
-              return 
+            status = self._write_var_attrs(f, varNum, var_attrs, zVar)
+            if (status == -1):
+                return 
+        
+        #Write the actual data to the file
         if not (var_data is None):
-           if (sparse == 0):
-              varMaxRec = self._write_var_data_nonsparse(f, zVar, varNum,
-                                                         dataType, numElems,
-                                                         recVary, compression,
-                                                         blockingfactor,
-                                                         var_data)
-           else:
-              notsupport = False
-              if not (isinstance(var_data, list) or
-                      isinstance(var_data, tuple)):
-                 notsupport = True
-              if (notsupport or len(var_data) != 2):
-                 print('Sparse record #s and data are not of list/tuple form:')
-                 print(' [ [rec_#1, rec_#2, rec_#3,    ],') 
-                 print('   [data_#1, data_#2, data_#3, ....] ]');
-                 return
-              var_data = self._make_sparse_blocks(var_spec, var_data[0],
+            if (sparse == 0):
+                varMaxRec = self._write_var_data_nonsparse(f, zVar, varNum,
+                                                           dataType, numElems,
+                                                           recVary, compression,
+                                                           blockingfactor,
+                                                           var_data)
+            else:
+                notsupport = False
+                if not (isinstance(var_data, list) or
+                        isinstance(var_data, tuple)):
+                    notsupport = True
+                if (notsupport or len(var_data) != 2):
+                    print('Sparse record #s and data are not of list/tuple form:')
+                    print(' [ [rec_#1, rec_#2, rec_#3,    ],') 
+                    print('   [data_#1, data_#2, data_#3, ....] ]');
+                    return
+                var_data = self._make_sparse_blocks(var_spec, var_data[0],
                                                   var_data[1])
-              blocks = len(var_data)
-              for x in range (0, blocks):
-                 varMaxRec = self._write_var_data_sparse(f, zVar, varNum,
-                                                         dataType, numElems,
-                                                         recVary, var_data[x])
-           if (zVar != True):
-              # GDR's rMaxRec
-              f.seek(self.gdr_head+52)
-              maxRec = int.from_bytes(f.read(4),'big', signed=True)
-              if (maxRec < varMaxRec):
-                 self._update_offset_value(f, self.gdr_head+52, 4, varMaxRec)
+                blocks = len(var_data)
+                for x in range (0, blocks):
+                    varMaxRec = self._write_var_data_sparse(f, zVar, varNum,
+                                                            dataType, numElems,
+                                                            recVary, var_data[x])
+            #Update GDR MaxRec if writing an r variable
+            if not zVar:
+                # GDR's rMaxRec
+                f.seek(self.gdr_head+52)
+                maxRec = int.from_bytes(f.read(4),'big', signed=True)
+                if (maxRec < varMaxRec):
+                    self._update_offset_value(f, self.gdr_head+52, 4, varMaxRec)
 
     def _write_var_attrs(self, f, varNum, var_attrs, zVar):
+        '''
+        Writes ADRs and AEDRs for variables
+        
+        Parameters:
+            f : file
+                The open CDF file
+            varNum : int
+                The variable number for adding attributes
+            var_attrs : dict
+                A dictionary object full of variable attributes
+            zVar : bool
+                True if varNum is referencing a z variable
+        
+        Returns: None
+        '''
+        
         if (not isinstance(var_attrs, dict)):
-           print('Variable attribute(s) should be in dictionary form... Stop')
-           return -1
-        num_attrs = len(var_attrs)
+            print('Variable attribute(s) should be in dictionary form... Stop')
+            return -1
+
         for attr, entry in var_attrs.items():
-           if (attr in self.gattrs):
-              print('Attribute: ',attr,
-                    ' already defined as a global attribute... Skip')
-              continue
-           if not (attr in self.attrs):
-              attrNum, offset = self._write_adr(f, False, attr)
-              if (len(self.attrs) == 0):
-                 # GDR's ADRhead
-                 self._update_offset_value(self.grd_offset+28, 8, offset)
-           else:
-              attrNum = self.attrs.index(attr)
-              offset = self.attrsinfo[attrNum][2]
-           if (entry == None):
-              continue
-           dataType = 0
-           if (isinstance(entry, list) or isinstance(entry, tuple)):
-              items = len(entry)
-              if (items == 2):
-                 dataType = CDF._datatype_token(entry[1])
-           if (dataType > 0):
-              # data type defined in entry
-              data = entry[0]
-              if (CDF._checklistofNums(data)):
-                 # All are numbers
-                 if (isinstance(data, list) or isinstance(data, tuple)):
-                    numElems = len(data)
-                 else:
-                    numElems = 1
-              else:
-                 # Then string(s) -- either in CDF_type or epoch in string(s)
-                 if (dataType == CDF.CDF_CHAR or dataType == CDF.CDF_UCHAR):
+            if (attr in self.gattrs):
+                print('Attribute: ',attr,
+                      ' already defined as a global attribute... Skip')
+                continue
+           
+            if not (attr in self.attrs):
+                attrNum, offset = self._write_adr(f, False, attr)
+                if (len(self.attrs) == 0):
+                    # GDR's ADRhead
+                    self._update_offset_value(self.grd_offset+28, 8, offset)
+            else:
+                attrNum = self.attrs.index(attr)
+                offset = self.attrsinfo[attrNum][2]
+           
+            if (entry is None):
+                continue
+            
+            #Check if dataType was provided
+            dataType = 0
+            if (isinstance(entry, list) or isinstance(entry, tuple)):
+                items = len(entry)
+                if (items == 2):
+                    dataType = CDF._datatype_token(entry[1])
+                    
+            if (dataType > 0):
+                #CDF data type defined in entry
+                data = entry[0]
+                if (CDF._checklistofNums(data)):
+                    # All are numbers
                     if (isinstance(data, list) or isinstance(data, tuple)):
-                       items = len(data)
-                       odata = data
-                       data = str('')
-                       for x in range (0, items):
-                          if (x > 0):
-                             data += str('\\N ')
-                             data += odata[x]
-                          else:
-                             data = odata[x]
-                    numElems = len(data)
-                 elif (dataType == CDF.CDF_EPOCH or dataType == CDF.CDF_EPOCH16
-                       or dataType == CDF.CDF_TIME_TT2000):
-                    cvalue = []
-                    if (isinstance(data, list) or isinstance(data, tuple)):
-                       numElems = len(data)
-                       for x in range(0, numElems):
-                          cvalue.append(cdfepoch.CDFepoch.parse(data[x]))
-                       data = cvalue
+                        numElems = len(data)
                     else:
-                       data = cdfepoch.CDFepoch.parse(data)
-                       numElems = 1
-           else:
-              # No data type defined...
-              data = entry
-              if (isinstance(entry, list) or isinstance(entry, tuple)):
-                 numElems, dataType = CDF._datatype_define(entry[0])
-                 if (dataType == CDF.CDF_CHAR or dataType == CDF.CDF_UCHAR):
-                    data = str('')
-                    for x in range (0, len(entry)):
-                       if (x > 0):
-                          data += str('\\N ')
-                          data += entry[x]
-                       else:
-                          data = entry[x]
-                 numElems = len(data) 
-              else:
-                 numElems, dataType = CDF_.datatype_define(entry)
-           offset = self._write_aedr(f, False, attrNum, varNum, data, dataType,
+                        numElems = 1
+                else:
+                    # Then string(s) -- either in CDF_type or epoch in string(s)
+                    if (dataType == CDF.CDF_CHAR or dataType == CDF.CDF_UCHAR):
+                        if (isinstance(data, list) or isinstance(data, tuple)):
+                            items = len(data)
+                            odata = data
+                            data = str('')
+                            for x in range (0, items):
+                                if (x > 0):
+                                    data += str('\\N ')
+                                    data += odata[x]
+                                else:
+                                    data = odata[x]
+                        numElems = len(data)
+                    elif (dataType == CDF.CDF_EPOCH or dataType == CDF.CDF_EPOCH16
+                          or dataType == CDF.CDF_TIME_TT2000):
+                        cvalue = []
+                        if (isinstance(data, list) or isinstance(data, tuple)):
+                            numElems = len(data)
+                            for x in range(0, numElems):
+                                cvalue.append(cdfepoch.CDFepoch.parse(data[x]))
+                            data = cvalue
+                        else:
+                            data = cdfepoch.CDFepoch.parse(data)
+                            numElems = 1
+            else:
+                # No data type defined...
+                data = entry
+                if (isinstance(entry, list) or isinstance(entry, tuple)):
+                    numElems, dataType = CDF._datatype_define(entry[0])
+                    if (dataType == CDF.CDF_CHAR or dataType == CDF.CDF_UCHAR):
+                        data = str('')
+                        for x in range (0, len(entry)):
+                            if (x > 0):
+                                data += str('\\N ')
+                                data += entry[x]
+                            else:
+                                data = entry[x]
+                    numElems = len(data) 
+                else:
+                    numElems, dataType = CDF._datatype_define(entry)
+                    
+            offset = self._write_aedr(f, False, attrNum, varNum, data, dataType,
                                      numElems, zVar)
-           self._update_aedr_link(f, attrNum, zVar, varNum, offset)
+            self._update_aedr_link(f, attrNum, zVar, varNum, offset)
           
     def _write_var_data_nonsparse(self, f, zVar, var, dataType, numElems,
                                   recVary, compression, blockingfactor, indata):
+        '''
+        Creates VVRs and the corresponding VXRs full of "indata" data.  
+        If there is no compression, creates exactly one VXR and VVR
+        If there is compression
+
+        Parameters:
+            f : file
+                The open CDF file
+            zVar : bool
+                True if this is z variable data
+            var : str
+                The name of the variable
+            dataType : int
+                the CDF variable type
+            numElems : int
+                number of elements in each record
+            recVary : bool
+                True if each record is unque
+            compression : int
+                The amount of compression
+            blockingfactor: ?
+                ?
+            indata : varies
+                the data to write, should be a numpy or byte array
+            
+        Returns:
+            recs : int
+                The number of records
+        
+        '''
+        
         numValues = self._num_values(zVar, var)
         dataTypeSize = CDF._datatype_size(dataType, numElems)
         if (isinstance(indata, dict)):
-           indata = indata['Data']
+            indata = indata['Data']
+        
+        #Deal with EPOCH16 data types
         if (dataType == CDF.CDF_EPOCH16):
-           epoch16 = []
-           if (isinstance(indata, list) or isinstance(indata, tuple) or
-               isinstance(indata, np.ndarray)):
-              adata = indata[0]
-              if (isinstance(adata, complex)):
-                 recs = len (indata)
-                 for x in range (0, recs):
-                   epoch16.append(indata[x].real)
-                   epoch16.append(indata[x].imag)
-                 indata = epoch16
-           else:
-              if (isinstance(indata, complex)):
-                 epoch16.append(indata.real)
-                 epoch16.append(indata.imag)
-                 indata = epoch16
+            epoch16 = []
+            if (isinstance(indata, list) or isinstance(indata, tuple) or
+                isinstance(indata, np.ndarray)):
+                adata = indata[0]
+                if (isinstance(adata, complex)):
+                    recs = len (indata)
+                    for x in range (0, recs):
+                        epoch16.append(indata[x].real)
+                        epoch16.append(indata[x].imag)
+                    indata = epoch16
+            else:
+                if (isinstance(indata, complex)):
+                    epoch16.append(indata.real)
+                    epoch16.append(indata.imag)
+                    indata = epoch16
+        
+        #Convert to byte stream
         recs, data = self._convert_data(dataType, numElems, numValues, indata)
-        if (recVary == False):
-           recs = 1
-        if (zVar == True):
-           vdr_offset = self.zvarsinfo[var][1]
+        
+        if not recVary:
+            recs = 1
+        if zVar:
+            vdr_offset = self.zvarsinfo[var][1]
         else:
-           vdr_offset = self.rvarsinfo[var][1]
+            vdr_offset = self.rvarsinfo[var][1]
+            
         usedEntries = 0
-        usedLvlEntries = 0
-        multiLvl = False
-        cprBuilt = 0
+        editedVDR = False
         numVXRs = 0
         if (compression > 0):
-           blockingfactor2 = int(CDF.BLOCKING_BYTES/(numValues * dataTypeSize))
-           recRemaining = int(CDF.BLOCKING_BYTES%(numValues * dataTypeSize))
-           if (recRemaining != 0):
-              blockingfactor2 = blockingfactor2 + 1
-           # If the given blocking factor is too small, use the default one
-           # Will re-adjust if the records are less than this computed BF.
-           if (blockingfactor < blockingfactor2):
-              blockingfactor = blockingfactor2
-           if (blockingfactor == 0):
-              blockingfactor = 1
-           # set blocking factor 
-           if (recs < blockingfactor):
-              blockingfactor = recs
-           blocks = int(recs / blockingfactor)
-           remaining = int(recs % blockingfactor)
-           if (remaining != 0):
-              blocks = blocks + 1
-           nEntries = CDF.NUM_VXR_ENTRIES
-           #VXRlvloffset = None
-           #savedVXRlvloffset = None
-           VXRhead = None
-           for x in range (0, blocks):
-              startrec = x * blockingfactor
-              startloc = startrec * numValues * dataTypeSize
-              endrec = (x + 1) * blockingfactor - 1
-              if (endrec > (recs-1)):
-                 endrec = recs - 1
-              #print('x=',x,' startrec=',startrec,' endrec=',endrec)
-              endloc = (endrec + 1) * numValues * dataTypeSize 
-              if (endloc > len(data)):
-                 endrec = recs - 1
-                 endloc = len(data)
-              bdata = data[startloc:endloc]
-              cdata = gzip.compress(bdata, compression)
-              if (len(cdata) < len(bdata)):
-                 if (cprBuilt == 0):
-                    f.seek(vdr_offset+44, 0)
-                    # VDR's Flags
-                    flags = int.from_bytes(f.read(4),'big', signed=True)
-                    flags = CDF._set_bit(flags, 2)
-                    self._update_offset_value(f, vdr_offset+44, 4, flags)
-                    f.seek(vdr_offset+80, 0)
-                    # VDR's BlockingFactor
-                    self._update_offset_value(f, vdr_offset+80, 4,
-                                              blockingfactor)
-                    cprBuilt = 1
-                 n1offset = self._write_cvvr(f, cdata)
-              else:
-                 n1offset = self._write_vvr(f, bdata)
-              if (x == 0):
-                 VXRoffset = self._write_vxr(f)
-                 VXRhead = VXRoffset
-                 numVXRs = 1
-                 self._update_vdr_vxrheadtail(f, vdr_offset, VXRoffset)
-              if (usedEntries < nEntries):
-                 # Use the exisitng VXR
-                 usedEntries = self._use_vxrentry(f, VXRoffset, startrec,
-                                                  endrec, n1offset)
-              else:
-                 # Create a new VXR and an upper level VXR, if needed.
-                 # Two levels of VXRs are the maximum, which is simpler
-                 # to implement.
-                 savedVXRoffset = VXRoffset
-                 VXRoffset = self._write_vxr(f)
-                 numVXRs += 1
-                 usedEntries = self._use_vxrentry(f, VXRoffset, startrec,
-                                                  endrec, n1offset)
-                 self._update_offset_value(f, savedVXRoffset+12, 8, VXRoffset)
-                 self._update_offset_value(f, vdr_offset+36, 8, VXRoffset)
-           if (numVXRs > CDF.NUM_VXRlvl_ENTRIES):
-              newvxrhead, newvxrtail = self._add_vxr_levels_r (f, VXRhead,
-                                                               numVXRs)
-              self._update_offset_value(f, vdr_offset+28, 8, newvxrhead)
-              self._update_offset_value(f, vdr_offset+36, 8, VXRoffset)
-              vxroff = VXRhead
-           #else:
-              #self._update_vdr_vxrheadtail(f, vdr_offset, VXRhead)
+            default_blockingfactor = math.ceil(CDF.BLOCKING_BYTES/(numValues * dataTypeSize))
+            # If the given blocking factor is too small, use the default one
+            # Will re-adjust if the records are less than this computed BF.
+            if (blockingfactor < default_blockingfactor):
+                blockingfactor = default_blockingfactor
+            if (blockingfactor == 0):
+                blockingfactor = 1
+            # set blocking factor 
+            if (recs < blockingfactor):
+                blockingfactor = recs
+            blocks = math.ceil(recs / blockingfactor)
+            nEntries = CDF.NUM_VXR_ENTRIES
+            VXRhead = None
+            for x in range(0, blocks):
+                startrec = x * blockingfactor
+                startloc = startrec * numValues * dataTypeSize
+                endrec = (x + 1) * blockingfactor - 1
+                if (endrec > (recs-1)):
+                    endrec = recs - 1
+                endloc = (endrec + 1) * numValues * dataTypeSize 
+                if (endloc > len(data)):
+                    endrec = recs - 1
+                    endloc = len(data)
+                bdata = data[startloc:endloc]
+                cdata = gzip.compress(bdata, compression)
+                if (len(cdata) < len(bdata)):
+                    if not editedVDR:
+                        f.seek(vdr_offset+44, 0)
+                        # VDR's Flags
+                        flags = int.from_bytes(f.read(4),'big', signed=True)
+                        flags = CDF._set_bit(flags, 2)
+                        self._update_offset_value(f, vdr_offset+44, 4, flags)
+                        f.seek(vdr_offset+80, 0)
+                        # VDR's BlockingFactor
+                        self._update_offset_value(f, vdr_offset+80, 4,
+                                                  blockingfactor)
+                        editedVDR = True
+                    n1offset = self._write_cvvr(f, cdata)
+                else:
+                    #Not worth compressing
+                    n1offset = self._write_vvr(f, bdata)
+                if (x == 0):
+                    #Create a VXR
+                    VXRoffset = self._write_vxr(f)
+                    VXRhead = VXRoffset
+                    numVXRs = 1
+                    self._update_vdr_vxrheadtail(f, vdr_offset, VXRoffset)
+                if (usedEntries < nEntries):
+                    # Use the exisitng VXR
+                    usedEntries = self._use_vxrentry(f, VXRoffset, startrec,
+                                                     endrec, n1offset)
+                else:
+                    # Create a new VXR and an upper level VXR, if needed.
+                    # Two levels of VXRs are the maximum, which is simpler
+                    # to implement.
+                    savedVXRoffset = VXRoffset
+                    VXRoffset = self._write_vxr(f)
+                    numVXRs += 1
+                    usedEntries = self._use_vxrentry(f, VXRoffset, startrec,
+                                                     endrec, n1offset)
+                    #Edit the VXRnext field of the previous VXR
+                    self._update_offset_value(f, savedVXRoffset+12, 8, VXRoffset)
+                    #Edit the VXRtail of the VDR
+                    self._update_offset_value(f, vdr_offset+36, 8, VXRoffset)
+            
+            #After we're done with the blocks, check the way 
+            # we have VXRs set up
+            if (numVXRs > CDF.NUM_VXRlvl_ENTRIES):
+                newvxrhead, newvxrtail = self._add_vxr_levels_r(f, VXRhead,
+                                                                 numVXRs)
+                self._update_offset_value(f, vdr_offset+28, 8, newvxrhead)
+                self._update_offset_value(f, vdr_offset+36, 8, VXRoffset)
+                vxroff = VXRhead
         else:
-           offset = self._write_vvr(f, data)
-           VXRoffset = self._write_vxr(f)
-           usedEntries = self._use_vxrentry(f, VXRoffset, 0, recs-1, offset)
-           self._update_vdr_vxrheadtail(f, vdr_offset, VXRoffset)
+            #Create one VVR and VXR
+            offset = self._write_vvr(f, data)
+            VXRoffset = self._write_vxr(f)
+            usedEntries = self._use_vxrentry(f, VXRoffset, 0, recs-1, offset)
+            self._update_vdr_vxrheadtail(f, vdr_offset, VXRoffset)
+        
         # VDR's MaxRec
         self._update_offset_value(f, vdr_offset+24, 4, recs-1)
+        
         return (recs-1)
 
     def _write_var_data_sparse(self, f, zVar, var, dataType, numElems, recVary,
@@ -1182,11 +1268,14 @@ class CDF(object):
         return vxroffset
 
     def _use_vxrentry(self, f, VXRoffset, recStart, recEnd, offset):
+        '''
+        Adds a VVR pointer to a VXR
+        '''
         # Select the next unused entry in a VXR for a VVR/CVVR
         f.seek(VXRoffset+20)
         # num entries
         numEntries = int.from_bytes(f.read(4),'big', signed=True)
-        # use an entry
+        # used entries
         usedEntries = int.from_bytes(f.read(4),'big', signed=True)
         # VXR's First
         self._update_offset_value(f, VXRoffset+28+4*usedEntries, 4, recStart)
@@ -1240,6 +1329,9 @@ class CDF(object):
            return newvxrhead, newvxroff
 
     def _update_vdr_vxrheadtail(self, f, vdr_offset, VXRoffset):
+        '''
+        This sets a VXR to be the first and last VXR in the VDR
+        '''
         # VDR's VXRhead
         self._update_offset_value(f, vdr_offset+28, 8, VXRoffset)
         # VDR's VXRtail
@@ -1260,15 +1352,21 @@ class CDF(object):
         return firstRec, lastRec
  
     def _majority_token(major):    # @NoSelf
+        '''
+        Returns the numberical type for a CDF row/column major type
+        '''
         majors = { 'ROW_MAJOR': 1, \
                    'COLUMN_MAJOR': 2}
         try:
-           return majors[major.upper()]
+            return majors[major.upper()]
         except:
-           print('bad major....',major)
-           return 0
+            print('bad major....',major)
+            return 0
  
     def _encoding_token(encoding):    # @NoSelf
+        '''
+        Returns the numberical type for a CDF encoding type
+        '''
         encodings = { 'NETWORK_ENCODING': 1, \
                       'SUN_ENCODING': 2, \
                       'VAX_ENCODING': 3, \
@@ -1293,6 +1391,9 @@ class CDF(object):
             return 0
 
     def _datatype_token(datatype):    # @NoSelf
+        '''
+        Returns the numberical type for a CDF data type
+        '''
         datatypes = {'CDF_INT1': 1, \
                      'CDF_INT2': 2, \
                      'CDF_INT4': 4, \
@@ -1321,11 +1422,9 @@ class CDF(object):
         else:
             numElems = 1
             if (isinstance(value, int)):
-                return numElems, CDF.CDF_INT4
+                return numElems, CDF.CDF_INT8
             elif (isinstance(value, float)):
                 return numElems, CDF.CDF_DOUBLE
-            elif (isinstance(value, long)):
-                return numElems, CDF.CDF_INT8
             elif (isinstance(value, complex)):
                 return numElems, CDF.CDF_EPOCH16
             else:
@@ -1333,6 +1432,19 @@ class CDF(object):
                 return None, None 
 
     def _datatype_size(datatype, numElms):    # @NoSelf
+        '''
+        Gets datatype size 
+        
+        Parameters:
+            datatype : int 
+                CDF variable data type
+            numElms : int
+                number of elements
+        
+        Returns: 
+            numBytes : int
+                The number of bytes for the data
+        '''
         sizes = {1: 1, \
                  2: 2, \
                  4: 4, \
@@ -1351,44 +1463,48 @@ class CDF(object):
                  51: 1, \
                  52: 1 }
         try:
-           if (isinstance(datatype, int)):
-               if (datatype == 51 or datatype == 52):
-                   return numElms
-               else:
-                   return sizes[datatype]
-           else:
-               datatype = datatype.upper()
-               if (datatype == 'CDF_INT1' or datatype == 'CDF_UINT1' or
-                   datatype == 'CDF_BYTE'):
-                   return 1
-               elif (datatype == 'CDF_INT2' or datatype == 'CDF_UINT2'):
-                   return 2
-               elif (datatype == 'CDF_INT4' or datatype == 'CDF_UINT4'):
-                   return 4
-               elif (datatype == 'CDF_INT8' or datatype == 'CDF_TIME_TT2000'):
-                   return 8
-               elif (datatype == 'CDF_REAL4' or datatype == 'CDF_FLOAT'):
-                   return 4
-               elif (datatype == 'CDF_REAL8' or datatype == 'CDF_DOUBLE' or
-                     datatype == 'CDF_EPOCH'):
-                   return 8
-               elif (datatype == 'CDF_EPOCH16'):
-                   return 16
-               elif (datatype == 'CDF_CHAR' or datatype == 'CDF_UCHAR'):
-                   return numElms
-               else: 
-                   return -1
+            if (isinstance(datatype, int)):
+                if (datatype == 51 or datatype == 52):
+                    return numElms
+                else:
+                    return sizes[datatype]
+            else:
+                datatype = datatype.upper()
+                if (datatype == 'CDF_INT1' or datatype == 'CDF_UINT1' or
+                    datatype == 'CDF_BYTE'):
+                    return 1
+                elif (datatype == 'CDF_INT2' or datatype == 'CDF_UINT2'):
+                    return 2
+                elif (datatype == 'CDF_INT4' or datatype == 'CDF_UINT4'):
+                    return 4
+                elif (datatype == 'CDF_INT8' or datatype == 'CDF_TIME_TT2000'):
+                    return 8
+                elif (datatype == 'CDF_REAL4' or datatype == 'CDF_FLOAT'):
+                    return 4
+                elif (datatype == 'CDF_REAL8' or datatype == 'CDF_DOUBLE' or
+                      datatype == 'CDF_EPOCH'):
+                    return 8
+                elif (datatype == 'CDF_EPOCH16'):
+                    return 16
+                elif (datatype == 'CDF_CHAR' or datatype == 'CDF_UCHAR'):
+                    return numElms
+                else: 
+                    return -1
         except:
-           return -1
+            return -1
 
     def _sparse_token(sparse):  # @NoSelf
+        '''
+        Returns the numerical CDF value for sparseness.  
+        '''
+        
         sparses = { 'no_sparse': 0, \
                     'pad_sparse': 1, \
                     'prev_sparse': 2}
         try:
-           return sparses[sparse.lower()]
+            return sparses[sparse.lower()]
         except:
-           return 0
+            return 0
 
     def _write_cdr(self, f, major, encoding, checksum):
         f.seek(0, 2)
@@ -1400,11 +1516,11 @@ class CDF(object):
         release = CDF.release
         flag = 0
         if (major == 1):
-          flag = CDF._set_bit (flag, 0)
+            flag = CDF._set_bit (flag, 0)
         flag = CDF._set_bit (flag, 1)
         if (checksum == True):
-          flag = CDF._set_bit (flag, 2)
-          flag = CDF._set_bit (flag, 3)
+            flag = CDF._set_bit (flag, 2)
+            flag = CDF._set_bit (flag, 3)
         rfuA = 0
         rfuB = 0
         increment = CDF.increment
@@ -1470,12 +1586,32 @@ class CDF(object):
         gdr[76:80] = struct.pack('>i', leapsecondlastupdate)
         gdr[80:84] = struct.pack('>i', rfuE)
         if (num_rdim > 0):
-           for i in range (0, num_rdim):
-              gdr[84+i*4:84+(i+1)*4] = struct.pack('>i', self.rdim_sizes[i])
+            for i in range (0, num_rdim):
+                gdr[84+i*4:84+(i+1)*4] = struct.pack('>i', self.rdim_sizes[i])
         f.write(gdr)
         return byte_loc
 
     def _write_adr(self, f, gORv, name):
+        '''
+        Writes and ADR to the end of the file.  
+        
+        Additionally, it will update the offset values to either the previous ADR
+        or the ADRhead field in the GDR. 
+        
+        Parameters:
+            f : file
+                The open CDF file
+            gORv : bool
+                True if a global attribute, False if variable attribute
+            name : str
+                name of the attribute
+        Returns:
+            num : int
+                The attribute number
+            byte_loc : int
+                The current location in file f
+        '''
+        
         f.seek(0, 2)
         byte_loc = f.tell()
         block_size = CDF.ADR_BASE_SIZE64
@@ -1483,9 +1619,9 @@ class CDF(object):
         nextADR = 0
         headAgrEDR = 0
         if (gORv == True):
-           scope = 1
+            scope = 1
         else:
-           scope = 2 
+            scope = 2 
         num = len(self.attrs)
         ngrEntries = 0
         maxgrEntry = -1
@@ -1518,75 +1654,103 @@ class CDF(object):
         info.append(byte_loc) 
         self.attrsinfo[num] = info
         if (scope == 1):
-           self.gattrs.append(name)
+            self.gattrs.append(name)
         else:
-           self.vattrs.append(name)
+            self.vattrs.append(name)
+        
         self.attrs.append(name)
         if (num > 0):
-           # ADR's ADRnext
-           self._update_offset_value(f, self.attrsinfo[num-1][2]+12, 8,
-                                     byte_loc)
+            # ADR's ADRnext
+            self._update_offset_value(f, self.attrsinfo[num-1][2]+12, 8,
+                                      byte_loc)
         else:
-           # GDR's ADRhead
-           self._update_offset_value(f, self.gdr_head+28, 8, byte_loc)
+            # GDR's ADRhead
+            self._update_offset_value(f, self.gdr_head+28, 8, byte_loc)
+        
         # GDR's NumAttr
         self._update_offset_value(f, self.gdr_head+48, 4, num+1)
+        
         return num, byte_loc
 
     def _write_aedr(self, f, gORz, attrNum, entryNum, value, pdataType,
                     pnumElems, zVar):
+        '''
+        Writes an aedr into the end of the file. 
+        
+        Parameters:
+            f : file
+                The current open CDF file
+            gORz : bool
+                True if this entry is for a global or z variable, False if r variable
+            attrNum : int
+                Number of the attribute this aedr belongs to.
+            entryNum : int
+                Number of the entry
+            value : 
+                The value of this entry
+            pdataType : int
+                The CDF data type of the value
+            pnumElems : int
+                Number of elements in the value.  
+            zVar : bool
+                True if this entry belongs to a z variable 
+        
+        Returns: 
+            byte_loc : int
+                This current location in the file after writing the aedr.  
+        '''
         f.seek(0, 2)
         byte_loc = f.tell()
-        block_size = CDF.AEDR_BASE_SIZE64
         if (gORz == True or zVar != True):
-           section_type = CDF.AgrEDR_
+            section_type = CDF.AgrEDR_
         else:
-           section_type = CDF.AzEDR_
+            section_type = CDF.AzEDR_
         nextAEDR = 0
-        if (pdataType is None and pnumElems is None):
-           if (isinstance(value, str)):
-              dataType = CDF.CDF_CHAR
-              numElems = len(value)
-           else:
-              if (isinstance(value, list) or isinstance(value, tuple)):
-                 numElems = len(value)
-              else:
-                 numElems = 1
-              if (cdataType is None):
-                 if (isinstance(value, list) or isinstance(value, tuple)):
-                    avalue = value[0]
-                 else:
-                    avalue = value
-                 if (isinstance(avalue, int)):
-                    dataType = CDF.CDF_INT4
-                 elif (isinstance(avalue, long)):
-                    dataType = CDF.CDF_INT8
-                 elif (isinstance(avalue, float)):
-                    dataType = CDF.CDF_FLOAT
-                 elif (isinstance(avalue, complex)):
-                    dataType = CDF.CDF_EPOCH16
-                 else:
-                    # assume a boolean
-                    dataType = CDF.CDF_INT1
-              else:
-                 dataType = CDF._datatype_token(cdataType)
-        else:
-           dataType = pdataType
-           numElems = pnumElems 
+        
+        if pdataType is None:
+            #Figure out Data Type if not supplied 
+            if (isinstance(value, list) or isinstance(value, tuple)):
+                avalue = value[0]
+            else:
+                avalue = value
+            if (isinstance(avalue, int)):
+                pdataType = CDF.CDF_INT8
+            elif (isinstance(avalue, float)):
+                pdataType = CDF.CDF_FLOAT
+            elif (isinstance(avalue, complex)):
+                pdataType = CDF.CDF_EPOCH16
+            else:
+                # assume a boolean
+                pdataType = CDF.CDF_INT1
+                
+        if pnumElems is None:
+            #Figure out number of elements if not supplied
+            if (isinstance(value, str)):
+                pdataType = CDF.CDF_CHAR
+                pnumElems = len(value)
+            else:
+                if (isinstance(value, list) or isinstance(value, tuple)):
+                    pnumElems = len(value)
+                else:
+                    pnumElems = 1
+        
+        dataType = pdataType
+        numElems = pnumElems 
+            
         rfuB = 0
         rfuC = 0
         rfuD = -1
         rfuE = -1
-        if (gORz == True):
-           numStrings = 0
+        if gORz:
+            numStrings = 0
         else:
-           if (isinstance(value, str)):
-              numStrings = value.count('\\N ') + 1
-           else:
-              numStrings = 0
+            if (isinstance(value, str)):
+                numStrings = value.count('\\N ') + 1
+            else:
+                numStrings = 0
         recs, cdata = self._convert_data(dataType, numElems, 1, value)
         if (dataType == 51):
-           numElems = len (cdata)
+            numElems = len(cdata)
         block_size = len(cdata) + 56
         aedr = bytearray(block_size)
         aedr[0:8] = struct.pack('>q', block_size)
@@ -1605,74 +1769,106 @@ class CDF(object):
         f.write(aedr)
         return byte_loc
 
-    def _write_num_values(self, f, dataType, numElems, values):
-        f.seek(0, 2)
-        order = self._convert_option()
-        ctype = CDF._convert_type(dataType)
-        myformat=order+'%s'+ctype
-        if (numElems < 2):
-          f.write(struct.pack(myformat %numElems, values))
-        else:
-          f.write(struct.pack(myformat %numElems, *values))
-
     def _write_vdr(self, f, cdataType, numElems, numDims, dimSizes, name,
                    dimVary, recVary, sparse, blockingfactor, compression,
                    pad, zVar):
-        if (zVar == True):
-           block_size = CDF.zVDR_BASE_SIZE64
-           section_type = CDF.zVDR_
+        '''
+        Writes a VDR block to the end of the file.  
+        
+        Parameters:
+            f : file
+                The open CDF file
+            cdataType : int
+                The CDF data type
+            numElems : int
+                The number of elements in the variable
+            numDims : int
+                The number of dimensions in the variable
+            dimSizes : int
+                The size of each dimension
+            name : str
+                The name of the variable
+            dimVary : array of bool
+                Bool array of size numDims.  
+                True if a dimension is physical, False if a dimension is not physical
+            recVary : bool
+                True if each record is unique
+            sparse : bool
+                True if using sparse records
+            blockingfactor: int
+                No idea
+            compression : int
+                The level of compression between 0-9
+            pad : num
+                The pad values to insert
+            zVar : bool
+                True if this variable is a z variable
+            
+        Returns:
+            num : int
+                The number of the variable
+            byte_loc : int
+                The current byte location within the file
+        '''
+        
+        if zVar:
+            block_size = CDF.zVDR_BASE_SIZE64
+            section_type = CDF.zVDR_
         else:
-           block_size = CDF.rVDR_BASE_SIZE64
-           section_type = CDF.rVDR_
+            block_size = CDF.rVDR_BASE_SIZE64
+            section_type = CDF.rVDR_
         nextVDR = 0
         dataType = cdataType
         if (dataType == -1):
-           print('Bad data type.... Stop')
-           return
+            print('Bad data type.... Stop')
+            return
         maxRec = -1
         headVXR = 0
         tailVXR = 0
         flags = 0
-        if (recVary == True):
-           flags = CDF._set_bit(flags, 0)
+        if recVary:
+            flags = CDF._set_bit(flags, 0)
         flags = CDF._set_bit(flags, 1)
         sRecords = sparse
         rfuB = 0
         rfuC = -1
         rfuF = -1
-        if (zVar == True):
-           num = len (self.zvars)
+        if zVar:
+            num = len(self.zvars)
         else:
-           num = len (self.rvars)
+            num = len(self.rvars)
         if (compression > 0):
-           offsetCPRorSPR = self._write_cpr(f, CDF.GZIP_COMPRESSION,
-                                            compression)
+            offsetCPRorSPR = self._write_cpr(f, CDF.GZIP_COMPRESSION,
+                                             compression)
         else:
-           offsetCPRorSPR = -1
+            offsetCPRorSPR = -1
         if (blockingfactor is None):
-           blockingFactor = 1
+            blockingFactor = 1
         else:
-           blockingFactor = blockingfactor
-
+            blockingFactor = blockingfactor
+        
+        #Increase the block size to account for "zDimSizes" and "DimVarys" fields
         if (numDims > 0):
-           if (zVar == True):
-              block_size = block_size + numDims * 8
-           else:
-              block_size = block_size + numDims * 4
+            if zVar:
+                block_size = block_size + numDims * 8
+            else:
+                block_size = block_size + numDims * 4
+                
+        #Determine pad value
         if not (pad is None):
-           if (dataType == 51 or dataType == 52):
-              pad = pad.encode()
-           else:
-              dummy, pad = self._convert_data(dataType, numElems, 1, pad)
+            if (dataType == 51 or dataType == 52):
+                pad = pad.encode()
+            else:
+                dummy, pad = self._convert_data(dataType, numElems, 1, pad)
         else:
-           pad = self._default_pad (dataType, numElems)
+            pad = self._default_pad(dataType, numElems)
 
         f.seek(0, 2)
         byte_loc = f.tell()
         block_size += len(pad)
         vdr = bytearray(block_size)
         if (dataType == 51):
-           numElems = len(pad)
+            numElems = len(pad)
         vdr[0:8] = struct.pack('>q', block_size)
         vdr[8:12] = struct.pack('>i', section_type)
         vdr[12:20] = struct.pack('>q', nextVDR)
@@ -1691,64 +1887,75 @@ class CDF(object):
         vdr[80:84] = struct.pack('>i', blockingFactor)
         tofill = 256 - len(name)
         vdr[84:340] = (name+'\0'*tofill).encode()
-        if (zVar == True):
-           vdr[340:344] = struct.pack('>i', numDims)
-           if (numDims > 0):
-              for i in range (0, numDims):
-                vdr[344+i*4:344+(i+1)*4] = struct.pack('>i', dimSizes[i])
-              ist = 344+numDims*4
-              for i in range (0, numDims):
-                vdr[ist+i*4:ist+(i+1)*4] = struct.pack('>i', CDF.VARY)
-           ist = 344 + 8 * numDims
+        if zVar:
+            vdr[340:344] = struct.pack('>i', numDims)
+            if (numDims > 0):
+                for i in range (0, numDims):
+                    vdr[344+i*4:344+(i+1)*4] = struct.pack('>i', dimSizes[i])
+                ist = 344+numDims*4
+                for i in range (0, numDims):
+                    vdr[ist+i*4:ist+(i+1)*4] = struct.pack('>i', CDF.VARY)
+            ist = 344 + 8 * numDims
         else:
-           if (numDims > 0):
-              for i in range (0, numDims):
-                if (dimVary[i] == True or dimVary[i] != 0):
-                   vdr[340+i*4:344+i*4] = struct.pack('>i', CDF.VARY)
-                else:
-                   vdr[340+i*4:344+i*4] = struct.pack('>i', CDF.NOVARY)
-           ist = 340 + 4 * numDims
+            if (numDims > 0):
+                for i in range (0, numDims):
+                    if (dimVary[i] == True or dimVary[i] != 0):
+                        vdr[340+i*4:344+i*4] = struct.pack('>i', CDF.VARY)
+                    else:
+                        vdr[340+i*4:344+i*4] = struct.pack('>i', CDF.NOVARY)
+            ist = 340 + 4 * numDims
         vdr[ist:block_size] = pad
         f.write(vdr) 
+        
+        #Set variable info
         info = []
         info.append(name)
         info.append(byte_loc)
-        if (zVar == True):
-           info.append(numDims)
-           info.append(dimSizes)
+        if zVar:
+            info.append(numDims)
+            info.append(dimSizes)
         else:
-           info.append(self.num_rdim)
-           info.append(self.rdim_sizes)
+            info.append(self.num_rdim)
+            info.append(self.rdim_sizes)
         info.append(dimVary)
-        if (zVar == True):
-           self.zvarsinfo[num] = info
-           self.zvars.append(name)
-           if (num > 0):
-              # VDR's VDRnext
-              self._update_offset_value(f, self.zvarsinfo[num-1][1]+12, 8,
-                                        byte_loc)
-           # GDR's NzVars
-           self._update_offset_value(f, self.gdr_head+60, 4, num+1)
+        
+        #Update the pointers from the CDR/previous VDR
+        if zVar:
+            self.zvarsinfo[num] = info
+            self.zvars.append(name)
+            if (num > 0):
+                # VDR's VDRnext
+                self._update_offset_value(f, self.zvarsinfo[num-1][1]+12, 8,
+                                          byte_loc)
+            # GDR's NzVars
+            self._update_offset_value(f, self.gdr_head+60, 4, num+1)
         else:
-           self.rvarsinfo[num] = info
-           self.rvars.append(name)
-           if (num > 0):
-              # VDR's VDRnext
-              self._update_offset_value(f, self.rvarsinfo[num-1][1]+12, 8,
-                                        byte_loc)
-           # GDR's NrVars
-           self._update_offset_value(f, self.gdr_head+44, 4, num+1)
+            self.rvarsinfo[num] = info
+            self.rvars.append(name)
+            if (num > 0):
+                # VDR's VDRnext
+                self._update_offset_value(f, self.rvarsinfo[num-1][1]+12, 8,
+                                          byte_loc)
+            # GDR's NrVars
+            self._update_offset_value(f, self.gdr_head+44, 4, num+1)
+            
         return num, byte_loc
 
     def _write_vxr(self, f, numEntries=None):
+        '''
+        Creates a VXR at the end of the file.
+        Returns byte location of the VXR
+        The First, Last, and Offset fields will need to be filled in later
+        '''
+        
         f.seek(0, 2)
         byte_loc = f.tell()
         section_type = CDF.VXR_
         nextVXR = 0
         if (numEntries == None):
-           nEntries = CDF.NUM_VXR_ENTRIES
+            nEntries = CDF.NUM_VXR_ENTRIES
         else:
-           nEntries = int(numEntries)
+            nEntries = int(numEntries)
         block_size = CDF.VXR_BASE_SIZE64 + (4 + 4 + 8) * nEntries
         nUsedEntries = 0
         firsts = [-1] * nEntries
@@ -1770,6 +1977,9 @@ class CDF(object):
         return byte_loc
 
     def _write_vvr(self, f, data):
+        '''
+        Writes a vvr to the end of file "f" with the byte stream "data".  
+        '''
         f.seek(0, 2)
         byte_loc = f.tell()
         block_size = CDF.VVR_BASE_SIZE64 + len(data)
@@ -1783,6 +1993,9 @@ class CDF(object):
         return byte_loc
 
     def _write_cpr(self, f, cType, parameter):
+        '''
+        Write compression info to the end of the file in a CPR.  
+        '''
         f.seek(0, 2)
         byte_loc = f.tell()
         block_size = CDF.CPR_BASE_SIZE64 + 4
@@ -1801,6 +2014,9 @@ class CDF(object):
         return byte_loc
 
     def _write_cvvr(self, f, data):
+        '''
+        Write compressed "data" variable to the end of the file in a CVVR
+        '''
         f.seek(0, 2)
         byte_loc = f.tell()
         cSize = len(data)
@@ -1818,6 +2034,21 @@ class CDF(object):
         return byte_loc
 
     def _write_ccr(self, f, g, level):
+        '''
+        Write a CCR to file "g" from file "f" with level "level".
+        Currently, only handles gzip compression.
+        
+        Parameters:
+            f : file
+                Uncompressed file to read from
+            g : file 
+                File to read the compressed file into
+            level : int
+                The level of the compression from 0 to 9
+        
+        Returns: None
+        
+        '''
         f.seek(8)
         data = f.read()
         uSize = len(data)
@@ -1841,292 +2072,365 @@ class CDF(object):
         self._update_offset_value(g, 20, 8, cprOffset)
 
     def _convert_option(self):
+        '''
+        Determines which symbol to use for numpy conversions
+        > : a little endian system to big endian ordering
+        < : a big endian system to little endian ordering
+        = : No conversion
+        '''        
         data_endian = 'little'
         if (self._encoding==1 or self._encoding==2 or self._encoding==5 or
             self._encoding==7 or self._encoding==9 or self._encoding==11 or
             self._encoding==12 or self._encoding==18):
-           data_endian = 'big'
+            data_endian = 'big'
         if sys.byteorder=='little' and data_endian=='big':
-           #big->little
-           order = '>'
+            #big->little
+            order = '>'
         elif sys.byteorder=='big' and data_endian=='little':
-           #little->big
-           order = '<'
+            #little->big
+            order = '<'
         else:
-           #no conversion
-           order = '='
+            #no conversion
+            order = '='
         return order
 
     def _convert_type(data_type): # @NoSelf
-        
+        '''
+        Converts CDF data types into python types
+        '''
         if (data_type == 1 or data_type == 41):
-           dt_string = 'b'
+            dt_string = 'b'
         elif data_type == 2:
-           dt_string = 'h'
+            dt_string = 'h'
         elif data_type == 4:
-           dt_string = 'i'
+            dt_string = 'i'
         elif (data_type == 8 or data_type == 33):
-           dt_string = 'q'
+            dt_string = 'q'
         elif data_type == 11:
-           dt_string = 'B'
+            dt_string = 'B'
         elif data_type == 12:
-           dt_string = 'H'
+            dt_string = 'H'
         elif data_type == 14:
-           dt_string = 'I'
+            dt_string = 'I'
         elif (data_type == 21 or data_type == 44):
-           dt_string = 'f'
+            dt_string = 'f'
         elif (data_type == 22 or data_type == 45 or data_type == 31):
-           dt_string = 'd'
+            dt_string = 'd'
         elif (data_type == 32):
-           dt_string = 'd'
+            dt_string = 'd'
         elif (data_type == 51 or data_type == 52):
-           dt_string = 's'
+            dt_string = 's'
         else:
-           dt_string = ''
+            dt_string = ''
         return dt_string
 
     def _convert_nptype(data_type, data): # @NoSelf
-
+        '''
+        Converts "data" of CDF type "data_type" into a numpy array
+        '''
         if (data_type == 1) or (data_type == 41):
-           return np.int8(data).tobytes()
+            return np.int8(data).tobytes()
         elif data_type == 2:
-           return np.int16(data).tobytes()
+            return np.int16(data).tobytes()
         elif data_type == 4:
-           return np.int32(data).tobytes()
+            return np.int32(data).tobytes()
         elif (data_type == 8) or (data_type == 33):
-           return np.int64(data).tobytes()
+            return np.int64(data).tobytes()
         elif data_type == 11:
-           return np.uint8(data).tobytes()
+            return np.uint8(data).tobytes()
         elif data_type == 12:
-           return np.uint16(data).tobytes()
+            return np.uint16(data).tobytes()
         elif data_type == 14:
-           return np.uint32(data).tobytes()
+            return np.uint32(data).tobytes()
         elif (data_type == 21) or (data_type == 44):
-           return np.float32(data).tobytes()
+            return np.float32(data).tobytes()
         elif (data_type == 22) or (data_type == 45) or (data_type == 31):
-           return np.float64(data).tobytes()
+            return np.float64(data).tobytes()
         elif (data_type == 32):
-           return np.complex128(data).tobytes()
+            return np.complex128(data).tobytes()
         else:
-           return data
+            return data
 
     def _default_pad(self, data_type, numElems):
-        
+        '''
+        Determines the default pad data for a "data_type"
+        '''
         order = self._convert_option()
         if (data_type == 1) or (data_type == 41):
-           pad_value = struct.pack(order+'b', -127)
+            pad_value = struct.pack(order+'b', -127)
         elif data_type == 2:
-           pad_value = struct.pack(order+'h', -32767)
+            pad_value = struct.pack(order+'h', -32767)
         elif data_type == 4:
-           pad_value = struct.pack(order+'i', -2147483647)
+            pad_value = struct.pack(order+'i', -2147483647)
         elif (data_type == 8) or (data_type == 33):
-           pad_value = struct.pack(order+'q', -9223372036854775807)
+            pad_value = struct.pack(order+'q', -9223372036854775807)
         elif data_type == 11:
-           pad_value = struct.pack(order+'B', 254)
+            pad_value = struct.pack(order+'B', 254)
         elif data_type == 12:
-           pad_value = struct.pack(order+'H', 65534)
+            pad_value = struct.pack(order+'H', 65534)
         elif data_type == 14:
-           pad_value = struct.pack(order+'I', 4294967294)
+            pad_value = struct.pack(order+'I', 4294967294)
         elif (data_type == 21) or (data_type == 44):
-           pad_value = struct.pack(order+'f', -1.0E30)
+            pad_value = struct.pack(order+'f', -1.0E30)
         elif (data_type == 22) or (data_type == 45):
-           pad_value = struct.pack(order+'d', -1.0E30)
+            pad_value = struct.pack(order+'d', -1.0E30)
         elif (data_type == 31):
-           pad_value = struct.pack(order+'d', 0.0)
+            pad_value = struct.pack(order+'d', 0.0)
         elif (data_type == 32):
-           pad_value = struct.pack(order+'2d', *[0.0,0.0])
+            pad_value = struct.pack(order+'2d', *[0.0,0.0])
         elif (data_type == 51) or (data_type == 52):
-           tmpPad = str(' '*numElems).encode()
-           form = str(numElems)
-           pad_value = struct.pack(form+'b', *tmpPad)
+            tmpPad = str(' '*numElems).encode()
+            form = str(numElems)
+            pad_value = struct.pack(form+'b', *tmpPad)
         return pad_value
 
     def _convert_data(self, data_type, num_elems, num_values, indata):
+        '''
+        Converts "indata" into a byte stream 
+        
+        Parameters:
+            data_type : int 
+                The CDF file data type
+                
+            num_elems : int
+                The number of elements in the data
+                
+            num_values : int
+                The number of values in each record
+            
+            indata : (varies)
+                The data to be converted
+                
+        Returns:
+            recs : int 
+                The number of records generated by converting indata
+            odata : byte stream
+                The stream of bytes to write to the CDF file
+        '''
         
         recSize = CDF._datatype_size(data_type, num_elems) * num_values
         if (isinstance(indata, list) or isinstance(indata, tuple)):
-           size = len(indata)
-           if (data_type == CDF.CDF_CHAR or data_type == CDF.CDF_UCHAR):
-              odata = ''
-              for x in range (0, size):
-                 adata = indata[x]
-                 if (isinstance(adata, list) or isinstance(adata, tuple)):
-                    size2 = len(adata)
-                    for y in range (0, size2):
-                       odata += adata[y].ljust(num_elems)
-                 else:
-                    size2 = 1
-                    odata += adata.ljust(num_elems)
-              recs = int((size*size2)/num_values)
-              return recs, odata.encode()
-           else:
-              tofrom = self._convert_option()
-              dt_string = CDF._convert_type(data_type)
-              recs = int(size/num_values)
-              if (data_type == CDF.CDF_EPOCH16 and
-                  isinstance(indata[0], complex)):
-                 complex_data = []
-                 for x in range (0, recs):
-                    acomplex = indata[x]
-                    complex_data.append(acomplex.real)
-                    complex_data.append(acomplex.imag)
-                 size = 2 * size
-                 indata = complex_data
-              if (data_type == CDF.CDF_EPOCH16 and
-                  not isinstance(indata[0], complex)):
-                 recs = int(recs/2)
-              form = tofrom + str(size) + dt_string
-              return recs, struct.pack(form, *indata)
+            size = len(indata)
+            if (data_type == CDF.CDF_CHAR or data_type == CDF.CDF_UCHAR):
+                odata = ''
+                for x in range (0, size):
+                    adata = indata[x]
+                    if (isinstance(adata, list) or isinstance(adata, tuple)):
+                        size2 = len(adata)
+                        for y in range (0, size2):
+                            odata += adata[y].ljust(num_elems)
+                    else:
+                        size2 = 1
+                        odata += adata.ljust(num_elems)
+                recs = int((size*size2)/num_values)
+                return recs, odata.encode()
+            else:
+                tofrom = self._convert_option()
+                dt_string = CDF._convert_type(data_type)
+                recs = int(size/num_values)
+                if (data_type == CDF.CDF_EPOCH16 and
+                    isinstance(indata[0], complex)):
+                    complex_data = []
+                    for x in range (0, recs):
+                        acomplex = indata[x]
+                        complex_data.append(acomplex.real)
+                        complex_data.append(acomplex.imag)
+                    size = 2 * size
+                    indata = complex_data
+                if (data_type == CDF.CDF_EPOCH16 and
+                    not isinstance(indata[0], complex)):
+                    recs = int(recs/2)
+                form = tofrom + str(size) + dt_string
+                return recs, struct.pack(form, *indata)
         elif (isinstance(indata, bytes)):
-           tofrom = self._convert_option()
-           recs = int(len(indata) / recSize)
-           dt_string = CDF._convert_type(data_type)
-           size = recs * num_values * num_elems
-           if (data_type == CDF.CDF_EPOCH16):
-              size = size * 2
-           form = str(size) + dt_string
-           form2 = tofrom + form
-           datau = struct.unpack(form, indata)
-           return recs, struct.pack(form2, *datau)
+            tofrom = self._convert_option()
+            recs = int(len(indata) / recSize)
+            dt_string = CDF._convert_type(data_type)
+            size = recs * num_values * num_elems
+            if (data_type == CDF.CDF_EPOCH16):
+                size = size * 2
+            form = str(size) + dt_string
+            form2 = tofrom + form
+            datau = struct.unpack(form, indata)
+            return recs, struct.pack(form2, *datau)
         elif (isinstance(indata, np.ndarray)):
-           tofrom = self._convert_option()
-           npdata = CDF._convert_nptype(data_type, indata)
-           recs = len(indata)
-           dt_string = CDF._convert_type(data_type)
-           if (data_type == CDF.CDF_EPOCH16):
-              num_elems = 2 * num_elems
-           form = str(recs*num_values*num_elems) + dt_string
-           form2 = tofrom + str(recs*num_values*num_elems) + dt_string
-           datau = struct.unpack(form, npdata)
-           return recs, struct.pack(form2, *datau)
+            tofrom = self._convert_option()
+            npdata = CDF._convert_nptype(data_type, indata)
+            recs = len(indata)
+            dt_string = CDF._convert_type(data_type)
+            if (data_type == CDF.CDF_EPOCH16):
+                num_elems = 2 * num_elems
+            form = str(recs*num_values*num_elems) + dt_string
+            form2 = tofrom + str(recs*num_values*num_elems) + dt_string
+            datau = struct.unpack(form, npdata)
+            return recs, struct.pack(form2, *datau)
         elif (isinstance(indata, str)):
-           return 1, indata.ljust(num_elems).encode()
+            return 1, indata.ljust(num_elems).encode()
         else:
-           tofrom = self._convert_option()
-           dt_string = CDF._convert_type(data_type)
-           if (data_type == CDF.CDF_EPOCH16):
-              num_elems = 2 * num_elems
-           try:
-              recs = int(len(indata) / recSize)
-           except:
-              recs = 1
-           if (data_type == CDF.CDF_EPOCH16):
-              complex_data = []
-              if (recs > 1):
-                 for x in range (0, recs):
-                    acomplex = indata[x]
-                    complex_data.append(acomplex.real)
-                    complex_data.append(acomplex.imag)
-              else:
-                 complex_data.append(indata.real)
-                 complex_data.append(indata.imag)
-              indata = complex_data
-           form = tofrom + str(recs*num_values*num_elems) + dt_string
-           if (recs*num_values*num_elems > 1):
-              return recs,struct.pack(form, *indata)
-           else:
-              return recs, struct.pack(form, indata)
+            tofrom = self._convert_option()
+            dt_string = CDF._convert_type(data_type)
+            if (data_type == CDF.CDF_EPOCH16):
+                num_elems = 2 * num_elems
+            try:
+                recs = int(len(indata) / recSize)
+            except:
+                recs = 1
+            if (data_type == CDF.CDF_EPOCH16):
+                complex_data = []
+                if (recs > 1):
+                    for x in range (0, recs):
+                        acomplex = indata[x]
+                        complex_data.append(acomplex.real)
+                        complex_data.append(acomplex.imag)
+                else:
+                    complex_data.append(indata.real)
+                    complex_data.append(indata.imag)
+                indata = complex_data
+            form = tofrom + str(recs*num_values*num_elems) + dt_string
+            if (recs*num_values*num_elems > 1):
+                return recs,struct.pack(form, *indata)
+            else:
+                return recs, struct.pack(form, indata)
 
     def _num_values(self, zVar, varNum):
+        '''
+        Determines the number of values in a record.
+        Set zVar=True if this is a zvariable.  
+        '''
         values = 1
         if (zVar == True):
-           numDims = self.zvarsinfo[varNum][2]
-           dimSizes = self.zvarsinfo[varNum][3]
-           dimVary = self.zvarsinfo[varNum][4]
+            numDims = self.zvarsinfo[varNum][2]
+            dimSizes = self.zvarsinfo[varNum][3]
+            dimVary = self.zvarsinfo[varNum][4]
         else:
-           numDims = self.rvarsinfo[varNum][2]
-           dimSizes = self.rvarsinfo[varNum][3]
-           dimVary = self.rvarsinfo[varNum][4]
+            numDims = self.rvarsinfo[varNum][2]
+            dimSizes = self.rvarsinfo[varNum][3]
+            dimVary = self.rvarsinfo[varNum][4]
         if (numDims < 1):
-           return values
+            return values
         else:
-           for x in range(0, numDims):
-              if (zVar == True):
-                 values = values * dimSizes[x]
-              else:
-                 if (dimVary[x] != 0):
+            for x in range(0, numDims):
+                if (zVar == True):
                     values = values * dimSizes[x]
-           return values
+                else:
+                    if (dimVary[x] != 0):
+                        values = values * dimSizes[x]
+            return values
     
     def _read_offset_value (self, f, offset, size):
+        '''
+        Reads an integer value from file "f" at location "offset".  
+        '''
         f.seek(offset, 0)
         if (size == 8):
-          return int.from_bytes(f.read(8),'big', signed=True)
+            return int.from_bytes(f.read(8),'big', signed=True)
         else:
-          return int.from_bytes(f.read(4),'big', signed=True)
+            return int.from_bytes(f.read(4),'big', signed=True)
 
     def _update_offset_value (self, f, offset, size, value):
+        '''
+        Writes "value" into location "offset" in file "f".   
+        '''
         f.seek(offset, 0)
         if (size == 8):
-          f.write(struct.pack('>q', value))
+            f.write(struct.pack('>q', value))
         else:
-          f.write(struct.pack('>i', value))
+            f.write(struct.pack('>i', value))
 
     def _update_aedr_link (self, f, attrNum, zVar, varNum, offset):
-        hoffset = self.attrsinfo[attrNum][2]
-        if (zVar == True):
-           f.seek(hoffset+56, 0)
-           # ADR's NzEntries
-           entries = int.from_bytes(f.read(4),'big', signed=True)
-           # ADR's MAXzEntry
-           maxEntry = int.from_bytes(f.read(4),'big', signed=True)
+        '''
+        Updates variable aedr links
+        
+        Parameters: 
+            f : file
+                The open CDF file
+            attrNum : int
+                The number of the attribute to change
+            zVar : bool
+                True if we are updating a z variable attribute
+            varNum : int
+                The variable number associated with this aedr
+            offset : int
+                The offset in the file to the AEDR
+        Returns: None
+        
+        '''
+        
+        #The offset to this AEDR's ADR
+        adr_offset = self.attrsinfo[attrNum][2]
+        
+        #Get the number of entries
+        if zVar:
+            f.seek(adr_offset+56, 0)
+            # ADR's NzEntries
+            entries = int.from_bytes(f.read(4),'big', signed=True)
+            # ADR's MAXzEntry
+            maxEntry = int.from_bytes(f.read(4),'big', signed=True)
         else:
-           f.seek(hoffset+36, 0)
-           # ADR's NgrEntries
-           entries = int.from_bytes(f.read(4),'big', signed=True)
-           # ADR's MAXgrEntry
-           maxEntry = int.from_bytes(f.read(4),'big', signed=True)
+            f.seek(adr_offset+36, 0)
+            # ADR's NgrEntries
+            entries = int.from_bytes(f.read(4),'big', signed=True)
+            # ADR's MAXgrEntry
+            maxEntry = int.from_bytes(f.read(4),'big', signed=True)
+        
+        
         if (entries == 0):
-           if (zVar == True):
-              # AzEDRhead
-              self._update_offset_value (f, hoffset+48, 8, offset)
-              # NzEntries
-              self._update_offset_value (f, hoffset+56, 4, 1)
-              # MaxzEntry
-              self._update_offset_value (f, hoffset+60, 4, varNum)
-           else:
-              # AgrEDRhead
-              self._update_offset_value (f, hoffset+20, 8, offset)
-              # NgrEntries
-              self._update_offset_value (f, hoffset+36, 4, 1)
-              # MaxgrEntry
-              self._update_offset_value (f, hoffset+40, 4, varNum)
+            #If this is the first entry, update the ADR to reflect
+            if zVar:
+                # AzEDRhead
+                self._update_offset_value(f, adr_offset+48, 8, offset)
+                # NzEntries
+                self._update_offset_value(f, adr_offset+56, 4, 1)
+                # MaxzEntry
+                self._update_offset_value(f, adr_offset+60, 4, varNum)
+            else:
+                # AgrEDRhead
+                self._update_offset_value(f, adr_offset+20, 8, offset)
+                # NgrEntries
+                self._update_offset_value(f, adr_offset+36, 4, 1)
+                # MaxgrEntry
+                self._update_offset_value(f, adr_offset+40, 4, varNum)
         else:
-           if (zVar == True):
-              f.seek(hoffset+48, 0)
-              head = int.from_bytes(f.read(8),'big', signed=True)
-           else:
-              f.seek(hoffset+20, 0)
-              head = int.from_bytes(f.read(8),'big', signed=True)
-           aedr = head
-           paedr = head
-           done = 0
-           for x in range (0, entries):
-              f.seek(aedr+28, 0)
-              num = int.from_bytes(f.read(4),'big', signed=True)
-              if (num > varNum):
-                 # insert an aedr to the chain
-                 # AEDRnext
-                 self._update_offset_value (f, paedr+12, 8, offset)
-                 # AEDRnext
-                 self._update_offset_value (f, offset+12, 8, aedr)
-                 done = 1
-                 break
-              else:
-                 # move to the next aedr in chain
-                 f.seek(aedr+12, 0)
-                 paedr = aedr
-                 aedr = int.from_bytes(f.read(8),'big', signed=True)
-           if (done == 0):
-              self._update_offset_value (f, paedr+12, 8, offset)
-           if (zVar == True):
-              self._update_offset_value (f, hoffset+56, 4, entries+1)
-              if (maxEntry < varNum):
-                 self._update_offset_value (f, hoffset+60, 4, varNum)
-           else:
-              self._update_offset_value (f, hoffset+36, 4, entries+1)
-              if (maxEntry < varNum):
-                 self._update_offset_value (f, hoffset+40, 4, varNum)
+            if zVar:
+                f.seek(adr_offset+48, 0)
+                head = int.from_bytes(f.read(8),'big', signed=True)
+            else:
+                f.seek(adr_offset+20, 0)
+                head = int.from_bytes(f.read(8),'big', signed=True)
+            aedr = head
+            previous_aedr = head
+            done = False
+            #For each entry, re-adjust file offsets if needed
+            for _ in range(0, entries):
+                f.seek(aedr+28, 0)
+                #Get variable number for entry
+                num = int.from_bytes(f.read(4),'big', signed=True)
+                if (num > varNum):
+                    # insert an aedr to the chain
+                    # AEDRnext
+                    self._update_offset_value(f, previous_aedr+12, 8, offset)
+                    # AEDRnext
+                    self._update_offset_value(f, offset+12, 8, aedr)
+                    done = True
+                    break
+                else:
+                    # move to the next aedr in chain
+                    f.seek(aedr+12, 0)
+                    previous_aedr = aedr
+                    aedr = int.from_bytes(f.read(8),'big', signed=True)
+            
+            #If no link was made, update the last found aedr
+            if not done:
+                self._update_offset_value (f, previous_aedr+12, 8, offset)
+            
+            if zVar:
+                self._update_offset_value(f, adr_offset+56, 4, entries+1)
+                if (maxEntry < varNum):
+                    self._update_offset_value (f, adr_offset+60, 4, varNum)
+            else:
+                self._update_offset_value(f, adr_offset+36, 4, entries+1)
+                if (maxEntry < varNum):
+                    self._update_offset_value(f, adr_offset+40, 4, varNum)
 
     def _set_bit(value, bit): # @NoSelf
         return value | (1<<bit)
