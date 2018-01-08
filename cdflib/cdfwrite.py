@@ -28,7 +28,7 @@ Creates an empty CDF file.
                            file creation. The default is False.
              ['rDim_sizes']: The dimensional sizes, applicable
                              only to rVariables.
-             ['Compress']: Whether to compress the CDF at the file
+             ['Compressed']: Whether to compress the CDF at the file
                            level. A value of 0-9 or True/False, the
                            default is 0/False.
 
@@ -40,18 +40,18 @@ Writes the global attributes.
                 a dictionary of entry number and value pair(s).
                 For examples:
       globalAttrs={}
-      globalAttrs['Global1']={0, 'Gloabl Value 1'}
-      globalAttrs['Global2']={0, 'Gloabl Value 2'}
+      globalAttrs['Global1']={0: 'Global Value 1'}
+      globalAttrs['Global2']={0: 'Global Value 2'}
    For a non-string value, use a list with the value and its 
    CDF data type. For examples:
-      globalAttrs['Global3']={0, [12, 'cdf_int4']}
-      globalAttrs['Global4']={0, [12.34 'cdf_double']}
+      globalAttrs['Global3']={0: [12, 'cdf_int4']}
+      globalAttrs['Global4']={0: [12.34, 'cdf_double']}
    If the data type is not provided, a corresponding
    CDF data type is assumed:
-      globalAttrs['Global3']={0, 12}     as 'cdf_int4'
-      globalAttrs['Global4']={0, 12.34}  as 'cdf_double'
+      globalAttrs['Global3']={0: 12}     as 'cdf_int4'
+      globalAttrs['Global4']={0: 12.34}  as 'cdf_double'
    CDF allows multi-values for non-string data for an attribute:
-      globalAttrs['Global5']={0, [[12.34,21.43], 'cdf_double']}
+      globalAttrs['Global5']={0: [[12.34,21.43], 'cdf_double']}
    For multi-entries from a global variable, they should be
    presented in this form:
       GA6={}
@@ -102,7 +102,7 @@ Writes a variable, along with variable attributes and data:
       ['Dims_Sizes']: The dimensional sizes for zVariables only. 
                       Use [] for 0-dimension. Each and
                       every dimension is varying for zVariables.
-      For zVariables:
+      For rVariables:
       ['Dim_Vary']: The dimensional variances for rVariables 
                     only.
       Optional keys:
@@ -544,8 +544,9 @@ class CDF(object):
                 g.write(bytearray.fromhex(CDF.V3magicNUMBER_1))
                 g.write(bytearray.fromhex(CDF.V3magicNUMBER_2c))
                 self._write_ccr(f, g, self.compression)
-            if (self.checksum == True):
+            if self.checksum:
                 if (self.compression > 0):
+                    g.seek(0, 2)
                     g.write(self._md5_compute(g))
                 else:
                     f.write(self._md5_compute(f))
@@ -687,7 +688,7 @@ class CDF(object):
             entryNumX = -1
             poffset=-1
             for entryID, value in attrs.items():
-                if (isinstance(entryID, str) and (not (entryID in self.zvars) or
+                if (isinstance(entryID, str) and (not (entryID in self.zvars) and
                     not (entryID in self.rvars))):
                     print('The variable: ', entryID, 
                           'not found in the CDF.... Stop')
@@ -740,7 +741,7 @@ class CDF(object):
                                 if (isinstance(data, list) or 
                                     isinstance(data, tuple)):
                                     print('Invalid variable attribute value.... Skip')
-                                    return
+                                    continue
                                 numElems = len(data)
                             elif (dataType == CDF.CDF_EPOCH or \
                                   dataType == CDF.CDF_EPOCH16
@@ -883,7 +884,7 @@ class CDF(object):
         try:
             blockingfactor = int(var_spec['Block_Factor'])
         except:
-            blockingfactor = None
+            blockingfactor = 1
         #Get pad value
         try:
             pad = var_spec['Pad']
@@ -1073,8 +1074,8 @@ class CDF(object):
                 True if each record is unque
             compression : int
                 The amount of compression
-            blockingfactor: ?
-                ?
+            blockingfactor: int
+                The size (in number of records) of a VVR data block
             indata : varies
                 the data to write, should be a numpy or byte array
             
