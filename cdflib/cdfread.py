@@ -245,12 +245,15 @@ class CDF(object):
             self.file = None
             return
         if magic_number == 'cdf30001':
-            cdfversion = 3
+            self.cdfversion = 3
         else:
-            cdfversion = 2
+            self.cdfversion = 2
         compressed_bool = f.read(4).hex()
         self._compressed = not (compressed_bool == '0000ffff')
         self._reading_compressed_file  = False
+        self.compressed_file = None
+        
+        
         if self._compressed:
             new_path = self._uncompress_file(path)
             if new_path == None:
@@ -258,11 +261,12 @@ class CDF(object):
                 f.close()
                 self.file = None
                 return
+            self.compressed_file = self.file
             self.file= open(new_path, 'rb')
             path = new_path
             self.file.seek(8)
             self._reading_compressed_file = True
-        if (cdfversion == 3): 
+        if (self.cdfversion == 3): 
             cdr_info = self._read_cdr(self.file.tell())
             gdr_info = self._read_gdr(self.file.tell())
         else:
@@ -270,15 +274,21 @@ class CDF(object):
             gdr_info = self._read_gdr2(self.file.tell())
 
         if cdr_info['md5'] and (validate != None):
-            if not self._md5_validation(gdr_info['eof']):
+            if not self._md5_validation():
                 print('This file fails the md5 checksum....')
                 f.close()
+                if self.compressed_file != None:
+                    self.compressed_file.close()
+                    self.compressed_file = None
                 self.file = None
                 return
 
         if not cdr_info['format']:
             print('This package does not support multi-format CDF')
             f.close()
+            if self.compressed_file != None:
+                self.compressed_file.close()
+                self.compressed_file = None
             self.file = None
             return
 
@@ -286,12 +296,14 @@ class CDF(object):
             print('This package does not support CDFs with this '+
                   CDF._encoding_token(cdr_info['encoding'])+' encoding') 
             f.close()
+            if self.compressed_file != None:
+                self.compressed_file.close()
+                self.compressed_file = None
             self.file = None
             return
 
         #SET GLOBAL VARIABLES
         self._post25 = cdr_info['post25']
-        self.cdfversion = cdfversion
         self._path = path
         self._version = cdr_info['version']
         self._encoding = cdr_info['encoding']
@@ -308,8 +320,12 @@ class CDF(object):
         self._num_att = gdr_info['num_attributes']
         self._num_rdim = gdr_info['rvariables_num_dims']
         self._rdim_sizes = gdr_info['rvariables_dim_sizes']
-        if (cdfversion == 3):
+        if (self.cdfversion == 3):
             self._leap_second_updated = gdr_info['leapsecond_updated']
+            
+        if self.compressed_file != None:
+            self.compressed_file.close()
+            self.compressed_file = None
     
     def __del__(self):
         if (self.file != None):
@@ -318,9 +334,11 @@ class CDF(object):
     def close(self):
         if (self.file != None):
             self.file.close()
-            if self._reading_compressed_file == True:
+            if self._reading_compressed_file:
                 os.remove(self._path)
                 self._reading_compressed_file = False
+        if self.compressed_file != None:
+            self.compressed_file.close()
             
     def cdf_info(self):
         mycdf_info = {}
@@ -400,9 +418,11 @@ class CDF(object):
                   'number of an attribute')
             
             attrs = self._get_attnames()
+            print(attrs)
             for x in range(0, self._num_att):
                 name = list(attrs[x].keys())[0]
-                print('NAME: ' + name + ' NUMBER: ' + str(x) + ' SCOPE: ' + attrs[x][name])
+                print('NAME: ' + name + ', NUMBER: ' + str(x) + ', SCOPE: ' + attrs[x][name])
+            return attrs
                 
     def attget(self, attribute = None, entry = None):
         
@@ -731,8 +751,6 @@ class CDF(object):
         f.seek(data_start)
         decompressed_data =  gzip.decompress(f.read(data_size))
         
-        self.close()
-        
         directory, filename = os.path.split(path)
         new_filename = filename+".gunzip"
         new_path = os.path.join(directory, new_filename)
@@ -783,23 +801,28 @@ class CDF(object):
         cParams = int.from_bytes(cpr[16:20],'big')
         return cType, cParams
 
-    def _md5_validation(self, file_size):
+    def _md5_validation(self):
         '''
         Verifies the MD5 checksum.  
         Only used in the __init__() function
         '''
+        if self.compressed_file==None:
+            f = self.file
+        else:
+            f = self.compressed_file
         md5 = hashlib.md5()
         block_size = 16384
-        remaining = file_size
-        self.file.seek(0)
+        f.seek(-16,2)
+        remaining = f.tell() #File size minus checksum size
+        f.seek(0)
         while (remaining > block_size):
-            data = self.file.read(block_size)
+            data = f.read(block_size)
             remaining = remaining - block_size
             md5.update(data)
         if (remaining > 0):
-            data = self.file.read(remaining)
+            data = f.read(remaining)
             md5.update(data)
-        existing_md5 = self.file.read(16).hex()
+        existing_md5 = f.read(16).hex()
         return (md5.hexdigest() == existing_md5)
 
     def _encoding_token(encoding):   # @NoSelf
@@ -887,9 +910,9 @@ class CDF(object):
 
     def _get_attnames(self):
         attrs = []
-        attr = {}
         position = self._first_adr
         for _ in range(0, self._num_att):
+            attr = {}
             if (self.cdfversion == 3):
                 adr_info = self._read_adr(position)
             else:
@@ -1500,9 +1523,9 @@ class CDF(object):
             
     def _read_vdr_fast2(self, byte_loc):
         if (self._post25 == True):
-           toadd = 0
+            toadd = 0
         else:
-           toadd = 128
+            toadd = 128
         f = self.file
         f.seek(byte_loc+8, 0)
         next_vdr = int.from_bytes(f.read(4),'big', signed=True)
@@ -1975,7 +1998,10 @@ class CDF(object):
                 new_dict['Real_Records'] = physical_recs
             return new_dict
         else:
-            return data
+            if (vdr_info['record_vary']):
+                return data
+            else:
+                return data[0]
 
     def _findtimerecords(self, var_name, starttime, endtime, epoch=None):
         

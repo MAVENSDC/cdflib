@@ -12,13 +12,13 @@ def readme():
         return f.read()
 
 setup(name='cdflib',
-      version='0.2.0',
+      version='0.3.0',
       description='A python CDF reader toolkit',
       url='http://github.com/MAVENSDC/cdflib',
       author='MAVEN SDC',
       author_email='mavensdc@lasp.colorado.edu',
       license='MIT',
-      keywords='CDF maven lasp PDS',
+      keywords='CDF maven lasp PDS GSFC',
       packages=['cdflib'],
       install_requires=['numpy'],
       include_package_data=True,
