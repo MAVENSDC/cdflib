@@ -195,7 +195,7 @@ data either written or found in the time range.
 
 getVersion ()
 =============
-Shows the code version.
+Shows the code version and last modified date.
 
 Sample use - 
 
@@ -204,6 +204,7 @@ Sample use -
     swea_cdf_file.cdf_info()
     x = swea_cdf_file.varget('NameOfVariable')
     swea_cdf_file.close()
+    cdflib.cdfread.CDF.getVersion()
 
 @author: Bryan Harter, Michael Liu
 '''
@@ -1644,11 +1645,13 @@ class CDF(object):
             if ('pad' in vdr_dict):
                 #use default pad value
                 filled_data = CDF._convert_np_data(vdr_dict['pad'], \
-                                                   vdr_dict['data_type'])
+                                                   vdr_dict['data_type'],\
+                                                   vdr_dict['num_elements'])
             else:
                 filled_data = CDF._convert_np_data(\
                                     self._default_pad(vdr_dict['data_type']),\
-                                    vdr_dict['data_type'])
+                                    vdr_dict['data_type'],\
+                                    vdr_dict['num_elements'])
             cur_block = -1
             rec_size = numBytes * numValues
             for rec_num in range(startrec, (endrec+1)):
@@ -1825,7 +1828,7 @@ class CDF(object):
                     z = byte_data[y:y+num_elems].find(b'\x00')
                     if (z > -1 and z < (num_elems-1)):
                         byte_data[y+z+1:y+num_elems] = b'\x00' * (num_elems - z - 1)
-                ret = byte_data[0:num_recs*num_elems].decode('utf-8')
+                ret = byte_data[0:num_recs*num_elems].decode('utf-8').replace('\x00', '')
             else:
                 #Count total number of strings
                 count = 1
@@ -1833,14 +1836,18 @@ class CDF(object):
                     count = count * dimensions[x]
                 strings = []
                 if (len(dimensions) == 0):
-                    strings =  [byte_stream[i:i+num_elems].decode('utf-8') for i in
-                                range(0, num_recs*count*num_elems, num_elems)]
+                    for i in range(0, num_recs*count*num_elems, num_elems):
+                        string1 = byte_stream[i:i+num_elems].decode('utf-8').\
+                                                            replace('\x00', '')
+                        strings.append(string1)
                 else:
                     for x in range (0, num_recs):
                         onerec = []
-                        onerec = [byte_stream[i:i+num_elems].decode('utf-8') for i in
-                                   range(x*count*num_elems, (x+1)*count*num_elems,
-                                        num_elems)]
+                        for i in range(x*count*num_elems, (x+1)*count*num_elems,
+                                       num_elems):
+                            string1 = byte_stream[i:i+num_elems].decode('utf-8')\
+                                                            .replace('\x00', '')
+                            onerec.append(string1)
                         strings.append(onerec)
                 ret = strings
             return ret
@@ -2127,12 +2134,15 @@ class CDF(object):
         ret.setflags('WRITEABLE')
         return ret
 
-    def _convert_np_data(data, data_type):   # @NoSelf
+    def _convert_np_data(data, data_type, num_elems):   # @NoSelf
         '''
         Converts a single np data into byte stream.
         '''
         if (data_type == 51 or data_type == 52):
-            return data.encode('utf-8')
+            if (data == ''):
+                return ('\x00'*num_elems).encode()
+            else:
+                return data.ljust(num_elems,'\x00').encode('utf-8')
         elif (data_type == 32):
             data_stream = data.real.tobytes()
             data_stream += data.imag.tobytes() 
@@ -2192,5 +2202,5 @@ class CDF(object):
     def getVersion():   # @NoSelf
         print('CDFread version:', str(CDF.version)+'.'+str(CDF.release)+
               '.'+str(CDF.increment))
-
+        print('Date: 2018/01/11')
  

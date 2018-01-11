@@ -138,7 +138,7 @@ class CDFReadTestCase(unittest.TestCase):
         varinfo = self.test_file_reader.varinq("Variable1")
         self.assertEqual(varinfo['Data_Type'], 8)
         var = self.test_file_reader.varget("Variable1")
-        self.assertEqual(var[0], 2)
+        self.assertEqual(var, 2)
             
         #Close the reading file
         self.test_file_reader.close()

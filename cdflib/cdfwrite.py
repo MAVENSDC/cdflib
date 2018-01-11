@@ -96,7 +96,9 @@ Writes a variable, along with variable attributes and data:
       Required keys:
       ['Variable']: The name of the variable
       ['Data_Type']: the CDF data type
-      ['Num_Elements']: The number of elements
+      ['Num_Elements']: The number of elements. Always 1 the
+                        for numeric type. The char length for
+                        string type.
       ['Rec_Vary']: Record variance
       For zVariables:
       ['Dims_Sizes']: The dimensional sizes for zVariables only. 
@@ -161,7 +163,7 @@ Writes a variable, along with variable attributes and data:
 
 getVersion()
 ============
-Shows the code version.
+Shows the code version and last modified date.
 
 Note: The attribute entry value for the CDF epoch data type, CDF_EPOCH,
       CDF_EPOCH16 or CDF_TIME_TT2000, can be presented in either a numeric
@@ -181,12 +183,12 @@ variable meta-data comes from the master CDF. Each variable's specification
 also is copied from the master CDF. Just fill the variable data to write a
 new CDF file.
  
-    import cdfwrite, cdfread, numpy as np
-    cdf_master = cdfread.CDF('/path/to/master_file.cdf')
+    import cdflib, numpy as np
+    cdf_master = cdflib.CDF('/path/to/master_file.cdf')
     if (cdf_master.file != None):
        # Get the cdf's specification
        info=cdf_master.cdf_info()
-       cdf_file=cdfwrite.CDF('/path/to/swea_file.cdf',cdf_spec=info,delete=True)
+       cdf_file=cdflib.CDF('/path/to/swea_file.cdf',cdf_spec=info,delete=True)
        if (cdf_file.file == None):
          print('Problem writing file.... Stop')
          cdf_master.close()
@@ -260,6 +262,7 @@ new CDF file.
                                var_data=[vardata,vardata])
        cdf_master.close()
        cdf_file.close()
+       cdflib.getVersion()
 
 @author: Mike Liu
 """
@@ -819,7 +822,7 @@ class CDF(object):
         f = self.file
         #Get variable info from var_spec
         try: 
-            dataType = var_spec['Data_Type']
+            dataType = int(var_spec['Data_Type'])
             numElems = int(var_spec['Num_Elements'])
             name = var_spec['Variable']
             recVary = var_spec['Rec_Vary']
@@ -837,6 +840,15 @@ class CDF(object):
         except:
             var_spec['Var_Type'] = 'zVariable'
             zVar = True
+            
+        if (dataType == CDF.CDF_CHAR or dataType == CDF.CDF_UCHAR):
+            if (numElems < 1):
+                print('Invalid Num_Elements for string data type variable')
+                return -1
+        else:
+            if (numElems != 1):
+                print('Invalid Num_Elements for numeric data type variable')
+                return -1
         #If its a z variable, get the dimension info
         #Otherwise, use r variable info
         if zVar:
@@ -1623,11 +1635,11 @@ class CDF(object):
         increment = CDF.increment
         identifier = 2
         rfuE = -1
-        copy_right = '\nCommon Data Format (CDF)\nHTTPS://CDF.GSFC.NASA.GOV\n'+ \
+        copy_right = '\nCommon Data Format (CDF)\nhttps://cdf.gsfc.nasa.gov\n'+ \
                      'Space Physics Data Facility\n'+ \
                      'NASA/Goddard Space Flight Center\n'+ \
                      'Greenbelt, Maryland 20771 USA\n'+ \
-                     '(User support: GSFC-CDF-SUPPORT@LISTS.NASA.GOV)\n'
+                     '(User support: gsfc-cdf-support@lists.nasa.gov)\n'
 
         cdr = bytearray(block_size)
         cdr[0:8] = struct.pack('>q', block_size)
@@ -1954,6 +1966,11 @@ class CDF(object):
         #Determine pad value
         if not (pad is None):
             if (dataType == 51 or dataType == 52):
+                #pad needs to be the correct number of elements
+                if (len(pad) < numElems): 
+                    pad += '\0'*(numElems-len(pad))
+                elif (len(pad) > numElems):
+                    pad = pad[:numElems]
                 pad = pad.encode()
             else:
                 dummy, pad = self._convert_data(dataType, numElems, 1, pad)
@@ -1964,8 +1981,8 @@ class CDF(object):
         byte_loc = f.tell()
         block_size += len(pad)
         vdr = bytearray(block_size)
-        if (dataType == 51):
-            numElems = len(pad)
+        #if (dataType == 51):
+        #    numElems = len(pad)
         vdr[0:8] = struct.pack('>q', block_size)
         vdr[8:12] = struct.pack('>i', section_type)
         vdr[12:20] = struct.pack('>q', nextVDR)
@@ -2315,10 +2332,10 @@ class CDF(object):
                     if (isinstance(adata, list) or isinstance(adata, tuple)):
                         size2 = len(adata)
                         for y in range (0, size2):
-                            odata += adata[y].ljust(num_elems)
+                            odata += adata[y].ljust(num_elems,'\x00')
                     else:
                         size2 = 1
-                        odata += adata.ljust(num_elems)
+                        odata += adata.ljust(num_elems,'\x00')
                 recs = int((size*size2)/num_values)
                 return recs, odata.encode()
             else:
@@ -2362,7 +2379,7 @@ class CDF(object):
             datau = struct.unpack(form, npdata)
             return recs, struct.pack(form2, *datau)
         elif (isinstance(indata, str)):
-            return 1, indata.ljust(num_elems).encode()
+            return 1, indata.ljust(num_elems,'\x00').encode()
         else:
             tofrom = self._convert_option()
             dt_string = CDF._convert_type(data_type)
@@ -2685,9 +2702,8 @@ class CDF(object):
                 print('Invalid sparse data... ',
                       'Less data than the specified records... Skip')
         elif (isinstance(data, list)):
-            data_1 = data[0]
-            if (isinstance(data_1, list)):
-                if not (all(isinstance(el, str) for el in data_1)):
+            if (isinstance(data[0], list)):
+                if not (all(isinstance(el, str) for el in data[0])):
                     print('Can not handle list data.... ',
                           'Only support list of str... Skip')
                     return
@@ -2697,8 +2713,8 @@ class CDF(object):
                           'Only support list of str... Skip')
                     return
             record_length = len(records)
-            for z in range(0, variable['Num_Dims']):
-                record_length = record_length * variable['Dim_Sizes'][z]
+            #for z in range(0, variable['Num_Dims']):
+            #    record_length = record_length * variable['Dim_Sizes'][z]
             if (record_length == len(data)):
                 # All are physical data
                 return self._make_sparse_blocks_with_physical(variable, records,
@@ -2823,4 +2839,4 @@ class CDF(object):
     def getVersion(): # @NoSelf
         print('CDFwrite version:', str(CDF.version)+'.'+str(CDF.release)+
               '.'+str(CDF.increment))
-
+        print('Date: 2018/01/11')
