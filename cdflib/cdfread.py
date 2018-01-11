@@ -79,16 +79,15 @@ This information includes
         +-----------------+--------------------------------------------------------------------------------+
         | ['Last_Rec']    | the maximum written record number (0-based)                                    |
         +-----------------+--------------------------------------------------------------------------------+
-        | ['Dim_Vary']    | the dimensional variance(s)
+        | ['Dim_Vary']    | the dimensional variance(s)                                                    |
         +-----------------+--------------------------------------------------------------------------------+
-        | ['Rec_Vary']    | the record variance
+        | ['Rec_Vary']    | the record variance                                                            |
         +-----------------+--------------------------------------------------------------------------------+
-        | ['Pad']         | the padded value if set
+        | ['Pad']         | the padded value if set                                                        |
         +-----------------+--------------------------------------------------------------------------------+
-        | ['Compress']    | the GZIP compression level, 0 to 9.
-        |                 | 0 if not compressed 
+        | ['Compress']    | the GZIP compression level, 0 to 9. 0 if not compressed                        |
         +-----------------+--------------------------------------------------------------------------------+
-        | ['Block_Factor']| the blocking factor if the variable is compressed
+        | ['Block_Factor']| the blocking factor if the variable is compressed                              |
         +-----------------+--------------------------------------------------------------------------------+
 
 
@@ -159,7 +158,7 @@ with the following defined keys for the output
         +-----------------+--------------------------------------------------------------------------------+
         | ['Data']        | retrieved variable data                                                        |
         +-----------------+--------------------------------------------------------------------------------+
-        | ['Real_Records']| Record numbers for real data for sparse record variable in list
+        | ['Real_Records']| Record numbers for real data for sparse record variable in list                |
         +-----------------+--------------------------------------------------------------------------------+
         
 By default, the full variable data is returned. To acquire
