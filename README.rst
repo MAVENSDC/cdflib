@@ -465,4 +465,3 @@ new CDF file::
 	cdf_file.close()
 	
 @author: Bryan Harter, Michael Liu
-'''

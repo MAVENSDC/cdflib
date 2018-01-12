@@ -296,18 +296,22 @@ class CDFepoch(object):
             print('Bad input')
             return None
         
-    def unixtime(self, epochs, to_np=False):
+    def unixtime(self, cdf_time, to_np=False):
         import datetime
-        time_list = self.breakdown(epochs, to_np=False)
+        time_list = CDFepoch.breakdown(cdf_time, to_np=False)
         unixtime = [] 
         for t in time_list:
-            del t[8:]
-            if len(t) == 8:
-                t[7] = (t[6]*1000)+t[7]
-                del t[7]
-            else:
-                t[6] = 1000*t[6]
-            unixtime.append(datetime.datetime(*t).replace(tzinfo=datetime.timezone.utc).timestamp())
+            date = ['year', 'month', 'day', 'hour', 'minute', 'second', 'microsecond']
+            for i in range(0,len(t)):
+                if i > 7:
+                    continue
+                elif i == 6:
+                    date[i] = 1000*t[i]
+                elif i== 7:
+                    date[i-1] += t[i]
+                else:  
+                    date[i] = t[i]
+            unixtime.append(datetime.datetime(*date).replace(tzinfo=datetime.timezone.utc).timestamp())
         return np.array(unixtime) if to_np else unixtime
     
     def compute(datetimes, to_np=None): # @NoSelf

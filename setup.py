@@ -12,7 +12,7 @@ def readme():
         return f.read()
 
 setup(name='cdflib',
-      version='0.3.1',
+      version='0.3.2',
       description='A python CDF reader toolkit',
       url='http://github.com/MAVENSDC/cdflib',
       author='MAVEN SDC',
