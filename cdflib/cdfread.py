@@ -739,8 +739,14 @@ class CDF(object):
             for x in zvars:
                 print("NAME: " + str(x))
             return 
-
+    
     def _uncompress_file(self, path):
+        '''
+        Writes the current file into a file in the temporary directory.
+        
+        If that doesn't work, create a new file in the CDFs directory.
+        '''
+        
         f = self.file
         if (self.cdfversion == 3):
             data_start, data_size, cType, _ = self._read_ccr(8)
@@ -751,16 +757,26 @@ class CDF(object):
         f.seek(data_start)
         decompressed_data =  gzip.decompress(f.read(data_size))
         
-        directory, filename = os.path.split(path)
-        new_filename = filename+".gunzip"
-        new_path = os.path.join(directory, new_filename)
-        with open(new_path, 'wb') as newfile:
-            newfile.write(bytearray.fromhex('cdf30001'))
-            newfile.write(bytearray.fromhex('0000ffff'))
-            newfile.write(decompressed_data)
-        
-        return new_path
-        
+        try:
+            import tempfile
+            _, filename = os.path.split(path)        
+            new_filename = filename+".gunzip"        
+            new_path = os.path.join(tempfile.gettempdir(), new_filename)
+            with open(new_path, 'wb') as newfile:
+                newfile.write(bytearray.fromhex('cdf30001'))
+                newfile.write(bytearray.fromhex('0000ffff'))
+                newfile.write(decompressed_data)
+                return new_path
+        except:
+            directory, filename = os.path.split(path)        
+            new_filename = filename+".gunzip"        
+            new_path = os.path.join(directory, new_filename)
+            with open(new_path, 'wb') as newfile:
+                newfile.write(bytearray.fromhex('cdf30001'))
+                newfile.write(bytearray.fromhex('0000ffff'))
+                newfile.write(decompressed_data)
+            return new_path
+    
     def _read_ccr(self, byte_loc):
         f = self.file
         f.seek(byte_loc, 0)
