@@ -166,7 +166,7 @@ Shows the latest date a leap second was added to the leap second table.
 
 import numpy as np, math, re, numbers
 
-class CDFepoch(object):
+class CDFepoch:
 
     version = 3
     release = 7
@@ -296,7 +296,7 @@ class CDFepoch(object):
             print('Bad input')
             return None
         
-    def unixtime(self, cdf_time, to_np=False):
+    def unixtime(cdf_time, to_np=False): # @NoSelf
         import datetime
         time_list = CDFepoch.breakdown(cdf_time, to_np=False)
         unixtime = [] 
@@ -339,7 +339,6 @@ class CDFepoch(object):
         else:
             print('Unknown input')
             return
-
 
     def findepochrange(epochs, starttime = None, endtime = None): # @NoSelf
 
@@ -775,7 +774,6 @@ class CDFepoch(object):
                                                         int(CDFepoch.LTS[ix][2]),
                                                         0, 0, 0, 0, 0, 0]))
 
-
     def _EPOCHbreakdownTT2000(epoch): # @NoSelf
     
         second_AD = epoch
@@ -847,7 +845,6 @@ class CDFepoch(object):
         else:
             new_epochs = epochs
         return np.where(np.logical_and(new_epochs>=stime, new_epochs<=etime))
-
 
     def encode_epoch16(epochs, iso_8601=None): # @NoSelf
 

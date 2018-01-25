@@ -1,8 +1,7 @@
 import os
 from . import cdfread
 from . import cdfwrite
-from .epochs import CDFepoch
-cdfepoch = CDFepoch()
+from .epochs import CDFepoch as cdfepoch
 
 #This function determines if we are reading or writing a file
 def CDF(path, cdf_spec=None, delete=False, validate=None):

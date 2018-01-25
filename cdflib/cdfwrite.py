@@ -398,44 +398,29 @@ class CDF(object):
 
     def __init__(self, path, cdf_spec=None, delete=False):
         if (cdf_spec != None):
-            try: 
-                major = cdf_spec['Majority']
-                if (isinstance(major, str)):
-                    major = CDF._majority_token(major)
-            except:
-                # default is column
-                major = 2
-            try:
-                encoding = cdf_spec['Encoding']
-                if (isinstance(encoding, str)):
-                    encoding = CDF._encoding_token(encoding)
-            except:
-                # default is host
-                encoding = 8
-            try:
-                checksum = cdf_spec['Checksum']
-            except:
-                # default is False
-                checksum = False
-            try:
-                cdf_compression = cdf_spec['Compressed']
-                if (isinstance(cdf_compression, int)):
-                    if (cdf_compression < 0 or cdf_compression > 9):
-                        cdf_compression = 0
-                else: 
-                    if (cdf_compression == True):
-                        cdf_compression = 6
-                    if (cdf_compression == False):
-                        cdf_compression = 0
-            except:
-                # default is no
-                cdf_compression = 0
-            try:
-                rdim_sizes = cdf_spec['rDim_sizes']
-                num_rdim = len(rdim_sizes)
-            except:
-                num_rdim = 0
-                rdim_sizes = None
+            major = cdf_spec.get('Majority', 2) # default is column
+            if (isinstance(major, str)):
+                major = CDF._majority_token(major)
+            
+            encoding = cdf_spec.get('Encoding', 8) # default is host
+            if (isinstance(encoding, str)):
+                encoding = CDF._encoding_token(encoding)
+            
+            checksum = cdf_spec.get('Checksum', False)
+
+            cdf_compression = cdf_spec.get('Compressed', 0)
+            if (isinstance(cdf_compression, int)):
+                if (cdf_compression < 0 or cdf_compression > 9):
+                    cdf_compression = 0
+            else: 
+                if (cdf_compression == True):
+                    cdf_compression = 6
+                if (cdf_compression == False):
+                    cdf_compression = 0
+            
+            rdim_sizes = cdf_spec.get('rDim_sizes',None)
+            num_rdim = len(rdim_sizes) if rdim_sizes is not None else 0
+
         else:
             major = 2
             encoding = 8
@@ -830,16 +815,12 @@ class CDF(object):
             print('Missing/invalid required spec for creating variable... Stop')
             return -1
         #Get whether or not it is a z variable 
-        try: 
-            var_type = var_spec['Var_Type']
-            if (var_type.lower() == 'zvariable'):
-                zVar = True
-            else:
-                var_spec['Var_Type'] = 'rVariable'
-                zVar = False
-        except:
-            var_spec['Var_Type'] = 'zVariable'
+        var_type = var_spec.setdefault('Var_Type', 'zvariable')
+        if (var_type.lower() == 'zvariable'):
             zVar = True
+        else:
+            var_spec['Var_Type'] = 'rVariable'
+            zVar = False
             
         if (dataType == CDF.CDF_CHAR or dataType == CDF.CDF_UCHAR):
             if (numElems < 1):
@@ -875,38 +856,30 @@ class CDF(object):
                      'rVariable... Stop')
                 return -1
         #Get Sparseness info 
-        try: 
-            sparse = CDF._sparse_token(var_spec['Sparse'])
-        except:
-            sparse = 0
+        sparse = CDF._sparse_token(var_spec.get('Sparse', 'no_sparse'))
         #Get compression info
-        try: 
-            compression = var_spec['Compress']
-            if (isinstance(compression, int)):
-                if (compression < 0 or compression > 9):
-                    compression = 0
-            else:
-                if (compression == True):
-                    compression = 6
-                if (compression == False):
-                    compression = 0
-        except:
-            compression = 6
+        compression = var_spec.get('Compress',6)
+        if (isinstance(compression, int)):
+            if (compression < 0 or compression > 9):
+                compression = 0
+        else:
+            if (compression == True):
+                compression = 6
+            if (compression == False):
+                compression = 0
+                
         #Get blocking factor
-        try:
-            blockingfactor = int(var_spec['Block_Factor'])
-        except:
-            blockingfactor = 1
+        blockingfactor = int(var_spec.get('Block_Factor', 1))
+        
         #Get pad value
-        try:
-            pad = var_spec['Pad']
-            if (isinstance(pad, list) or isinstance(pad, tuple)):
-                pad = pad[0]
-        except:
-            pad = None
+        pad = var_spec.get('Pad', None)
+        if (isinstance(pad, list) or isinstance(pad, tuple)):
+            pad = pad[0]
+            
         if (name in self.zvars or name in self.rvars):
             print('Variable: ', name, 'already exists..... Stop')
             return
+        
         varNum, offset = self._write_vdr(f, dataType, numElems, numDims,
                                          dimSizes, name, dimVary, recVary,
                                          sparse, blockingfactor, compression,
@@ -1607,8 +1580,8 @@ class CDF(object):
         Returns the numerical CDF value for sparseness.  
         '''
         
-        sparses = { 'no_sparse': 0, \
-                    'pad_sparse': 1, \
+        sparses = { 'no_sparse': 0, 
+                    'pad_sparse': 1, 
                     'prev_sparse': 2}
         try:
             return sparses[sparse.lower()]
