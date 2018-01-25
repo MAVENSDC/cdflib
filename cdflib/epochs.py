@@ -204,29 +204,12 @@ class CDFepoch:
     
     #Attempt to download latest leap second table
     try:
-        import urllib.request
-        leapsecond_files_url = "https://cdf.gsfc.nasa.gov/html/CDFLeapSeconds.txt"
-        page = urllib.request.urlopen(leapsecond_files_url)
-        full_path=os.path.realpath(__file__)
-        library_path = os.path.dirname(full_path)
-        with open(os.path.join(library_path,'CDFLeapSeconds.txt'), "wb") as lsfile:
-            lsfile.write(page.read())
+        _download_leap_sec_file()
     except:
         pass
     
     try:
-        import csv
-        full_path=os.path.realpath(__file__)
-        library_path = os.path.dirname(full_path)
-        leap_seconds_file = os.path.join(library_path,'CDFLeapSeconds.txt')
-        LTS = []
-        with open(leap_seconds_file) as lsfile:
-            lsreader = csv.reader(lsfile, delimiter=' ')
-            for row in lsreader:
-                if row[0] == ";":
-                    continue
-                row = list(filter(('').__ne__, row))
-                LTS.append(row)
+        LTS = _return_leap_sec_table()
     except:
         #Use a built in leap second table
         LTS = [ [ 1960,  1,  1,  1.4178180, 37300.0, 0.0012960 ],
@@ -1818,3 +1801,25 @@ class CDFepoch:
         print('Leap second last updated:', str(CDFepoch.LTS[-1][0])+'-'+
               str(CDFepoch.LTS[-1][1])+'-'+str(CDFepoch.LTS[-1][2]))
 
+    def _return_leap_sec_table(): # @NoSelf
+        import csv
+        full_path=os.path.realpath(__file__)
+        library_path = os.path.dirname(full_path)
+        leap_seconds_file = os.path.join(library_path,'CDFLeapSeconds.txt')
+        LTS = []
+        with open(leap_seconds_file) as lsfile:
+            lsreader = csv.reader(lsfile, delimiter=' ')
+            for row in lsreader:
+                if row[0] == ";":
+                    continue
+                row = list(filter(('').__ne__, row))
+                LTS.append(row)
+    
+    def _download_leap_sec_file(): # @NoSelf
+        import urllib.request
+        leapsecond_files_url = "https://cdf.gsfc.nasa.gov/html/CDFLeapSeconds.txt"
+        page = urllib.request.urlopen(leapsecond_files_url)
+        full_path=os.path.realpath(__file__)
+        library_path = os.path.dirname(full_path)
+        with open(os.path.join(library_path,'CDFLeapSeconds.txt'), "wb") as lsfile:
+            lsfile.write(page.read())
