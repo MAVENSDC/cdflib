@@ -4,7 +4,7 @@ import numpy as np
 from cdflib import cdfwrite
 from cdflib import cdfread
 
-class CDFReadTestCase(unittest.TestCase):
+class CDFWriteTestCase(unittest.TestCase):
     
     def setUp(self):
         cdf_spec = {'rDim_sizes':[1]}
