@@ -152,17 +152,19 @@ data type, with the variable data and its specification.
 If "expand" is set as True, a dictionary is returned
 with the following defined keys for the output
         +-----------------+--------------------------------------------------------------------------------+
-        | ['Rec_Ndim']    | the dimension number of each variable record                                   |
+        | ['Rec_Ndim']         | the dimension number of each variable record                              |
         +-----------------+--------------------------------------------------------------------------------+
-        | ['Rec_Shape']   | the shape of the variable record dimensions                                    |
+        | ['Rec_Shape']        | the shape of the variable record dimensions                               |
         +-----------------+--------------------------------------------------------------------------------+
-        | ['Num_Records'] | the number of the retrieved records                                            |
+        | ['Num_Records']      | the total number of records                                               |
         +-----------------+--------------------------------------------------------------------------------+
-        | ['Data_Type']   | the CDF data type                                                              |
+        | ['Records_Returned'] | the number of records retrieved                                           |
         +-----------------+--------------------------------------------------------------------------------+
-        | ['Data']        | retrieved variable data                                                        |
+        | ['Data_Type']        | the CDF data type                                                         |
         +-----------------+--------------------------------------------------------------------------------+
-        | ['Real_Records']| Record numbers for real data for sparse record variable in list
+        | ['Data']             | retrieved variable data                                                   |
+        +-----------------+--------------------------------------------------------------------------------+
+        | ['Real_Records']     | Record numbers for real data for sparse record variable in list           |
         +-----------------+--------------------------------------------------------------------------------+
         
 By default, the full variable data is returned. To acquire
