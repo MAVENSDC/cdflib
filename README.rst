@@ -463,5 +463,167 @@ new CDF file::
 			              var_data=[vardata,vardata])
 	cdf_master.close()
 	cdf_file.close()
+
 	
+##########
+CDF Epochs
+##########
+
+Importing cdflib also imports the module CDFepoch, which handles CDF-based epochs.  
+The following functions can be used to convert back and forth between different ways to display the date.
+You can call these functions like so::
+    import cdflib
+    
+    cdf_file = cdflib.epochs.CDFepoch.compute_epoch([2017,1,1,1,1,1,111])
+
+There are three (3) epoch data types in CDF: CDF_EPOCH, CDF_EPOCH16 and 
+CDF_TIME_TT2000. 
+
+- CDF_EPOCH is milliseconds since Year 0. 
+
+- CDF_EPOCH16 is picoseconds since Year 0. 
+
+- CDF_TIME_TT2000 (TT2000 as short) is nanoseconds since J2000 with leap seconds. 
+
+CDF_EPOCH is a single double(as float in Python), CDF_EPOCH16 is 2-doubles (as complex in Python),
+and TT2000 is 8-byte integer (as int in Python). In Numpy, they are np.float64, np.complex128 and np.int64, respectively. 
+All these epoch values can come from from CDF.varget function.
+
+Five main functions are provided 
+
+encode (epochs, iso_8601=False)
+=============
+
+Encodes the epoch(s) into UTC string(s).
+    
+    For CDF_EPOCH: 
+                The input should be either a float or list of floats
+                (in numpy, a np.float64 or a np.ndarray of np.float64)
+                Each epoch is encoded, by default to a ISO 8601 form:
+                2004-05-13T15:08:11.022 
+                Or, if iso_8601 is set to False,
+                13-May-2004 15:08:11.022
+    For CDF_EPOCH16: 
+                  The input should be either a complex or list of 
+                  complex(in numpy, a np.complex128 or a np.ndarray of np.complex128)
+                  Each epoch is encoded, by default to a ISO 8601 form:
+                  2004-05-13T15:08:11.022033044055 
+                  Or, if iso_8601 is set to False,
+                  13-May-2004 15:08:11.022.033.044.055
+    For TT2000: 
+             The input should be either a int or list of ints
+             (in numpy, a np.int64 or a np.ndarray of np.int64)
+             Each epoch is encoded, by default to a ISO 8601 form:
+             2008-02-02T06:08:10.10.012014016
+             Or, if iso_8601 is set to False,
+             02-Feb-2008 06:08:10.012.014.016
+
+unixtime (epochs, to_np=False)
+=============
+
+Encodes the epoch(s) into seconds after 1970-01-01.  Precision is only 
+kept to the nearest microsecond.  
+
+If to_np is True, then the values will be returned in a numpy array.  
+
+
+breakdown (epochs, to_np=False)
+=============
+
+Breaks down the epoch(s) into UTC components. 
+
+    For CDF_EPOCH: 
+                they are 7 date/time components: year, month, day,
+                hour, minute, second, and millisecond
+    For CDF_EPOCH16: 
+                  they are 10 date/time components: year, month, day,
+                  hour, minute, second, and millisecond, microsecond,
+                  nanosecond, and picosecond.
+    For TT2000: 
+             they are 9 date/time components: year, month, day,
+             hour, minute, second, millisecond, microsecond, 
+             nanosecond.
+             
+Specify to_np to True, if the result should be in numpy array.
+
+compute[_epoch/_epoch16/_tt200] (datetimes, to_np=False)
+=============
+
+Computes the provided date/time components into CDF epoch value(s).
+
+    For CDF_EPOCH: 
+        For computing into CDF_EPOCH value, each date/time elements should 
+        have exactly seven (7) components, as year, month, day, hour, minute,
+        second and millisecond, in a list. For example:
+        [[2017,1,1,1,1,1,111],[2017,2,2,2,2,2,222]]
+        Or, call function compute_epoch directly, instead, with at least three
+        (3) first (up to seven) components. The last component, if
+        not the 7th, can be a float that can have a fraction of the unit.
+
+    For CDF_EPOCH16:
+        They should have exactly ten (10) components, as year, 
+        month, day, hour, minute, second, millisecond, microsecond, nanosecond 
+        and picosecond, in a list. For example:
+        [[2017,1,1,1,1,1,123,456,789,999],[2017,2,2,2,2,2,987,654,321,999]]
+        Or, call function compute_epoch directly, instead, with at least three
+        (3) first (up to ten) components. The last component, if
+        not the 10th, can be a float that can have a fraction of the unit.
+
+    For TT2000:
+        Each TT2000 typed date/time should have exactly nine (9) components, as 
+        year, month, day, hour, minute, second, millisecond, microsecond, 
+        and nanosecond, in a list.  For example:
+        [[2017,1,1,1,1,1,123,456,789],[2017,2,2,2,2,2,987,654,321]]
+        Or, call function compute_tt2000 directly, instead, with at least three
+        (3) first (up to nine) components. The last component, if
+        not the 9th, can be a float that can have a fraction of the unit.
+
+Specify to_np to True, if the result should be in numpy class.
+
+parse (datetimes, to_np=False)
+=============
+
+Parses the provided date/time string(s) into CDF epoch value(s).
+
+    For CDF_EPOCH:
+        The string has to be in the form of 'dd-mmm-yyyy hh:mm:ss.xxx' or
+        'yyyy-mm-ddThh:mm:ss.xxx' (in iso_8601). The string is the output
+        from encode function. 
+
+    For CDF_EPOCH16:
+        The string has to be in the form of 
+        'dd-mmm-yyyy hh:mm:ss.mmm.uuu.nnn.ppp' or
+        'yyyy-mm-ddThh:mm:ss.mmmuuunnnppp' (in iso_8601). The string is
+        the output from encode function. 
+
+    For TT2000:
+        The string has to be in the form of 
+        'dd-mmm-yyyy hh:mm:ss.mmm.uuu.nnn' or
+        'yyyy-mm-ddThh:mm:ss.mmmuuunnn' (in iso_8601). The string is
+        the output from encode function. 
+
+Specify to_np to True, if the result should be in numpy class.
+
+findepochrange (epochs, starttime=None, endtime=None)
+=============
+
+Finds the record range within the start and end time from values 
+of a CDF epoch data type. It returns a list of record numbers. 
+If the start time is not provided, then it is 
+assumed to be the minimum possible value. If the end time is not 
+provided, then the maximum possible value is assumed. The epoch is
+assumed to be in the chronological order. The start and end times
+should have the proper number of date/time components, corresponding
+to the epoch's data type.
+
+getVersion ()
+==========
+
+Shows the code version.
+
+getLeapSecondLastUpdated ()
+========================
+
+Shows the latest date a leap second was added to the leap second table.
+
 @author: Bryan Harter, Michael Liu
