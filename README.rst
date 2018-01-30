@@ -618,6 +618,9 @@ assumed to be in the chronological order. The start and end times
 should have the proper number of date/time components, corresponding
 to the epoch's data type.
 
+The start/end times should be in either be in epoch units, or in the list 
+format described in "compute_epoch/epoch16/tt2000" section.  
+
 getVersion ()
 ==========
 

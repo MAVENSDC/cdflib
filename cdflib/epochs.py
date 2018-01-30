@@ -150,6 +150,9 @@ assumed to be in the chronological order. The start and end times
 should have the proper number of date/time components, corresponding
 to the epoch's data type.
 
+The start/end times should be in either be in epoch units, or in the list 
+format described in "compute_epoch/epoch16/tt2000" section.  
+
 getVersion ()
 ==========
 
@@ -169,6 +172,10 @@ import math
 import re
 import numbers
 import os
+
+
+
+
 
 class CDFepoch:
 
@@ -200,17 +207,48 @@ class CDFepoch:
     FILLED_TT2000_VALUE      = int(-9223372036854775808)
     NERA1 = 14
 
+        
+    
+        
+
     #LASTLEAPSECONDDAY = 20170101
     
     #Attempt to download latest leap second table
     try:
-        _download_leap_sec_file()
+        import urllib.request
+        leapsecond_files_url = "https://cdf.gsfc.nasa.gov/html/CDFLeapSeconds.txt"
+        page = urllib.request.urlopen(leapsecond_files_url)
+        full_path=os.path.realpath(__file__)
+        library_path = os.path.dirname(full_path)
+        with open(os.path.join(library_path,'CDFLeapSeconds.txt'), "wb") as lsfile:
+            lsfile.write(page.read())
     except:
+        print("Can't download new leap second table")
         pass
     
+    #Attempt to load the leap second table saved in the cdflib
     try:
-        LTS = _return_leap_sec_table()
+        import csv
+        full_path=os.path.realpath(__file__)
+        library_path = os.path.dirname(full_path)
+        leap_seconds_file = os.path.join(library_path,'CDFLeapSeconds.txt')
+        LTS = []
+        with open(leap_seconds_file) as lsfile:
+            lsreader = csv.reader(lsfile, delimiter=' ')
+            for row in lsreader:
+                if row[0] == ";":
+                    continue
+                row = list(filter(('').__ne__, row))
+                row[0] = int(row[0])
+                row[1] = int(row[1])
+                row[2] = int(row[2])
+                row[3] = float(row[3])
+                row[4] = float(row[4])
+                row[5] = float(row[5])
+                LTS.append(row)
     except:
+        print("Can't find leap second table.  Using one built into code.")
+        print("Last leap second in built in table is on Jan 01 2017. ")
         #Use a built in leap second table
         LTS = [ [ 1960,  1,  1,  1.4178180, 37300.0, 0.0012960 ],
                 [ 1961,  1,  1,  1.4228180, 37300.0, 0.0012960 ],
@@ -859,9 +897,9 @@ class CDFepoch:
             new_epochs = np.array(epochs)
         else:
             new_epochs = epochs
-        return np.where(np.logical_and(new_epochs>=stime, new_epochs<=etime))
+        return np.where(np.logical_and(new_epochs>=stime, new_epochs<=etime))[0]
 
-    def encode_epoch16(epochs, iso_8601=None): # @NoSelf
+    def encode_epoch16(epochs, iso_8601=True): # @NoSelf
 
         if (isinstance(epochs, complex) or
             isinstance(epochs, np.complex128)):
@@ -877,22 +915,22 @@ class CDFepoch:
         for x in range(0, count):
             #complex
             if ((new_epochs[x].real == -1.0E31) and (new_epochs[x].imag == -1.0E31)):
-                if (iso_8601 == None or iso_8601 != False):
+                if iso_8601:
                     encoded = '9999-12-31T23:59:59.999999999999'
                 else:
                     encoded = '31-Dec-9999 23:59:59.999.999.999.999'
             else:
-                encoded = CDFepoch._encodex_epoch16 (new_epochs[x], iso_8601)
+                encoded = CDFepoch._encodex_epoch16(new_epochs[x], iso_8601)
             if (count == 1):
                 return encoded
             else:
                 encodeds.append(encoded)
         return encodeds
 
-    def _encodex_epoch16(epoch16, iso_8601=None):  # @NoSelf
+    def _encodex_epoch16(epoch16, iso_8601=True):  # @NoSelf
 
         components = CDFepoch.breakdown_epoch16(epoch16)
-        if (iso_8601 == None or iso_8601 != False):
+        if iso_8601:
             # year-mm-ddThh:mm:ss.mmmuuunnnppp 
             encoded = str(components[0]).zfill(4) 
             encoded += '-'
@@ -1316,22 +1354,22 @@ class CDFepoch:
                 break
         if (len(indx) == 0):
             indx.append(0)
-        hasadded = 0
+        hasadded = False
         for x in range(0, count, 2):
             if (epoch16[x] < etime[0]):
                 continue
             elif (epoch16[x] == etime[0]):
                 if (epoch16[x+1] > etime[1]):
-                    indx.append(int(x/2))
-                    hasadded = 1
+                    indx.append(int((x-1)/2))
+                    hasadded = True
                     break
             else:
                 indx.append(int((x-1)/2))
-                hasadded = 1
+                hasadded = True
                 break
-        if (hasadded == 0):
+        if not hasadded:
             indx.append(int(count/2)-1)
-        return indx
+        return np.arange(indx[0], indx[1]+1, step=1)
 
     def encode_epoch(epochs, iso_8601=True): # @NoSelf
 
@@ -1625,7 +1663,7 @@ class CDFepoch:
             new_epochs = np.array(epochs)
         else:
             new_epochs = epochs
-        return np.where(np.logical_and(new_epochs>=stime, new_epochs<=etime))
+        return np.where(np.logical_and(new_epochs>=stime, new_epochs<=etime))[0]
 
     def parse(value, to_np=None): # @NoSelf
         if ((isinstance(value, list) or isinstance(value, tuple)) and
@@ -1801,25 +1839,3 @@ class CDFepoch:
         print('Leap second last updated:', str(CDFepoch.LTS[-1][0])+'-'+
               str(CDFepoch.LTS[-1][1])+'-'+str(CDFepoch.LTS[-1][2]))
 
-    def _return_leap_sec_table(): # @NoSelf
-        import csv
-        full_path=os.path.realpath(__file__)
-        library_path = os.path.dirname(full_path)
-        leap_seconds_file = os.path.join(library_path,'CDFLeapSeconds.txt')
-        LTS = []
-        with open(leap_seconds_file) as lsfile:
-            lsreader = csv.reader(lsfile, delimiter=' ')
-            for row in lsreader:
-                if row[0] == ";":
-                    continue
-                row = list(filter(('').__ne__, row))
-                LTS.append(row)
-    
-    def _download_leap_sec_file(): # @NoSelf
-        import urllib.request
-        leapsecond_files_url = "https://cdf.gsfc.nasa.gov/html/CDFLeapSeconds.txt"
-        page = urllib.request.urlopen(leapsecond_files_url)
-        full_path=os.path.realpath(__file__)
-        library_path = os.path.dirname(full_path)
-        with open(os.path.join(library_path,'CDFLeapSeconds.txt'), "wb") as lsfile:
-            lsfile.write(page.read())
