@@ -2008,20 +2008,13 @@ class CDF(object):
             if (starttime != None or endtime != None):
                 recs = self._findtimerecords(vdr_info['name'], starttime,
                                              endtime, epoch = epoch)
-                if (recs == None):
+                if recs is None:
                     return None
-                if (isinstance(recs, tuple)):
-                    # back from np.where command for CDF_EPOCH and TT2000
-                    idx = recs[0]
-                    if (len(idx) == 0):
-                        #no records in range
-                        return None
-                    else:
-                        startrec = idx[0]
-                        endrec = idx[len(idx)-1]
-                else:
+                if len(recs) == 0:
+                    return None
+                else: 
                     startrec = recs[0]
-                    endrec = recs[1]
+                    endrec = recs[-1]
         else:
             startrec = 0
             endrec = 0
