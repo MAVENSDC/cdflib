@@ -2,6 +2,21 @@ import unittest
 import numpy as np
 import cdflib
 from random import *
+
+'''
+To check code coverage, first:
+
+pip install coverage
+
+Then change to the cdflib directory, and type:
+
+coverage run --source=. -m unittest discover -s tests/
+
+This will run all unit tests.  To view the coverage results:
+
+coverage report
+'''
+
 '''
 Each of these results were hand checked using either IDL or 
 other online resources.  
