@@ -9,7 +9,7 @@ class CDFWriteTestCase(unittest.TestCase):
     def setUp(self):
         cdf_spec = {'rDim_sizes':[1]}
         self.test_file = cdfwrite.CDF(os.path.dirname(__file__)+
-                                      "/testfiles/testing.cdf", cdf_spec=cdf_spec)
+                                      "/testfiles/testing.cdf", cdf_spec=cdf_spec, delete=True)
         self.test_file_reader = False
         self.compressed_test_file = False
         self.checksum_test_file = False
@@ -229,21 +229,21 @@ class CDFWriteTestCase(unittest.TestCase):
         data = [[200,3000,3100,3500,4000,5000,6000,10000,10001,10002,20000], 
                 np.array([0,1,2,3,4,5,6,7,8,9,10])]
         self.test_file.write_var(var_spec, var_data=data)
-        
+         
         #Close the file so we can read
         self.test_file.close()
-        
+         
         #Open the file to read
         self.test_file_reader = cdfread.CDF(os.path.dirname(__file__)+
                                             "/testfiles/testing.cdf")
-        
+         
         #Test CDF info
         varinq = self.test_file_reader.varinq("Variable1")
         var = self.test_file_reader.varget("Variable1")
         pad_num = varinq['Pad'][0]
         self.assertEqual(var[100], pad_num)
         self.assertEqual(var[3000], 1)
-        
+         
         #Close the reading file
         self.test_file_reader.close()
         
@@ -259,21 +259,21 @@ class CDFWriteTestCase(unittest.TestCase):
         data = [[200,3000,3100,3500,4000,5000,6000,10000,10001,10002,20000], 
                 np.array([0,1,2,3,4,5,6,7,8,9,10])]
         self.test_file.write_var(var_spec, var_data=data)
-        
+         
         #Close the file so we can read
         self.test_file.close()
-        
+         
         #Open the file to read
         self.test_file_reader = cdfread.CDF(os.path.dirname(__file__)+
                                             "/testfiles/testing.cdf")
-        
+         
         #Test CDF info
         varinq = self.test_file_reader.varinq("Variable1")
         var = self.test_file_reader.varget("Variable1")
         pad_num = varinq['Pad'][0]
         self.assertEqual(var[100], pad_num)
         self.assertEqual(var[6001], var[6000])
-        
+         
         #Close the reading file
         self.test_file_reader.close()
     
@@ -324,21 +324,21 @@ class CDFWriteTestCase(unittest.TestCase):
                                           physical_records4)).astype(int)
         sparse_data = [physical_records, data]
         self.test_file.write_var(var_spec, var_data=sparse_data)
-        
+         
         #Close the file so we can read
         self.test_file.close()
-        
+         
         #Open the file to read
         self.test_file_reader = cdfread.CDF(os.path.dirname(__file__)+
                                             "/testfiles/testing.cdf")
-        
+         
         #Test CDF info
         varinq = self.test_file_reader.varinq("Variable1")
         var = self.test_file_reader.varget("Variable1")
         pad_num = varinq['Pad'][0]
         self.assertEqual(var[30001], pad_num)
         self.assertEqual(var[70001], 30000)
-        
+         
         #Close the reading file
         self.test_file_reader.close()
         
@@ -363,21 +363,21 @@ class CDFWriteTestCase(unittest.TestCase):
                                           physical_records4)).astype(int)
         sparse_data = [physical_records, data]
         self.test_file.write_var(var_spec, var_data=sparse_data)
-        
+         
         #Close the file so we can read
         self.test_file.close()
-        
+         
         #Open the file to read
         self.test_file_reader = cdfread.CDF(os.path.dirname(__file__)+
                                             "/testfiles/testing.cdf")
-        
+         
         #Test CDF info
         varinq = self.test_file_reader.varinq("Variable1")
         var = self.test_file_reader.varget("Variable1")
         pad_num = varinq['Pad'][0]
         self.assertEqual(var[30001], pad_num)
         self.assertEqual(var[70001], 70001)
-        
+         
         #Close the reading file
         self.test_file_reader.close()
     
@@ -421,7 +421,7 @@ class CDFWriteTestCase(unittest.TestCase):
         cdf_spec = {'Checksum':True}
         self.checksum_test_file = cdfwrite.CDF(os.path.dirname(__file__)+
                                                "/testfiles/testing_checksum.cdf", 
-                                               cdf_spec=cdf_spec)
+                                               cdf_spec=cdf_spec, delete=True)
         var_spec = {}
         var_spec['Variable'] = 'Variable1'
         var_spec['Data_Type'] = 4
@@ -521,7 +521,7 @@ class CDFWriteTestCase(unittest.TestCase):
         os.remove(os.path.dirname(__file__)+"/testfiles/testing.cdf")
         cdf_spec = {'rDim_sizes':[2,2]}
         self.test_file = cdfwrite.CDF(os.path.dirname(__file__)+
-                                      "/testfiles/testing.cdf", cdf_spec=cdf_spec)
+                                      "/testfiles/testing.cdf", cdf_spec=cdf_spec, delete=False)
         
         #Setup the test_file       
         var_spec = {}
@@ -566,7 +566,7 @@ class CDFWriteTestCase(unittest.TestCase):
         cdf_spec = {'rDim_sizes':[2,20]}
         self.test_file = cdfwrite.CDF(os.path.dirname(__file__)+
                                       "/testfiles/testing.cdf", 
-                                      cdf_spec=cdf_spec)
+                                      cdf_spec=cdf_spec, delete=False)
         
         #Setup the test_file       
         var_spec = {}
@@ -609,7 +609,7 @@ class CDFWriteTestCase(unittest.TestCase):
         cdf_spec = {'rDim_sizes':[2,20]}
         self.test_file = cdfwrite.CDF(os.path.dirname(__file__)+
                                       "/testfiles/testing.cdf", 
-                                      cdf_spec=cdf_spec)
+                                      cdf_spec=cdf_spec, delete=False)
         
         #Setup the test_file       
         var_spec = {}

@@ -534,10 +534,19 @@ class CDF(object):
                 self._write_ccr(f, g, self.compression)
             if self.checksum:
                 if (self.compression > 0):
-                    g.seek(0, 2)
-                    g.write(self._md5_compute(g))
+                    md5_g = self._md5_compute(g)
+                    try:
+                        g.seek(0, 2)
+                        g.write(md5_g)
+                    except IOError as  e:
+                        print str(e)
                 else:
-                    f.write(self._md5_compute(f))
+                    md5 = self._md5_compute(f)
+                    try:
+                        f.seek(0,2)
+                        f.write(md5)
+                    except IOError as  e:
+                        print str(e)
             f.close()
             if (self.compression > 0):
                 g.close()
@@ -932,7 +941,7 @@ class CDF(object):
             if not zVar:
                 # GDR's rMaxRec
                 f.seek(self.gdr_head+52)
-                maxRec = int.from_bytes(f.read(4),'big', signed=True)
+                maxRec = int(f.read(4).encode('hex'), 16)
                 if (maxRec < varMaxRec):
                     self._update_offset_value(f, self.gdr_head+52, 4, varMaxRec)
 
@@ -1117,7 +1126,7 @@ class CDF(object):
             # set blocking factor 
             if (recs < blockingfactor):
                 blockingfactor = recs
-            blocks = math.ceil(recs / blockingfactor)
+            blocks = int(math.ceil(recs / blockingfactor))
             nEntries = CDF.NUM_VXR_ENTRIES
             VXRhead = None
             
@@ -1138,7 +1147,7 @@ class CDF(object):
                     if not editedVDR:
                         f.seek(vdr_offset+44, 0)
                         # VDR's Flags
-                        flags = int.from_bytes(f.read(4),'big', signed=True)
+                        flags = int(f.read(4).encode('hex'), 16)
                         flags = CDF._set_bit(flags, 2)
                         self._update_offset_value(f, vdr_offset+44, 4, flags)
                         f.seek(vdr_offset+80, 0)
@@ -1238,7 +1247,7 @@ class CDF(object):
         f.seek(vdr_offset+28, 0)
         
         #Get first VXR
-        vxrOne = int.from_bytes(f.read(8),'big', signed=True)
+        vxrOne = int(f.read(8).encode('hex'), 16)
         foundSpot = 0
         usedEntries = 0
         currentVXR = 0
@@ -1249,9 +1258,9 @@ class CDF(object):
             f.seek(vxrOne, 0)
             currentVXR = f.tell()
             f.seek(vxrOne+12, 0)
-            vxrNext = int.from_bytes(f.read(8),'big', signed=True)
-            nEntries = int.from_bytes(f.read(4),'big', signed=True)
-            usedEntries = int.from_bytes(f.read(4),'big', signed=True)
+            vxrNext = int(f.read(8).encode('hex'), 16)
+            nEntries = int(f.read(4).encode('hex'), 16)
+            usedEntries = int(f.read(4).encode('hex'), 16)
             if (usedEntries == nEntries):
                 # all entries are used -- check the next vxr in link
                 vxrOne = vxrNext
@@ -1269,7 +1278,7 @@ class CDF(object):
         
         # Modify the VDR's MaxRec if needed
         f.seek(vdr_offset+24, 0)
-        recNumc = int.from_bytes(f.read(4),'big', signed=True)
+        recNumc = int(f.read(4).encode('hex'), 16)
         if (rec_end > recNumc):
             self._update_offset_value(f, vdr_offset+24, 4, rec_end)
             
@@ -1320,9 +1329,9 @@ class CDF(object):
         # Select the next unused entry in a VXR for a VVR/CVVR
         f.seek(VXRoffset+20)
         # num entries
-        numEntries = int.from_bytes(f.read(4),'big', signed=True)
+        numEntries = int(f.read(4).encode('hex'), 16)
         # used entries
-        usedEntries = int.from_bytes(f.read(4),'big', signed=True)
+        usedEntries = int(f.read(4).encode('hex'), 16)
         # VXR's First
         self._update_offset_value(f, VXRoffset+28+4*usedEntries, 4, recStart)
         # VXR's Last
@@ -1423,16 +1432,17 @@ class CDF(object):
         '''
         f.seek(VXRoffset+20)
         # Num entries
-        numEntries = int.from_bytes(f.read(4),'big', signed=True)
+        numEntries = int(f.read(4).encode('hex'), 16)
         # used entries
-        usedEntries = int.from_bytes(f.read(4),'big', signed=True)
+        usedEntries = int(f.read(4).encode('hex'), 16)
         # VXR's First record
-        firstRec = int.from_bytes(f.read(4),'big', signed=True)
+        firstRec = int(f.read(4).encode('hex'), 16)
         # VXR's Last record
         f.seek(VXRoffset+28+(4*numEntries+4*(usedEntries-1)))
-        lastRec = int.from_bytes(f.read(4),'big', signed=True)
+        lastRec = int(f.read(4).encode('hex'), 16)
         return firstRec, lastRec
  
+    @staticmethod
     def _majority_token(major):    # @NoSelf
         '''
         Returns the numberical type for a CDF row/column major type
@@ -1445,6 +1455,7 @@ class CDF(object):
             print('bad major....',major)
             return 0
  
+    @staticmethod
     def _encoding_token(encoding):    # @NoSelf
         '''
         Returns the numberical type for a CDF encoding type
@@ -1472,6 +1483,7 @@ class CDF(object):
             print('bad encoding....',encoding)
             return 0
 
+    @staticmethod
     def _datatype_token(datatype):    # @NoSelf
         '''
         Returns the numberical type for a CDF data type
@@ -1498,6 +1510,7 @@ class CDF(object):
         except:
             return 0
 
+    @staticmethod
     def _datatype_define(value):    # @NoSelf
         if (isinstance(value, str)):
             return len(value), CDF.CDF_CHAR
@@ -1512,7 +1525,7 @@ class CDF(object):
             else:
                 print('Invalid data type for data.... Skip')
                 return None, None 
-
+    @staticmethod
     def _datatype_size(datatype, numElms):    # @NoSelf
         '''
         Gets datatype size 
@@ -1575,6 +1588,7 @@ class CDF(object):
         except:
             return -1
 
+    @staticmethod
     def _sparse_token(sparse):  # @NoSelf
         '''
         Returns the numerical CDF value for sparseness.  
@@ -2181,6 +2195,7 @@ class CDF(object):
             order = '='
         return order
 
+    @staticmethod
     def _convert_type(data_type): # @NoSelf
         '''
         Converts CDF data types into python types
@@ -2211,6 +2226,7 @@ class CDF(object):
             dt_string = ''
         return dt_string
 
+    @staticmethod
     def _convert_nptype(data_type, data): # @NoSelf
         '''
         Converts "data" of CDF type "data_type" into a numpy array
@@ -2410,9 +2426,9 @@ class CDF(object):
         '''
         f.seek(offset, 0)
         if (size == 8):
-            return int.from_bytes(f.read(8),'big', signed=True)
+            return int(f.read(8).encode('hex'), 16)
         else:
-            return int.from_bytes(f.read(4),'big', signed=True)
+            return int(f.read(4).encode('hex'), 16)
 
     def _update_offset_value (self, f, offset, size, value):
         '''
@@ -2450,15 +2466,15 @@ class CDF(object):
         if zVar:
             f.seek(adr_offset+56, 0)
             # ADR's NzEntries
-            entries = int.from_bytes(f.read(4),'big', signed=True)
+            entries = int(f.read(4).encode('hex'), 16)
             # ADR's MAXzEntry
-            maxEntry = int.from_bytes(f.read(4),'big', signed=True)
+            maxEntry = int(f.read(4).encode('hex'), 16)
         else:
             f.seek(adr_offset+36, 0)
             # ADR's NgrEntries
-            entries = int.from_bytes(f.read(4),'big', signed=True)
+            entries = int(f.read(4).encode('hex'), 16)
             # ADR's MAXgrEntry
-            maxEntry = int.from_bytes(f.read(4),'big', signed=True)
+            maxEntry = int(f.read(4).encode('hex'), 16)
         
         
         if (entries == 0):
@@ -2480,10 +2496,10 @@ class CDF(object):
         else:
             if zVar:
                 f.seek(adr_offset+48, 0)
-                head = int.from_bytes(f.read(8),'big', signed=True)
+                head = int(f.read(8).encode('hex'), 16)
             else:
                 f.seek(adr_offset+20, 0)
-                head = int.from_bytes(f.read(8),'big', signed=True)
+                head = int(f.read(8).encode('hex'), 16)
             aedr = head
             previous_aedr = head
             done = False
@@ -2491,7 +2507,7 @@ class CDF(object):
             for _ in range(0, entries):
                 f.seek(aedr+28, 0)
                 #Get variable number for entry
-                num = int.from_bytes(f.read(4),'big', signed=True)
+                num = int(f.read(4).encode('hex'), 16)
                 if (num > varNum):
                     # insert an aedr to the chain
                     # AEDRnext
@@ -2504,7 +2520,7 @@ class CDF(object):
                     # move to the next aedr in chain
                     f.seek(aedr+12, 0)
                     previous_aedr = aedr
-                    aedr = int.from_bytes(f.read(8),'big', signed=True)
+                    aedr = int(f.read(8).encode('hex'), 16)
             
             #If no link was made, update the last found aedr
             if not done:
@@ -2519,15 +2535,19 @@ class CDF(object):
                 if (maxEntry < varNum):
                     self._update_offset_value(f, adr_offset+40, 4, varNum)
 
+    @staticmethod
     def _set_bit(value, bit): # @NoSelf
         return value | (1<<bit)
 
+    @staticmethod
     def _clear_bit(value, bit): # @NoSelf
         return value & ~(1<<bit)
 
+    @staticmethod
     def _checklistofstrs(obj): # @NoSelf
         return bool(obj) and all(isinstance(elem, str) for elem in obj)
 
+    @staticmethod
     def _checklistofNums(obj): # @NoSelf
         if (isinstance(obj, list) or isinstance(obj, tuple)):
             return bool(obj) and all(isinstance(elem, numbers.Number)
@@ -2551,8 +2571,10 @@ class CDF(object):
         if (remaining > 0):
             data = f.read(remaining)
             md5.update(data)
-        return md5.digest()
+        var = md5.digest()
+        return var
 
+    @staticmethod
     def _make_blocks(records): # @NoSelf
         '''
         Organizes the physical records into blocks in a list by
@@ -2809,6 +2831,7 @@ class CDF(object):
             
         return sparse_data
 
+    @staticmethod
     def getVersion(): # @NoSelf
         print('CDFwrite version:', str(CDF.version)+'.'+str(CDF.release)+
               '.'+str(CDF.increment))

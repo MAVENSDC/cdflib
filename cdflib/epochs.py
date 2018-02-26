@@ -300,6 +300,7 @@ class CDFepoch:
     currentJDay = -1
     currentLeapSeconds = -1
 
+    @staticmethod
     def encode(epochs, iso_8601=True): # @NoSelf
 
         if (isinstance(epochs, int) or isinstance(epochs, np.int64)):
@@ -324,6 +325,7 @@ class CDFepoch:
             print('Bad input')
             return None
 
+    @staticmethod
     def breakdown(epochs, to_np=None): # @NoSelf
 
         if (isinstance(epochs, int) or isinstance(epochs, np.int64)):
@@ -349,6 +351,7 @@ class CDFepoch:
             print('Bad input')
             return None
         
+    @staticmethod
     def unixtime(cdf_time, to_np=False): # @NoSelf
         import datetime
         time_list = CDFepoch.breakdown(cdf_time, to_np=False)
@@ -367,6 +370,7 @@ class CDFepoch:
             unixtime.append(datetime.datetime(*date).replace(tzinfo=datetime.timezone.utc).timestamp())
         return np.array(unixtime) if to_np else unixtime
     
+    @staticmethod
     def compute(datetimes, to_np=None): # @NoSelf
 
         if (not isinstance(datetimes, list) and 
@@ -393,6 +397,7 @@ class CDFepoch:
             print('Unknown input')
             return
 
+    @staticmethod
     def findepochrange(epochs, starttime = None, endtime = None): # @NoSelf
 
         if (isinstance(epochs, float) or isinstance(epochs, np.float64)):
@@ -419,6 +424,7 @@ class CDFepoch:
             print('Bad input')
             return None
 
+    @staticmethod
     def encode_tt2000(tt2000, iso_8601=None): # @NoSelf
     
         if (isinstance(tt2000, int) or isinstance(tt2000, np.int64)):
@@ -495,6 +501,7 @@ class CDFepoch:
                 encodeds.append(encoded)
         return encodeds
 
+    @staticmethod
     def breakdown_tt2000(tt2000, to_np=None): # @NoSelf
 
         if (isinstance(tt2000, int) or isinstance(tt2000, np.int64)):
@@ -631,6 +638,7 @@ class CDFepoch:
         else:
             return np.array(toutcs)
     
+    @staticmethod
     def compute_tt2000(datetimes, to_np=None): # @NoSelf
     
         if (not isinstance(datetimes, list) and not isinstance(datetimes, tuple)):
@@ -778,6 +786,7 @@ class CDFepoch:
         else:
             return np.array(nanoSecSinceJ2000s)
 
+    @staticmethod
     def _LeapSecondsfromYMD(year, month, day): # @NoSelf
     
         j = -1
@@ -796,6 +805,7 @@ class CDFepoch:
             da =  da + ((jda - CDFepoch.MJDbase) - CDFepoch.LTS[j][4]) * CDFepoch.LTS[j][5]
         return da
     
+    @staticmethod
     def _LeapSecondsfromJ2000(nanosecs): # @NoSelf
     
         da = []
@@ -816,6 +826,7 @@ class CDFepoch:
         da[0] = CDFepoch.LTS[j][3]
         return da
     
+    @staticmethod
     def _LoadLeapNanoSecondsTable(): # @NoSelf
     
         CDFepoch.NST = []
@@ -827,6 +838,7 @@ class CDFepoch:
                                                         int(CDFepoch.LTS[ix][2]),
                                                         0, 0, 0, 0, 0, 0]))
 
+    @staticmethod
     def _EPOCHbreakdownTT2000(epoch): # @NoSelf
     
         second_AD = epoch
@@ -855,6 +867,7 @@ class CDFepoch:
         date.append(int(second_AD % 60.0))
         return date
 
+    @staticmethod
     def epochrange_tt2000(epochs, starttime = None, endtime = None): # @NoSelf
 
         if (isinstance(epochs, int) or isinstance(epochs, np.int64)):
@@ -899,6 +912,7 @@ class CDFepoch:
             new_epochs = epochs
         return np.where(np.logical_and(new_epochs>=stime, new_epochs<=etime))[0]
 
+    @staticmethod
     def encode_epoch16(epochs, iso_8601=True): # @NoSelf
 
         if (isinstance(epochs, complex) or
@@ -927,6 +941,7 @@ class CDFepoch:
                 encodeds.append(encoded)
         return encodeds
 
+    @staticmethod
     def _encodex_epoch16(epoch16, iso_8601=True):  # @NoSelf
 
         components = CDFepoch.breakdown_epoch16(epoch16)
@@ -971,6 +986,7 @@ class CDFepoch:
             encoded += str(components[9]).zfill(3)
         return encoded
 
+    @staticmethod
     def _JulianDay(y, m, d): # @NoSelf
 
         a1 = int(7*(int(y+int((m+9)/12)))/4)
@@ -978,6 +994,7 @@ class CDFepoch:
         a3 = int(275*m/9)
         return (367*y - a1 - a2 + a3 + d + 1721029)
 
+    @staticmethod
     def compute_epoch16(datetimes, to_np=None): # @NoSelf
 
         if (not isinstance(datetimes, list) and 
@@ -1153,6 +1170,7 @@ class CDFepoch:
         else:
             return np.array(epochs)
 
+    @staticmethod
     def breakdown_epoch16(epochs, to_np=None): # @NoSelf
 
         if (isinstance(epochs, complex) or 
@@ -1232,6 +1250,7 @@ class CDFepoch:
         else:
             return np.array(components)
     
+    @staticmethod
     def _computeEpoch16(y, m, d, h, mn, s, ms, msu, msn, msp): # @NoSelf
     
         if (m == 0):
@@ -1272,6 +1291,7 @@ class CDFepoch:
         else:
             return epoch
 
+    @staticmethod
     def epochrange_epoch16(epochs, starttime = None, endtime = None): # @NoSelf
 
         if (isinstance(epochs, complex) or isinstance(epochs, np.complex128)):
@@ -1371,6 +1391,7 @@ class CDFepoch:
             indx.append(int(count/2)-1)
         return np.arange(indx[0], indx[1]+1, step=1)
 
+    @staticmethod
     def encode_epoch(epochs, iso_8601=True): # @NoSelf
 
         if (isinstance(epochs, float) or isinstance(epochs, np.float64)):
@@ -1396,6 +1417,7 @@ class CDFepoch:
             encodeds.append(encoded)
         return encodeds
 
+    @staticmethod
     def _encodex_epoch(epoch, iso_8601=None): # @NoSelf
 
         components = CDFepoch.breakdown_epoch(epoch)
@@ -1431,6 +1453,7 @@ class CDFepoch:
             encoded += str(components[6]).zfill(3)
         return encoded
 
+    @staticmethod
     def compute_epoch(dates, to_np=None): # @NoSelf
 
         if (not isinstance(dates, list) and not isinstance(dates, tuple)):
@@ -1537,6 +1560,7 @@ class CDFepoch:
         else:
             return np.array(epochs)
 
+    @staticmethod
     def _computeEpoch(y, m, d, h, mn, s, ms): # @NoSelf
 
         if (m == 0):
@@ -1556,6 +1580,7 @@ class CDFepoch:
         else:
             return msecFromEpoch
 
+    @staticmethod
     def breakdown_epoch(epochs, to_np=False): # @NoSelf
 
         if (isinstance(epochs, float) or isinstance(epochs, np.float64)):
@@ -1619,6 +1644,7 @@ class CDFepoch:
         else:
             return components
 
+    @staticmethod
     def epochrange_epoch(epochs, starttime = None, endtime = None): # @NoSelf
 
         if (isinstance(epochs, float) or isinstance(epochs, np.float64)):
@@ -1665,6 +1691,7 @@ class CDFepoch:
             new_epochs = epochs
         return np.where(np.logical_and(new_epochs>=stime, new_epochs<=etime))[0]
 
+    @staticmethod
     def parse(value, to_np=None): # @NoSelf
         if ((isinstance(value, list) or isinstance(value, tuple)) and
             not (isinstance(value[0], str))):
@@ -1691,6 +1718,7 @@ class CDFepoch:
                 else:
                     return np.array(CDFepoch._parse_epoch(value))
 
+    @staticmethod
     def _parse_epoch(value): # @NoSelf
         if (isinstance(value, list) or isinstance(value, tuple)):
             epochs = []
@@ -1803,6 +1831,7 @@ class CDFepoch:
                 print('Invalid cdf epoch type...')
                 return None
 
+    @staticmethod
     def _month_index(month): # @NoSelf
         if (month.lower() == 'jan'):
             return 1
@@ -1831,10 +1860,12 @@ class CDFepoch:
         else:
             return -1
 
+    @staticmethod
     def getVersion(): # @NoSelf
         print('epochs version:', str(CDFepoch.version)+'.'+
               str(CDFepoch.release)+'.'+str(CDFepoch.increment))
-
+   
+    @staticmethod
     def getLeapSecondLastUpdated(): # @NoSelf
         print('Leap second last updated:', str(CDFepoch.LTS[-1][0])+'-'+
               str(CDFepoch.LTS[-1][1])+'-'+str(CDFepoch.LTS[-1][2]))
