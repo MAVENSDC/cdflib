@@ -280,6 +280,8 @@ import cdflib.epochs as cdfepoch
 import numbers
 import math
 
+from __future__ import print_function
+
 class CDF(object):
 
     version = 3
@@ -539,14 +541,14 @@ class CDF(object):
                         g.seek(0, 2)
                         g.write(md5_g)
                     except IOError as  e:
-                        print str(e)
+                        print(str(e))
                 else:
                     md5 = self._md5_compute(f)
                     try:
                         f.seek(0,2)
                         f.write(md5)
                     except IOError as  e:
-                        print str(e)
+                        print(str(e))
             f.close()
             if (self.compression > 0):
                 g.close()
@@ -1522,6 +1524,8 @@ class CDF(object):
                 return numElems, CDF.CDF_DOUBLE
             elif (isinstance(value, complex)):
                 return numElems, CDF.CDF_EPOCH16
+            elif (isinstance(value, np.ndarray)):
+                return numElems, CDF.CDF_TIME_TT2000
             else:
                 print('Invalid data type for data.... Skip')
                 return None, None 
@@ -1821,7 +1825,7 @@ class CDF(object):
                 
         if pnumElems is None:
             #Figure out number of elements if not supplied
-            if (isinstance(value, str)):
+            if (isinstance(value, str) or isinstance(value, unicode)):
                 pdataType = CDF.CDF_CHAR
                 pnumElems = len(value)
             else:
