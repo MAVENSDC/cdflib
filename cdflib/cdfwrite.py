@@ -267,6 +267,7 @@ new CDF file.
 @author: Mike Liu
 """
 
+from __future__ import print_function
 
 import numpy as np
 import sys
@@ -280,7 +281,6 @@ import cdflib.epochs as cdfepoch
 import numbers
 import math
 
-from __future__ import print_function
 
 class CDF(object):
 
