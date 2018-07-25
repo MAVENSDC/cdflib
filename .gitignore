@@ -9,3 +9,6 @@ build
 /.pydevproject
 *.ipynb
 /*.html
+tests/*
+/testing.py
+/.coverage
