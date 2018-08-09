@@ -4,7 +4,7 @@ cdfwrite.py
     This is a python script to write a CDF file from scratch
 without needing to install the CDF NASA library.
     This Python code only creates V3 CDFs.
-    This code is based on Python 3. 
+    This code is based on Python 3.
 
 Main functions:
 
@@ -12,13 +12,13 @@ CDF (path, cdf_spec=None, delete=False)
 =======================================
 Creates an empty CDF file.
    path: The path name of the CDF (with or without .cdf extension)
-   cdf_spec: The optional specification of the CDF file, in the form 
+   cdf_spec: The optional specification of the CDF file, in the form
              of a dictionary. 
              The keys for the dictionary are:
              ['Majority']: 'row_major' or 'column_major', or its
                            corresponding value. The default
                            is 'column_major'.
-             ['Encoding']: Data encoding scheme. See the CDF 
+             ['Encoding']: Data encoding scheme. See the CDF
                            documentation about the valid values.
                            Can be in string or its numeric
                            corresponding value. The default is
@@ -42,7 +42,7 @@ Writes the global attributes.
       globalAttrs={}
       globalAttrs['Global1']={0: 'Global Value 1'}
       globalAttrs['Global2']={0: 'Global Value 2'}
-   For a non-string value, use a list with the value and its 
+   For a non-string value, use a list with the value and its
    CDF data type. For examples:
       globalAttrs['Global3']={0: [12, 'cdf_int4']}
       globalAttrs['Global4']={0: [12.34, 'cdf_double']}
@@ -76,12 +76,12 @@ Writes a variable's attributes, provided the variable already exists.
       entries_1={}
       entries_1['var_name_1'] = 'abcd'
       entries_1['var_name_2'] = [12, 'cdf_int4']
-      .... 
+      ....
       variableAttrs['attr_name_1']=entries_1
       entries_2={}
       entries_2['var_name_1'] = 'xyz'
       entries_2['var_name_2'] = [[12, 34], 'cdf_int4']
-      .... 
+      ....
       variableAttrs['attr_name_2']=entries_2
       ....
       ....
@@ -101,14 +101,14 @@ Writes a variable, along with variable attributes and data:
                         string type.
       ['Rec_Vary']: Record variance
       For zVariables:
-      ['Dims_Sizes']: The dimensional sizes for zVariables only. 
+      ['Dims_Sizes']: The dimensional sizes for zVariables only.
                       Use [] for 0-dimension. Each and
                       every dimension is varying for zVariables.
       For rVariables:
-      ['Dim_Vary']: The dimensional variances for rVariables 
+      ['Dim_Vary']: The dimensional variances for rVariables
                     only.
       Optional keys:
-      ['Var_Type']: Whether the variable is a zVariable or 
+      ['Var_Type']: Whether the variable is a zVariable or
                     rVariable. Valid values: "zVariable" and
                     "rVariable". The default is "zVariable".
       ['Sparse']: Whether the variable has sparse records.
@@ -118,7 +118,7 @@ Writes a variable, along with variable attributes and data:
                     no compression. The default is to compress
                     with level 6 (done only if the compressed
                     data is less than the uncompressed data).
-      ['Block_Factor']: The blocking factor, the number of 
+      ['Block_Factor']: The blocking factor, the number of
                         records in a chunk when the variable is
                         compressed.
       ['Pad']: The padded value (in bytes, numpy.ndarray or
@@ -126,10 +126,10 @@ Writes a variable, along with variable attributes and data:
     var_attrs is a dictionary, with {attribute:value} pairs.
               The attribute is the name of a variable attribute.
               The value can have its data type specified for the
-              numeric data. If not, based on Python's type, a 
+              numeric data. If not, based on Python's type, a
               corresponding CDF type is assumed: CDF_INT4 for int,
               CDF_DOUBLE for float, CDF_EPOCH16 for complex and
-              and CDF_INT8 for long. 
+              and CDF_INT8 for long.
               For example, the following defined attributes will
               have the same types in the CDF:
                  var_attrs= { 'attr1':  'value1',
@@ -154,7 +154,7 @@ Writes a variable, along with variable attributes and data:
              physical record number(s), the second being the variable
              data in bytes, numpy.ndarray, or a list of strings. Variable
              data can have just physical records' data (with the same
-             number of records as the first element) or have data from both 
+             number of records as the first element) or have data from both
              physical records and virtual records (which with filled data).
              The var_data has the form:
               [[rec_#1,rec_#2,rec_#3,...],
@@ -176,13 +176,13 @@ Note: The attribute entry value for the CDF epoch data type, CDF_EPOCH,
       CDF_TIME_TT2000: 'year-mm-ddThh:mm:ss.mmmuuunnn'
       where mon is a 3-character month.
 
-Sample use - 
+Sample use -
 
 Use a master CDF file as the template for creating a CDF. Both global and
 variable meta-data comes from the master CDF. Each variable's specification
 also is copied from the master CDF. Just fill the variable data to write a
 new CDF file.
- 
+
     import cdflib, numpy as np
     cdf_master = cdflib.CDF('/path/to/master_file.cdf')
     if (cdf_master.file != None):
@@ -224,7 +224,7 @@ new CDF file.
             # 3 physical records at [0,5,10]:
             # vardata = [[  5.55000000e+01, -1.00000002e+30,  6.65999985e+01],
             #            [  6.66659973e+02,  7.77770020e+02,  8.88880005e+02],
-            #            [  2.00500000e+02,  2.10600006e+02,  2.20699997e+02]] 
+            #            [  2.00500000e+02,  2.10600006e+02,  2.20699997e+02]]
             # Or, with virtual record data embedded in the data:
             # vardata = [[  5.55000000e+01, -1.00000002e+30,  6.65999985e+01],
             #            [ -1.00000002e+30, -1.00000002e+30, -1.00000002e+30],
@@ -520,9 +520,9 @@ class CDF(object):
 
     def close(self):
         '''
-        Closes the CDF Class.  
-        1) If compression was set, this is where the compressed file is written.  
-        2) If a checksum is needed, this will place the checksum at the end of the file. 
+        Closes the CDF Class.
+        1) If compression was set, this is where the compressed file is written.
+        2) If a checksum is needed, this will place the checksum at the end of the file.
         '''
         if (self.file != None):
             f = self.file
@@ -550,7 +550,7 @@ class CDF(object):
 
     def write_globalattrs(self, globalAttrs):
         '''
-        Creates ADRs from "globalAttrs", as well as corresponding AEDRs.  
+        Creates ADRs from "globalAttrs", as well as corresponding AEDRs.
         '''
         if not (isinstance(globalAttrs, dict)):
             print('Global attribute(s) not in dictionary form.... Stop')
@@ -1042,7 +1042,7 @@ class CDF(object):
     def _write_var_data_nonsparse(self, f, zVar, var, dataType, numElems,
                                   recVary, compression, blockingfactor, indata):
         '''
-        Creates VVRs and the corresponding VXRs full of "indata" data.  
+        Creates VVRs and the corresponding VXRs full of "indata" data.
         If there is no compression, creates exactly one VXR and VVR
         If there is compression
 
@@ -1341,7 +1341,7 @@ class CDF(object):
         '''
         Build a new level of VXRs... make VXRs more tree-like
 
-        From: 
+        From:
 
         VXR1 -> VXR2 -> VXR3 -> VXR4 -> ... -> VXRn
 
@@ -1353,7 +1353,7 @@ class CDF(object):
                              ...
                     VXR5  ..........  VXRn
 
-        Parameters: 
+        Parameters:
             f : file
                 The open CDF file
             vxrhead : int
@@ -1516,15 +1516,15 @@ class CDF(object):
 
     def _datatype_size(datatype, numElms):    # @NoSelf
         '''
-        Gets datatype size 
+        Gets datatype size
 
         Parameters:
-            datatype : int 
+            datatype : int
                 CDF variable data type
             numElms : int
                 number of elements
 
-        Returns: 
+        Returns:
             numBytes : int
                 The number of bytes for the data
         '''
@@ -1578,7 +1578,7 @@ class CDF(object):
 
     def _sparse_token(sparse):  # @NoSelf
         '''
-        Returns the numerical CDF value for sparseness.  
+        Returns the numerical CDF value for sparseness.
         '''
 
         sparses = {'no_sparse': 0,
@@ -1676,10 +1676,10 @@ class CDF(object):
 
     def _write_adr(self, f, gORv, name):
         '''
-        Writes and ADR to the end of the file.  
+        Writes and ADR to the end of the file.
 
         Additionally, it will update the offset values to either the previous ADR
-        or the ADRhead field in the GDR. 
+        or the ADRhead field in the GDR.
 
         Parameters:
             f : file
@@ -1758,7 +1758,7 @@ class CDF(object):
     def _write_aedr(self, f, gORz, attrNum, entryNum, value, pdataType,
                     pnumElems, zVar):
         '''
-        Writes an aedr into the end of the file. 
+        Writes an aedr into the end of the file.
 
         Parameters:
             f : file
@@ -1769,18 +1769,18 @@ class CDF(object):
                 Number of the attribute this aedr belongs to.
             entryNum : int
                 Number of the entry
-            value : 
+            value :
                 The value of this entry
             pdataType : int
                 The CDF data type of the value
             pnumElems : int
-                Number of elements in the value.  
+                Number of elements in the value.
             zVar : bool
-                True if this entry belongs to a z variable 
+                True if this entry belongs to a z variable
 
-        Returns: 
+        Returns:
             byte_loc : int
-                This current location in the file after writing the aedr.  
+                This current location in the file after writing the aedr.
         '''
         f.seek(0, 2)
         byte_loc = f.tell()
@@ -1856,7 +1856,7 @@ class CDF(object):
                    dimVary, recVary, sparse, blockingfactor, compression,
                    pad, zVar):
         '''
-        Writes a VDR block to the end of the file.  
+        Writes a VDR block to the end of the file.
 
         Parameters:
             f : file
@@ -1872,7 +1872,7 @@ class CDF(object):
             name : str
                 The name of the variable
             dimVary : array of bool
-                Bool array of size numDims.  
+                Bool array of size numDims.
                 True if a dimension is physical, False if a dimension is not physical
             recVary : bool
                 True if each record is unique
@@ -2066,7 +2066,7 @@ class CDF(object):
 
     def _write_vvr(self, f, data):
         '''
-        Writes a vvr to the end of file "f" with the byte stream "data".  
+        Writes a vvr to the end of file "f" with the byte stream "data".
         '''
         f.seek(0, 2)
         byte_loc = f.tell()
@@ -2082,7 +2082,7 @@ class CDF(object):
 
     def _write_cpr(self, f, cType, parameter):
         '''
-        Write compression info to the end of the file in a CPR.  
+        Write compression info to the end of the file in a CPR.
         '''
         f.seek(0, 2)
         byte_loc = f.tell()
@@ -2129,7 +2129,7 @@ class CDF(object):
         Parameters:
             f : file
                 Uncompressed file to read from
-            g : file 
+            g : file
                 File to read the compressed file into
             level : int
                 The level of the compression from 0 to 9
@@ -2274,10 +2274,10 @@ class CDF(object):
 
     def _convert_data(self, data_type, num_elems, num_values, indata):
         '''
-        Converts "indata" into a byte stream 
+        Converts "indata" into a byte stream
 
         Parameters:
-            data_type : int 
+            data_type : int
                 The CDF file data type
 
             num_elems : int
@@ -2290,7 +2290,7 @@ class CDF(object):
                 The data to be converted
 
         Returns:
-            recs : int 
+            recs : int
                 The number of records generated by converting indata
             odata : byte stream
                 The stream of bytes to write to the CDF file
@@ -2383,7 +2383,7 @@ class CDF(object):
     def _num_values(self, zVar, varNum):
         '''
         Determines the number of values in a record.
-        Set zVar=True if this is a zvariable.  
+        Set zVar=True if this is a zvariable.
         '''
         values = 1
         if (zVar == True):
@@ -2407,7 +2407,7 @@ class CDF(object):
 
     def _read_offset_value(self, f, offset, size):
         '''
-        Reads an integer value from file "f" at location "offset".  
+        Reads an integer value from file "f" at location "offset".
         '''
         f.seek(offset, 0)
         if (size == 8):
@@ -2417,7 +2417,7 @@ class CDF(object):
 
     def _update_offset_value(self, f, offset, size, value):
         '''
-        Writes "value" into location "offset" in file "f".   
+        Writes "value" into location "offset" in file "f".
         '''
         f.seek(offset, 0)
         if (size == 8):
@@ -2429,7 +2429,7 @@ class CDF(object):
         '''
         Updates variable aedr links
 
-        Parameters: 
+        Parameters:
             f : file
                 The open CDF file
             attrNum : int
@@ -2558,13 +2558,13 @@ class CDF(object):
         Organizes the physical records into blocks in a list by
         placing consecutive physical records into a single block, so
         lesser VXRs will be created.
-          [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...]  
+          [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...]
 
         Parameters:
             records: list
                 A list of records that there is data for
 
-        Returns: 
+        Returns:
             sparse_blocks: list of list
                 A list of ranges we have physical values for.
 
@@ -2611,9 +2611,9 @@ class CDF(object):
 
     def _make_sparse_blocks(self, variable, records, data):
         '''
-        Handles the data for the variable with sparse records. 
+        Handles the data for the variable with sparse records.
         Organizes the physical record numbers into blocks in a list:
-          [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...]  
+          [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...]
         Place consecutive physical records into a single block
 
         If all records are physical, this calls _make_sparse_blocks_with_physical
@@ -2628,17 +2628,17 @@ class CDF(object):
                 expand=True)
 
             records : list
-                a list of physical records 
+                a list of physical records
 
             data : varies
                 bytes array, numpy.ndarray or list of str form with all physical
                 data or embedded virtual data (returned from call to
                 varget('variable') for a sparse variable)
 
-        Returns: 
+        Returns:
             sparse_blocks: list
                 A list of sparse records/data in the form
-                [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...] 
+                [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...]
         '''
 
         if (isinstance(data, dict)):
@@ -2706,18 +2706,18 @@ class CDF(object):
 
     def _make_sparse_blocks_with_virtual(self, variable, records, data):
         '''
-        Handles the data for the variable with sparse records. 
+        Handles the data for the variable with sparse records.
         Organizes the physical record numbers into blocks in a list:
-          [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...]  
+          [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...]
         Place consecutive physical records into a single block
 
         Parameters:
             variable: dict
                 the variable, returned from varinq('variable', expand=True)
             records: list
-                a list of physical records 
+                a list of physical records
             data: varies
-                bytes array, numpy.ndarray or list of str form with vitual data 
+                bytes array, numpy.ndarray or list of str form with vitual data
                 embedded, returned from varget('variable') call
         '''
 
