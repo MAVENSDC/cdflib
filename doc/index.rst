@@ -5,9 +5,9 @@ Welcome to cdflib's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   api/cdfread
-   api/cdfwrite
-   api/epochs
+   modules/cdfread
+   modules/cdfwrite
+   modules/epochs
 
 
 
