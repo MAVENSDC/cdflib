@@ -7,6 +7,8 @@ from cdflib import cdfread
 class CDFWriteTestCase(unittest.TestCase):
     
     def setUp(self):
+        if os.path.isfile(os.path.dirname(__file__)+ "/testfiles/testing.cdf"):
+            os.remove(os.path.dirname(__file__)+ "/testfiles/testing.cdf")
         cdf_spec = {'rDim_sizes':[1]}
         self.test_file = cdfwrite.CDF(os.path.dirname(__file__)+
                                       "/testfiles/testing.cdf", cdf_spec=cdf_spec)
