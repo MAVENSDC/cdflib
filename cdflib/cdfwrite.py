@@ -467,13 +467,13 @@ class CDF(object):
                 quit()
             else:
                 os.remove(path)
-        f = open(path, 'wb+')
         try:
             f = open(path, 'wb+')
             self.file = f
             self.file2 = None
             self.path = path
-        except:
+        except Exception as e:
+            print(e)
             print('CDF:',path,' already exists... Stop!')
             self.file = None
             quit()
