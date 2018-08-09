@@ -467,6 +467,7 @@ class CDF(object):
                 quit()
             else:
                 os.remove(path)
+        f = open(path, 'wb+')
         try:
             f = open(path, 'wb+')
             self.file = f
