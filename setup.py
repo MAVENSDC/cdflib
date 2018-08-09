@@ -22,4 +22,5 @@ setup(name='cdflib',
       packages=['cdflib'],
       install_requires=['numpy'],
       include_package_data=True,
+      test_suit='tests',
       zip_safe=False)
