@@ -1,7 +1,7 @@
 '''
-This is a python script to read CDF files without needing to install the CDF NASA library.  
+This is a python script to read CDF files without needing to install the CDF NASA library.
 
-You will need Python version 3, as well as the Numpy library to use this module.  
+You will need Python version 3, as well as the Numpy library to use this module.
 
 To install, open up your terminal/command prompt, and type::
 
@@ -11,22 +11,23 @@ To install, open up your terminal/command prompt, and type::
 CDF Class
 ##########
 
-To begin accessing the data within a CDF file, first create a new CDF class.  
+To begin accessing the data within a CDF file, first create a new CDF class.
 This can be done with the following commands::
     import cdflib
-    
+
     cdf_file = cdflib.CDF('/path/to/cdf_file.cdf')
-    
+
 Then, you can call various functions on the variable.  For example::
 
     x = cdf_file.varget("NameOfVariable", startrec = 0, endrec = 150)
 
-This command will return all data inside of the variable "Variable1", from records 0 to 150.  Below is a list of the 8 different functions you can call.   
+This command will return all data inside of the variable "Variable1", from
+records 0 to 150.  Below is a list of the 8 different functions you can call.
 
 cdf_info()
 =============
-    
-Returns a dictionary that shows the basic CDF information. 
+
+Returns a dictionary that shows the basic CDF information.
 This information includes
         +---------------+--------------------------------------------------------------------------------+
         | ['CDF']       | the name of the CDF                                                            |
@@ -53,12 +54,12 @@ This information includes
         +---------------+--------------------------------------------------------------------------------+
         | ['LeapSecondUpdated']| The last updated for the leap second table, if applicable
         +---------------+--------------------------------------------------------------------------------+
-          
+
 
 varinq(variable)
 =============
-    
-Returns a dictionary that shows the basic variable information.  
+
+Returns a dictionary that shows the basic variable information.
 This information includes
         +-----------------+--------------------------------------------------------------------------------+
         | ['Variable']    | the name of the variable                                                       |
@@ -93,13 +94,14 @@ This information includes
 
 attinq( attribute = None)
 =============
-    
-Returns a python dictionary of attribute information.  If no attribute is provided, a list of all attributes is printed.  
-                   
+
+Returns a python dictionary of attribute information.
+If no attribute is provided, a list of all attributes is printed.
+
 attget( attribute = None, entry = None)
 =============
-    
-Returns the value of the attribute at the entry number provided. A variable name can be used instead of its corresponding 
+
+Returns the value of the attribute at the entry number provided. A variable name can be used instead of its corresponding
 entry number. A dictionary is returned with the following defined keys
 
         +-----------------+--------------------------------------------------------------------------------+
@@ -114,8 +116,8 @@ entry number. A dictionary is returned with the following defined keys
 
 varattsget(variable = None, expand = False)
 =============
-    
-Gets all variable attributes. 
+
+Gets all variable attributes.
 Unlike attget, which returns a single attribute entry value,
 this function returns all of the variable attribute entries,
 in a dictionary (in the form of 'attribute': value pair) for
@@ -125,11 +127,11 @@ If expand is entered with non-False, then each entry's data
 type is also returned in a list form as [entry, 'CDF_xxxx'].
 For attributes without any entries, they will also return with
 None value.
-               
+
 globalattsget(expand = False)
 =============
-    
-Gets all global attributes.  
+
+Gets all global attributes.
 This function returns all of the global attribute entries,
 in a dictionary (in the form of 'attribute': {entry: value}
 pair) from a CDF. If there is no entry found, None is
@@ -137,7 +139,7 @@ returned. If expand is entered with non-False, then each
 entry's data type is also returned in a list form as
 [entry, 'CDF_xxxx']. For attributes without any entries,
 they will also return with None value.
-                   
+
 varget( variable = None, [epoch=None], [[starttime=None, endtime=None] | [startrec=0, endrec = None]], [,expand=True])
 =============
 Returns the variable data. Variable can be entered either
@@ -162,11 +164,11 @@ with the following defined keys for the output
         +-----------------+--------------------------------------------------------------------------------+
         | ['Real_Records']     | Record numbers for real data for sparse record variable in list           |
         +-----------------+--------------------------------------------------------------------------------+
-        
+
 By default, the full variable data is returned. To acquire
 only a portion of the data for a record-varying variable,
 either the time or record (0-based) range can be specified.
-'epoch' can be used to specify which time variable this 
+'epoch' can be used to specify which time variable this
 variable depends on and is to be searched for the time range.
 For the ISTP-compliant CDFs, the time variable will come from
 the attribute 'DEPEND_0' from this variable. The function will
@@ -175,7 +177,7 @@ If either the start or end time is not specified,
 the possible minimum or maximum value for the specific epoch
 data type is assumed. If either the start or end record is not
 specified, the range starts at 0 or/and ends at the last of the
-written data. 
+written data.
 
 The start (and end) time should be presented in a list as:
 [year month day hour minute second millisec] for CDF_EPOCH
@@ -184,11 +186,12 @@ The start (and end) time should be presented in a list as:
 If not enough time components are presented, only the last item can have the floating
 portion for the sub-time components.
 
-Note: CDF's CDF_EPOCH16 data type uses 2 8-byte doubles for each data value.  In Python, each value is presented as a complex or numpy.complex128.
+Note: CDF's CDF_EPOCH16 data type uses 2 8-byte doubles for each data value.
+In Python, each value is presented as a complex or numpy.complex128.
 
 epochrange( epoch, [starttime=None, endtime=None])
 =============
-Get epoch range. 
+Get epoch range.
 Returns a list of the record numbers, representing the
 corresponding starting and ending records within the time
 range from the epoch data. A None is returned if there is no
@@ -198,7 +201,7 @@ getVersion ()
 =============
 Shows the code version and last modified date.
 
-Sample use - 
+Sample use -
 
     import cdflib
     swea_cdf_file = cdflib.CDF('/path/to/swea_file.cdf')
@@ -231,10 +234,10 @@ class CDF(object):
         # READ FIRST INTERNAL RECORDS
         try:
             f = open(path, 'rb')
-        except:
+        except Exception:
             try:
-                f = open(path+'.cdf', 'rb')
-            except:
+                f = open(path + '.cdf', 'rb')
+            except Exception:
                 print('CDF:', path, ' not found')
                 self.file = None
                 return
@@ -258,7 +261,7 @@ class CDF(object):
 
         if self._compressed:
             new_path = self._uncompress_file(path)
-            if new_path == None:
+            if new_path is None:
                 print("Decompression was unsuccessful.  Only GZIP compression is currently supported.")
                 f.close()
                 self.file = None
@@ -275,11 +278,11 @@ class CDF(object):
             cdr_info = self._read_cdr2(self.file.tell())
             gdr_info = self._read_gdr2(self.file.tell())
 
-        if cdr_info['md5'] and (validate != None):
+        if cdr_info['md5'] and (validate is not None):
             if not self._md5_validation():
                 print('This file fails the md5 checksum....')
                 f.close()
-                if self.compressed_file != None:
+                if self.compressed_file is not None:
                     self.compressed_file.close()
                     self.compressed_file = None
                 self.file = None
@@ -288,7 +291,7 @@ class CDF(object):
         if not cdr_info['format']:
             print('This package does not support multi-format CDF')
             f.close()
-            if self.compressed_file != None:
+            if self.compressed_file is not None:
                 self.compressed_file.close()
                 self.compressed_file = None
             self.file = None
@@ -296,9 +299,9 @@ class CDF(object):
 
         if cdr_info['encoding'] == 3 or cdr_info['encoding'] == 14 or cdr_info['encoding'] == 15:
             print('This package does not support CDFs with this ' +
-                  CDF._encoding_token(cdr_info['encoding'])+' encoding')
+                  CDF._encoding_token(cdr_info['encoding']) + ' encoding')
             f.close()
-            if self.compressed_file != None:
+            if self.compressed_file is not None:
                 self.compressed_file.close()
                 self.compressed_file = None
             self.file = None
@@ -325,21 +328,21 @@ class CDF(object):
         if (self.cdfversion == 3):
             self._leap_second_updated = gdr_info['leapsecond_updated']
 
-        if self.compressed_file != None:
+        if self.compressed_file is not None:
             self.compressed_file.close()
             self.compressed_file = None
 
     def __del__(self):
-        if (self.file != None):
+        if (self.file is not None):
             self.close()
 
     def close(self):
-        if (self.file != None):
+        if (self.file is not None):
             self.file.close()
             if self._reading_compressed_file:
                 os.remove(self._path)
                 self._reading_compressed_file = False
-        if self.compressed_file != None:
+        if self.compressed_file is not None:
             self.compressed_file.close()
 
     def cdf_info(self):
@@ -447,7 +450,7 @@ class CDF(object):
                     break
                 else:
                     position = next_adr
-            if adr_info == None:
+            if adr_info is None:
                 print("Attribute not found.")
                 return
         elif isinstance(attribute, int):
@@ -475,7 +478,7 @@ class CDF(object):
                     name, next_adr = self._read_adr_fast(position)
                 else:
                     name, next_adr = self._read_adr_fast2(position)
-                print('NAME:'+name+' NUMBER: '+str(x))
+                print('NAME:' + name + ' NUMBER: ' + str(x))
                 position = next_adr
             return
 
@@ -551,8 +554,9 @@ class CDF(object):
             print('This CDF has both r and z variables. Use variable name')
             return
 
-        if ((starttime != None or endtime != None) and
-                (startrec != 0 or endrec != None)):
+
+        if ((starttime is not None or endtime is not None) and
+                (startrec != 0 or endrec is not None)):
             print('Can\'t specify both time and record range')
             return
 
@@ -576,7 +580,7 @@ class CDF(object):
                     position = vdr_next
                 position = self._first_rvariable
                 num_variables = self._num_rvariable
-            if vdr_info == None:
+            if vdr_info is None:
                 print("Variable name not found.")
                 return
         elif isinstance(variable, int):
@@ -607,10 +611,10 @@ class CDF(object):
             rvars, zvars = self._get_varnames()
             print("RVARIABLES: ")
             for x in rvars:
-                print("NAME: "+str(x))
+                print("NAME: " + str(x))
             print("ZVARIABLES: ")
             for x in zvars:
-                print("NAME: "+str(x))
+                print("NAME: " + str(x))
             return
 
         if inq:
@@ -638,11 +642,11 @@ class CDF(object):
                 byte_loc = adr_info['next_adr_location']
                 continue
             if (adr_info['num_gr_entry'] == 0):
-                if (expand != False):
+                if (expand is not False):
                     return_dict[adr_info['name']] = None
                 byte_loc = adr_info['next_adr_location']
                 continue
-            if (expand == False):
+            if (expand is False):
                 entries = []
             else:
                 entries = {}
@@ -653,7 +657,7 @@ class CDF(object):
                 else:
                     aedr_info = self._read_aedr2(aedr_byte_loc, to_np=to_np)
                 entryData = aedr_info['entry']
-                if (expand == False):
+                if (expand is False):
                     entries.append(entryData)
                 else:
                     entryWithType = []
@@ -684,7 +688,7 @@ class CDF(object):
                 aedr_byte_loc = aedr_info['next_aedr']
 
             if (len(entries) != 0):
-                if (expand == False):
+                if (expand is False):
                     if (len(entries) == 1):
                         return_dict[adr_info['name']] = entries[0]
                     else:
@@ -762,7 +766,7 @@ class CDF(object):
         try:
             import tempfile
             _, filename = os.path.split(path)
-            new_filename = filename+".gunzip"
+            new_filename = filename + ".gunzip"
             new_path = os.path.join(tempfile.gettempdir(), new_filename)
             with open(new_path, 'wb') as newfile:
                 newfile.write(bytearray.fromhex('cdf30001'))
@@ -771,7 +775,7 @@ class CDF(object):
                 return new_path
         except:
             directory, filename = os.path.split(path)
-            new_filename = filename+".gunzip"
+            new_filename = filename + ".gunzip"
             new_path = os.path.join(directory, new_filename)
             with open(new_path, 'wb') as newfile:
                 newfile.write(bytearray.fromhex('cdf30001'))
@@ -783,7 +787,7 @@ class CDF(object):
         f = self.file
         f.seek(byte_loc, 0)
         block_size = int.from_bytes(f.read(8), 'big')
-        f.seek(byte_loc+12)
+        f.seek(byte_loc + 12)
         cproffset = int.from_bytes(f.read(8), 'big')
         data_start = byte_loc + 32
         data_size = block_size - 32
@@ -805,7 +809,7 @@ class CDF(object):
         f = self.file
         f.seek(byte_loc, 0)
         block_size = int.from_bytes(f.read(8), 'big')
-        cpr = f.read(block_size-8)
+        cpr = f.read(block_size - 8)
         cType = int.from_bytes(cpr[4:8], 'big')
         cParams = int.from_bytes(cpr[16:20], 'big')
         return cType, cParams
@@ -814,14 +818,14 @@ class CDF(object):
         f = self.file
         f.seek(byte_loc, 0)
         block_size = int.from_bytes(f.read(4), 'big')
-        cpr = f.read(block_size-4)
+        cpr = f.read(block_size - 4)
         cType = int.from_bytes(cpr[4:8], 'big')
         cParams = int.from_bytes(cpr[16:20], 'big')
         return cType, cParams
 
     def _md5_validation(self):
         '''
-        Verifies the MD5 checksum.  
+        Verifies the MD5 checksum.
         Only used in the __init__() function
         '''
         if self.compressed_file == None:
@@ -830,7 +834,7 @@ class CDF(object):
             f = self.compressed_file
         md5 = hashlib.md5()
         block_size = 16384
-        f.seek(-16, 2)
+        f.seek(-16,2)
         remaining = f.tell()  # File size minus checksum size
         f.seek(0)
         while (remaining > block_size):
@@ -944,7 +948,7 @@ class CDF(object):
         f = self.file
         f.seek(byte_loc, 0)
         block_size = int.from_bytes(f.read(8), 'big')
-        cdr = f.read(block_size-8)
+        cdr = f.read(block_size - 8)
         # _ = int.from_bytes(cdr[0:4],'big') #Section Type
         gdroff = int.from_bytes(cdr[4:12], 'big')  # GDR Location
         version = int.from_bytes(cdr[12:16], 'big')
@@ -986,7 +990,7 @@ class CDF(object):
         f = self.file
         f.seek(byte_loc, 0)
         block_size = int.from_bytes(f.read(4), 'big')
-        cdr = f.read(block_size-4)
+        cdr = f.read(block_size - 4)
         gdroff = int.from_bytes(cdr[4:8], 'big')  # GDR Location
         version = int.from_bytes(cdr[8:12], 'big')
         release = int.from_bytes(cdr[12:16], 'big')
@@ -1641,9 +1645,9 @@ class CDF(object):
 
     def _read_vvrs(self, vdr_dict, vvr_offs, vvr_start, vvr_end, startrec, endrec, to_np=True):
         '''
-        Reads in all VVRS that are pointed to in the VVR_OFFS array.  
+        Reads in all VVRS that are pointed to in the VVR_OFFS array.
         Creates a large byte array of all values called "byte_stream".
-        Decodes the byte_stream, then returns them.  
+        Decodes the byte_stream, then returns them.
         '''
 
         numBytes = CDF._type_size(vdr_dict['data_type'],
@@ -1747,8 +1751,8 @@ class CDF(object):
 
     def _convert_option(self):
         '''
-        Determines how to convert CDF byte ordering to the system 
-        byte ordering.  
+        Determines how to convert CDF byte ordering to the system
+        byte ordering.
         '''
 
         if sys.byteorder == 'little' and self._endian() == 'big-endian':
@@ -1841,7 +1845,7 @@ class CDF(object):
         This is the primary routine that converts streams of bytes into usable data.
 
         To do so, we need the bytes, the type of data, the number of records,
-        the number of elements in a record, and dimension information.  
+        the number of elements in a record, and dimension information.
         '''
 
         squeeze_needed = False
@@ -1931,8 +1935,8 @@ class CDF(object):
 
     def _num_values(self, vdr_dict):
         '''
-        Returns the number of values in a record, using a given VDR 
-        dictionary. Multiplies the dimension sizes of each dimension, 
+        Returns the number of values in a record, using a given VDR
+        dictionary. Multiplies the dimension sizes of each dimension,
         if it is varying.
         '''
         values = 1
@@ -2118,7 +2122,7 @@ class CDF(object):
 
     def _default_pad(self, data_type, num_elms):   # @NoSelf
         '''
-        The default pad values by CDF data type 
+        The default pad values by CDF data type
         '''
         order = self._convert_option()
         if (data_type == 51 or data_type == 52):
@@ -2227,8 +2231,8 @@ class CDF(object):
 
     def _convert_data(self, data, data_type, num_recs, num_values, num_elems):
         '''
-        Converts data to the appropriate type using the struct.unpack method, 
-        rather than using numpy.  
+        Converts data to the appropriate type using the struct.unpack method,
+        rather than using numpy.
         '''
 
         if (data_type == 51 or data_type == 52):
