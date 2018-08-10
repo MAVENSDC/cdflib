@@ -1,5 +1,6 @@
 """
-cdfwrite.py
+This is a python module to write a CDF file from scratch without needing to
+install the CDF NASA library. This Python code only creates V3 CDFs.
 
     This is a python script to write a CDF file from scratch
 without needing to install the CDF NASA library.

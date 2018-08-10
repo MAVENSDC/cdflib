@@ -3,24 +3,29 @@
 CDF Epochs
 ##########
 
-Importing cdflib also imports the module CDFepoch, which handles CDF-based epochs.
-The following functions can be used to convert back and forth between different ways to display the date.
-You can call these functions like so::
-    import cdflib
+Importing cdflib also imports the module CDFepoch, which handles
+CDF-based epochs.
 
+The following functions can be used to convert back and forth between
+ifferent ways to display the date.
+
+You can call these functions like so::
+
+    import cdflib
     cdf_file = cdflib.cdfepoch.compute_epoch([2017,1,1,1,1,1,111])
 
 There are three (3) epoch data types in CDF: CDF_EPOCH, CDF_EPOCH16 and
 CDF_TIME_TT2000.
 
 - CDF_EPOCH is milliseconds since Year 0.
-
 - CDF_EPOCH16 is picoseconds since Year 0.
+- CDF_TIME_TT2000 (TT2000 as short) is nanoseconds since J2000 with
+  leap seconds.
 
-- CDF_TIME_TT2000 (TT2000 as short) is nanoseconds since J2000 with leap seconds.
-
-CDF_EPOCH is a single double(as float in Python), CDF_EPOCH16 is 2-doubles (as complex in Python),
-and TT2000 is 8-byte integer (as int in Python). In Numpy, they are np.float64, np.complex128 and np.int64, respectively.
+CDF_EPOCH is a single double(as float in Python),
+CDF_EPOCH16 is 2-doubles (as complex in Python),
+and TT2000 is 8-byte integer (as int in Python).
+In Numpy, they are np.float64, np.complex128 and np.int64, respectively.
 All these epoch values can come from from CDF.varget function.
 
 @author: Michael Liu

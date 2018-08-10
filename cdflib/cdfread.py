@@ -1,7 +1,7 @@
 '''
-This is a python script to read CDF files without needing to install the CDF NASA library.
-
-You will need Python version 3, as well as the Numpy library to use this module.
+This is a python script to read CDF files without needing to install the
+CDF NASA library. You will need Python version 3, as well as the Numpy
+library to use this module.
 
 To install, open up your terminal/command prompt, and type::
 
@@ -13,8 +13,8 @@ CDF Class
 
 To begin accessing the data within a CDF file, first create a new CDF class.
 This can be done with the following commands::
-    import cdflib
 
+    import cdflib
     cdf_file = cdflib.CDF('/path/to/cdf_file.cdf')
 
 Then, you can call various functions on the variable.  For example::
@@ -22,7 +22,7 @@ Then, you can call various functions on the variable.  For example::
     x = cdf_file.varget("NameOfVariable", startrec = 0, endrec = 150)
 
 This command will return all data inside of the variable "Variable1", from
-records 0 to 150.  Below is a list of the 8 different functions you can call.
+records 0 to 150.
 
 Sample use::
 
