@@ -1,4 +1,13 @@
-This is a python script to read/write CDF files without needing to install the CDF NASA library.  
+.. image:: https://travis-ci.com/scivision/cdflib.svg?branch=master
+    :target: https://travis-ci.com/scivision/cdflib
+    
+.. image:: https://coveralls.io/repos/github/scivision/cdflib/badge.svg?branch=master
+    :target: https://coveralls.io/github/scivision/cdflib?branch=master
+
+.. image:: https://ci.appveyor.com/api/projects/status/sjkgys1xft4q02x3?svg=true
+    :target: https://ci.appveyor.com/project/scivision/cdflib
+
+This is a python module to read/write CDF files without needing to install the CDF NASA library.  
 
 You will need Python version 3, as well as the Numpy library to use this module.  
 

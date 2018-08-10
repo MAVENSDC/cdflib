@@ -273,12 +273,13 @@ import sys
 import struct
 import gzip
 import hashlib
-import platform as pf 
-import binascii 
-import os.path 
+import platform as pf
+import binascii
+import os.path
 import cdflib.epochs as cdfepoch
 import numbers
 import math
+
 
 class CDF(object):
 
@@ -316,7 +317,7 @@ class CDF(object):
     VAX_ENCODING = 3
     DECSTATION_ENCODING = 4
     SGi_ENCODING = 5
-    IBMPC_ENCODING  = 6
+    IBMPC_ENCODING = 6
     IBMRS_ENCODING = 7
     HOST_ENCODING = 8
     PPC_ENCODING = 9
@@ -359,18 +360,18 @@ class CDF(object):
     V3magicNUMBER_1 = 'cdf30001'
     V3magicNUMBER_2 = '0000ffff'
     V3magicNUMBER_2c = 'cccc0001'
-    CDR_ =  1
-    GDR_ =  2
+    CDR_ = 1
+    GDR_ = 2
     rVDR_ = 3
-    ADR_ =  4
+    ADR_ = 4
     AgrEDR_ = 5
-    VXR_ =  6
-    VVR_ =  7
+    VXR_ = 6
+    VVR_ = 7
     zVDR_ = 8
     AzEDR_ = 9
-    CCR_ =  10
-    CPR_ =  11
-    SPR_ =  12
+    CCR_ = 10
+    CPR_ = 11
+    SPR_ = 12
     CVVR_ = 13
 
     NUM_VXR_ENTRIES = 7
@@ -398,27 +399,27 @@ class CDF(object):
 
     def __init__(self, path, cdf_spec=None, delete=False):
         if (cdf_spec != None):
-            major = cdf_spec.get('Majority', 2) # default is column
+            major = cdf_spec.get('Majority', 2)  # default is column
             if (isinstance(major, str)):
                 major = CDF._majority_token(major)
-            
-            encoding = cdf_spec.get('Encoding', 8) # default is host
+
+            encoding = cdf_spec.get('Encoding', 8)  # default is host
             if (isinstance(encoding, str)):
                 encoding = CDF._encoding_token(encoding)
-            
+
             checksum = cdf_spec.get('Checksum', False)
 
             cdf_compression = cdf_spec.get('Compressed', 0)
             if (isinstance(cdf_compression, int)):
                 if (cdf_compression < 0 or cdf_compression > 9):
                     cdf_compression = 0
-            else: 
+            else:
                 if (cdf_compression == True):
                     cdf_compression = 6
                 if (cdf_compression == False):
                     cdf_compression = 0
-            
-            rdim_sizes = cdf_spec.get('rDim_sizes',None)
+
+            rdim_sizes = cdf_spec.get('rDim_sizes', None)
             num_rdim = len(rdim_sizes) if rdim_sizes is not None else 0
 
         else:
@@ -435,7 +436,7 @@ class CDF(object):
         osMachine = pf.uname()[5]
         if (encoding == 8):
             if (osSystem == 'Windows' or osSystem == 'Linux' or
-                osSystem == 'Darwin'):
+                    osSystem == 'Darwin'):
                 self._encoding = CDF.IBMPC_ENCODING
             elif (osSystem == 'SunOS' and osMachine == 'sparc'):
                 self._encoding = CDF.SUN_ENCODING
@@ -456,12 +457,12 @@ class CDF(object):
         if not (path.lower().endswith('.cdf')):
             path += '.cdf'
         if (len(path) > CDF.CDF_PATHNAME_LEN):
-            print('CDF:',path,' longer than allowed length... Stop!')
+            print('CDF:', path, ' longer than allowed length... Stop!')
             self.file = None
             return
         if (os.path.exists(path)):
             if not delete:
-                print('file: ',path,' already exists....\n',
+                print('file: ', path, ' already exists....\n',
                       'Delete it or specify the \'delete=False\' option... Stop')
                 self.file = None
                 quit()
@@ -474,7 +475,7 @@ class CDF(object):
             self.path = path
         except Exception as e:
             print(e)
-            print('CDF:',path,' already exists... Stop!')
+            print('CDF:', path, ' already exists... Stop!')
             self.file = None
             quit()
         self.compressed_file = None
@@ -483,32 +484,32 @@ class CDF(object):
                 compressed_file = path + '.tmp'
                 g = open(compressed_file, 'wb+')
                 self.file2 = g
-                self.compressed_file = compressed_file 
+                self.compressed_file = compressed_file
             except:
-                print('Temp CDF:',compressed_file,' not created... Stop!')
+                print('Temp CDF:', compressed_file, ' not created... Stop!')
                 self.file = None
                 quit()
         self.file.seek(0)
         f.write(binascii.unhexlify(CDF.V3magicNUMBER_1))
         f.write(binascii.unhexlify(CDF.V3magicNUMBER_2))
-        
-        #Dictionary objects, these contains name, offset, and dimension information
-        self.zvarsinfo = {} 
+
+        # Dictionary objects, these contains name, offset, and dimension information
+        self.zvarsinfo = {}
         self.rvarsinfo = {}
-        
-        #Dictionary object, contains name, offset, and scope (global or variable)
+
+        # Dictionary object, contains name, offset, and scope (global or variable)
         self.attrsinfo = {}
-        
-        self.gattrs = [] #List of global attributes
-        self.vattrs = [] # List of variable attributes
-        self.attrs = [] # List of ALL attributes
-        self.zvars = [] #List of z variable names 
-        self.rvars = [] # List of r variable names
-        self.checksum = checksum #Boolean, whether or not to include the checksum at the end
-        self.compression = cdf_compression # Compression level (or True/False)
-        self.num_rdim = num_rdim # Number of r dimensions 
-        self.rdim_sizes = rdim_sizes # Size of r dimensions
-        
+
+        self.gattrs = []  # List of global attributes
+        self.vattrs = []  # List of variable attributes
+        self.attrs = []  # List of ALL attributes
+        self.zvars = []  # List of z variable names
+        self.rvars = []  # List of r variable names
+        self.checksum = checksum  # Boolean, whether or not to include the checksum at the end
+        self.compression = cdf_compression  # Compression level (or True/False)
+        self.num_rdim = num_rdim  # Number of r dimensions
+        self.rdim_sizes = rdim_sizes  # Size of r dimensions
+
         self.cdr_head = self._write_cdr(f, major, self._encoding, checksum)
         self.gdr_head = self._write_gdr(f)
         self.offset = f.tell()
@@ -526,7 +527,7 @@ class CDF(object):
         if (self.file != None):
             f = self.file
             g = self.file2
-            f.seek(0,2)
+            f.seek(0, 2)
             eof = f.tell()
             self._update_offset_value(f, self.gdr_head+36, 8, eof)
             if (self.compression > 0):
@@ -559,10 +560,10 @@ class CDF(object):
         f = self.file
         for attr, entry in globalAttrs.items():
             if (attr in self.gattrs):
-                print('Global attribute: ',attr,' already exists... Stop')
+                print('Global attribute: ', attr, ' already exists... Stop')
                 return
             if (attr in self.vattrs):
-                print('Attribute: ',attr,' already defined as a variable ',
+                print('Attribute: ', attr, ' already defined as a variable ',
                       'attribute... Skip')
                 continue
             attrNum, offsetADR = self._write_adr(f, True, attr)
@@ -576,25 +577,25 @@ class CDF(object):
                     entryNumMaX = entryNum
                 if (isinstance(value, list) or isinstance(value, tuple)):
                     if (len(value) == 2):
-                        #Check if the second value is a valid data type
+                        # Check if the second value is a valid data type
                         value2 = value[1]
                         dataType = CDF._datatype_token(value2)
                         if (dataType > 0):
-                            #Data Type found
+                            # Data Type found
                             data = value[0]
-                            if (dataType == CDF.CDF_CHAR or \
-                                dataType == CDF.CDF_UCHAR):
+                            if (dataType == CDF.CDF_CHAR or
+                                    dataType == CDF.CDF_UCHAR):
                                 if (isinstance(data, list) or
-                                    isinstance(data, tuple)):
+                                        isinstance(data, tuple)):
                                     print('Invalid global attribute value.... Skip')
                                     return
                                 numElems = len(data)
-                            elif (dataType == CDF.CDF_EPOCH or \
+                            elif (dataType == CDF.CDF_EPOCH or
                                   dataType == CDF.CDF_EPOCH16
                                   or dataType == CDF.CDF_TIME_TT2000):
                                 cvalue = []
                                 if (isinstance(data, list) or
-                                    isinstance(data, tuple)):
+                                        isinstance(data, tuple)):
                                     numElems = len(data)
                                     for x in range(0, numElems):
                                         if (isinstance(data[x], str)):
@@ -608,28 +609,28 @@ class CDF(object):
                                     numElems = 1
                             else:
                                 if (isinstance(data, list) or
-                                    isinstance(data, tuple)):
-                                    numElems = len(data) 
+                                        isinstance(data, tuple)):
+                                    numElems = len(data)
                                 else:
                                     numElems = 1
-                        else: 
-                            #Data type not found, both values are data.  
+                        else:
+                            # Data type not found, both values are data.
                             data = value
-                            numElems, dataType = CDF._datatype_define(value[0]) 
+                            numElems, dataType = CDF._datatype_define(value[0])
                             numElems = len(value)
                     else:
-                        #Length greater than 2, so it is all data.  
+                        # Length greater than 2, so it is all data.
                         data = value
                         numElems, dataType = CDF._datatype_define(value[0])
                         numElems = len(value)
                 else:
-                    #Just one value
+                    # Just one value
                     data = value
-                    numElems, dataType = CDF._datatype_define(value) 
+                    numElems, dataType = CDF._datatype_define(value)
                     if (numElems is None):
                         print('Unknown data.... Skip')
                         return
-                    
+
                 offset = self._write_aedr(f, True, attrNum, entryNum, data,
                                           dataType, numElems, None)
                 if (entries == 0):
@@ -638,7 +639,7 @@ class CDF(object):
                 else:
                     # ADR's ADRnext
                     self._update_offset_value(f, poffset+12, 8, offset)
-                    
+
                 poffset = offset
                 entries = entries + 1
             # ADR's NgrEntries
@@ -659,7 +660,7 @@ class CDF(object):
                 print('Attribute name should be a string... Stop')
                 return
             if (attr in self.gattrs):
-                print('Variable attribute: ',attr,
+                print('Variable attribute: ', attr,
                       ' is already a global variable... Stop')
                 return
             if (attr in self.vattrs):
@@ -675,16 +676,16 @@ class CDF(object):
                       'Stop')
                 return
             entryNumX = -1
-            poffset=-1
+            poffset = -1
             for entryID, value in attrs.items():
                 if (isinstance(entryID, str) and (not (entryID in self.zvars) and
-                    not (entryID in self.rvars))):
-                    print('The variable: ', entryID, 
+                                                  not (entryID in self.rvars))):
+                    print('The variable: ', entryID,
                           'not found in the CDF.... Stop')
                     return
-                if (isinstance(entryID, numbers.Number) and 
-                   (len(self.zvars) > 0 and len(self.rvars) > 0)):
-                    print('The variable: ', entryID, 
+                if (isinstance(entryID, numbers.Number) and
+                        (len(self.zvars) > 0 and len(self.rvars) > 0)):
+                    print('The variable: ', entryID,
                           'can not be used as the CDF has ',
                           'both zVariables and rVariables.... Stop')
                     return
@@ -725,19 +726,19 @@ class CDF(object):
                         dataType = CDF._datatype_token(value2)
                         if (dataType > 0):
                             data = value[0]
-                            if (dataType == CDF.CDF_CHAR or \
-                                dataType == CDF.CDF_UCHAR):
-                                if (isinstance(data, list) or 
-                                    isinstance(data, tuple)):
+                            if (dataType == CDF.CDF_CHAR or
+                                    dataType == CDF.CDF_UCHAR):
+                                if (isinstance(data, list) or
+                                        isinstance(data, tuple)):
                                     print('Invalid variable attribute value.... Skip')
                                     continue
                                 numElems = len(data)
-                            elif (dataType == CDF.CDF_EPOCH or \
+                            elif (dataType == CDF.CDF_EPOCH or
                                   dataType == CDF.CDF_EPOCH16
                                   or dataType == CDF.CDF_TIME_TT2000):
                                 cvalue = []
                                 if (isinstance(data, list) or
-                                    isinstance(data, tuple)):
+                                        isinstance(data, tuple)):
                                     numElems = len(data)
                                     for x in range(0, numElems):
                                         if (isinstance(data[x], str)):
@@ -756,12 +757,12 @@ class CDF(object):
                                     numElems = 1
                             else:
                                 if (isinstance(data, list) or isinstance(data, tuple)):
-                                    numElems = len(data) 
+                                    numElems = len(data)
                                 else:
                                     numElems = 1
                         else:
                             data = value
-                            numElems, dataType = CDF._datatype_define(value[0]) 
+                            numElems, dataType = CDF._datatype_define(value[0])
                             numElems = len(value)
                     else:
                         data = value
@@ -769,7 +770,7 @@ class CDF(object):
                         numElems = len(value)
                 else:
                     data = value
-                    numElems, dataType = CDF._datatype_define(value) 
+                    numElems, dataType = CDF._datatype_define(value)
                     if (numElems is None):
                         print('Unknown data.... Skip')
                         return
@@ -797,17 +798,17 @@ class CDF(object):
                 self._update_offset_value(f, offsetA+36, 4, entries)
                 # ADR's MAXgrEntry
                 self._update_offset_value(f, offsetA+40, 4, entryNumX)
-                
+
     def write_var(self, var_spec, var_attrs=None, var_data=None):
         '''
-        
+
         '''
         if (not isinstance(var_spec, dict)):
             print('Variable should be in dictionary form... Stop')
             return
         f = self.file
-        #Get variable info from var_spec
-        try: 
+        # Get variable info from var_spec
+        try:
             dataType = int(var_spec['Data_Type'])
             numElems = int(var_spec['Num_Elements'])
             name = var_spec['Variable']
@@ -815,14 +816,14 @@ class CDF(object):
         except:
             print('Missing/invalid required spec for creating variable... Stop')
             return -1
-        #Get whether or not it is a z variable 
+        # Get whether or not it is a z variable
         var_type = var_spec.setdefault('Var_Type', 'zvariable')
         if (var_type.lower() == 'zvariable'):
             zVar = True
         else:
             var_spec['Var_Type'] = 'rVariable'
             zVar = False
-            
+
         if (dataType == CDF.CDF_CHAR or dataType == CDF.CDF_UCHAR):
             if (numElems < 1):
                 print('Invalid Num_Elements for string data type variable')
@@ -831,14 +832,14 @@ class CDF(object):
             if (numElems != 1):
                 print('Invalid Num_Elements for numeric data type variable')
                 return -1
-        #If its a z variable, get the dimension info
-        #Otherwise, use r variable info
+        # If its a z variable, get the dimension info
+        # Otherwise, use r variable info
         if zVar:
-            try: 
+            try:
                 dimSizes = var_spec['Dim_Sizes']
                 numDims = len(dimSizes)
                 dimVary = []
-                for _ in range (0, numDims):
+                for _ in range(0, numDims):
                     dimVary.append(True)
             except:
                 print('Missing/invalid required spec for creating variable... ',
@@ -854,12 +855,12 @@ class CDF(object):
                     return -1
             except:
                 print('Missing/invalid required spec for Dim_Vary for ',
-                     'rVariable... Stop')
+                      'rVariable... Stop')
                 return -1
-        #Get Sparseness info 
+        # Get Sparseness info
         sparse = CDF._sparse_token(var_spec.get('Sparse', 'no_sparse'))
-        #Get compression info
-        compression = var_spec.get('Compress',6)
+        # Get compression info
+        compression = var_spec.get('Compress', 6)
         if (isinstance(compression, int)):
             if (compression < 0 or compression > 9):
                 compression = 0
@@ -868,24 +869,24 @@ class CDF(object):
                 compression = 6
             if (compression == False):
                 compression = 0
-                
-        #Get blocking factor
+
+        # Get blocking factor
         blockingfactor = int(var_spec.get('Block_Factor', 1))
-        
-        #Get pad value
+
+        # Get pad value
         pad = var_spec.get('Pad', None)
         if (isinstance(pad, list) or isinstance(pad, tuple)):
             pad = pad[0]
-            
+
         if (name in self.zvars or name in self.rvars):
             print('Variable: ', name, 'already exists..... Stop')
             return
-        
+
         varNum, offset = self._write_vdr(f, dataType, numElems, numDims,
                                          dimSizes, name, dimVary, recVary,
                                          sparse, blockingfactor, compression,
                                          pad, zVar)
-        #Update the GDR pointers if needed
+        # Update the GDR pointers if needed
         if zVar:
             if (len(self.zvars) == 1):
                 # GDR's zVDRhead
@@ -894,14 +895,14 @@ class CDF(object):
             if (len(self.rvars) == 1):
                 # GDR's rVDRhead
                 self._update_offset_value(f, self.gdr_head+12, 8, offset)
-                
-        #Write the variable attributes
+
+        # Write the variable attributes
         if not (var_attrs is None):
             status = self._write_var_attrs(f, varNum, var_attrs, zVar)
             if (status == -1):
-                return 
-        
-        #Write the actual data to the file
+                return
+
+        # Write the actual data to the file
         if not (var_data is None):
             if (sparse == 0):
                 varMaxRec = self._write_var_data_nonsparse(f, zVar, varNum,
@@ -916,31 +917,31 @@ class CDF(object):
                     notsupport = True
                 if (notsupport or len(var_data) != 2):
                     print('Sparse record #s and data are not of list/tuple form:')
-                    print(' [ [rec_#1, rec_#2, rec_#3,    ],') 
-                    print('   [data_#1, data_#2, data_#3, ....] ]');
+                    print(' [ [rec_#1, rec_#2, rec_#3,    ],')
+                    print('   [data_#1, data_#2, data_#3, ....] ]')
                     return
-                
-                #Format data into: [[recstart1, recend1, data1], 
+
+                # Format data into: [[recstart1, recend1, data1],
                 #                   [recstart2,recend2,data2], ...]
                 var_data = self._make_sparse_blocks(var_spec, var_data[0],
-                                                  var_data[1])
+                                                    var_data[1])
 
                 for block in var_data:
                     varMaxRec = self._write_var_data_sparse(f, zVar, varNum,
                                                             dataType, numElems,
                                                             recVary, block)
-            #Update GDR MaxRec if writing an r variable
+            # Update GDR MaxRec if writing an r variable
             if not zVar:
                 # GDR's rMaxRec
                 f.seek(self.gdr_head+52)
-                maxRec = int.from_bytes(f.read(4),'big', signed=True)
+                maxRec = int.from_bytes(f.read(4), 'big', signed=True)
                 if (maxRec < varMaxRec):
                     self._update_offset_value(f, self.gdr_head+52, 4, varMaxRec)
 
     def _write_var_attrs(self, f, varNum, var_attrs, zVar):
         '''
         Writes ADRs and AEDRs for variables
-        
+
         Parameters:
             f : file
                 The open CDF file
@@ -950,20 +951,20 @@ class CDF(object):
                 A dictionary object full of variable attributes
             zVar : bool
                 True if varNum is referencing a z variable
-        
+
         Returns: None
         '''
-        
+
         if (not isinstance(var_attrs, dict)):
             print('Variable attribute(s) should be in dictionary form... Stop')
             return -1
 
         for attr, entry in var_attrs.items():
             if (attr in self.gattrs):
-                print('Attribute: ',attr,
+                print('Attribute: ', attr,
                       ' already defined as a global attribute... Skip')
                 continue
-           
+
             if not (attr in self.attrs):
                 attrNum, offset = self._write_adr(f, False, attr)
                 if (len(self.attrs) == 0):
@@ -972,19 +973,19 @@ class CDF(object):
             else:
                 attrNum = self.attrs.index(attr)
                 offset = self.attrsinfo[attrNum][2]
-           
+
             if (entry is None):
                 continue
-            
-            #Check if dataType was provided
+
+            # Check if dataType was provided
             dataType = 0
             if (isinstance(entry, list) or isinstance(entry, tuple)):
                 items = len(entry)
                 if (items == 2):
                     dataType = CDF._datatype_token(entry[1])
-                    
+
             if (dataType > 0):
-                #CDF data type defined in entry
+                # CDF data type defined in entry
                 data = entry[0]
                 if (CDF._checklistofNums(data)):
                     # All are numbers
@@ -999,7 +1000,7 @@ class CDF(object):
                             items = len(data)
                             odata = data
                             data = str('')
-                            for x in range (0, items):
+                            for x in range(0, items):
                                 if (x > 0):
                                     data += str('\\N ')
                                     data += odata[x]
@@ -1024,20 +1025,20 @@ class CDF(object):
                     numElems, dataType = CDF._datatype_define(entry[0])
                     if (dataType == CDF.CDF_CHAR or dataType == CDF.CDF_UCHAR):
                         data = str('')
-                        for x in range (0, len(entry)):
+                        for x in range(0, len(entry)):
                             if (x > 0):
                                 data += str('\\N ')
                                 data += entry[x]
                             else:
                                 data = entry[x]
-                    numElems = len(data) 
+                    numElems = len(data)
                 else:
                     numElems, dataType = CDF._datatype_define(entry)
-                    
+
             offset = self._write_aedr(f, False, attrNum, varNum, data, dataType,
-                                     numElems, zVar)
+                                      numElems, zVar)
             self._update_aedr_link(f, attrNum, zVar, varNum, offset)
-          
+
     def _write_var_data_nonsparse(self, f, zVar, var, dataType, numElems,
                                   recVary, compression, blockingfactor, indata):
         '''
@@ -1064,27 +1065,27 @@ class CDF(object):
                 The size (in number of records) of a VVR data block
             indata : varies
                 the data to write, should be a numpy or byte array
-            
+
         Returns:
             recs : int
                 The number of records
-        
+
         '''
-        
+
         numValues = self._num_values(zVar, var)
         dataTypeSize = CDF._datatype_size(dataType, numElems)
         if (isinstance(indata, dict)):
             indata = indata['Data']
-        
-        #Deal with EPOCH16 data types
+
+        # Deal with EPOCH16 data types
         if (dataType == CDF.CDF_EPOCH16):
             epoch16 = []
             if (isinstance(indata, list) or isinstance(indata, tuple) or
-                isinstance(indata, np.ndarray)):
+                    isinstance(indata, np.ndarray)):
                 adata = indata[0]
                 if (isinstance(adata, complex)):
-                    recs = len (indata)
-                    for x in range (0, recs):
+                    recs = len(indata)
+                    for x in range(0, recs):
                         epoch16.append(indata[x].real)
                         epoch16.append(indata[x].imag)
                     indata = epoch16
@@ -1093,17 +1094,17 @@ class CDF(object):
                     epoch16.append(indata.real)
                     epoch16.append(indata.imag)
                     indata = epoch16
-        
-        #Convert to byte stream
+
+        # Convert to byte stream
         recs, data = self._convert_data(dataType, numElems, numValues, indata)
-        
+
         if not recVary:
             recs = 1
         if zVar:
             vdr_offset = self.zvarsinfo[var][1]
         else:
             vdr_offset = self.rvarsinfo[var][1]
-            
+
         usedEntries = 0
         editedVDR = False
         numVXRs = 0
@@ -1115,21 +1116,21 @@ class CDF(object):
                 blockingfactor = default_blockingfactor
             if (blockingfactor == 0):
                 blockingfactor = 1
-            # set blocking factor 
+            # set blocking factor
             if (recs < blockingfactor):
                 blockingfactor = recs
             blocks = math.ceil(recs / blockingfactor)
             nEntries = CDF.NUM_VXR_ENTRIES
             VXRhead = None
-            
-            #Loop through blocks, create VVRs/CVVRs
+
+            # Loop through blocks, create VVRs/CVVRs
             for x in range(0, blocks):
                 startrec = x * blockingfactor
                 startloc = startrec * numValues * dataTypeSize
                 endrec = (x + 1) * blockingfactor - 1
                 if (endrec > (recs-1)):
                     endrec = recs - 1
-                endloc = (endrec + 1) * numValues * dataTypeSize 
+                endloc = (endrec + 1) * numValues * dataTypeSize
                 if (endloc > len(data)):
                     endrec = recs - 1
                     endloc = len(data)
@@ -1139,7 +1140,7 @@ class CDF(object):
                     if not editedVDR:
                         f.seek(vdr_offset+44, 0)
                         # VDR's Flags
-                        flags = int.from_bytes(f.read(4),'big', signed=True)
+                        flags = int.from_bytes(f.read(4), 'big', signed=True)
                         flags = CDF._set_bit(flags, 2)
                         self._update_offset_value(f, vdr_offset+44, 4, flags)
                         f.seek(vdr_offset+80, 0)
@@ -1149,10 +1150,10 @@ class CDF(object):
                         editedVDR = True
                     n1offset = self._write_cvvr(f, cdata)
                 else:
-                    #Not worth compressing
+                    # Not worth compressing
                     n1offset = self._write_vvr(f, bdata)
                 if (x == 0):
-                    #Create a VXR
+                    # Create a VXR
                     VXRoffset = self._write_vxr(f)
                     VXRhead = VXRoffset
                     numVXRs = 1
@@ -1170,35 +1171,35 @@ class CDF(object):
                     numVXRs += 1
                     usedEntries = self._use_vxrentry(f, VXRoffset, startrec,
                                                      endrec, n1offset)
-                    #Edit the VXRnext field of the previous VXR
+                    # Edit the VXRnext field of the previous VXR
                     self._update_offset_value(f, savedVXRoffset+12, 8, VXRoffset)
-                    #Edit the VXRtail of the VDR
+                    # Edit the VXRtail of the VDR
                     self._update_offset_value(f, vdr_offset+36, 8, VXRoffset)
-            
-            #After we're done with the blocks, check the way 
+
+            # After we're done with the blocks, check the way
             # we have VXRs set up
             if (numVXRs > CDF.NUM_VXRlvl_ENTRIES):
                 newvxrhead, newvxrtail = self._add_vxr_levels_r(f, VXRhead,
-                                                                 numVXRs)
+                                                                numVXRs)
                 self._update_offset_value(f, vdr_offset+28, 8, newvxrhead)
                 self._update_offset_value(f, vdr_offset+36, 8, newvxrtail)
         else:
-            #Create one VVR and VXR, with one VXR entry
+            # Create one VVR and VXR, with one VXR entry
             offset = self._write_vvr(f, data)
             VXRoffset = self._write_vxr(f)
             usedEntries = self._use_vxrentry(f, VXRoffset, 0, recs-1, offset)
             self._update_vdr_vxrheadtail(f, vdr_offset, VXRoffset)
-        
+
         # VDR's MaxRec
         self._update_offset_value(f, vdr_offset+24, 4, recs-1)
-        
+
         return (recs-1)
 
     def _write_var_data_sparse(self, f, zVar, var, dataType, numElems, recVary,
                                oneblock):
         '''
         Writes a VVR and a VXR for this block of sparse data
-        
+
         Parameters:
             f : file
                 The open CDF file
@@ -1214,52 +1215,52 @@ class CDF(object):
                 True if the value varies across records
             oneblock: list
                 A list of data in the form [startrec, endrec, [data]]
-        
+
         Returns:
             recend : int
                 Just the "endrec" value input by the user in "oneblock"
         '''
-        
+
         rec_start = oneblock[0]
         rec_end = oneblock[1]
         indata = oneblock[2]
         numValues = self._num_values(zVar, var)
-        
-        #Convert oneblock[2] into a byte stream
+
+        # Convert oneblock[2] into a byte stream
         _, data = self._convert_data(dataType, numElems, numValues, indata)
-        
-        #Gather dimension information
+
+        # Gather dimension information
         if zVar:
             vdr_offset = self.zvarsinfo[var][1]
         else:
             vdr_offset = self.rvarsinfo[var][1]
-            
-        #Write one VVR
+
+        # Write one VVR
         offset = self._write_vvr(f, data)
         f.seek(vdr_offset+28, 0)
-        
-        #Get first VXR
-        vxrOne = int.from_bytes(f.read(8),'big', signed=True)
+
+        # Get first VXR
+        vxrOne = int.from_bytes(f.read(8), 'big', signed=True)
         foundSpot = 0
         usedEntries = 0
         currentVXR = 0
-        
-        #Search through VXRs to find an open one
+
+        # Search through VXRs to find an open one
         while (foundSpot == 0 and vxrOne > 0):
             # have a VXR
             f.seek(vxrOne, 0)
             currentVXR = f.tell()
             f.seek(vxrOne+12, 0)
-            vxrNext = int.from_bytes(f.read(8),'big', signed=True)
-            nEntries = int.from_bytes(f.read(4),'big', signed=True)
-            usedEntries = int.from_bytes(f.read(4),'big', signed=True)
+            vxrNext = int.from_bytes(f.read(8), 'big', signed=True)
+            nEntries = int.from_bytes(f.read(4), 'big', signed=True)
+            usedEntries = int.from_bytes(f.read(4), 'big', signed=True)
             if (usedEntries == nEntries):
                 # all entries are used -- check the next vxr in link
                 vxrOne = vxrNext
             else:
                 # found a vxr with an vailable entry spot
                 foundSpot = 1
-              
+
         # vxrOne == 0 from vdr's vxrhead vxrOne == -1 from a vxr's vxrnext
         if (vxrOne == 0 or vxrOne == -1):
             # no available vxr... create a new one
@@ -1267,20 +1268,19 @@ class CDF(object):
                                           currentVXR, offset)
         else:
             self._use_vxrentry(f, currentVXR, rec_start, rec_end, offset)
-        
+
         # Modify the VDR's MaxRec if needed
         f.seek(vdr_offset+24, 0)
-        recNumc = int.from_bytes(f.read(4),'big', signed=True)
+        recNumc = int.from_bytes(f.read(4), 'big', signed=True)
         if (rec_end > recNumc):
             self._update_offset_value(f, vdr_offset+24, 4, rec_end)
-            
-        
+
         return rec_end
 
     def _create_vxr(self, f, recStart, recEnd, currentVDR, priorVXR, vvrOffset):
         '''
         Create a VXR AND use a VXR
-        
+
         Parameters:
             f : file
                 The open CDF file
@@ -1294,13 +1294,13 @@ class CDF(object):
                 The byte location of the previous VXR
             vvrOffset : int
                 The byte location of ther VVR
-        
+
         Returns:
             vxroffset : int
                 The byte location of the created vxr
-        
+
         '''
-        # add a VXR, use an entry, and link it to the prior VXR if it exists 
+        # add a VXR, use an entry, and link it to the prior VXR if it exists
         vxroffset = self._write_vxr(f)
         usedEntries = self._use_vxrentry(f, vxroffset, recStart, recEnd,
                                          vvrOffset)
@@ -1321,9 +1321,9 @@ class CDF(object):
         # Select the next unused entry in a VXR for a VVR/CVVR
         f.seek(VXRoffset+20)
         # num entries
-        numEntries = int.from_bytes(f.read(4),'big', signed=True)
+        numEntries = int.from_bytes(f.read(4), 'big', signed=True)
         # used entries
-        usedEntries = int.from_bytes(f.read(4),'big', signed=True)
+        usedEntries = int.from_bytes(f.read(4), 'big', signed=True)
         # VXR's First
         self._update_offset_value(f, VXRoffset+28+4*usedEntries, 4, recStart)
         # VXR's Last
@@ -1336,15 +1336,15 @@ class CDF(object):
         usedEntries += 1
         self._update_offset_value(f, VXRoffset+24, 4, usedEntries)
         return usedEntries
- 
-    def _add_vxr_levels_r (self, f, vxrhead, numVXRs):
+
+    def _add_vxr_levels_r(self, f, vxrhead, numVXRs):
         '''
         Build a new level of VXRs... make VXRs more tree-like
-        
+
         From: 
-        
+
         VXR1 -> VXR2 -> VXR3 -> VXR4 -> ... -> VXRn
-        
+
         To:
                            new VXR1
                          /    |    \
@@ -1352,7 +1352,7 @@ class CDF(object):
                        /      |      \
                              ...
                     VXR5  ..........  VXRn
-                        
+
         Parameters: 
             f : file
                 The open CDF file
@@ -1360,7 +1360,7 @@ class CDF(object):
                 The byte location of the first VXR for a variable
             numVXRs : int
                 The total number of VXRs
-        
+
         Returns:
             newVXRhead : int
                 The byte location of the newest VXR head
@@ -1395,16 +1395,16 @@ class CDF(object):
                                                  vxroff)
                 vxroff = self._read_offset_value(f, vxroff+12, 8)
         vxroff = vxrhead
-        
-        #Break the horizontal links 
+
+        # Break the horizontal links
         for x in range(0, numVXRs):
             nvxroff = self._read_offset_value(f, vxroff+12, 8)
             self._update_offset_value(f, vxroff+12, 8, 0)
             vxroff = nvxroff
-        
-        #Iterate this process if we're over NUM_VXRlvl_ENTRIES
+
+        # Iterate this process if we're over NUM_VXRlvl_ENTRIES
         if (newNumVXRs > CDF.NUM_VXRlvl_ENTRIES):
-            return self._add_vxr_levels_r (f, newvxrhead, newNumVXRs)
+            return self._add_vxr_levels_r(f, newvxrhead, newNumVXRs)
         else:
             return newvxrhead, newvxroff
 
@@ -1424,76 +1424,76 @@ class CDF(object):
         '''
         f.seek(VXRoffset+20)
         # Num entries
-        numEntries = int.from_bytes(f.read(4),'big', signed=True)
+        numEntries = int.from_bytes(f.read(4), 'big', signed=True)
         # used entries
-        usedEntries = int.from_bytes(f.read(4),'big', signed=True)
+        usedEntries = int.from_bytes(f.read(4), 'big', signed=True)
         # VXR's First record
-        firstRec = int.from_bytes(f.read(4),'big', signed=True)
+        firstRec = int.from_bytes(f.read(4), 'big', signed=True)
         # VXR's Last record
         f.seek(VXRoffset+28+(4*numEntries+4*(usedEntries-1)))
-        lastRec = int.from_bytes(f.read(4),'big', signed=True)
+        lastRec = int.from_bytes(f.read(4), 'big', signed=True)
         return firstRec, lastRec
- 
+
     def _majority_token(major):    # @NoSelf
         '''
         Returns the numberical type for a CDF row/column major type
         '''
-        majors = { 'ROW_MAJOR': 1, \
-                   'COLUMN_MAJOR': 2}
+        majors = {'ROW_MAJOR': 1,
+                  'COLUMN_MAJOR': 2}
         try:
             return majors[major.upper()]
         except:
-            print('bad major....',major)
+            print('bad major....', major)
             return 0
- 
+
     def _encoding_token(encoding):    # @NoSelf
         '''
         Returns the numberical type for a CDF encoding type
         '''
-        encodings = { 'NETWORK_ENCODING': 1, \
-                      'SUN_ENCODING': 2, \
-                      'VAX_ENCODING': 3, \
-                      'DECSTATION_ENCODING': 4, \
-                      'SGI_ENCODING': 5, \
-                      'IBMPC_ENCODING': 6, \
-                      'IBMRS_ENCODING': 7, \
-                      'HOST_ENCODING': 8, \
-                      'PPC_ENCODING': 9, \
-                      'HP_ENCODING': 11, \
-                      'NEXT_ENCODING': 12, \
-                      'ALPHAOSF1_ENCODING': 13, \
-                      'ALPHAVMSD_ENCODING': 14, \
-                      'ALPHAVMSG_ENCODING': 15, \
-                      'ALPHAVMSI_ENCODING': 16, \
-                      'ARM_LITTLE_ENCODING': 17, \
-                      'ARM_BIG_ENCODING': 18}
+        encodings = {'NETWORK_ENCODING': 1,
+                     'SUN_ENCODING': 2,
+                     'VAX_ENCODING': 3,
+                     'DECSTATION_ENCODING': 4,
+                     'SGI_ENCODING': 5,
+                     'IBMPC_ENCODING': 6,
+                     'IBMRS_ENCODING': 7,
+                     'HOST_ENCODING': 8,
+                     'PPC_ENCODING': 9,
+                     'HP_ENCODING': 11,
+                     'NEXT_ENCODING': 12,
+                     'ALPHAOSF1_ENCODING': 13,
+                     'ALPHAVMSD_ENCODING': 14,
+                     'ALPHAVMSG_ENCODING': 15,
+                     'ALPHAVMSI_ENCODING': 16,
+                     'ARM_LITTLE_ENCODING': 17,
+                     'ARM_BIG_ENCODING': 18}
         try:
             return encodings[encoding.upper()]
         except:
-            print('bad encoding....',encoding)
+            print('bad encoding....', encoding)
             return 0
 
     def _datatype_token(datatype):    # @NoSelf
         '''
         Returns the numberical type for a CDF data type
         '''
-        datatypes = {'CDF_INT1': 1, \
-                     'CDF_INT2': 2, \
-                     'CDF_INT4': 4, \
-                     'CDF_INT8': 8, \
-                     'CDF_UINT1': 11, \
-                     'CDF_UINT2': 12, \
-                     'CDF_UINT4': 14, \
-                     'CDF_REAL4': 21, \
-                     'CDF_REAL8': 22, \
-                     'CDF_EPOCH': 31, \
-                     'CDF_EPOCH16': 32, \
-                     'CDF_TIME_TT2000': 33, \
-                     'CDF_BYTE': 41, \
-                     'CDF_FLOAT': 44, \
-                     'CDF_DOUBLE': 45, \
-                     'CDF_CHAR': 51, \
-                     'CDF_UCHAR': 52 }
+        datatypes = {'CDF_INT1': 1,
+                     'CDF_INT2': 2,
+                     'CDF_INT4': 4,
+                     'CDF_INT8': 8,
+                     'CDF_UINT1': 11,
+                     'CDF_UINT2': 12,
+                     'CDF_UINT4': 14,
+                     'CDF_REAL4': 21,
+                     'CDF_REAL8': 22,
+                     'CDF_EPOCH': 31,
+                     'CDF_EPOCH16': 32,
+                     'CDF_TIME_TT2000': 33,
+                     'CDF_BYTE': 41,
+                     'CDF_FLOAT': 44,
+                     'CDF_DOUBLE': 45,
+                     'CDF_CHAR': 51,
+                     'CDF_UCHAR': 52}
         try:
             return datatypes[datatype.upper()]
         except:
@@ -1512,39 +1512,39 @@ class CDF(object):
                 return numElems, CDF.CDF_EPOCH16
             else:
                 print('Invalid data type for data.... Skip')
-                return None, None 
+                return None, None
 
     def _datatype_size(datatype, numElms):    # @NoSelf
         '''
         Gets datatype size 
-        
+
         Parameters:
             datatype : int 
                 CDF variable data type
             numElms : int
                 number of elements
-        
+
         Returns: 
             numBytes : int
                 The number of bytes for the data
         '''
-        sizes = {1: 1, \
-                 2: 2, \
-                 4: 4, \
-                 8: 8, \
-                 11: 1, \
-                 12: 2, \
-                 14: 4, \
-                 21: 4, \
-                 22: 8, \
-                 31: 8, \
-                 32: 16, \
-                 33: 8, \
-                 41: 1, \
-                 44: 4, \
-                 45: 8, \
-                 51: 1, \
-                 52: 1 }
+        sizes = {1: 1,
+                 2: 2,
+                 4: 4,
+                 8: 8,
+                 11: 1,
+                 12: 2,
+                 14: 4,
+                 21: 4,
+                 22: 8,
+                 31: 8,
+                 32: 16,
+                 33: 8,
+                 41: 1,
+                 44: 4,
+                 45: 8,
+                 51: 1,
+                 52: 1}
         try:
             if (isinstance(datatype, int)):
                 if (datatype == 51 or datatype == 52):
@@ -1554,7 +1554,7 @@ class CDF(object):
             else:
                 datatype = datatype.upper()
                 if (datatype == 'CDF_INT1' or datatype == 'CDF_UINT1' or
-                    datatype == 'CDF_BYTE'):
+                        datatype == 'CDF_BYTE'):
                     return 1
                 elif (datatype == 'CDF_INT2' or datatype == 'CDF_UINT2'):
                     return 2
@@ -1571,7 +1571,7 @@ class CDF(object):
                     return 16
                 elif (datatype == 'CDF_CHAR' or datatype == 'CDF_UCHAR'):
                     return numElms
-                else: 
+                else:
                     return -1
         except:
             return -1
@@ -1580,10 +1580,10 @@ class CDF(object):
         '''
         Returns the numerical CDF value for sparseness.  
         '''
-        
-        sparses = { 'no_sparse': 0, 
-                    'pad_sparse': 1, 
-                    'prev_sparse': 2}
+
+        sparses = {'no_sparse': 0,
+                   'pad_sparse': 1,
+                   'prev_sparse': 2}
         try:
             return sparses[sparse.lower()]
         except:
@@ -1599,20 +1599,20 @@ class CDF(object):
         release = CDF.release
         flag = 0
         if (major == 1):
-            flag = CDF._set_bit (flag, 0)
-        flag = CDF._set_bit (flag, 1)
+            flag = CDF._set_bit(flag, 0)
+        flag = CDF._set_bit(flag, 1)
         if (checksum == True):
-            flag = CDF._set_bit (flag, 2)
-            flag = CDF._set_bit (flag, 3)
+            flag = CDF._set_bit(flag, 2)
+            flag = CDF._set_bit(flag, 3)
         rfuA = 0
         rfuB = 0
         increment = CDF.increment
         identifier = 2
         rfuE = -1
-        copy_right = '\nCommon Data Format (CDF)\nhttps://cdf.gsfc.nasa.gov\n'+ \
-                     'Space Physics Data Facility\n'+ \
-                     'NASA/Goddard Space Flight Center\n'+ \
-                     'Greenbelt, Maryland 20771 USA\n'+ \
+        copy_right = '\nCommon Data Format (CDF)\nhttps://cdf.gsfc.nasa.gov\n' + \
+                     'Space Physics Data Facility\n' + \
+                     'NASA/Goddard Space Flight Center\n' + \
+                     'Greenbelt, Maryland 20771 USA\n' + \
                      '(User support: gsfc-cdf-support@lists.nasa.gov)\n'
 
         cdr = bytearray(block_size)
@@ -1632,7 +1632,7 @@ class CDF(object):
         cdr[56:block_size] = (copy_right+'\0'*tofill).encode()
         f.write(cdr)
         return byte_loc
-        
+
     def _write_gdr(self, f):
         f.seek(0, 2)
         byte_loc = f.tell()
@@ -1643,12 +1643,12 @@ class CDF(object):
         first_adr = 0
         eof = byte_loc + block_size
         num_rvariable = 0
-        num_att = 0 
-        rMaxRec = -1 
-        num_rdim = self.num_rdim 
+        num_att = 0
+        rMaxRec = -1
+        num_rdim = self.num_rdim
         num_zvariable = 0
-        UIR_head = 0 
-        rfuC = 0 
+        UIR_head = 0
+        rfuC = 0
         leapsecondlastupdate = 20170101
         rfuE = -1
 
@@ -1669,7 +1669,7 @@ class CDF(object):
         gdr[76:80] = struct.pack('>i', leapsecondlastupdate)
         gdr[80:84] = struct.pack('>i', rfuE)
         if (num_rdim > 0):
-            for i in range (0, num_rdim):
+            for i in range(0, num_rdim):
                 gdr[84+i*4:84+(i+1)*4] = struct.pack('>i', self.rdim_sizes[i])
         f.write(gdr)
         return byte_loc
@@ -1677,10 +1677,10 @@ class CDF(object):
     def _write_adr(self, f, gORv, name):
         '''
         Writes and ADR to the end of the file.  
-        
+
         Additionally, it will update the offset values to either the previous ADR
         or the ADRhead field in the GDR. 
-        
+
         Parameters:
             f : file
                 The open CDF file
@@ -1694,7 +1694,7 @@ class CDF(object):
             byte_loc : int
                 The current location in file f
         '''
-        
+
         f.seek(0, 2)
         byte_loc = f.tell()
         block_size = CDF.ADR_BASE_SIZE64
@@ -1704,7 +1704,7 @@ class CDF(object):
         if (gORv == True):
             scope = 1
         else:
-            scope = 2 
+            scope = 2
         num = len(self.attrs)
         ngrEntries = 0
         maxgrEntry = -1
@@ -1713,7 +1713,7 @@ class CDF(object):
         nzEntries = 0
         maxzEntry = -1
         rfuE = -1
-        
+
         adr = bytearray(block_size)
         adr[0:8] = struct.pack('>q', block_size)
         adr[8:12] = struct.pack('>i', section_type)
@@ -1734,13 +1734,13 @@ class CDF(object):
         info = []
         info.append(name)
         info.append(scope)
-        info.append(byte_loc) 
+        info.append(byte_loc)
         self.attrsinfo[num] = info
         if (scope == 1):
             self.gattrs.append(name)
         else:
             self.vattrs.append(name)
-        
+
         self.attrs.append(name)
         if (num > 0):
             # ADR's ADRnext
@@ -1749,17 +1749,17 @@ class CDF(object):
         else:
             # GDR's ADRhead
             self._update_offset_value(f, self.gdr_head+28, 8, byte_loc)
-        
+
         # GDR's NumAttr
         self._update_offset_value(f, self.gdr_head+48, 4, num+1)
-        
+
         return num, byte_loc
 
     def _write_aedr(self, f, gORz, attrNum, entryNum, value, pdataType,
                     pnumElems, zVar):
         '''
         Writes an aedr into the end of the file. 
-        
+
         Parameters:
             f : file
                 The current open CDF file
@@ -1777,7 +1777,7 @@ class CDF(object):
                 Number of elements in the value.  
             zVar : bool
                 True if this entry belongs to a z variable 
-        
+
         Returns: 
             byte_loc : int
                 This current location in the file after writing the aedr.  
@@ -1789,9 +1789,9 @@ class CDF(object):
         else:
             section_type = CDF.AzEDR_
         nextAEDR = 0
-        
+
         if pdataType is None:
-            #Figure out Data Type if not supplied 
+            # Figure out Data Type if not supplied
             if (isinstance(value, list) or isinstance(value, tuple)):
                 avalue = value[0]
             else:
@@ -1805,9 +1805,9 @@ class CDF(object):
             else:
                 # assume a boolean
                 pdataType = CDF.CDF_INT1
-                
+
         if pnumElems is None:
-            #Figure out number of elements if not supplied
+            # Figure out number of elements if not supplied
             if (isinstance(value, str)):
                 pdataType = CDF.CDF_CHAR
                 pnumElems = len(value)
@@ -1816,10 +1816,10 @@ class CDF(object):
                     pnumElems = len(value)
                 else:
                     pnumElems = 1
-        
+
         dataType = pdataType
-        numElems = pnumElems 
-            
+        numElems = pnumElems
+
         rfuB = 0
         rfuC = 0
         rfuD = -1
@@ -1857,7 +1857,7 @@ class CDF(object):
                    pad, zVar):
         '''
         Writes a VDR block to the end of the file.  
-        
+
         Parameters:
             f : file
                 The open CDF file
@@ -1886,14 +1886,14 @@ class CDF(object):
                 The pad values to insert
             zVar : bool
                 True if this variable is a z variable
-            
+
         Returns:
             num : int
                 The number of the variable
             byte_loc : int
                 The current byte location within the file
         '''
-        
+
         if zVar:
             block_size = CDF.zVDR_BASE_SIZE64
             section_type = CDF.zVDR_
@@ -1929,19 +1929,19 @@ class CDF(object):
             blockingFactor = 1
         else:
             blockingFactor = blockingfactor
-        
-        #Increase the block size to account for "zDimSizes" and "DimVarys" fields
+
+        # Increase the block size to account for "zDimSizes" and "DimVarys" fields
         if (numDims > 0):
             if zVar:
                 block_size = block_size + numDims * 8
             else:
                 block_size = block_size + numDims * 4
-                
-        #Determine pad value
+
+        # Determine pad value
         if not (pad is None):
             if (dataType == 51 or dataType == 52):
-                #pad needs to be the correct number of elements
-                if (len(pad) < numElems): 
+                # pad needs to be the correct number of elements
+                if (len(pad) < numElems):
                     pad += '\0'*(numElems-len(pad))
                 elif (len(pad) > numElems):
                     pad = pad[:numElems]
@@ -1955,7 +1955,7 @@ class CDF(object):
         byte_loc = f.tell()
         block_size += len(pad)
         vdr = bytearray(block_size)
-        #if (dataType == 51):
+        # if (dataType == 51):
         #    numElems = len(pad)
         vdr[0:8] = struct.pack('>q', block_size)
         vdr[8:12] = struct.pack('>i', section_type)
@@ -1978,24 +1978,24 @@ class CDF(object):
         if zVar:
             vdr[340:344] = struct.pack('>i', numDims)
             if (numDims > 0):
-                for i in range (0, numDims):
+                for i in range(0, numDims):
                     vdr[344+i*4:344+(i+1)*4] = struct.pack('>i', dimSizes[i])
                 ist = 344+numDims*4
-                for i in range (0, numDims):
+                for i in range(0, numDims):
                     vdr[ist+i*4:ist+(i+1)*4] = struct.pack('>i', CDF.VARY)
             ist = 344 + 8 * numDims
         else:
             if (numDims > 0):
-                for i in range (0, numDims):
+                for i in range(0, numDims):
                     if (dimVary[i] == True or dimVary[i] != 0):
                         vdr[340+i*4:344+i*4] = struct.pack('>i', CDF.VARY)
                     else:
                         vdr[340+i*4:344+i*4] = struct.pack('>i', CDF.NOVARY)
             ist = 340 + 4 * numDims
         vdr[ist:block_size] = pad
-        f.write(vdr) 
-        
-        #Set variable info
+        f.write(vdr)
+
+        # Set variable info
         info = []
         info.append(name)
         info.append(byte_loc)
@@ -2006,8 +2006,8 @@ class CDF(object):
             info.append(self.num_rdim)
             info.append(self.rdim_sizes)
         info.append(dimVary)
-        
-        #Update the pointers from the CDR/previous VDR
+
+        # Update the pointers from the CDR/previous VDR
         if zVar:
             self.zvarsinfo[num] = info
             self.zvars.append(name)
@@ -2026,7 +2026,7 @@ class CDF(object):
                                           byte_loc)
             # GDR's NrVars
             self._update_offset_value(f, self.gdr_head+44, 4, num+1)
-            
+
         return num, byte_loc
 
     def _write_vxr(self, f, numEntries=None):
@@ -2035,7 +2035,7 @@ class CDF(object):
         Returns byte location of the VXR
         The First, Last, and Offset fields will need to be filled in later
         '''
-        
+
         f.seek(0, 2)
         byte_loc = f.tell()
         section_type = CDF.VXR_
@@ -2057,10 +2057,10 @@ class CDF(object):
         vxr[20:24] = struct.pack('>i', nEntries)
         vxr[24:28] = struct.pack('>i', nUsedEntries)
         estart = 28 + 4*nEntries
-        vxr[28:estart] = struct.pack('>%si' %nEntries, *firsts)
+        vxr[28:estart] = struct.pack('>%si' % nEntries, *firsts)
         eend = estart + 4*nEntries
-        vxr[estart:eend] = struct.pack('>%si' %nEntries, *lasts)
-        vxr[eend:block_size] = struct.pack('>%sq' %nEntries, *offsets)
+        vxr[estart:eend] = struct.pack('>%si' % nEntries, *lasts)
+        vxr[eend:block_size] = struct.pack('>%sq' % nEntries, *offsets)
         f.write(vxr)
         return byte_loc
 
@@ -2088,9 +2088,9 @@ class CDF(object):
         byte_loc = f.tell()
         block_size = CDF.CPR_BASE_SIZE64 + 4
         section_type = CDF.CPR_
-        rfuA = 0;
-        pCount = 1 
-        
+        rfuA = 0
+        pCount = 1
+
         cpr = bytearray(block_size)
         cpr[0:8] = struct.pack('>q', block_size)
         cpr[8:12] = struct.pack('>i', section_type)
@@ -2110,7 +2110,7 @@ class CDF(object):
         cSize = len(data)
         block_size = CDF.CVVR_BASE_SIZE64 + cSize
         section_type = CDF.CVVR_
-        rfuA = 0;
+        rfuA = 0
 
         cvvr1 = bytearray(24)
         cvvr1[0:8] = struct.pack('>q', block_size)
@@ -2125,7 +2125,7 @@ class CDF(object):
         '''
         Write a CCR to file "g" from file "f" with level "level".
         Currently, only handles gzip compression.
-        
+
         Parameters:
             f : file
                 Uncompressed file to read from
@@ -2133,15 +2133,15 @@ class CDF(object):
                 File to read the compressed file into
             level : int
                 The level of the compression from 0 to 9
-        
+
         Returns: None
-        
+
         '''
         f.seek(8)
         data = f.read()
         uSize = len(data)
         section_type = CDF.CCR_
-        rfuA = 0;
+        rfuA = 0
         cData = gzip.compress(data, level)
         block_size = CDF.CCR_BASE_SIZE64 + len(cData)
         cprOffset = 0
@@ -2165,24 +2165,24 @@ class CDF(object):
         > : a little endian system to big endian ordering
         < : a big endian system to little endian ordering
         = : No conversion
-        '''        
+        '''
         data_endian = 'little'
-        if (self._encoding==1 or self._encoding==2 or self._encoding==5 or
-            self._encoding==7 or self._encoding==9 or self._encoding==11 or
-            self._encoding==12 or self._encoding==18):
+        if (self._encoding == 1 or self._encoding == 2 or self._encoding == 5 or
+            self._encoding == 7 or self._encoding == 9 or self._encoding == 11 or
+                self._encoding == 12 or self._encoding == 18):
             data_endian = 'big'
-        if sys.byteorder=='little' and data_endian=='big':
-            #big->little
+        if sys.byteorder == 'little' and data_endian == 'big':
+            # big->little
             order = '>'
-        elif sys.byteorder=='big' and data_endian=='little':
-            #little->big
+        elif sys.byteorder == 'big' and data_endian == 'little':
+            # little->big
             order = '<'
         else:
-            #no conversion
+            # no conversion
             order = '='
         return order
 
-    def _convert_type(data_type): # @NoSelf
+    def _convert_type(data_type):  # @NoSelf
         '''
         Converts CDF data types into python types
         '''
@@ -2212,7 +2212,7 @@ class CDF(object):
             dt_string = ''
         return dt_string
 
-    def _convert_nptype(data_type, data): # @NoSelf
+    def _convert_nptype(data_type, data):  # @NoSelf
         '''
         Converts "data" of CDF type "data_type" into a numpy array
         '''
@@ -2265,7 +2265,7 @@ class CDF(object):
         elif (data_type == 31):
             pad_value = struct.pack(order+'d', 0.0)
         elif (data_type == 32):
-            pad_value = struct.pack(order+'2d', *[0.0,0.0])
+            pad_value = struct.pack(order+'2d', *[0.0, 0.0])
         elif (data_type == 51) or (data_type == 52):
             tmpPad = str(' '*numElems).encode()
             form = str(numElems)
@@ -2275,41 +2275,41 @@ class CDF(object):
     def _convert_data(self, data_type, num_elems, num_values, indata):
         '''
         Converts "indata" into a byte stream 
-        
+
         Parameters:
             data_type : int 
                 The CDF file data type
-                
+
             num_elems : int
                 The number of elements in the data
-                
+
             num_values : int
                 The number of values in each record
-            
+
             indata : (varies)
                 The data to be converted
-                
+
         Returns:
             recs : int 
                 The number of records generated by converting indata
             odata : byte stream
                 The stream of bytes to write to the CDF file
         '''
-        
+
         recSize = CDF._datatype_size(data_type, num_elems) * num_values
         if (isinstance(indata, list) or isinstance(indata, tuple)):
             size = len(indata)
             if (data_type == CDF.CDF_CHAR or data_type == CDF.CDF_UCHAR):
                 odata = ''
-                for x in range (0, size):
+                for x in range(0, size):
                     adata = indata[x]
                     if (isinstance(adata, list) or isinstance(adata, tuple)):
                         size2 = len(adata)
-                        for y in range (0, size2):
-                            odata += adata[y].ljust(num_elems,'\x00')
+                        for y in range(0, size2):
+                            odata += adata[y].ljust(num_elems, '\x00')
                     else:
                         size2 = 1
-                        odata += adata.ljust(num_elems,'\x00')
+                        odata += adata.ljust(num_elems, '\x00')
                 recs = int((size*size2)/num_values)
                 return recs, odata.encode()
             else:
@@ -2317,16 +2317,16 @@ class CDF(object):
                 dt_string = CDF._convert_type(data_type)
                 recs = int(size/num_values)
                 if (data_type == CDF.CDF_EPOCH16 and
-                    isinstance(indata[0], complex)):
+                        isinstance(indata[0], complex)):
                     complex_data = []
-                    for x in range (0, recs):
+                    for x in range(0, recs):
                         acomplex = indata[x]
                         complex_data.append(acomplex.real)
                         complex_data.append(acomplex.imag)
                     size = 2 * size
                     indata = complex_data
                 if (data_type == CDF.CDF_EPOCH16 and
-                    not isinstance(indata[0], complex)):
+                        not isinstance(indata[0], complex)):
                     recs = int(recs/2)
                 form = tofrom + str(size) + dt_string
                 return recs, struct.pack(form, *indata)
@@ -2353,7 +2353,7 @@ class CDF(object):
             datau = struct.unpack(form, npdata)
             return recs, struct.pack(form2, *datau)
         elif (isinstance(indata, str)):
-            return 1, indata.ljust(num_elems,'\x00').encode()
+            return 1, indata.ljust(num_elems, '\x00').encode()
         else:
             tofrom = self._convert_option()
             dt_string = CDF._convert_type(data_type)
@@ -2366,7 +2366,7 @@ class CDF(object):
             if (data_type == CDF.CDF_EPOCH16):
                 complex_data = []
                 if (recs > 1):
-                    for x in range (0, recs):
+                    for x in range(0, recs):
                         acomplex = indata[x]
                         complex_data.append(acomplex.real)
                         complex_data.append(acomplex.imag)
@@ -2376,7 +2376,7 @@ class CDF(object):
                 indata = complex_data
             form = tofrom + str(recs*num_values*num_elems) + dt_string
             if (recs*num_values*num_elems > 1):
-                return recs,struct.pack(form, *indata)
+                return recs, struct.pack(form, *indata)
             else:
                 return recs, struct.pack(form, indata)
 
@@ -2404,18 +2404,18 @@ class CDF(object):
                     if (dimVary[x] != 0):
                         values = values * dimSizes[x]
             return values
-    
-    def _read_offset_value (self, f, offset, size):
+
+    def _read_offset_value(self, f, offset, size):
         '''
         Reads an integer value from file "f" at location "offset".  
         '''
         f.seek(offset, 0)
         if (size == 8):
-            return int.from_bytes(f.read(8),'big', signed=True)
+            return int.from_bytes(f.read(8), 'big', signed=True)
         else:
-            return int.from_bytes(f.read(4),'big', signed=True)
+            return int.from_bytes(f.read(4), 'big', signed=True)
 
-    def _update_offset_value (self, f, offset, size, value):
+    def _update_offset_value(self, f, offset, size, value):
         '''
         Writes "value" into location "offset" in file "f".   
         '''
@@ -2425,10 +2425,10 @@ class CDF(object):
         else:
             f.write(struct.pack('>i', value))
 
-    def _update_aedr_link (self, f, attrNum, zVar, varNum, offset):
+    def _update_aedr_link(self, f, attrNum, zVar, varNum, offset):
         '''
         Updates variable aedr links
-        
+
         Parameters: 
             f : file
                 The open CDF file
@@ -2441,29 +2441,28 @@ class CDF(object):
             offset : int
                 The offset in the file to the AEDR
         Returns: None
-        
+
         '''
-        
-        #The offset to this AEDR's ADR
+
+        # The offset to this AEDR's ADR
         adr_offset = self.attrsinfo[attrNum][2]
-        
-        #Get the number of entries
+
+        # Get the number of entries
         if zVar:
             f.seek(adr_offset+56, 0)
             # ADR's NzEntries
-            entries = int.from_bytes(f.read(4),'big', signed=True)
+            entries = int.from_bytes(f.read(4), 'big', signed=True)
             # ADR's MAXzEntry
-            maxEntry = int.from_bytes(f.read(4),'big', signed=True)
+            maxEntry = int.from_bytes(f.read(4), 'big', signed=True)
         else:
             f.seek(adr_offset+36, 0)
             # ADR's NgrEntries
-            entries = int.from_bytes(f.read(4),'big', signed=True)
+            entries = int.from_bytes(f.read(4), 'big', signed=True)
             # ADR's MAXgrEntry
-            maxEntry = int.from_bytes(f.read(4),'big', signed=True)
-        
-        
+            maxEntry = int.from_bytes(f.read(4), 'big', signed=True)
+
         if (entries == 0):
-            #If this is the first entry, update the ADR to reflect
+            # If this is the first entry, update the ADR to reflect
             if zVar:
                 # AzEDRhead
                 self._update_offset_value(f, adr_offset+48, 8, offset)
@@ -2481,18 +2480,18 @@ class CDF(object):
         else:
             if zVar:
                 f.seek(adr_offset+48, 0)
-                head = int.from_bytes(f.read(8),'big', signed=True)
+                head = int.from_bytes(f.read(8), 'big', signed=True)
             else:
                 f.seek(adr_offset+20, 0)
-                head = int.from_bytes(f.read(8),'big', signed=True)
+                head = int.from_bytes(f.read(8), 'big', signed=True)
             aedr = head
             previous_aedr = head
             done = False
-            #For each entry, re-adjust file offsets if needed
+            # For each entry, re-adjust file offsets if needed
             for _ in range(0, entries):
                 f.seek(aedr+28, 0)
-                #Get variable number for entry
-                num = int.from_bytes(f.read(4),'big', signed=True)
+                # Get variable number for entry
+                num = int.from_bytes(f.read(4), 'big', signed=True)
                 if (num > varNum):
                     # insert an aedr to the chain
                     # AEDRnext
@@ -2505,34 +2504,34 @@ class CDF(object):
                     # move to the next aedr in chain
                     f.seek(aedr+12, 0)
                     previous_aedr = aedr
-                    aedr = int.from_bytes(f.read(8),'big', signed=True)
-            
-            #If no link was made, update the last found aedr
+                    aedr = int.from_bytes(f.read(8), 'big', signed=True)
+
+            # If no link was made, update the last found aedr
             if not done:
-                self._update_offset_value (f, previous_aedr+12, 8, offset)
-            
+                self._update_offset_value(f, previous_aedr+12, 8, offset)
+
             if zVar:
                 self._update_offset_value(f, adr_offset+56, 4, entries+1)
                 if (maxEntry < varNum):
-                    self._update_offset_value (f, adr_offset+60, 4, varNum)
+                    self._update_offset_value(f, adr_offset+60, 4, varNum)
             else:
                 self._update_offset_value(f, adr_offset+36, 4, entries+1)
                 if (maxEntry < varNum):
                     self._update_offset_value(f, adr_offset+40, 4, varNum)
 
-    def _set_bit(value, bit): # @NoSelf
-        return value | (1<<bit)
+    def _set_bit(value, bit):  # @NoSelf
+        return value | (1 << bit)
 
-    def _clear_bit(value, bit): # @NoSelf
-        return value & ~(1<<bit)
+    def _clear_bit(value, bit):  # @NoSelf
+        return value & ~(1 << bit)
 
-    def _checklistofstrs(obj): # @NoSelf
+    def _checklistofstrs(obj):  # @NoSelf
         return bool(obj) and all(isinstance(elem, str) for elem in obj)
 
-    def _checklistofNums(obj): # @NoSelf
+    def _checklistofNums(obj):  # @NoSelf
         if (isinstance(obj, list) or isinstance(obj, tuple)):
             return bool(obj) and all(isinstance(elem, numbers.Number)
-                                    for elem in obj)
+                                     for elem in obj)
         else:
             return isinstance(obj, numbers.Number)
 
@@ -2554,39 +2553,39 @@ class CDF(object):
             md5.update(data)
         return md5.digest()
 
-    def _make_blocks(records): # @NoSelf
+    def _make_blocks(records):  # @NoSelf
         '''
         Organizes the physical records into blocks in a list by
         placing consecutive physical records into a single block, so
         lesser VXRs will be created.
           [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...]  
-        
+
         Parameters:
             records: list
                 A list of records that there is data for
-        
+
         Returns: 
             sparse_blocks: list of list
                 A list of ranges we have physical values for.
-        
+
         Example:
             Input: [1,2,3,4,10,11,12,13,50,51,52,53]
             Output: [[1,4],[10,13],[50,53]]
         '''
-        
+
         sparse_blocks = []
         total = len(records)
         if (total == 0):
             return []
-        
+
         x = 0
         while (x < total):
             recstart = records[x]
             y = x
             recnum = recstart
-            
-            #Find the location in the records before the next gap
-            #Call this value "y"
+
+            # Find the location in the records before the next gap
+            # Call this value "y"
             while ((y+1) < total):
                 y = y + 1
                 nextnum = records[y]
@@ -2596,18 +2595,18 @@ class CDF(object):
                 else:
                     y = y - 1
                     break
-            
-            #Put the values of the records into "ablock", append to sparse_blocks
+
+            # Put the values of the records into "ablock", append to sparse_blocks
             ablock = []
             ablock.append(recstart)
-            if ((y+1)==total):
+            if ((y+1) == total):
                 recend = records[total-1]
             else:
                 recend = records[y]
             x = y + 1
             ablock.append(recend)
             sparse_blocks.append(ablock)
-           
+
         return sparse_blocks
 
     def _make_sparse_blocks(self, variable, records, data):
@@ -2616,36 +2615,36 @@ class CDF(object):
         Organizes the physical record numbers into blocks in a list:
           [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...]  
         Place consecutive physical records into a single block
-        
+
         If all records are physical, this calls _make_sparse_blocks_with_physical
-        
+
         If any records are virtual, this calls _make_sparse_blocks_with_virtual
-        
+
         Parameters:
             variable : dict
                 the variable dictionary, with 'Num_Dims', 'Dim_Sizes',
                 'Data_Type', 'Num_Elements' key words, typically
                 returned from a call to cdf read's varinq('variable',
                 expand=True)
-                
+
             records : list
                 a list of physical records 
-                
+
             data : varies
                 bytes array, numpy.ndarray or list of str form with all physical
                 data or embedded virtual data (returned from call to
                 varget('variable') for a sparse variable)
-                
+
         Returns: 
             sparse_blocks: list
                 A list of sparse records/data in the form
                 [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...] 
         '''
-        
+
         if (isinstance(data, dict)):
             try:
                 data = data['Data']
-            except:   
+            except:
                 print('Unknown dictionary.... Skip')
                 return None
         if (isinstance(data, np.ndarray)):
@@ -2687,16 +2686,16 @@ class CDF(object):
                           'Only support list of str... Skip')
                     return
             record_length = len(records)
-            #for z in range(0, variable['Num_Dims']):
+            # for z in range(0, variable['Num_Dims']):
             #    record_length = record_length * variable['Dim_Sizes'][z]
             if (record_length == len(data)):
                 # All are physical data
                 return self._make_sparse_blocks_with_physical(variable, records,
-                                                             data)
+                                                              data)
             elif (record_length < len(data)):
                 # There are some virtual data
                 return self._make_sparse_blocks_with_virtual(variable, records,
-                                                            data)
+                                                             data)
             else:
                 print('Invalid sparse data... ',
                       'Less data than the specified records... Skip')
@@ -2711,7 +2710,7 @@ class CDF(object):
         Organizes the physical record numbers into blocks in a list:
           [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...]  
         Place consecutive physical records into a single block
-        
+
         Parameters:
             variable: dict
                 the variable, returned from varinq('variable', expand=True)
@@ -2721,10 +2720,10 @@ class CDF(object):
                 bytes array, numpy.ndarray or list of str form with vitual data 
                 embedded, returned from varget('variable') call
         '''
-        
-        #Gather the ranges for which we have physical data
+
+        # Gather the ranges for which we have physical data
         sparse_blocks = CDF._make_blocks(records)
-        
+
         sparse_data = []
         if (isinstance(data, np.ndarray)):
             for sblock in sparse_blocks:
@@ -2732,8 +2731,8 @@ class CDF(object):
                 asparse = []
                 asparse.append(sblock[0])
                 asparse.append(sblock[1])
-                starting=sblock[0]
-                ending=sblock[1]+1
+                starting = sblock[0]
+                ending = sblock[1]+1
                 asparse.append(data[starting:ending])
                 sparse_data.append(asparse)
             return sparse_data
@@ -2741,15 +2740,15 @@ class CDF(object):
             y = 1
             for z in range(0, variable['Num_Dims']):
                 y = y * variable['Dim_Sizes'][z]
-            y = y * CDF._datatype_size(variable['Data_Type'],variable['Num_Elements'])
+            y = y * CDF._datatype_size(variable['Data_Type'], variable['Num_Elements'])
             for x in sparse_blocks:
                 # each block in this list: [starting_rec#, ending_rec#, data]
                 asparse = []
                 asparse.append(sblock[0])
                 asparse.append(sblock[1])
-                starting=sblock[0]*y
-                ending=(sblock[1]+1)*y
-                asparse.append(data[starting:ending]) 
+                starting = sblock[0]*y
+                ending = (sblock[1]+1)*y
+                asparse.append(data[starting:ending])
                 sparse_data.append(asparse)
             return sparse_data
         elif (isinstance(data, list)):
@@ -2763,38 +2762,38 @@ class CDF(object):
                 ist = sblock[0]
                 for z in range(0, records):
                     datax.append(data[ist+z])
-                asparse.append(datax) 
+                asparse.append(datax)
                 sparse_data.append(asparse)
             return sparse_data
         else:
             print('Can not handle data... Skip')
             return None
- 
+
     def _make_sparse_blocks_with_physical(self, variable, records, data):
         # All records are physical... just a single block
         #   [[0,end_rec,data]]
-        
-        #Determine if z variable
+
+        # Determine if z variable
         if (variable['Var_Type'].lower() == 'zvariable'):
             zVar = True
         else:
             zVar = False
-            
-        #Determine dimension information
+
+        # Determine dimension information
         if zVar:
             numDims = len(variable['Dim_Sizes'])
             numValues = 1
-            for x in range (0, numDims):
+            for x in range(0, numDims):
                 numValues = numValues * variable['Dim_Sizes'][x]
         else:
-            for x in range (0, numDims):
+            for x in range(0, numDims):
                 if (variable['Dim_Vary'][x] != 0):
                     numValues = numValues * variable['Dim_Sizes'][x]
-                    
-        #Determine blocks
+
+        # Determine blocks
         sparse_blocks = CDF._make_blocks(records)
-        
-        #Create a list in the form of [[0,100, [data]], ...]
+
+        # Create a list in the form of [[0,100, [data]], ...]
         sparse_data = []
         recStart = 0
         for sblock in sparse_blocks:
@@ -2807,10 +2806,10 @@ class CDF(object):
             asparse.append(data[recStart:recEnd])
             sparse_data.append(asparse)
             recStart = recStart + totalRecs
-            
+
         return sparse_data
 
-    def getVersion(): # @NoSelf
-        print('CDFwrite version:', str(CDF.version)+'.'+str(CDF.release)+
+    def getVersion():  # @NoSelf
+        print('CDFwrite version:', str(CDF.version)+'.'+str(CDF.release) +
               '.'+str(CDF.increment))
         print('Date: 2018/01/11')
