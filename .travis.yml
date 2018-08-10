@@ -1,14 +1,32 @@
-# Config file for automatic testing at travis-ci.org
-
 language: python
+sudo: required
+dist: xenial
+group: travis_latest
+
+git:
+  depth: 3
+  quiet: true
+
 python:
-  - 3.6
-  - 3.5
-  - 3.4
-  - 2.7
+- 3.7
+- 3.6
+- 3.5
+- 3.4
+- 2.7
 
-# Command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
-install: pip install -U tox-travis
+os:
+- linux
 
-# Command to run tests, e.g. python setup.py test
-script: tox
+install: pip install -e .[tests]
+
+script:
+- pytest -rsv
+- flake8
+- mypy . --ignore-missing-imports
+
+after_success:
+- if [[ $TRAVIS_PYTHON_VERSION == 3.6* ]]; then
+  pytest --cov --cov-config=setup.cfg;
+  coveralls;
+  fi
+
