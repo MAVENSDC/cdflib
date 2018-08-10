@@ -27,26 +27,27 @@ import math
 class CDF(object):
     """
     Creates an empty CDF file.
-       path: The path name of the CDF (with or without .cdf extension)
-       cdf_spec: The optional specification of the CDF file, in the form
-                 of a dictionary.
-                 The keys for the dictionary are:
-                 ['Majority']: 'row_major' or 'column_major', or its
-                               corresponding value. The default
-                               is 'column_major'.
-                 ['Encoding']: Data encoding scheme. See the CDF
-                               documentation about the valid values.
-                               Can be in string or its numeric
-                               corresponding value. The default is
-                               'host', which will be determined when
-                               the script runs.
-                 ['Checksum']: Whether to set the data validation upon
-                               file creation. The default is False.
-                 ['rDim_sizes']: The dimensional sizes, applicable
-                                 only to rVariables.
-                 ['Compressed']: Whether to compress the CDF at the file
-                               level. A value of 0-9 or True/False, the
-                               default is 0/False.
+
+    path: The path name of the CDF (with or without .cdf extension)
+    cdf_spec: The optional specification of the CDF file, in the form
+             of a dictionary.
+             The keys for the dictionary are:
+             ['Majority']: 'row_major' or 'column_major', or its
+                           corresponding value. The default
+                           is 'column_major'.
+             ['Encoding']: Data encoding scheme. See the CDF
+                           documentation about the valid values.
+                           Can be in string or its numeric
+                           corresponding value. The default is
+                           'host', which will be determined when
+                           the script runs.
+             ['Checksum']: Whether to set the data validation upon
+                           file creation. The default is False.
+             ['rDim_sizes']: The dimensional sizes, applicable
+                             only to rVariables.
+             ['Compressed']: Whether to compress the CDF at the file
+                           level. A value of 0-9 or True/False, the
+                           default is 0/False.
     """
 
     version = 3
@@ -317,33 +318,43 @@ class CDF(object):
     def write_globalattrs(self, globalAttrs):
         '''
         Writes the global attributes.
-           globalAttrs: A dictionary that has global attribute name(s)
-                        and their value(s) pair(s). The value(s) is
-                        a dictionary of entry number and value pair(s).
-                        For examples:
-              globalAttrs={}
-              globalAttrs['Global1']={0: 'Global Value 1'}
-              globalAttrs['Global2']={0: 'Global Value 2'}
-           For a non-string value, use a list with the value and its
-           CDF data type. For examples:
-              globalAttrs['Global3']={0: [12, 'cdf_int4']}
-              globalAttrs['Global4']={0: [12.34, 'cdf_double']}
-           If the data type is not provided, a corresponding
-           CDF data type is assumed:
-              globalAttrs['Global3']={0: 12}     as 'cdf_int4'
-              globalAttrs['Global4']={0: 12.34}  as 'cdf_double'
-           CDF allows multi-values for non-string data for an attribute:
-              globalAttrs['Global5']={0: [[12.34,21.43], 'cdf_double']}
-           For multi-entries from a global variable, they should be
-           presented in this form:
-              GA6={}
-              GA6[0]='abcd'
-              GA6[1]=[12, 'cdf_int2']
-              GA6[2]=[12.5, 'cdf_float']
-              GA6[3]=[[0,1,2], 'cdf_int8']
-              globalAttrs['Global6']=GA6
-              ....
-              f.write_globalattrs(globalAttrs)
+
+        globalAttrs: A dictionary that has global attribute name(s)
+                    and their value(s) pair(s). The value(s) is
+                    a dictionary of entry number and value pair(s).
+                    For example::
+
+          globalAttrs={}
+          globalAttrs['Global1']={0: 'Global Value 1'}
+          globalAttrs['Global2']={0: 'Global Value 2'}
+
+        For a non-string value, use a list with the value and its
+        CDF data type. For example::
+
+          globalAttrs['Global3']={0: [12, 'cdf_int4']}
+          globalAttrs['Global4']={0: [12.34, 'cdf_double']}
+
+        If the data type is not provided, a corresponding
+        CDF data type is assumed::
+
+          globalAttrs['Global3']={0: 12}     as 'cdf_int4'
+          globalAttrs['Global4']={0: 12.34}  as 'cdf_double'
+
+        CDF allows multi-values for non-string data for an attribute::
+
+          globalAttrs['Global5']={0: [[12.34,21.43], 'cdf_double']}
+
+        For multi-entries from a global variable, they should be
+        presented in this form::
+
+          GA6={}
+          GA6[0]='abcd'
+          GA6[1]=[12, 'cdf_int2']
+          GA6[2]=[12.5, 'cdf_float']
+          GA6[3]=[[0,1,2], 'cdf_int8']
+          globalAttrs['Global6']=GA6
+          ....
+          f.write_globalattrs(globalAttrs)
         '''
         if not (isinstance(globalAttrs, dict)):
             print('Global attribute(s) not in dictionary form.... Stop')
@@ -443,26 +454,28 @@ class CDF(object):
     def write_variableattrs(self, variableAttrs):
         """
         Writes a variable's attributes, provided the variable already exists.
-           variableAttrs: a dictionary that has variable attribute name
-                          and its entry value pair(s). The entry value
-                          is also a dictionary of variable id and value
-                          pair(s).  Variable id can be the variable name
-                          or its id number in the file. Use write_var function
-                          if the variable does not exist. For examples:
-              variableAttrs={}
-              entries_1={}
-              entries_1['var_name_1'] = 'abcd'
-              entries_1['var_name_2'] = [12, 'cdf_int4']
-              ....
-              variableAttrs['attr_name_1']=entries_1
-              entries_2={}
-              entries_2['var_name_1'] = 'xyz'
-              entries_2['var_name_2'] = [[12, 34], 'cdf_int4']
-              ....
-              variableAttrs['attr_name_2']=entries_2
-              ....
-              ....
-              f.write_variableattrs(variableAttrs)
+
+        variableAttrs: a dictionary that has variable attribute name
+                      and its entry value pair(s). The entry value
+                      is also a dictionary of variable id and value
+                      pair(s).  Variable id can be the variable name
+                      or its id number in the file. Use write_var function
+                      if the variable does not exist. For example::
+
+            variableAttrs={}
+            entries_1={}
+            entries_1['var_name_1'] = 'abcd'
+            entries_1['var_name_2'] = [12, 'cdf_int4']
+            ....
+            variableAttrs['attr_name_1']=entries_1
+            entries_2={}
+            entries_2['var_name_1'] = 'xyz'
+            entries_2['var_name_2'] = [[12, 34], 'cdf_int4']
+            ....
+            variableAttrs['attr_name_2']=entries_2
+            ....
+            ....
+            f.write_variableattrs(variableAttrs)
         """
         if not (isinstance(variableAttrs, dict)):
             print('Variable attribute(s) not in dictionary form.... Stop')
