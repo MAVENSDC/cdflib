@@ -1,3 +1,6 @@
+*.cdf
+*.tmp
+.pytest_cache/
 *.tar
 *.pyc
 *.tar.gz
