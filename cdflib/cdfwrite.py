@@ -515,6 +515,7 @@ class CDF(object):
                     g.seek(0, 2)
                     g.write(self._md5_compute(g))
 
+        self.path.unlink()  # NOTE: for Windows this is necessary
         self.compressed_file.rename(self.path)
 
     def write_globalattrs(self, globalAttrs):
