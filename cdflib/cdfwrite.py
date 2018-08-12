@@ -750,7 +750,7 @@ class CDF(object):
             zVar = True
         else:
             var_spec['Var_Type'] = 'rVariable'
-            zVar = Falseg
+            zVar = False
 
         if (dataType == CDF.CDF_CHAR or dataType == CDF.CDF_UCHAR):
             if (numElems < 1):
