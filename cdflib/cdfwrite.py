@@ -267,7 +267,6 @@ new CDF file.
 @author: Mike Liu
 """
 import logging
-import os
 import numpy as np
 import sys
 import struct
@@ -1255,8 +1254,7 @@ class CDF(object):
         '''
         # add a VXR, use an entry, and link it to the prior VXR if it exists
         vxroffset = self._write_vxr(f)
-        usedEntries = self._use_vxrentry(f, vxroffset, recStart, recEnd,
-                                         vvrOffset)
+        self._use_vxrentry(f, vxroffset, recStart, recEnd, vvrOffset)
         if (priorVXR == 0):
             # VDR's VXRhead
             self._update_offset_value(f, currentVDR+28, 8, vxroffset)
@@ -1344,8 +1342,7 @@ class CDF(object):
                 endEntry = CDF.NUM_VXRlvl_ENTRIES
             for _ in range(0, endEntry):
                 recFirst, recLast = self._get_recrange(f, vxroff)
-                usedEntries = self._use_vxrentry(f, newvxroff, recFirst, recLast,
-                                                 vxroff)
+                self._use_vxrentry(f, newvxroff, recFirst, recLast, vxroff)
                 vxroff = self._read_offset_value(f, vxroff+12, 8)
         vxroff = vxrhead
 
