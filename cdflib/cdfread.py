@@ -21,7 +21,8 @@ Then, you can call various functions on the variable.  For example::
 
     x = cdf_file.varget("NameOfVariable", startrec = 0, endrec = 150)
 
-This command will return all data inside of the variable "Variable1", from records 0 to 150.  Below is a list of the 8 different functions you can call.
+This command will return all data inside of the variable "Variable1", from records 0 to 150.
+Below is a list of the 8 different functions you can call.
 
 cdf_info()
 =============
@@ -184,7 +185,8 @@ The start (and end) time should be presented in a list as:
 If not enough time components are presented, only the last item can have the floating
 portion for the sub-time components.
 
-Note: CDF's CDF_EPOCH16 data type uses 2 8-byte doubles for each data value.  In Python, each value is presented as a complex or numpy.complex128.
+Note: CDF's CDF_EPOCH16 data type uses 2 8-byte doubles for each data value.
+In Python, each value is presented as a complex or numpy.complex128.
 
 epochrange( epoch, [starttime=None, endtime=None])
 =============
@@ -324,7 +326,7 @@ class CDF(object):
 
     def varinq(self, variable):
         vdr_info = self.varget(variable=variable, inq=True)
-        if vdr_info == None:
+        if vdr_info is None:
             raise KeyError("Variable {} not found.".format(variable))
 
         var = {}
@@ -409,7 +411,7 @@ class CDF(object):
                     break
                 else:
                     position = next_adr
-            if adr_info == None:
+            if adr_info is None:
                 raise KeyError('No attribute {}'.format(attribute))
         elif isinstance(attribute, int):
             if (attribute < 0) or (attribute > self._num_att):
@@ -508,13 +510,10 @@ class CDF(object):
 
         if (isinstance(variable, int) and self._num_zvariable > 0 and
                 self._num_rvariable > 0):
-            print('This CDF has both r and z variables. Use variable name')
-            return
+            raise NameError('This CDF has both r and z variables. Use variable name')
 
-        if ((starttime != None or endtime != None) and
-                (startrec != 0 or endrec != None)):
-            print('Can\'t specify both time and record range')
-            return
+        if (starttime is not None or endtime is not None) and (startrec != 0 or endrec is not None):
+            raise IndexError('Can\'t specify both time and record range')
 
         if isinstance(variable, str):
             # Check z variables for the name, then r variables
@@ -536,18 +535,18 @@ class CDF(object):
                     position = vdr_next
                 position = self._first_rvariable
                 num_variables = self._num_rvariable
-            if vdr_info == None:
+            if vdr_info is None:
                 print("Variable name not found.")
                 return
         elif isinstance(variable, int):
             if self._num_zvariable > 0:
                 position = self._first_zvariable
                 num_variable = self._num_zvariable
-                zVar = True
+                # zVar = True
             elif self._num_rvariable > 0:
                 position = self._first_rvariable
                 num_variable = self._num_rvariable
-                zVar = False
+                # zVar = False
             if (variable < 0 or variable >= num_variable):
                 print('No variable by this number:', variable)
                 return
@@ -577,7 +576,7 @@ class CDF(object):
             return vdr_info
         else:
             if (vdr_info['max_records'] < 0):
-                    #print('No data is written for this variable')
+                    # print('No data is written for this variable')
                 return None
             return self._read_vardata(vdr_info, epoch=epoch, starttime=starttime, endtime=endtime,
                                       startrec=startrec, endrec=endrec, record_range_only=record_range_only,
@@ -598,11 +597,11 @@ class CDF(object):
                 byte_loc = adr_info['next_adr_location']
                 continue
             if (adr_info['num_gr_entry'] == 0):
-                if (expand != False):
+                if expand:
                     return_dict[adr_info['name']] = None
                 byte_loc = adr_info['next_adr_location']
                 continue
-            if (expand == False):
+            if expand:
                 entries = []
             else:
                 entries = {}
@@ -613,11 +612,11 @@ class CDF(object):
                 else:
                     aedr_info = self._read_aedr2(aedr_byte_loc, to_np=to_np)
                 entryData = aedr_info['entry']
-                if (expand == False):
+                if not expand:
                     entries.append(entryData)
                 else:
                     entryWithType = []
-                    if (isinstance(entryData, str)):
+                    if isinstance(entryData, str):
                         entryWithType.append(entryData)
                     else:
                         dataType = aedr_info['data_type']
@@ -644,7 +643,7 @@ class CDF(object):
                 aedr_byte_loc = aedr_info['next_aedr']
 
             if (len(entries) != 0):
-                if (expand == False):
+                if not expand:
                     if (len(entries) == 1):
                         return_dict[adr_info['name']] = entries[0]
                     else:
@@ -906,7 +905,7 @@ class CDF(object):
             cdr = f.read(block_size-8)
             foffs = f.tell()
         # _ = int.from_bytes(cdr[0:4],'big') #Section Type
-        gdroff = int.from_bytes(cdr[4:12], 'big')  # GDR Location
+        # gdroff = int.from_bytes(cdr[4:12], 'big')  # GDR Location
         version = int.from_bytes(cdr[12:16], 'big')
         if version not in (2, 3):
             raise ValueError('CDF version {} not handled'.format(version))
@@ -916,7 +915,8 @@ class CDF(object):
 
         # FLAG
         #
-        # 0 The majority of variable values within a variable record. Variable records are described in Chapter 4. Set indicates row-majority. Clear indicates column-majority.
+        # 0 The majority of variable values within a variable record. Variable records are described in Chapter 4.
+        #    Set indicates row-majority. Clear indicates column-majority.
         # 1 The file format of the CDF. Set indicates single-file. Clear indicates multi-file.
         # 2 The checksum of the CDF. Set indicates a checksum method is used.
         # 3 The MD5 checksum method indicator. Set indicates MD5 method is used for the checksum. Bit 2 must be set.
@@ -953,7 +953,7 @@ class CDF(object):
             cdr = f.read(block_size-4)
             foffs = f.tell()
 
-        gdroff = int.from_bytes(cdr[4:8], 'big')  # GDR Location
+        # gdroff = int.from_bytes(cdr[4:8], 'big')  # GDR Location
         version = int.from_bytes(cdr[8:12], 'big')
         release = int.from_bytes(cdr[12:16], 'big')
         encoding = int.from_bytes(cdr[16:20], 'big')
@@ -1086,7 +1086,7 @@ class CDF(object):
                 else:
                     aedr_info = self._read_aedr2(byte_loc, to_np=to_np)
                 entryData = aedr_info['entry']
-                if (expand == False):
+                if not expand:
                     return_dict[adr_info['name']] = entryData
                 else:
                     entryWithType = []
@@ -1117,7 +1117,7 @@ class CDF(object):
                 found = 1
                 break
             byte_loc = adr_info['next_adr_location']
-            if (found == 0 and expand != False):
+            if found == 0 and expand:
                 return_dict[adr_info['name']] = None
         return return_dict
 
@@ -1311,7 +1311,7 @@ class CDF(object):
         return_dict['entry'] = entry
         return_dict['data_type'] = data_type
         return_dict['num_elements'] = num_elements
-        #return_dict['num_strings'] = num_strings
+        # return_dict['num_strings'] = num_strings
         return_dict['next_aedr'] = next_aedr
         return_dict['entry_num'] = entry_num
         return return_dict
@@ -1418,7 +1418,7 @@ class CDF(object):
 
     def _read_vdr2(self, byte_loc):
 
-        if (self._post25 == True):
+        if self._post25:
             toadd = 0
         else:
             toadd = 128
@@ -1470,7 +1470,7 @@ class CDF(object):
             # Check for "False" dimensions, and delete them
             for x in range(0, num_dims):
                 y = num_dims - x - 1
-                if (dim_varys[y] == 0 or dim_varys[y] == False):
+                if dim_varys[y] == 0 or not dim_varys[y]:
                     del zdim_sizes[y]
                     del dim_varys[y]
                     adj = adj + 1
@@ -1493,7 +1493,7 @@ class CDF(object):
             byte_stream = vdr[coff:]
             try:
                 pad = self._read_data(byte_stream, data_type, 1, num_elements)
-            except:
+            except Exception:
                 if (data_type == 51 or data_type == 52):
                     pad = ' '*num_elements
 
@@ -1566,7 +1566,7 @@ class CDF(object):
             next_vxr_pos = int.from_bytes(vxrs[4:12], 'big', signed=True)
             num_ent = int.from_bytes(vxrs[12:16], 'big', signed=True)
             num_ent_used = int.from_bytes(vxrs[16:20], 'big', signed=True)
-            coff = 20
+            # coff = 20
             for ix in range(0, num_ent_used):
                 soffset = 20 + 4 * ix
                 num_start = int.from_bytes(vxrs[soffset:soffset+4], 'big',
@@ -1602,7 +1602,7 @@ class CDF(object):
         next_vxr_pos = int.from_bytes(vxrs[4:8], 'big', signed=True)
         num_ent = int.from_bytes(vxrs[8:12], 'big', signed=True)
         num_ent_used = int.from_bytes(vxrs[12:16], 'big', signed=True)
-        coff = 16
+        # coff = 16
         for ix in range(0, num_ent_used):
             soffset = 16 + 4 * ix
             num_start = int.from_bytes(vxrs[soffset:soffset+4], 'big',
@@ -1837,7 +1837,7 @@ class CDF(object):
         # for the numpy dtype.  This requires us to squeeze
         # the matrix later, to get rid of this extra dimension.
         dt_string = self._convert_option()
-        if dimensions != None:
+        if dimensions is not None:
             if (len(dimensions) == 1):
                 dimensions.append(1)
                 squeeze_needed = True
@@ -1851,7 +1851,7 @@ class CDF(object):
             dt_string += ')'
         if data_type == 52 or data_type == 51:
             # string
-            if dimensions == None:
+            if dimensions is None:
                 byte_data = bytearray(byte_stream[0:num_recs*num_elems])
                 # In each record, check for the first '\x00' (null character).
                 # If found, make all the characters after it null as well.
@@ -1991,7 +1991,7 @@ class CDF(object):
 
         if (vdr_info['record_vary']):
             # Record varying
-            if (starttime != None or endtime != None):
+            if (starttime is not None or endtime is not None):
                 recs = self._findtimerecords(vdr_info['name'], starttime,
                                              endtime, epoch=epoch)
                 if recs is None:
@@ -2035,9 +2035,9 @@ class CDF(object):
 
     def _findtimerecords(self, var_name, starttime, endtime, epoch=None):
 
-        if (epoch != None):
+        if epoch is not None:
             vdr_info = self.varinq(epoch)
-            if (vdr_info == None):
+            if (vdr_info is None):
                 print('Epoch not found')
                 return None
             if (vdr_info['Data_Type'] == 31 or vdr_info['Data_Type'] == 32 or
@@ -2051,7 +2051,7 @@ class CDF(object):
             else:
                 # acquire depend_0 variable
                 dependVar = self.attget('DEPEND_0', var_name)
-                if (dependVar == None):
+                if (dependVar is None):
                     print('No corresponding epoch from \'DEPEND_0\' attribute ',
                           'for variable:', var_name)
                     print('Use \'epoch\' argument to specify its time-based variable')
@@ -2069,7 +2069,7 @@ class CDF(object):
 
     def _findrangerecords(self, data_type, epochtimes, starttime, endtime):
         if (data_type == 31 or data_type == 32 or data_type == 33):
-            #CDF_EPOCH or CDF_EPOCH16 or CDF_TIME_TT2000
+            # CDF_EPOCH or CDF_EPOCH16 or CDF_TIME_TT2000
             recs = epoch.CDFepoch.findepochrange(epochtimes, starttime, endtime)
         else:
             print('Not a CDF epoch type...')
@@ -2232,7 +2232,7 @@ class CDF(object):
             return list(struct.unpack_from(form,
                                            data[0:num_recs*num_values*value_len]))
 
-    def getVersion():   # @NoSelf
-        print('CDFread version:', str(CDF.version)+'.'+str(CDF.release) +
-              '.'+str(CDF.increment))
+    def getVersion(self):   # @NoSelf
+        print('CDFread version:', str(self.version)+'.'+str(self.release) +
+              '.'+str(self.increment))
         print('Date: 2018/01/11')

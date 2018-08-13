@@ -1,15 +1,17 @@
-import os
+from pathlib import Path
 from . import cdfread
 from . import cdfwrite
-from .epochs import CDFepoch as cdfepoch
+from .epochs import CDFepoch as cdfepoch  # noqa: F401
 
 # This function determines if we are reading or writing a file
 
 
-def CDF(path, cdf_spec=None, delete=False, validate=None):
-    if (os.path.exists(path)):
+def CDF(path, cdf_spec=None, delete: bool=False, validate=None):
+    path = Path(path).expanduser()
+
+    if path.is_file():
         if delete:
-            os.remove(path)
+            path.unlink()
             return
         else:
             return cdfread.CDF(path, validate=validate)

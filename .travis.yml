@@ -19,7 +19,7 @@ install: pip install -e .[tests]
 
 script:
 - pytest -rsv
-#- flake8
+- flake8
 # - mypy . --ignore-missing-imports
 
 after_success:

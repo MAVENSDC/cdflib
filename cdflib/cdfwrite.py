@@ -267,7 +267,6 @@ new CDF file.
 @author: Mike Liu
 """
 import logging
-import os
 import numpy as np
 import sys
 import struct
@@ -291,7 +290,7 @@ class CDF(object):
     CDF_ATTR_NAME_LEN256 = 256
 
     CDF_COPYRIGHT_LEN = 256
-    #CDF_STATUSTEXT_LEN = 200
+    # CDF_STATUSTEXT_LEN = 200
     CDF_PATHNAME_LEN = 512
 
     CDF_INT1 = 1
@@ -336,8 +335,8 @@ class CDF(object):
     ROW_MAJOR = 1
     COLUMN_MAJOR = 2
 
-    #SINGLE_FILE = 1
-    #MULTI_FILE = 2
+    # SINGLE_FILE = 1
+    # MULTI_FILE = 2
 
     NO_CHECKSUM = 0
     MD5_CHECKSUM = 1
@@ -346,14 +345,14 @@ class CDF(object):
     GLOBAL_SCOPE = 1
     VARIABLE_SCOPE = 2
 
-    #NO_COMPRESSION = 0
-    #RLE_COMPRESSION = 1
-    #HUFF_COMPRESSION = 2
-    #AHUFF_COMPRESSION = 3
+    # NO_COMPRESSION = 0
+    # RLE_COMPRESSION = 1
+    # HUFF_COMPRESSION = 2
+    # AHUFF_COMPRESSION = 3
     GZIP_COMPRESSION = 5
 
-    #RLE_OF_ZEROs	= 0
-    #NO_SPARSEARRAYS = 0
+    # RLE_OF_ZEROs	= 0
+    # NO_SPARSEARRAYS = 0
     NO_SPARSERECORDS = 0
     PAD_SPARSERECORDS = 1
     PREV_SPARSERECORDS = 2
@@ -392,7 +391,7 @@ class CDF(object):
     SPR_BASE_SIZE64 = 24
     CVVR_BASE_SIZE64 = 24
 
-    #BLOCKING_BYTES = 131072
+    # BLOCKING_BYTES = 131072
     BLOCKING_BYTES = 65536
 
     level = 0
@@ -406,8 +405,8 @@ class CDF(object):
                 major = CDF._majority_token(major)
 
             encoding = cdf_spec.get('Encoding', 8)  # default is host
-            if (isinstance(encoding, str)):
-                encoding = CDF._encoding_token(encoding)
+            if isinstance(encoding, str):
+                encoding = self._encoding_token(encoding)
 
             checksum = cdf_spec.get('Checksum', False)
 
@@ -539,7 +538,7 @@ class CDF(object):
 
                 attrNum, offsetADR = self._write_adr(f, True, attr)
                 entries = 0
-                if (entry == None):
+                if entry is None:
                     continue
                 entryNumMaX = -1
                 poffset = -1
@@ -550,7 +549,7 @@ class CDF(object):
                         if (len(value) == 2):
                             # Check if the second value is a valid data type
                             value2 = value[1]
-                            dataType = CDF._datatype_token(value2)
+                            dataType = self._datatype_token(value2)
                             if (dataType > 0):
                                 # Data Type found
                                 data = value[0]
@@ -641,8 +640,9 @@ class CDF(object):
                 else:
                     attrNum, offsetA = self._write_adr(f, False, attr)
                 entries = 0
-                if (attrs == None):
+                if attrs is None:
                     continue
+
                 if not (isinstance(attrs, dict)):
                     print('An attribute''s attribute(s) not in dictionary form.... ',
                           'Stop')
@@ -691,7 +691,7 @@ class CDF(object):
                     if (isinstance(value, list) or isinstance(value, tuple)):
                         if (len(value) == 2):
                             value2 = value[1]
-                            dataType = CDF._datatype_token(value2)
+                            dataType = self._datatype_token(value2)
                             if (dataType > 0):
                                 data = value[0]
                                 if (dataType == CDF.CDF_CHAR or
@@ -745,7 +745,7 @@ class CDF(object):
                     offset = self._write_aedr(f, False, attrNum, entryNum, data,
                                               dataType, numElems, zVar)
                     if (entries == 0):
-                        if (zVar == True):
+                        if zVar:
                             # ADR's AzEDRhead
                             self._update_offset_value(f, offsetA+48, 8, offset)
                         else:
@@ -756,7 +756,7 @@ class CDF(object):
                         self._update_offset_value(f, poffset+12, 8, offset)
                     poffset = offset
                     entries = entries + 1
-                if (zVar == True):
+                if zVar:
                     # ADR's NzEntries
                     self._update_offset_value(f, offsetA+56, 4, entries)
                     # ADR's MAXzEntry
@@ -936,7 +936,7 @@ class CDF(object):
             if (isinstance(entry, list) or isinstance(entry, tuple)):
                 items = len(entry)
                 if (items == 2):
-                    dataType = CDF._datatype_token(entry[1])
+                    dataType = self._datatype_token(entry[1])
 
             if (dataType > 0):
                 # CDF data type defined in entry
@@ -1255,8 +1255,8 @@ class CDF(object):
         '''
         # add a VXR, use an entry, and link it to the prior VXR if it exists
         vxroffset = self._write_vxr(f)
-        usedEntries = self._use_vxrentry(f, vxroffset, recStart, recEnd,
-                                         vvrOffset)
+        self._use_vxrentry(f, vxroffset, recStart, recEnd,
+                           vvrOffset)
         if (priorVXR == 0):
             # VDR's VXRhead
             self._update_offset_value(f, currentVDR+28, 8, vxroffset)
@@ -1344,8 +1344,8 @@ class CDF(object):
                 endEntry = CDF.NUM_VXRlvl_ENTRIES
             for _ in range(0, endEntry):
                 recFirst, recLast = self._get_recrange(f, vxroff)
-                usedEntries = self._use_vxrentry(f, newvxroff, recFirst, recLast,
-                                                 vxroff)
+                self._use_vxrentry(f, newvxroff, recFirst, recLast,
+                                   vxroff)
                 vxroff = self._read_offset_value(f, vxroff+12, 8)
         vxroff = vxrhead
 
@@ -1395,11 +1395,11 @@ class CDF(object):
                   'COLUMN_MAJOR': 2}
         try:
             return majors[major.upper()]
-        except:
-            print('bad major....', major)
+        except KeyError:
+            logging.error('bad major {}'.format(major))
             return 0
 
-    def _encoding_token(encoding):    # @NoSelf
+    def _encoding_token(self, encoding: str) -> int:    # @NoSelf
         '''
         Returns the numberical type for a CDF encoding type
         '''
@@ -1422,11 +1422,11 @@ class CDF(object):
                      'ARM_BIG_ENCODING': 18}
         try:
             return encodings[encoding.upper()]
-        except:
-            print('bad encoding....', encoding)
+        except (KeyError, TypeError, AttributeError):
+            logging.error('bad encoding {}'.format(encoding))
             return 0
 
-    def _datatype_token(datatype):    # @NoSelf
+    def _datatype_token(self, datatype: str) -> int:    # @NoSelf
         '''
         Returns the numberical type for a CDF data type
         '''
@@ -1449,7 +1449,7 @@ class CDF(object):
                      'CDF_UCHAR': 52}
         try:
             return datatypes[datatype.upper()]
-        except:
+        except (KeyError, TypeError, AttributeError):
             return 0
 
     def _datatype_define(value):    # @NoSelf
@@ -1539,7 +1539,7 @@ class CDF(object):
                    'prev_sparse': 2}
         try:
             return sparses[sparse.lower()]
-        except:
+        except Exception:
             return 0
 
     def _write_cdr(self, f, major, encoding, checksum):
@@ -1554,7 +1554,7 @@ class CDF(object):
         if (major == 1):
             flag = CDF._set_bit(flag, 0)
         flag = CDF._set_bit(flag, 1)
-        if (checksum == True):
+        if checksum:
             flag = CDF._set_bit(flag, 2)
             flag = CDF._set_bit(flag, 3)
         rfuA = 0
@@ -1656,7 +1656,7 @@ class CDF(object):
         section_type = CDF.ADR_
         nextADR = 0
         headAgrEDR = 0
-        if (gORv == True):
+        if gORv:
             scope = 1
         else:
             scope = 2
@@ -1739,7 +1739,7 @@ class CDF(object):
         '''
         f.seek(0, 2)
         byte_loc = f.tell()
-        if (gORz == True or zVar != True):
+        if gORz or not zVar:
             section_type = CDF.AgrEDR_
         else:
             section_type = CDF.AzEDR_
@@ -1946,7 +1946,7 @@ class CDF(object):
         else:
             if (numDims > 0):
                 for i in range(0, numDims):
-                    if (dimVary[i] == True or dimVary[i] != 0):
+                    if dimVary[i]:
                         vdr[340+i*4:344+i*4] = struct.pack('>i', CDF.VARY)
                     else:
                         vdr[340+i*4:344+i*4] = struct.pack('>i', CDF.NOVARY)
@@ -1999,7 +1999,7 @@ class CDF(object):
         byte_loc = f.tell()
         section_type = CDF.VXR_
         nextVXR = 0
-        if (numEntries == None):
+        if numEntries is None:
             nEntries = CDF.NUM_VXR_ENTRIES
         else:
             nEntries = int(numEntries)
@@ -2108,8 +2108,8 @@ class CDF(object):
         block_size = CDF.CCR_BASE_SIZE64 + len(cData)
         cprOffset = 0
         ccr1 = bytearray(32)
-        #ccr1[0:4] = binascii.unhexlify(CDF.V3magicNUMBER_1)
-        #ccr1[4:8] = binascii.unhexlify(CDF.V3magicNUMBER_2c)
+        # ccr1[0:4] = binascii.unhexlify(CDF.V3magicNUMBER_1)
+        # ccr1[4:8] = binascii.unhexlify(CDF.V3magicNUMBER_2c)
         ccr1[0:8] = struct.pack('>q', block_size)
         ccr1[8:12] = struct.pack('>i', section_type)
         ccr1[12:20] = struct.pack('>q', cprOffset)
@@ -2234,6 +2234,7 @@ class CDF(object):
             tmpPad = str(' '*numElems).encode()
             form = str(numElems)
             pad_value = struct.pack(form+'b', *tmpPad)
+
         return pad_value
 
     def _convert_data(self, data_type, num_elems, num_values, indata):
@@ -2325,7 +2326,7 @@ class CDF(object):
                 num_elems = 2 * num_elems
             try:
                 recs = int(len(indata) / recSize)
-            except:
+            except Exception:
                 recs = 1
             if (data_type == CDF.CDF_EPOCH16):
                 complex_data = []
@@ -2350,7 +2351,7 @@ class CDF(object):
         Set zVar=True if this is a zvariable.
         '''
         values = 1
-        if (zVar == True):
+        if zVar:
             numDims = self.zvarsinfo[varNum][2]
             dimSizes = self.zvarsinfo[varNum][3]
             dimVary = self.zvarsinfo[varNum][4]
@@ -2362,7 +2363,7 @@ class CDF(object):
             return values
         else:
             for x in range(0, numDims):
-                if (zVar == True):
+                if zVar:
                     values = values * dimSizes[x]
                 else:
                     if (dimVary[x] != 0):
@@ -2608,12 +2609,13 @@ class CDF(object):
                 [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...]
         '''
 
-        if (isinstance(data, dict)):
+        if isinstance(data, dict):
             try:
                 data = data['Data']
-            except:
-                print('Unknown dictionary.... Skip')
+            except KeyError:
+                logging.error('Unknown dictionary.... Skip')
                 return None
+
         if (isinstance(data, np.ndarray)):
             if (len(records) == len(data)):
                 # All are physical data
@@ -2776,7 +2778,7 @@ class CDF(object):
 
         return sparse_data
 
-    def getVersion():  # @NoSelf
-        print('CDFwrite version:', str(CDF.version)+'.'+str(CDF.release) +
-              '.'+str(CDF.increment))
+    def getVersion(self):  # @NoSelf
+        print('CDFwrite version:', str(self.version)+'.'+str(self.release) +
+              '.'+str(self.increment))
         print('Date: 2018/01/11')
