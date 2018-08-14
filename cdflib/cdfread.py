@@ -231,7 +231,7 @@ class CDF(object):
         if not path.is_file():
             path = path.with_suffix('.cdf')
             if not path.is_file():
-                raise FileNotFoundError(f'{path} not found')
+                raise FileNotFoundError('{} not found'.format(path))
 
         self.file = path
 
