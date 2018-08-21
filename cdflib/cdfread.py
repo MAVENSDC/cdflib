@@ -237,7 +237,7 @@ class CDF(object):
 
         self.file = path
 
-        with self.file.open('rb')  as f:
+        with self.file.open('rb') as f:
             magic_number = f.read(4).hex()
             compressed_bool = f.read(4).hex()
 

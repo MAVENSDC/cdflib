@@ -1944,7 +1944,7 @@ class CDF(object):
         else:
             if (numDims > 0):
                 for i in range(0, numDims):
-                    if (dimVary[i] == True or dimVary[i] != 0):
+                    if dimVary[i]:
                         vdr[340+i*4:344+i*4] = struct.pack('>i', CDF.VARY)
                     else:
                         vdr[340+i*4:344+i*4] = struct.pack('>i', CDF.NOVARY)
