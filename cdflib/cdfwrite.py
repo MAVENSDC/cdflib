@@ -1255,8 +1255,7 @@ class CDF(object):
         '''
         # add a VXR, use an entry, and link it to the prior VXR if it exists
         vxroffset = self._write_vxr(f)
-        self._use_vxrentry(f, vxroffset, recStart, recEnd,
-                           vvrOffset)
+        self._use_vxrentry(f, vxroffset, recStart, recEnd, vvrOffset)
         if (priorVXR == 0):
             # VDR's VXRhead
             self._update_offset_value(f, currentVDR+28, 8, vxroffset)
@@ -1344,8 +1343,7 @@ class CDF(object):
                 endEntry = CDF.NUM_VXRlvl_ENTRIES
             for _ in range(0, endEntry):
                 recFirst, recLast = self._get_recrange(f, vxroff)
-                self._use_vxrentry(f, newvxroff, recFirst, recLast,
-                                   vxroff)
+                self._use_vxrentry(f, newvxroff, recFirst, recLast, vxroff)
                 vxroff = self._read_offset_value(f, vxroff+12, 8)
         vxroff = vxrhead
 
@@ -1399,7 +1397,7 @@ class CDF(object):
             logging.error('bad major {}'.format(major))
             return 0
 
-    def _encoding_token(self, encoding: str) -> int:    # @NoSelf
+    def _encoding_token(self, encoding: str) -> int:
         '''
         Returns the numberical type for a CDF encoding type
         '''
@@ -1426,7 +1424,7 @@ class CDF(object):
             logging.error('bad encoding {}'.format(encoding))
             return 0
 
-    def _datatype_token(self, datatype: str) -> int:    # @NoSelf
+    def _datatype_token(self, datatype: str) -> int:
         '''
         Returns the numberical type for a CDF data type
         '''
@@ -1946,7 +1944,7 @@ class CDF(object):
         else:
             if (numDims > 0):
                 for i in range(0, numDims):
-                    if dimVary[i]:
+                    if (dimVary[i] == True or dimVary[i] != 0):
                         vdr[340+i*4:344+i*4] = struct.pack('>i', CDF.VARY)
                     else:
                         vdr[340+i*4:344+i*4] = struct.pack('>i', CDF.NOVARY)
@@ -2778,7 +2776,7 @@ class CDF(object):
 
         return sparse_data
 
-    def getVersion(self):  # @NoSelf
+    def getVersion(self):
         print('CDFwrite version:', str(self.version)+'.'+str(self.release) +
               '.'+str(self.increment))
         print('Date: 2018/01/11')
