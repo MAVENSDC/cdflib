@@ -41,6 +41,8 @@ A shortcut for reading a variable that reads all values in the variable is:
 x = h['varname']
 ```
 
+At this time, a cdfread context manager isn't provided because the file read operations are atomic--the file is closed immediately after reading necessary data, and file position is preserved in the object.
+
 Below is a list of the 8 different functions you can call.
 
 ### cdf_info()
