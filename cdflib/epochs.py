@@ -362,16 +362,12 @@ class CDFepoch:
 
     def compute(datetimes, to_np=None):  # @NoSelf
 
-        if (not isinstance(datetimes, list) and
-            not isinstance(datetimes, tuple) and
-                not isinstance(datetimes, np.ndarray)):
-            print('datetime must be in list form')
-            return
-        if (isinstance(datetimes[0], numbers.Number)):
+        if not isinstance(datetimes, (list, tuple, np.ndarray)):
+            raise TypeError('datetime must be in list form')
+
+        if isinstance(datetimes[0], numbers.Number):
             items = len(datetimes)
-        elif (isinstance(datetimes[0], list) or
-              isinstance(datetimes[0], tuple) or
-              isinstance(datetimes[0], np.ndarray)):
+        elif isinstance(datetimes[0], (list, tuple, np.ndarray)):
             items = len(datetimes[0])
         else:
             print('Unknown input')
@@ -392,10 +388,9 @@ class CDFepoch:
             return CDFepoch.epochrange_epoch(epochs, starttime, endtime)
         elif (isinstance(epochs, int) or isinstance(epochs, np.int64)):
             return CDFepoch.epochrange_tt2000(epochs, starttime, endtime)
-        elif (isinstance(epochs, complex) or isinstance(epochs, np.complex128)):
+        elif isinstance(epochs, (complex, np.complex128)):
             return CDFepoch.epochrange_epoch16(epochs, starttime, endtime)
-        elif (isinstance(epochs, list) or isinstance(epochs, tuple) or
-              isinstance(epochs, np.ndarray)):
+        elif isinstance(epochs, (list, tuple, np.ndarray)):
             if (isinstance(epochs[0], float) or
                     isinstance(epochs[0], np.float64)):
                 return CDFepoch.epochrange_epoch(epochs, starttime, endtime)

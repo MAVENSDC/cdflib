@@ -3,14 +3,14 @@ import pytest
 import unittest
 import numpy as np
 import cdflib
-from random import *
+from random import randint
 
 '''
 To check code coverage, first:
 
 pip install pytest-cov
 
-Then 
+Then
 
 pytest --cov
 
@@ -20,25 +20,21 @@ coverage report
 '''
 
 '''
-Each of these results were hand checked using either IDL or 
-other online resources.  
+Each of these results were hand checked using either IDL or
+other online resources.
 '''
 
 
+def test_encode_cdfepoch():
+    x = cdflib.cdfepoch.encode([62285326000000.0, 62985326000000.0])
+    assert x[0] == '1973-09-28T23:26:40.000'
+    assert x[1] == '1995-12-04T19:53:20.000'
+
+    y = cdflib.cdfepoch.encode(62975326000002.0, iso_8601=False)
+    assert y == '11-Aug-1995 02:06:40.002'
+
+
 class CDFEpochTestCase(unittest.TestCase):
-
-    def setUp(self):
-        return
-
-    def tearDown(self):
-        return
-
-    def test_encode_cdfepoch(self):
-        x = cdflib.cdfepoch.encode([62285326000000.0, 62985326000000.0])
-        self.assertEqual(x[0], '1973-09-28T23:26:40.000')
-        self.assertEqual(x[1], '1995-12-04T19:53:20.000')
-        y = cdflib.cdfepoch.encode(62975326000002.0, iso_8601=False)
-        self.assertEqual(y, '11-Aug-1995 02:06:40.002')
 
     def test_encode_cdfepoch16(self):
         '''
@@ -48,7 +44,7 @@ class CDFEpochTestCase(unittest.TestCase):
         However, I believe this IDL routine is bugged.  This website:
         https://www.epochconverter.com/seconds-days-since-y0
 
-        shows a correct answer. 
+        shows a correct answer.
         '''
         x = cdflib.cdfepoch.encode(np.complex128(63300946758.000000 + 176214648000.00000j))
         self.assertEqual(x, '2005-12-04T20:19:18.176214648000')
