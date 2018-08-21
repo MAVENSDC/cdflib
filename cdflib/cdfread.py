@@ -297,6 +297,9 @@ class CDF(object):
         if self.compressed_file is not None:
             self.compressed_file = None
 
+    def __getitem__(self, variable: str) -> np.ndarray:
+        return self.varget(variable)
+
     def cdf_info(self):
         mycdf_info = {}
         mycdf_info['CDF'] = self.file
@@ -498,12 +501,11 @@ class CDF(object):
                record_range_only=False, inq=False, expand=False,
                to_np=True):
 
-        if (isinstance(variable, int) and self._num_zvariable > 0 and
-                self._num_rvariable > 0):
+        if (isinstance(variable, int) and self._num_zvariable > 0 and self._num_rvariable > 0):
             raise NameError('This CDF has both r and z variables. Use variable name')
 
         if (starttime is not None or endtime is not None) and (startrec != 0 or endrec is not None):
-            raise IndexError('Can\'t specify both time and record range')
+            raise IndexError('Cannot specify both time and record range')
 
         if isinstance(variable, str):
             # Check z variables for the name, then r variables
