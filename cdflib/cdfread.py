@@ -1661,7 +1661,8 @@ class CDF(object):
                                                    vdr_dict['num_elements'])
             else:
                 filled_data = CDF._convert_np_data(
-                    self._default_pad(vdr_dict['data_type']),
+                    self._default_pad(vdr_dict['data_type'], 
+                                      vdr_dict['num_elements']),
                     vdr_dict['data_type'],
                     vdr_dict['num_elements'])
             cur_block = -1
