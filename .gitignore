@@ -15,3 +15,5 @@ build
 /*.html
 /testing.py
 /.coverage
+doc/_build
+doc/api
