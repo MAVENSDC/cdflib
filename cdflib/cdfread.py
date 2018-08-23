@@ -47,6 +47,7 @@ import struct
 import gzip
 import hashlib
 import cdflib.epochs as epoch
+from typing import Tuple, Dict, Any
 
 
 class CDF(object):
@@ -887,7 +888,7 @@ class CDF(object):
             position = adr_info['next_adr_location']
         return attrs
 
-    def _read_cdr(self, byte_loc: int):
+    def _read_cdr(self, byte_loc: int) -> Tuple[Dict[str, Any], int]:
         with self.file.open('rb') as f:
             f.seek(byte_loc, 0)
             block_size = int.from_bytes(f.read(8), 'big')
@@ -913,8 +914,8 @@ class CDF(object):
 
         flag = int.from_bytes(cdr[24:28], 'big')
         flag_bits = '{0:032b}'.format(flag)
-        row_majority = (flag_bits[31] == '1')
-        single_format = (flag_bits[30] == '1')
+        row_majority = flag_bits[31] == '1'
+        single_format = flag_bits[30] == '1'
         md5 = (flag_bits[29] == '1' and flag_bits[28] == '1')
         increment = int.from_bytes(cdr[36:40], 'big')
         cdfcopyright = cdr[48:].decode('utf-8')
@@ -923,19 +924,15 @@ class CDF(object):
         cdr_info = {}
         cdr_info['encoding'] = encoding
         cdr_info['copyright'] = cdfcopyright
-        cdr_info['version'] = str(version) + '.' + str(release) + '.' +  \
-            str(increment)
-        if row_majority:
-            cdr_info['majority'] = 1
-        else:
-            cdr_info['majority'] = 2
+        cdr_info['version'] = '{}.{}.{}'.format(version, release, increment)  # type: ignore
+        cdr_info['majority'] = 1 if row_majority else 2
         cdr_info['format'] = single_format
         cdr_info['md5'] = md5
         cdr_info['post25'] = True
 
         return cdr_info, foffs
 
-    def _read_cdr2(self, byte_loc):
+    def _read_cdr2(self, byte_loc: int):
         with self.file.open('rb') as f:
             f.seek(byte_loc, 0)
             block_size = int.from_bytes(f.read(4), 'big')
@@ -958,18 +955,11 @@ class CDF(object):
         cdr_info = {}
         cdr_info['encoding'] = encoding
         cdr_info['copyright'] = cdfcopyright
-        cdr_info['version'] = str(version) + '.' + str(release) + '.' + \
-            str(increment)
-        if row_majority:
-            cdr_info['majority'] = 1
-        else:
-            cdr_info['majority'] = 2
+        cdr_info['version'] = '{}.{}.{}'.format(version, release, increment)  # type: ignore
+        cdr_info['majority'] = 1 if row_majority else 2
         cdr_info['format'] = single_format
         cdr_info['md5'] = md5
-        if (version == 2 and release >= 5):
-            cdr_info['post25'] = True
-        else:
-            cdr_info['post25'] = False
+        cdr_info['post25'] = version == 2 and release >= 5
 
         return cdr_info, foffs
 
@@ -2222,10 +2212,9 @@ class CDF(object):
             return list(struct.unpack_from(form,
                                            data[0:num_recs*num_values*value_len]))
 
-    def getVersion():   # @NoSelf
+    def getVersion(self):
         """
         Shows the code version and last modified date.
         """
-        print('CDFread version:', str(CDF.version) + '.' + str(CDF.release) +
-              '.' + str(CDF.increment))
+        print('CDFread version: {}.{}.{}'.format(self.version, self.release, self.increment))
         print('Date: 2018/01/11')

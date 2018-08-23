@@ -37,6 +37,9 @@ import re
 import numbers
 from pathlib import Path
 import logging
+import urllib.request
+import csv
+from typing import List, Union   # noqa: F401
 
 
 class CDFepoch:
@@ -75,32 +78,30 @@ class CDFepoch:
         leap_sec_file = library_path / 'CDFLeapSeconds.txt'
         # Attempt to download latest leap second table
         try:
-            import urllib.request
             leapsecond_files_url = "https://cdf.gsfc.nasa.gov/html/CDFLeapSeconds.txt"
             page = urllib.request.urlopen(leapsecond_files_url)
 
             with leap_sec_file.open("wb") as lsfile:
                 lsfile.write(page.read())
-        except BaseException:
+        except Exception:
             logging.error("Can't download new leap second table")
 
         # Attempt to load the leap second table saved in the cdflib
         try:
-            import csv
-            self.LTS = []
+            self.LTS = []  # type: List[List[Union[int, float]]]
             with leap_sec_file.open('r') as lsfile:
                 lsreader = csv.reader(lsfile, delimiter=' ')
                 for row in lsreader:
                     if row[0] == ";":
                         continue
                     row = list(filter(('').__ne__, row))
-                    row[0] = int(row[0])
-                    row[1] = int(row[1])
-                    row[2] = int(row[2])
-                    row[3] = float(row[3])
-                    row[4] = float(row[4])
-                    row[5] = float(row[5])
-                    self.LTS.append(row)
+
+                    self.LTS.append([int(row[0]),
+                                     int(row[1]),
+                                     int(row[2]),
+                                     float(row[3]),
+                                     float(row[4]),
+                                     float(row[5])])
         except FileNotFoundError:
             print("Can't find leap second table.  Using one built into code.")
             print("Last leap second in built in table is on Jan 01 2017. ")
@@ -799,11 +800,9 @@ class CDFepoch:
                 # new2_epochs = epochs
                 pass
             else:
-                logging.error('Bad data')
-                return None
+                raise ValueError('Bad data')
         else:
-            print('Bad data')
-            return None
+            raise ValueError('Bad data')
         if starttime is None:
             stime = int(-9223372036854775807)
         else:
@@ -840,8 +839,7 @@ class CDFepoch:
         elif isinstance(epochs, (list, tuple, np.ndarray)):
             new_epochs = epochs
         else:
-            print('Bad data')
-            return None
+            raise ValueError('Bad data')
         count = len(new_epochs)
         encodeds = []
         for x in range(count):
@@ -1212,11 +1210,9 @@ class CDFepoch:
                     isinstance(epochs[0], np.complex128)):
                 new_epochs = epochs
             else:
-                print('Bad data')
-                return None
+                raise ValueError('Bad data')
         else:
-            print('Bad data')
-            return None
+            raise ValueError('Bad data')
         if starttime is None:
             stime = []
             stime.append(-1.0E31)
@@ -1301,15 +1297,14 @@ class CDFepoch:
             indx.append(int(count / 2) - 1)
         return np.arange(indx[0], indx[1] + 1, step=1)
 
-    def encode_epoch(self, epochs, iso_8601=True):  # @NoSelf
+    def encode_epoch(self, epochs, iso_8601=True):
 
         if (isinstance(epochs, float) or isinstance(epochs, np.float64)):
             new_epochs = [epochs]
         elif (isinstance(epochs, list) or isinstance(epochs, np.ndarray)):
             new_epochs = epochs
         else:
-            print('Bad data')
-            return None
+            raise ValueError('Bad data')
         count = len(new_epochs)
         encodeds = []
         for x in range(0, count):
@@ -1486,15 +1481,14 @@ class CDFepoch:
         else:
             return msecFromEpoch
 
-    def breakdown_epoch(self, epochs, to_np=False):  # @NoSelf
+    def breakdown_epoch(self, epochs, to_np=False):
 
         if isinstance(epochs, (float, np.float64)):
             new_epochs = [epochs]
         elif isinstance(epochs, (list, tuple, np.ndarray)):
             new_epochs = epochs
         else:
-            print('Bad data')
-            return None
+            raise ValueError('Bad data')
         count = len(new_epochs)
         components = []
         for x in range(0, count):
@@ -1550,46 +1544,39 @@ class CDFepoch:
 
     def epochrange_epoch(self, epochs, starttime=None, endtime=None):
 
-        if (isinstance(epochs, float) or isinstance(epochs, np.float64)):
+        if isinstance(epochs, (float, np.float64)):
             # new2_epochs = [epochs]
             pass
-        elif (isinstance(epochs, list) or isinstance(epochs, tuple) or
-              isinstance(epochs, np.ndarray)):
-            if (isinstance(epochs[0], float) or
-                    isinstance(epochs[0], np.float64)):
+        elif isinstance(epochs, (list, tuple, np.ndarray)):
+            if isinstance(epochs[0], (float, np.float64)):
                 # new2_epochs = epochs
                 pass
             else:
-                print('Bad data')
-                return None
+                raise ValueError('Bad data')
         else:
-            print('Bad data')
-            return None
+            raise ValueError('Bad data')
+
         if starttime is None:
             stime = 0.0
         else:
-            if (isinstance(starttime, float) or isinstance(starttime, int) or
-                    isinstance(starttime, np.float64)):
+            if isinstance(starttime, (float, int, np.float64)):
                 stime = starttime
-            elif (isinstance(starttime, list) or isinstance(starttime, tuple)):
+            elif isinstance(starttime, (list, tuple)):
                 stime = self.compute_epoch(starttime)
             else:
-                print('Bad start time')
-                return None
+                raise ValueError('Bad start time')
         if endtime is not None:
             if isinstance(endtime, (float, int, np.float64)):
                 etime = endtime
             elif isinstance(endtime, (list, tuple)):
-                etime = CDFepoch.compute_epoch(endtime)
+                etime = self.compute_epoch(endtime)
             else:
-                print('Bad end time')
-                return None
+                raise ValueError('Bad end time')
         else:
             etime = 1.0E31
         if (stime > etime):
-            print('Invalid start/end time')
-            return None
-        if (isinstance(epochs, list) or isinstance(epochs, tuple)):
+            raise ValueError('Invalid start/end time')
+        if isinstance(epochs, (list, tuple)):
             new_epochs = np.array(epochs)
         else:
             new_epochs = epochs
@@ -1641,7 +1628,7 @@ class CDFepoch:
                     return np.array(self._parse_epoch(value))
 
     def _parse_epoch(self, value):
-        if (isinstance(value, list) or isinstance(value, tuple)):
+        if isinstance(value, (list, tuple)):
             epochs = []
             for x in range(0, len(value)):
                 epochs.append(value[x])
@@ -1749,47 +1736,21 @@ class CDFepoch:
                         ns = int(date[0][8])
                     return self.compute_tt2000([yy, mm, dd, hh, mn, ss, ms, us, ns])
             else:
-                print('Invalid cdf epoch type...')
-                return None
+                raise TypeError('Invalid cdf epoch type')
 
-    def _month_index(month):  # @NoSelf
-        if (month.lower() == 'jan'):
-            return 1
-        elif(month.lower() == 'feb'):
-            return 2
-        elif(month.lower() == 'mar'):
-            return 3
-        elif(month.lower() == 'apr'):
-            return 4
-        elif(month.lower() == 'may'):
-            return 5
-        elif(month.lower() == 'jun'):
-            return 6
-        elif(month.lower() == 'jul'):
-            return 7
-        elif(month.lower() == 'aug'):
-            return 8
-        elif(month.lower() == 'sep'):
-            return 9
-        elif(month.lower() == 'oct'):
-            return 10
-        elif(month.lower() == 'nov'):
-            return 11
-        elif(month.lower() == 'dec'):
-            return 12
-        else:
-            return -1
-
-    def getVersion():  # @NoSelf
+    def getVersion(self):
         """
         Shows the code version.
         """
-        print('epochs version:', str(CDFepoch.version) + '.' +
-              str(CDFepoch.release) + '.'+str(CDFepoch.increment))
+        print('epochs version: {}.{}.{}'.format(self.version, self.release, self.increment))
+        print('Date: 2018/01/11')
 
-    def getLeapSecondLastUpdated():  # @NoSelf
+    def getLeapSecondLastUpdated(self):
         """
         Shows the latest date a leap second was added to the leap second table.
         """
-        print('Leap second last updated:', str(CDFepoch.LTS[-1][0]) + '-' +
-              str(CDFepoch.LTS[-1][1]) + '-' + str(CDFepoch.LTS[-1][2]))
+        print('Leap second last updated: {}-{}-{}'.format(self.LTS[-1][0], self.LTS[-1][1], self.LTS[-1][2]))
+
+
+def _month_index(month: str) -> int:
+    return datetime.datetime.strptime(month, '%b').month

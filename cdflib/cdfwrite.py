@@ -2706,7 +2706,7 @@ class CDF(object):
 
         return sparse_data
 
-    def getVersion():  # @NoSelf
+    def getVersion(self):
         """
         Shows the code version and last modified date.
 
@@ -2725,6 +2725,5 @@ class CDF(object):
 
         where mon is a 3-character month.
         """
-        print('CDFwrite version:', str(CDF.version) + '.'+str(CDF.release) +
-              '.' + str(CDF.increment))
+        print('CDFwrite version: {}.{}.{}'.format(self.version, self.release, self.increment))
         print('Date: 2018/01/11')
