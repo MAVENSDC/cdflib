@@ -249,7 +249,7 @@ class CDF(object):
         """
         position = self._first_adr
         if isinstance(attribute, str):
-            for _ in range(0, self._num_att):
+            for _ in range(self._num_att):
                 if (self.cdfversion == 3):
                     name, next_adr = self._read_adr_fast(position)
                 else:
@@ -265,7 +265,7 @@ class CDF(object):
         elif isinstance(attribute, int):
             if (attribute < 0 or attribute > self._num_zvariable):
                 raise KeyError('No attribute {}'.format(attribute))
-            for _ in range(0, attribute):
+            for _ in range(attribute):
                 if (self.cdfversion == 3):
                     name, next_adr = self._read_adr_fast(position)
                 else:
@@ -281,7 +281,7 @@ class CDF(object):
 
             attrs = self._get_attnames()
             print(attrs)
-            for x in range(0, self._num_att):
+            for x in range(self._num_att):
                 name = list(attrs[x].keys())[0]
                 print('NAME: ' + name + ', NUMBER: ' + str(x) + ', SCOPE: ' + attrs[x][name])
             return attrs
@@ -309,7 +309,7 @@ class CDF(object):
         # Get Correct ADR
         adr_info = None
         if isinstance(attribute, str):
-            for _ in range(0, self._num_att):
+            for _ in range(self._num_att):
                 if (self.cdfversion == 3):
                     name, next_adr = self._read_adr_fast(position)
                 else:
@@ -331,7 +331,7 @@ class CDF(object):
             if not isinstance(entry, int):
                 raise TypeError('{} has to be a number.'.format(entry))
 
-            for _ in range(0, attribute):
+            for _ in range(attribute):
                 if (self.cdfversion == 3):
                     name, next_adr = self._read_adr_fast(position)
                 else:
@@ -344,7 +344,7 @@ class CDF(object):
         else:
             print('Please set attribute keyword equal to the name or ',
                   'number of an attribute')
-            for x in range(0, self._num_att):
+            for x in range(self._num_att):
                 if (self.cdfversion == 3):
                     name, next_adr = self._read_adr_fast(position)
                 else:
@@ -368,7 +368,7 @@ class CDF(object):
             if isinstance(entry, str):
                 # a zVariable?
                 positionx = self._first_zvariable
-                for x in range(0, self._num_zvariable):
+                for x in range(self._num_zvariable):
                     if (self.cdfversion == 3):
                         name, vdr_next = self._read_vdr_fast(positionx)
                     else:
@@ -381,7 +381,7 @@ class CDF(object):
                 if var_num == -1:
                     # a rVariable?
                     positionx = self._first_rvariable
-                    for x in range(0, self._num_rvariable):
+                    for x in range(self._num_rvariable):
                         if (self.cdfversion == 3):
                             name, vdr_next = self._read_vdr_fast(positionx)
                         else:
@@ -481,7 +481,7 @@ class CDF(object):
             num_variables = self._num_zvariable
             vdr_info = None
             for zVar in [1, 0]:
-                for _ in range(0, num_variables):
+                for _ in range(num_variables):
                     if (self.cdfversion == 3):
                         name, vdr_next = self._read_vdr_fast(position)
                     else:
@@ -510,7 +510,7 @@ class CDF(object):
             if (variable < 0 or variable >= num_variable):
                 raise KeyError('No variable by number: {}'.format(variable))
 
-            for _ in range(0, variable):
+            for _ in range(variable):
                 if (self.cdfversion == 3):
                     name, next_vdr = self._read_vdr_fast(position)
                 else:
@@ -567,7 +567,7 @@ class CDF(object):
         """
         byte_loc = self._first_adr
         return_dict = {}
-        for _ in range(0, self._num_att):
+        for _ in range(self._num_att):
             if (self.cdfversion == 3):
                 adr_info = self._read_adr(byte_loc)
             else:
@@ -585,7 +585,7 @@ class CDF(object):
             else:
                 entries = {}
             aedr_byte_loc = adr_info['first_gr_entry']
-            for _ in range(0, adr_info['num_gr_entry']):
+            for _ in range(adr_info['num_gr_entry']):
                 if (self.cdfversion == 3):
                     aedr_info = self._read_aedr(aedr_byte_loc, to_np=to_np)
                 else:
@@ -654,7 +654,7 @@ class CDF(object):
             position = self._first_zvariable
             num_variables = self._num_zvariable
             for zVar in [1, 0]:
-                for _ in range(0, num_variables):
+                for _ in range(num_variables):
                     if (self.cdfversion == 3):
                         name, vdr_next = self._read_vdr_fast(position)
                     else:
@@ -800,7 +800,7 @@ class CDF(object):
         if self._num_zvariable > 0:
             position = self._first_zvariable
             num_variable = self._num_zvariable
-            for _ in range(0, num_variable):
+            for _ in range(num_variable):
                 if (self.cdfversion == 3):
                     name, next_vdr = self._read_vdr_fast(position)
                 else:
@@ -810,7 +810,7 @@ class CDF(object):
         if self._num_rvariable > 0:
             position = self._first_rvariable
             num_variable = self._num_rvariable
-            for _ in range(0, num_variable):
+            for _ in range(num_variable):
                 if (self.cdfversion == 3):
                     name, next_vdr = self._read_vdr_fast(position)
                 else:
@@ -822,7 +822,7 @@ class CDF(object):
     def _get_attnames(self):
         attrs = []
         position = self._first_adr
-        for _ in range(0, self._num_att):
+        for _ in range(self._num_att):
             attr = {}
             if (self.cdfversion == 3):
                 adr_info = self._read_adr(position)
@@ -927,7 +927,7 @@ class CDF(object):
         # A bunch of 4 byte integers in a row.  Length is (size of GDR) - 84
         # In this case. there is nothing
         rdim_sizes = []
-        for x in range(0, num_rdim):
+        for x in range(num_rdim):
             ioff = 76 + x * 4
             rdim_sizes.append(int.from_bytes(gdr[ioff:ioff+4], 'big',
                                              signed=True))
@@ -961,7 +961,7 @@ class CDF(object):
         num_rdim = int.from_bytes(gdr[32:36], 'big', signed=True)
         num_zvariable = int.from_bytes(gdr[36:40], 'big', signed=True)
         rdim_sizes = []
-        for x in range(0, num_rdim):
+        for x in range(num_rdim):
             ioff = 56 + x * 4
             rdim_sizes.append(int.from_bytes(gdr[ioff:ioff+4], 'big',
                                              signed=True))
@@ -1279,17 +1279,17 @@ class CDF(object):
         if (section_type == 8):
             # zvariable
             num_dims = int.from_bytes(vdr[332:336], 'big', signed=True)
-            for x in range(0, num_dims):
+            for x in range(num_dims):
                 ioff = 336 + 4 * x
                 zdim_sizes.append(int.from_bytes(vdr[ioff:ioff+4], 'big',
                                                  signed=True))
             coff = 336 + 4 * num_dims
-            for x in range(0, num_dims):
+            for x in range(num_dims):
                 dim_varys.append(int.from_bytes(vdr[coff+4*x:coff+4*x+4],
                                                 'big', signed=True))
             adj = 0
             # Check for "False" dimensions, and delete them
-            for x in range(0, num_dims):
+            for x in range(num_dims):
                 y = num_dims - x - 1
                 if (dim_varys[y] == 0):
                     del zdim_sizes[y]
@@ -1299,11 +1299,11 @@ class CDF(object):
             coff = 336 + 8 * num_dims
         else:
             # rvariable
-            for x in range(0, self._rvariables_num_dims):
+            for x in range(self._rvariables_num_dims):
                 ioff = 332 + 4 * x
                 dim_varys.append(int.from_bytes(vdr[ioff:ioff+4], 'big',
                                                 signed=True))
-            for x in range(0, self._rvariables_num_dims):
+            for x in range(self._rvariables_num_dims):
                 if (dim_varys[x] != 0):
                     dim_sizes.append(self._rvariables_dim_sizes[x])
             num_dims = len(dim_sizes)
@@ -1384,12 +1384,12 @@ class CDF(object):
             # zvariable
             num_dims = int.from_bytes(vdr[124+toadd:128+toadd], 'big',
                                       signed=True)
-            for x in range(0, num_dims):
+            for x in range(num_dims):
                 xoff = 128 + toadd + 4*x
                 zdim_sizes.append(int.from_bytes(vdr[xoff:xoff+4], 'big',
                                                  signed=True))
             coff = 128 + toadd + 4 * num_dims
-            for x in range(0, num_dims):
+            for x in range(num_dims):
                 icoff = coff + 4 * x
                 if (int.from_bytes(vdr[icoff:icoff+4], 'big', signed=True) == 0):
                     dim_varys.append(False)
@@ -1397,7 +1397,7 @@ class CDF(object):
                     dim_varys.append(True)
             adj = 0
             # Check for "False" dimensions, and delete them
-            for x in range(0, num_dims):
+            for x in range(num_dims):
                 y = num_dims - x - 1
                 if dim_varys[y] == 0 or not dim_varys[y]:
                     del zdim_sizes[y]
@@ -1407,13 +1407,13 @@ class CDF(object):
             coff = 128 + toadd + 8 * num_dims
         else:
             # rvariable
-            for x in range(0, self._rvariables_num_dims):
+            for x in range(self._rvariables_num_dims):
                 ix = 124 + toadd + 4 * x
                 if (int.from_bytes(vdr[ix:ix+4], 'big', signed=True) == 0):
                     dim_varys.append(False)
                 else:
                     dim_varys.append(True)
-            for x in range(0, len(dim_varys)):
+            for x in range(len(dim_varys)):
                 dim_sizes.append(self._rvariables_dim_sizes[x])
             num_dims = len(dim_sizes)
             coff = 124 + toadd + 4 * self._rvariables_num_dims
@@ -1496,7 +1496,7 @@ class CDF(object):
             num_ent = int.from_bytes(vxrs[12:16], 'big', signed=True)
             num_ent_used = int.from_bytes(vxrs[16:20], 'big', signed=True)
             # coff = 20
-            for ix in range(0, num_ent_used):
+            for ix in range(num_ent_used):
                 soffset = 20 + 4 * ix
                 num_start = int.from_bytes(vxrs[soffset:soffset+4], 'big',
                                            signed=True)
@@ -1532,7 +1532,7 @@ class CDF(object):
         num_ent = int.from_bytes(vxrs[8:12], 'big', signed=True)
         num_ent_used = int.from_bytes(vxrs[12:16], 'big', signed=True)
         # coff = 16
-        for ix in range(0, num_ent_used):
+        for ix in range(num_ent_used):
             soffset = 16 + 4 * ix
             num_start = int.from_bytes(vxrs[soffset:soffset+4], 'big',
                                        signed=True)
@@ -1574,7 +1574,7 @@ class CDF(object):
         byte_stream = bytearray(totalBytes)
         pos = 0
         if (vdr_dict['sparse'] == 0):
-            for vvr_num in range(0, len(vvr_offs)):
+            for vvr_num in range(len(vvr_offs)):
                 if (vvr_end[vvr_num] >= startrec and firstBlock == -1):
                     firstBlock = vvr_num
                 if (vvr_end[vvr_num] >= endrec):
@@ -1644,7 +1644,7 @@ class CDF(object):
         dimensions = []
         var_vary = vdr_dict['dim_vary']
         var_sizes = vdr_dict['dim_sizes']
-        for x in range(0, vdr_dict['num_dims']):
+        for x in range(vdr_dict['num_dims']):
             if (var_vary[x] == 0):
                 continue
             dimensions.append(var_sizes[x])
@@ -1722,7 +1722,7 @@ class CDF(object):
                 byte_data = bytearray(byte_stream[0:num_recs*num_elems])
                 # In each record, check for the first '\x00' (null character).
                 # If found, make all the characters after it null as well.
-                for x in range(0, num_recs):
+                for x in range(num_recs):
                     y = x * num_elems
                     z = byte_data[y:y+num_elems].find(b'\x00')
                     if (z > -1 and z < (num_elems-1)):
@@ -1731,7 +1731,7 @@ class CDF(object):
             else:
                 # Count total number of strings
                 count = 1
-                for x in range(0, len(dimensions)):
+                for x in range(len(dimensions)):
                     count = count * dimensions[x]
                 strings = []
                 if (len(dimensions) == 0):
@@ -1740,7 +1740,7 @@ class CDF(object):
                             replace('\x00', '')
                         strings.append(string1)
                 else:
-                    for x in range(0, num_recs):
+                    for x in range(num_recs):
                         onerec = []
                         for i in range(x*count*num_elems, (x+1)*count*num_elems,
                                        num_elems):
@@ -1791,7 +1791,7 @@ class CDF(object):
         if it is varying.
         '''
         values = 1
-        for x in range(0, vdr_dict['num_dims']):
+        for x in range(vdr_dict['num_dims']):
             if (vdr_dict['dim_vary'][x] != 0):
                 values = values * vdr_dict['dim_sizes'][x]
 
@@ -1800,7 +1800,7 @@ class CDF(object):
     def _get_attdata(self, adr_info, entry_num: int,
                      num_entry: int, first_entry: int, to_np: bool=True) -> Dict[str, Any]:
         position = first_entry
-        for _ in range(0, num_entry):
+        for _ in range(num_entry):
             if (self.cdfversion == 3):
                 got_entry_num, next_aedr = self._read_aedr_fast(position)
             else:
@@ -1888,7 +1888,7 @@ class CDF(object):
             if (vdr_info['sparse']):
                 blocks = len(vvr_start)
                 physical_recs = []
-                for x in range(0, blocks):
+                for x in range(blocks):
                     for y in range(vvr_start[x], vvr_end[x]+1):
                         physical_recs.append(y)
                 new_dict['Real_Records'] = physical_recs
