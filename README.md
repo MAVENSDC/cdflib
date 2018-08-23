@@ -1,6 +1,9 @@
 [![image](https://travis-ci.com/scivision/cdflib.svg?branch=master)](https://travis-ci.com/scivision/cdflib)
 [![image](https://coveralls.io/repos/github/scivision/cdflib/badge.svg?branch=master)](https://coveralls.io/github/scivision/cdflib?branch=master)
 [![Build status](https://ci.appveyor.com/api/projects/status/kfhqkd87vifsbc9d?svg=true)](https://ci.appveyor.com/project/scivision/cdflib)
+[![PyPi version](https://img.shields.io/pypi/pyversions/cdflib.svg)](https://pypi.python.org/pypi/cdflib)
+[![PyPi formats](https://img.shields.io/pypi/format/cdflib.svg)](https://pypi.python.org/pypi/cdflib)
+[![PyPi Download stats](http://pepy.tech/badge/cdflib)](http://pepy.tech/project/cdflib)
 
 # CDFlib
 
