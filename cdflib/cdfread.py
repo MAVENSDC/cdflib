@@ -982,7 +982,9 @@ class CDF(object):
     def _read_varatts(self, var_num, zVar, expand, to_np: bool=True) -> dict:
         byte_loc = self._first_adr
         return_dict = {}
-        for z in range(0, self._num_att):
+        CDFepoch = epoch.CDFepoch()
+
+        for z in range(self._num_att):
             if (self.cdfversion == 3):
                 adr_info = self._read_adr(byte_loc)
             else:
@@ -997,7 +999,7 @@ class CDF(object):
                 byte_loc = adr_info['first_gr_entry']
                 num_entry = adr_info['num_gr_entry']
             found = 0
-            for _ in range(0, num_entry):
+            for _ in range(num_entry):
                 if (self.cdfversion == 3):
                     entryNum, byte_next = self._read_aedr_fast(byte_loc)
                 else:
@@ -1018,23 +1020,22 @@ class CDF(object):
                         entryWithType.append(entryData)
                     else:
                         dataType = aedr_info['data_type']
-                        if (dataType != 31 and dataType != 32 and dataType != 33):
-                            if (len(entryData.tolist()) == 1):
+                        if dataType not in (31, 32, 33):
+                            if len(entryData.tolist()) == 1:
                                 entryWithType.append(entryData.tolist()[0])
                             else:
                                 entryWithType.append(entryData.tolist())
                         else:
-                            CDFepoch = epoch.CDFepoch()
                             if len(entryData.tolist()) == 1:
                                 if dataType != 33:
-                                    entryWithType.append(CDFepoch.encode(entryData.tolist()[0], iso_8601=False))
+                                    entryWithType.append(CDFepoch.encode(entryData.tolist()[0], iso_8601=False))   # type: ignore
                                 else:
-                                    entryWithType.append(CDFepoch.encode(entryData.tolist()[0]))
+                                    entryWithType.append(CDFepoch.encode(entryData.tolist()[0]))   # type: ignore
                             else:
                                 if dataType != 33:
-                                    entryWithType.append(CDFepoch.encode(entryData.tolist(),  iso_8601=False))
+                                    entryWithType.append(CDFepoch.encode(entryData.tolist(),  iso_8601=False))   # type: ignore
                                 else:
-                                    entryWithType.append(CDFepoch.encode(entryData.tolist()))
+                                    entryWithType.append(CDFepoch.encode(entryData.tolist()))   # type: ignore
                     entryWithType.append(_datatype_token(aedr_info['data_type']))
                     return_dict[adr_info['name']] = entryWithType
                 found = 1

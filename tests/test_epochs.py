@@ -25,6 +25,7 @@ other online resources.
 
 CDFepoch = cdflib.cdfepoch()
 
+
 def test_encode_CDFepoch():
     x = CDFepoch.encode([62285326000000.0, 62985326000000.0])
     assert x[0] == '1973-09-28T23:26:40.000'
@@ -47,8 +48,8 @@ def test_encode_CDFepoch16():
     x = CDFepoch.encode(np.complex128(63300946758.000000 + 176214648000.00000j))
     assert x == '2005-12-04T20:19:18.176214648000'
     y = CDFepoch.encode(np.complex128([33300946758.000000 + 106014648000.00000j,
-                                                61234543210.000000 + 000011148000.00000j]),
-                                 iso_8601=False)
+                                       61234543210.000000 + 000011148000.00000j]),
+                        iso_8601=False)
     assert y[0] == '07-Apr-1055 14:59:18.106.014.648.000'
     assert y[1] == '12-Jun-1940 03:20:10.000.011.148.000'
 
@@ -57,8 +58,7 @@ def test_encode_cdftt2000():
     x = CDFepoch.encode(186999622360321123)
     assert x == '2005-12-04T20:19:18.176321123'
 
-    y = CDFepoch.encode([500000000100, 123456789101112131],
-                                 iso_8601=False)
+    y = CDFepoch.encode([500000000100, 123456789101112131], iso_8601=False)
     assert y[0] == '01-Jan-2000 12:07:15.816.000.100'
     assert y[1] == '30-Nov-2003 09:32:04.917.112.131'
 

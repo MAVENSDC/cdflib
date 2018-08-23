@@ -43,6 +43,7 @@ from typing import List, Union, Sequence   # noqa: F401
 
 FILLED_TT2000_VALUE = int(-9223372036854775808)
 DEFAULT_TT2000_PADVALUE = int(-9223372036854775807)
+MONTH_TOKEN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 
 class CDFepoch:
@@ -51,9 +52,6 @@ class CDFepoch:
         self.version = 3
         self.release = 7
         self.increment = 0
-
-        self.month_Token = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
         self.JulianDateJ2000_12h = 2451545
         self.J2000Since0AD12h = 730485
@@ -159,7 +157,7 @@ class CDFepoch:
         self.currentJDay = -1
         self.currentLeapSeconds = -1
 
-    def encode(self, epochs, iso_8601: bool=True):
+    def encode(self, epochs, iso_8601: bool=True) -> Union[str, List[str]]:
         """
         Encodes the epoch(s) into UTC string(s).
 
@@ -188,14 +186,14 @@ class CDFepoch:
         if isinstance(epochs, (int, np.int64)):
             return self.encode_tt2000(epochs, iso_8601)
         elif isinstance(epochs, (float, np.float64)):
-            return self.encode_epoch(epochs, iso_8601)
+            return encode_epoch(epochs, iso_8601)
         elif isinstance(epochs, (complex, np.complex128)):
             return self.encode_epoch16(epochs, iso_8601)
         elif isinstance(epochs, (list, np.ndarray)):
             if isinstance(epochs[0], (int,  np.int64)):
                 return self.encode_tt2000(epochs, iso_8601)
             elif isinstance(epochs[0], (float, np.float64)):
-                return self.encode_epoch(epochs, iso_8601)
+                return encode_epoch(epochs, iso_8601)
             elif isinstance(epochs[0], (complex, np.complex128)):
                 return self.encode_epoch16(epochs, iso_8601)
             else:
@@ -208,7 +206,7 @@ class CDFepoch:
         if (isinstance(epochs, int) or isinstance(epochs, np.int64)):
             return self.breakdown_tt2000(epochs, to_np)
         elif (isinstance(epochs, float) or isinstance(epochs, np.float64)):
-            return self.breakdown_epoch(epochs, to_np)
+            return breakdown_epoch(epochs, to_np)
         elif (isinstance(epochs, complex) or isinstance(epochs, np.complex128)):
             return self.breakdown_epoch16(epochs, to_np)
         elif (isinstance(epochs, list) or isinstance(epochs, tuple) or
@@ -217,7 +215,7 @@ class CDFepoch:
                 return self.breakdown_tt2000(epochs, to_np)
             elif (isinstance(epochs[0], float) or
                   isinstance(epochs[0], np.float64)):
-                return self.breakdown_epoch(epochs, to_np)
+                return breakdown_epoch(epochs, to_np)
             elif (isinstance(epochs[0], complex) or
                   isinstance(epochs[0], np.complex128)):
                 return self.breakdown_epoch16(epochs, to_np)
@@ -234,8 +232,10 @@ class CDFepoch:
         If to_np is True, then the values will be returned in a numpy array.
         """
         time_list = self.breakdown(cdf_time, to_np=False)
-       # breakpoint()
-        unixtime = [datetime.datetime(*t[:6], t[6]*1000+t[7]).replace(tzinfo=datetime.timezone.utc).timestamp() for t in time_list]
+
+        unixtime = [datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5],
+                                      microsecond=t[6]*1000+t[7]).replace(
+            tzinfo=datetime.timezone.utc).timestamp() for t in time_list]
 
         return np.array(unixtime) if to_np else unixtime
 
@@ -306,21 +306,18 @@ class CDFepoch:
         The start/end times should be in either be in epoch units, or in the list
         format described in "compute_epoch/epoch16/tt2000" section.
         """
-        if (isinstance(epochs, float) or isinstance(epochs, np.float64)):
+        if isinstance(epochs, (float, np.float64)):
             return self.epochrange_epoch(epochs, starttime, endtime)
-        elif (isinstance(epochs, int) or isinstance(epochs, np.int64)):
+        elif isinstance(epochs, (int, np.int64)):
             return self.epochrange_tt2000(epochs, starttime, endtime)
         elif isinstance(epochs, (complex, np.complex128)):
             return self.epochrange_epoch16(epochs, starttime, endtime)
         elif isinstance(epochs, (list, tuple, np.ndarray)):
-            if (isinstance(epochs[0], float) or
-                    isinstance(epochs[0], np.float64)):
+            if isinstance(epochs[0], (float, np.float64)):
                 return self.epochrange_epoch(epochs, starttime, endtime)
-            elif (isinstance(epochs[0], int) or
-                  isinstance(epochs[0], np.int64)):
+            elif isinstance(epochs[0], (int, np.int64)):
                 return self.epochrange_tt2000(epochs, starttime, endtime)
-            elif (isinstance(epochs[0], complex) or
-                  isinstance(epochs[0], np.complex128)):
+            elif isinstance(epochs[0], (complex, np.complex128)):
                 return self.epochrange_epoch16(epochs, starttime, endtime)
             else:
                 raise TypeError('Bad input')
@@ -382,7 +379,7 @@ class CDFepoch:
                 # dd-mmm-yyyy hh:mm:ss.mmm.uuu.nnn
                 encoded = str(ld).zfill(2)
                 encoded += '-'
-                encoded += self.month_Token[lm - 1]
+                encoded += MONTH_TOKEN[lm - 1]
                 encoded += '-'
                 encoded += str(ly).zfill(4)
                 encoded += ' '
@@ -636,46 +633,45 @@ class CDFepoch:
 
     def epochrange_tt2000(self, epochs, starttime=None, endtime=None):
 
-        if (isinstance(epochs, int) or isinstance(epochs, np.int64)):
+        if isinstance(epochs, (int, np.int64)):
             # new2_epochs = [epochs]
             pass
-        elif (isinstance(epochs, list) or isinstance(epochs, tuple) or
-              isinstance(epochs, np.ndarray)):
-            if (isinstance(epochs[0], int) or
-                    isinstance(epochs[0], np.int64)):
+        elif isinstance(epochs, (list, tuple, np.ndarray)):
+            if isinstance(epochs[0], (int, np.int64)):
                 # new2_epochs = epochs
                 pass
             else:
-                raise ValueError('Bad data')
+                raise TypeError('Bad data')
         else:
-            raise ValueError('Bad data')
+            raise TypeError('Bad data')
         if starttime is None:
             stime = int(-9223372036854775807)
         else:
-            if (isinstance(starttime, int) or isinstance(starttime, np.int64)):
+            if isinstance(starttime, (int, np.int64)):
                 stime = starttime
             elif (isinstance(starttime, list)):
                 stime = self.compute_tt2000(starttime)
             else:
-                print('Bad start time')
-                return None
-        if (endtime is not None):
-            if (isinstance(endtime, int) or isinstance(endtime, np.int64)):
+                raise TypeError('Bad start time')
+
+        if endtime is not None:
+            if isinstance(endtime, (int, np.int64)):
                 etime = endtime
-            elif (isinstance(endtime, list) or isinstance(endtime, tuple)):
+            elif isinstance(endtime, (list, tuple)):
                 etime = self.compute_tt2000(endtime)
             else:
-                print('Bad end time')
-                return None
+                raise TypeError('Bad end time')
         else:
             etime = int(9223372036854775807)
-        if (stime > etime):
-            print('Invalid start/end time')
-            return None
-        if (isinstance(epochs, list) or isinstance(epochs, tuple)):
+
+        if stime > etime:
+            raise ValueError('Invalid start/end time')
+
+        if isinstance(epochs, (list, tuple)):
             new_epochs = np.array(epochs)
         else:
             new_epochs = epochs
+
         return np.where(np.logical_and(new_epochs >= stime, new_epochs <= etime))[0]
 
     def encode_epoch16(self, epochs, iso_8601: bool=True):
@@ -725,7 +721,7 @@ class CDFepoch:
             # dd-mmm-year hh:mm:ss.mmm.uuu.nnn.ppp
             encoded = str(components[2]).zfill(2)
             encoded += '-'
-            encoded += self.month_Token[components[1] - 1]
+            encoded += MONTH_TOKEN[components[1] - 1]
             encoded += '-'
             encoded += str(components[0]).zfill(4)
             encoded += ' '
@@ -839,40 +835,38 @@ class CDFepoch:
             stime.append(-1.0E31)
             stime.append(-1.0E31)
         else:
-            if (isinstance(starttime, complex) or
-                    isinstance(starttime, np.complex128)):
+            if isinstance(starttime, (complex, np.complex128)):
                 stime = []
                 stime.append(starttime.real)
                 stime.append(starttime.imag)
-            elif (isinstance(starttime, list) or isinstance(starttime, tuple)):
+            elif isinstance(starttime, (list, tuple)):
                 sstime = compute_epoch16(starttime)
                 stime = []
                 stime.append(sstime.real)
                 stime.append(sstime.imag)
             else:
-                print('Bad start time')
-                return None
+                raise TypeError('Bad start time')
+
         if endtime is not None:
-            if (isinstance(endtime, complex) or
-                    isinstance(endtime, np.complex128)):
+            if isinstance(endtime, (complex, np.complex128)):
                 etime = []
                 etime.append(endtime.real)
                 etime.append(endtime.imag)
-            elif (isinstance(endtime, list) or isinstance(endtime, tuple)):
+            elif isinstance(endtime, (list, tuple)):
                 eetime = compute_epoch16(endtime)
                 etime = []
                 etime.append(eetime.real)
                 etime.append(eetime.imag)
             else:
-                print('Bad start time')
-                return None
+                raise TypeError('Bad start time')
+
         else:
             etime = []
             etime.append(1.0E31)
             etime.append(1.0E31)
         if (stime[0] > etime[0] or (stime[0] == etime[0] and stime[1] > etime[1])):
-            print('Invalid start/end time')
-            return None
+            raise ValueError('Invalid start/end time')
+
         count = len(new_epochs)
         epoch16 = []
         for x in range(count):
@@ -887,6 +881,7 @@ class CDFepoch:
             (epoch16[count - 2] == stime[0] and
              epoch16[count - 1] < stime[1])):
             return None
+
         for x in range(0, count, 2):
             if (epoch16[x] < stime[0]):
                 continue
@@ -917,126 +912,6 @@ class CDFepoch:
         if not hasadded:
             indx.append(int(count / 2) - 1)
         return np.arange(indx[0], indx[1] + 1, step=1)
-
-    def encode_epoch(self, epochs, iso_8601=True):
-
-        if (isinstance(epochs, float) or isinstance(epochs, np.float64)):
-            new_epochs = [epochs]
-        elif (isinstance(epochs, list) or isinstance(epochs, np.ndarray)):
-            new_epochs = epochs
-        else:
-            raise ValueError('Bad data')
-        count = len(new_epochs)
-        encodeds = []
-        for x in range(count):
-            epoch = new_epochs[x]
-            if (epoch == -1.0E31):
-                if (iso_8601):
-                    encoded = '9999-12-31T23:59:59.999'
-                else:
-                    encoded = '31-Dec-9999 23:59:59.999'
-            else:
-                encoded = self._encodex_epoch(epoch, iso_8601)
-            if (count == 1):
-                return encoded
-            encodeds.append(encoded)
-        return encodeds
-
-    def _encodex_epoch(self, epoch, iso_8601=None):
-
-        components = self.breakdown_epoch(epoch)
-        if (iso_8601):
-            # year-mm-ddThh:mm:ss.mmm
-            encoded = str(components[0]).zfill(4)
-            encoded += '-'
-            encoded += str(components[1]).zfill(2)
-            encoded += '-'
-            encoded += str(components[2]).zfill(2)
-            encoded += 'T'
-            encoded += str(components[3]).zfill(2)
-            encoded += ':'
-            encoded += str(components[4]).zfill(2)
-            encoded += ':'
-            encoded += str(components[5]).zfill(2)
-            encoded += '.'
-            encoded += str(components[6]).zfill(3)
-        else:
-            # dd-mmm-year hh:mm:ss.mmm
-            encoded = str(components[2]).zfill(2)
-            encoded += '-'
-            encoded += self.month_Token[components[1] - 1]
-            encoded += '-'
-            encoded += str(components[0]).zfill(4)
-            encoded += ' '
-            encoded += str(components[3]).zfill(2)
-            encoded += ':'
-            encoded += str(components[4]).zfill(2)
-            encoded += ':'
-            encoded += str(components[5]).zfill(2)
-            encoded += '.'
-            encoded += str(components[6]).zfill(3)
-        return encoded
-
-    def breakdown_epoch(self, epochs, to_np: bool=False):
-
-        if isinstance(epochs, (float, np.float64)):
-            new_epochs = [epochs]
-        elif isinstance(epochs, (list, tuple, np.ndarray)):
-            new_epochs = epochs
-        else:
-            raise ValueError('Bad data')
-        count = len(new_epochs)
-        components = []
-        for x in range(count):
-            component = []
-            epoch = new_epochs[x]
-            if (epoch == -1.0E31):
-                component.append(9999)
-                component.append(12)
-                component.append(31)
-                component.append(23)
-                component.append(59)
-                component.append(59)
-                component.append(999)
-            else:
-                if (epoch < 0.0):
-                    epoch = -epochs
-                if (isinstance(epochs, int)):
-                    epoch = float(epoch)
-                msec_AD = epoch
-                second_AD = msec_AD / 1000.0
-                minute_AD = second_AD / 60.0
-                hour_AD = minute_AD / 60.0
-                day_AD = hour_AD / 24.0
-                jd = int(1721060 + day_AD)
-                L = jd + 68569
-                n = int(4 * L / 146097)
-                L = L - int((146097 * n + 3) / 4)
-                i = int(4000 * (L + 1) / 1461001)
-                L = L - int(1461 * i / 4) + 31
-                j = int(80 * L / 2447)
-                k = L - int(2447 * j / 80)
-                L = int(j / 11)
-                j = j + 2 - 12 * L
-                i = 100 * (n - 49) + i + L
-                component.append(i)
-                component.append(j)
-                component.append(k)
-                component.append(int(hour_AD % 24.0))
-                component.append(int(minute_AD % 60.0))
-                component.append(int(second_AD % 60.0))
-                component.append(int(msec_AD % 1000.0))
-            if (count == 1):
-                if to_np:
-                    return np.array(component)
-                else:
-                    return component
-            else:
-                components.append(component)
-        if to_np:
-            return np.array(components)
-        else:
-            return components
 
     def epochrange_epoch(self, epochs, starttime=None, endtime=None):
 
@@ -1393,6 +1268,134 @@ class CDFepoch:
             return nanoSecSinceJ2000s
         else:
             return np.array(nanoSecSinceJ2000s)
+
+
+def encode_epoch(epochs: Sequence[float], iso_8601: bool=True) -> Union[str, List[str]]:
+
+    if isinstance(epochs, (float, np.float64)):
+        new_epochs = [epochs]
+    elif isinstance(epochs, (list, np.ndarray)):
+        new_epochs = epochs
+    else:
+        raise TypeError('Bad data')
+
+    count = len(new_epochs)
+    encodeds = []
+    for x in range(count):
+        epoch = new_epochs[x]
+        if epoch == -1.0E31:
+            encoded = '9999-12-31T23:59:59.999' if iso_8601 else '31-Dec-9999 23:59:59.999'
+        else:
+            encoded = _encodex_epoch(epoch, iso_8601)
+
+        if count == 1:
+            return encoded
+
+        encodeds.append(encoded)
+
+    return encodeds
+
+
+def _encodex_epoch(epoch: Sequence[float], iso_8601: bool=False) -> str:
+
+    components = breakdown_epoch(epoch)
+    if iso_8601:
+        # year-mm-ddThh:mm:ss.mmm
+        encoded = str(components[0]).zfill(4)
+        encoded += '-'
+        encoded += str(components[1]).zfill(2)
+        encoded += '-'
+        encoded += str(components[2]).zfill(2)
+        encoded += 'T'
+        encoded += str(components[3]).zfill(2)
+        encoded += ':'
+        encoded += str(components[4]).zfill(2)
+        encoded += ':'
+        encoded += str(components[5]).zfill(2)
+        encoded += '.'
+        encoded += str(components[6]).zfill(3)
+    else:
+        # dd-mmm-year hh:mm:ss.mmm
+        encoded = str(components[2]).zfill(2)
+        encoded += '-'
+        encoded += MONTH_TOKEN[components[1] - 1]
+        encoded += '-'
+        encoded += str(components[0]).zfill(4)
+        encoded += ' '
+        encoded += str(components[3]).zfill(2)
+        encoded += ':'
+        encoded += str(components[4]).zfill(2)
+        encoded += ':'
+        encoded += str(components[5]).zfill(2)
+        encoded += '.'
+        encoded += str(components[6]).zfill(3)
+
+    return encoded
+
+
+def breakdown_epoch(epochs: Sequence[float], to_np: bool=False) -> np.ndarray:
+
+    if isinstance(epochs, (float, np.float64)):
+        new_epochs = [epochs]
+    elif isinstance(epochs, (list, tuple, np.ndarray)):
+        new_epochs = epochs
+    else:
+        raise TypeError('Bad data')
+
+    count = len(new_epochs)
+    components = []
+    for x in range(count):
+        component = []
+        epoch = new_epochs[x]
+        if epoch == -1.0E31:
+            component.append(9999)
+            component.append(12)
+            component.append(31)
+            component.append(23)
+            component.append(59)
+            component.append(59)
+            component.append(999)
+        else:
+            if epoch < 0.:
+                epoch = -epoch
+
+            if isinstance(epochs, int):
+                epoch = float(epoch)
+
+            msec_AD = epoch
+            second_AD = msec_AD / 1000.0
+            minute_AD = second_AD / 60.0
+            hour_AD = minute_AD / 60.0
+            day_AD = hour_AD / 24.0
+            jd = int(1721060 + day_AD)
+            L = jd + 68569
+            n = int(4 * L / 146097)
+            L = L - int((146097 * n + 3) / 4)
+            i = int(4000 * (L + 1) / 1461001)
+            L = L - int(1461 * i / 4) + 31
+            j = int(80 * L / 2447)
+            k = L - int(2447 * j / 80)
+            L = int(j / 11)
+            j = j + 2 - 12 * L
+            i = 100 * (n - 49) + i + L
+            component.append(i)
+            component.append(j)
+            component.append(k)
+            component.append(int(hour_AD % 24.0))
+            component.append(int(minute_AD % 60.0))
+            component.append(int(second_AD % 60.0))
+            component.append(int(msec_AD % 1000.0))
+        if (count == 1):
+            if to_np:
+                return np.array(component)
+            else:
+                return component
+        else:
+            components.append(component)
+    if to_np:
+        return np.array(components)
+    else:
+        return components
 
 
 def compute_epoch16(datetimes, to_np: bool=False) -> np.ndarray:
