@@ -3,166 +3,30 @@
 CDF Epochs
 ##########
 
-Importing cdflib also imports the module CDFepoch, which handles CDF-based epochs.
-The following functions can be used to convert back and forth between different ways to display the date.
-You can call these functions like so::
-    import cdflib
+Importing cdflib also imports the module CDFepoch, which handles
+CDF-based epochs.
 
+The following functions can be used to convert back and forth between
+ifferent ways to display the date.
+
+You can call these functions like so::
+
+    import cdflib
     cdf_file = cdflib.cdfepoch.compute_epoch([2017,1,1,1,1,1,111])
 
 There are three (3) epoch data types in CDF: CDF_EPOCH, CDF_EPOCH16 and
 CDF_TIME_TT2000.
 
 - CDF_EPOCH is milliseconds since Year 0.
-
 - CDF_EPOCH16 is picoseconds since Year 0.
+- CDF_TIME_TT2000 (TT2000 as short) is nanoseconds since J2000 with
+  leap seconds.
 
-- CDF_TIME_TT2000 (TT2000 as short) is nanoseconds since J2000 with leap seconds.
-
-CDF_EPOCH is a single double(as float in Python), CDF_EPOCH16 is 2-doubles (as complex in Python),
-and TT2000 is 8-byte integer (as int in Python). In Numpy, they are np.float64, np.complex128 and np.int64, respectively.
+CDF_EPOCH is a single double(as float in Python),
+CDF_EPOCH16 is 2-doubles (as complex in Python),
+and TT2000 is 8-byte integer (as int in Python).
+In Numpy, they are np.float64, np.complex128 and np.int64, respectively.
 All these epoch values can come from from CDF.varget function.
-
-Five main functions are provided
-
-encode (epochs, iso_8601=False)
-=============
-
-Encodes the epoch(s) into UTC string(s).
-
-For CDF_EPOCH:
-        The input should be either a float or list of floats
-        (in numpy, a np.float64 or a np.ndarray of np.float64)
-        Each epoch is encoded, by default to a ISO 8601 form:
-        2004-05-13T15:08:11.022
-        Or, if iso_8601 is set to False,
-        13-May-2004 15:08:11.022
-For CDF_EPOCH16:
-        The input should be either a complex or list of
-        complex(in numpy, a np.complex128 or a np.ndarray of np.complex128)
-        Each epoch is encoded, by default to a ISO 8601 form:
-        2004-05-13T15:08:11.022033044055
-        Or, if iso_8601 is set to False,
-        13-May-2004 15:08:11.022.033.044.055
-For TT2000:
-        The input should be either a int or list of ints
-        (in numpy, a np.int64 or a np.ndarray of np.int64)
-        Each epoch is encoded, by default to a ISO 8601 form:
-        2008-02-02T06:08:10.10.012014016
-        Or, if iso_8601 is set to False,
-        02-Feb-2008 06:08:10.012.014.016
-
-unixtime (epochs, to_np=False)
-=============
-
-Encodes the epoch(s) into seconds after 1970-01-01.  Precision is only
-kept to the nearest microsecond.
-
-If to_np is True, then the values will be returned in a numpy array.
-
-
-breakdown (epochs, to_np=False)
-=============
-
-Breaks down the epoch(s) into UTC components.
-
-For CDF_EPOCH:
-        they are 7 date/time components: year, month, day,
-        hour, minute, second, and millisecond
-For CDF_EPOCH16:
-        they are 10 date/time components: year, month, day,
-        hour, minute, second, and millisecond, microsecond,
-        nanosecond, and picosecond.
-For TT2000:
-        they are 9 date/time components: year, month, day,
-        hour, minute, second, millisecond, microsecond,
-        nanosecond.
-
-Specify to_np to True, if the result should be in numpy array.
-
-compute[_epoch/_epoch16/_tt200] (datetimes, to_np=False)
-=============
-
-Computes the provided date/time components into CDF epoch value(s).
-
-For CDF_EPOCH:
-        For computing into CDF_EPOCH value, each date/time elements should
-        have exactly seven (7) components, as year, month, day, hour, minute,
-        second and millisecond, in a list. For example:
-        [[2017,1,1,1,1,1,111],[2017,2,2,2,2,2,222]]
-        Or, call function compute_epoch directly, instead, with at least three
-        (3) first (up to seven) components. The last component, if
-        not the 7th, can be a float that can have a fraction of the unit.
-
-For CDF_EPOCH16:
-        They should have exactly ten (10) components, as year,
-        month, day, hour, minute, second, millisecond, microsecond, nanosecond
-        and picosecond, in a list. For example:
-        [[2017,1,1,1,1,1,123,456,789,999],[2017,2,2,2,2,2,987,654,321,999]]
-        Or, call function compute_epoch directly, instead, with at least three
-        (3) first (up to ten) components. The last component, if
-        not the 10th, can be a float that can have a fraction of the unit.
-
-For TT2000:
-        Each TT2000 typed date/time should have exactly nine (9) components, as
-        year, month, day, hour, minute, second, millisecond, microsecond,
-        and nanosecond, in a list.  For example:
-        [[2017,1,1,1,1,1,123,456,789],[2017,2,2,2,2,2,987,654,321]]
-        Or, call function compute_tt2000 directly, instead, with at least three
-        (3) first (up to nine) components. The last component, if
-        not the 9th, can be a float that can have a fraction of the unit.
-
-Specify to_np to True, if the result should be in numpy class.
-
-parse (datetimes, to_np=False)
-=============
-
-Parses the provided date/time string(s) into CDF epoch value(s).
-
-For CDF_EPOCH:
-        The string has to be in the form of 'dd-mmm-yyyy hh:mm:ss.xxx' or
-        'yyyy-mm-ddThh:mm:ss.xxx' (in iso_8601). The string is the output
-        from encode function.
-
-For CDF_EPOCH16:
-        The string has to be in the form of
-        'dd-mmm-yyyy hh:mm:ss.mmm.uuu.nnn.ppp' or
-        'yyyy-mm-ddThh:mm:ss.mmmuuunnnppp' (in iso_8601). The string is
-        the output from encode function.
-
-For TT2000:
-        The string has to be in the form of
-        'dd-mmm-yyyy hh:mm:ss.mmm.uuu.nnn' or
-        'yyyy-mm-ddThh:mm:ss.mmmuuunnn' (in iso_8601). The string is
-        the output from encode function.
-
-Specify to_np to True, if the result should be in numpy class.
-
-findepochrange (epochs, starttime=None, endtime=None)
-=============
-
-Finds the record range within the start and end time from values
-of a CDF epoch data type. It returns a list of record numbers.
-If the start time is not provided, then it is
-assumed to be the minimum possible value. If the end time is not
-provided, then the maximum possible value is assumed. The epoch is
-assumed to be in the chronological order. The start and end times
-should have the proper number of date/time components, corresponding
-to the epoch's data type.
-
-The start/end times should be in either be in epoch units, or in the list
-format described in "compute_epoch/epoch16/tt2000" section.
-
-getVersion ()
-==========
-
-Shows the code version.
-
-getLeapSecondLastUpdated ()
-========================
-
-Shows the latest date a leap second was added to the leap second table.
-
 
 @author: Michael Liu
 """
@@ -292,7 +156,31 @@ class CDFepoch:
         self.currentLeapSeconds = -1
 
     def encode(self, epochs, iso_8601=True):
+        """
+        Encodes the epoch(s) into UTC string(s).
 
+        For CDF_EPOCH:
+                The input should be either a float or list of floats
+                (in numpy, a np.float64 or a np.ndarray of np.float64)
+                Each epoch is encoded, by default to a ISO 8601 form:
+                2004-05-13T15:08:11.022
+                Or, if iso_8601 is set to False,
+                13-May-2004 15:08:11.022
+        For CDF_EPOCH16:
+                The input should be either a complex or list of
+                complex(in numpy, a np.complex128 or a np.ndarray of np.complex128)
+                Each epoch is encoded, by default to a ISO 8601 form:
+                2004-05-13T15:08:11.022033044055
+                Or, if iso_8601 is set to False,
+                13-May-2004 15:08:11.022.033.044.055
+        For TT2000:
+                The input should be either a int or list of ints
+                (in numpy, a np.int64 or a np.ndarray of np.int64)
+                Each epoch is encoded, by default to a ISO 8601 form:
+                2008-02-02T06:08:10.10.012014016
+                Or, if iso_8601 is set to False,
+                02-Feb-2008 06:08:10.012.014.016
+        """
         if isinstance(epochs, (int, np.int64)):
             return self.encode_tt2000(epochs, iso_8601)
         elif isinstance(epochs, (float, np.float64)):
@@ -336,7 +224,13 @@ class CDFepoch:
         else:
             raise TypeError('Bad input')
 
-    def unixtime(self, cdf_time, to_np=False):  # @NoSelf
+    def unixtime(self, cdf_time, to_np=False):
+        """
+        Encodes the epoch(s) into seconds after 1970-01-01.  Precision is only
+        kept to the nearest microsecond.
+
+        If to_np is True, then the values will be returned in a numpy array.
+        """
         time_list = self.breakdown(cdf_time, to_np=False)
         unixtime = []
         for t in time_list:
@@ -354,7 +248,39 @@ class CDFepoch:
 
         return np.array(unixtime) if to_np else unixtime
 
-    def compute(self, datetimes, to_np=None):  # @NoSelf
+    def compute(self, datetimes, to_np=None):
+        """
+        Computes the provided date/time components into CDF epoch value(s).
+
+        For CDF_EPOCH:
+                For computing into CDF_EPOCH value, each date/time elements should
+                have exactly seven (7) components, as year, month, day, hour, minute,
+                second and millisecond, in a list. For example:
+                [[2017,1,1,1,1,1,111],[2017,2,2,2,2,2,222]]
+                Or, call function compute_epoch directly, instead, with at least three
+                (3) first (up to seven) components. The last component, if
+                not the 7th, can be a float that can have a fraction of the unit.
+
+        For CDF_EPOCH16:
+                They should have exactly ten (10) components, as year,
+                month, day, hour, minute, second, millisecond, microsecond, nanosecond
+                and picosecond, in a list. For example:
+                [[2017,1,1,1,1,1,123,456,789,999],[2017,2,2,2,2,2,987,654,321,999]]
+                Or, call function compute_epoch directly, instead, with at least three
+                (3) first (up to ten) components. The last component, if
+                not the 10th, can be a float that can have a fraction of the unit.
+
+        For TT2000:
+                Each TT2000 typed date/time should have exactly nine (9) components, as
+                year, month, day, hour, minute, second, millisecond, microsecond,
+                and nanosecond, in a list.  For example:
+                [[2017,1,1,1,1,1,123,456,789],[2017,2,2,2,2,2,987,654,321]]
+                Or, call function compute_tt2000 directly, instead, with at least three
+                (3) first (up to nine) components. The last component, if
+                not the 9th, can be a float that can have a fraction of the unit.
+
+        Specify to_np to True, if the result should be in numpy class.
+        """
 
         if not isinstance(datetimes, (list, tuple, np.ndarray)):
             raise TypeError('datetime must be in list form')
@@ -375,8 +301,20 @@ class CDFepoch:
         else:
             raise TypeError('Bad input')
 
-    def findepochrange(self, epochs, starttime=None, endtime=None):  # @NoSelf
+    def findepochrange(self, epochs, starttime=None, endtime=None):
+        """
+        Finds the record range within the start and end time from values
+        of a CDF epoch data type. It returns a list of record numbers.
+        If the start time is not provided, then it is
+        assumed to be the minimum possible value. If the end time is not
+        provided, then the maximum possible value is assumed. The epoch is
+        assumed to be in the chronological order. The start and end times
+        should have the proper number of date/time components, corresponding
+        to the epoch's data type.
 
+        The start/end times should be in either be in epoch units, or in the list
+        format described in "compute_epoch/epoch16/tt2000" section.
+        """
         if (isinstance(epochs, float) or isinstance(epochs, np.float64)):
             return self.epochrange_epoch(epochs, starttime, endtime)
         elif (isinstance(epochs, int) or isinstance(epochs, np.int64)):
@@ -398,7 +336,7 @@ class CDFepoch:
         else:
             raise TypeError('Bad input')
 
-    def encode_tt2000(self, tt2000, iso_8601=None):  # @NoSelf
+    def encode_tt2000(self, tt2000, iso_8601=None):
 
         if isinstance(tt2000, (int, np.int64)):
             new_tt2000 = [tt2000]
@@ -473,12 +411,28 @@ class CDFepoch:
                 encodeds.append(encoded)
         return encodeds
 
-    def breakdown_tt2000(self, tt2000, to_np=None):  # @NoSelf
+    def breakdown_tt2000(self, tt2000, to_np=None):
+        """
+        Breaks down the epoch(s) into UTC components.
+
+        For CDF_EPOCH:
+                they are 7 date/time components: year, month, day,
+                hour, minute, second, and millisecond
+        For CDF_EPOCH16:
+                they are 10 date/time components: year, month, day,
+                hour, minute, second, and millisecond, microsecond,
+                nanosecond, and picosecond.
+        For TT2000:
+                they are 9 date/time components: year, month, day,
+                hour, minute, second, millisecond, microsecond,
+                nanosecond.
+
+        Specify to_np to True, if the result should be in numpy array.
+        """
 
         if isinstance(tt2000, (int, np.int64)):
             new_tt2000 = [tt2000]
-        elif isinstance(tt2000, (list, tuple) or
-                        isinstance(tt2000, np.ndarray)):
+        elif isinstance(tt2000, (list, tuple, np.ndarray)):
             new_tt2000 = tt2000
         else:
             print('Bad input data')
@@ -598,18 +552,18 @@ class CDFepoch:
             datetime.append(ma1)
             datetime.append(na1)
             if (count == 1):
-                if (to_np is None):
+                if to_np is None:
                     return datetime
                 else:
                     return np.array(datetime)
             else:
                 toutcs.append(datetime)
-        if (to_np is None):
+        if to_np is None:
             return toutcs
         else:
             return np.array(toutcs)
 
-    def compute_tt2000(self, datetimes, to_np=None):  # @NoSelf
+    def compute_tt2000(self, datetimes, to_np=None):
 
         if (not isinstance(datetimes, list) and not isinstance(datetimes, tuple)):
             print('datetime must be in list form')
@@ -756,7 +710,7 @@ class CDFepoch:
         else:
             return np.array(nanoSecSinceJ2000s)
 
-    def _LeapSecondsfromYMD(self, year, month, day):  # @NoSelf
+    def _LeapSecondsfromYMD(self, year, month, day):
 
         j = -1
         m = 12 * year + month
@@ -774,19 +728,19 @@ class CDFepoch:
             da = da + ((jda - self.MJDbase) - self.LTS[j][4]) * self.LTS[j][5]
         return da
 
-    def _LeapSecondsfromJ2000(self, nanosecs):  # @NoSelf
+    def _LeapSecondsfromJ2000(self, nanosecs):
 
         da = []
         da.append(0.0)
         da.append(0.0)
         j = -1
-        if (self.NST is None):
+        if self.NST is None:
             self._LoadLeapNanoSecondsTable()
         for i, _ in reversed(list(enumerate(self.NST))):
             if (nanosecs >= self.NST[i]):
                 j = i
-                if (i < (self.NDAT - 1)):
-                    if ((nanosecs + 1000000000) >= self.NST[i + 1]):
+                if i < (self.NDAT - 1):
+                    if (nanosecs + 1000000000) >= self.NST[i + 1]:
                         da[1] = 1.0
                 break
         if (j <= self.NERA1):
@@ -794,7 +748,7 @@ class CDFepoch:
         da[0] = self.LTS[j][3]
         return da
 
-    def _LoadLeapNanoSecondsTable(self):  # @NoSelf
+    def _LoadLeapNanoSecondsTable(self):
 
         self.NST = []
         for ix in range(0, self.NERA1):
@@ -805,7 +759,7 @@ class CDFepoch:
                                                  int(self.LTS[ix][2]),
                                                  0, 0, 0, 0, 0, 0]))
 
-    def _EPOCHbreakdownTT2000(self, epoch):  # @NoSelf
+    def _EPOCHbreakdownTT2000(self, epoch):
 
         second_AD = epoch
         minute_AD = second_AD / 60.0
@@ -833,7 +787,7 @@ class CDFepoch:
         date.append(int(second_AD % 60.0))
         return date
 
-    def epochrange_tt2000(self, epochs, starttime=None, endtime=None):  # @NoSelf
+    def epochrange_tt2000(self, epochs, starttime=None, endtime=None):
 
         if (isinstance(epochs, int) or isinstance(epochs, np.int64)):
             # new2_epochs = [epochs]
@@ -850,7 +804,7 @@ class CDFepoch:
         else:
             print('Bad data')
             return None
-        if (starttime is None):
+        if starttime is None:
             stime = int(-9223372036854775807)
         else:
             if (isinstance(starttime, int) or isinstance(starttime, np.int64)):
@@ -879,7 +833,7 @@ class CDFepoch:
             new_epochs = epochs
         return np.where(np.logical_and(new_epochs >= stime, new_epochs <= etime))[0]
 
-    def encode_epoch16(self, epochs, iso_8601: bool=True):  # @NoSelf
+    def encode_epoch16(self, epochs, iso_8601: bool=True):
 
         if isinstance(epochs, (complex, np.complex128)):
             new_epochs = [epochs]
@@ -905,7 +859,7 @@ class CDFepoch:
                 encodeds.append(encoded)
         return encodeds
 
-    def _encodex_epoch16(self, epoch16, iso_8601: bool=True):  # @NoSelf
+    def _encodex_epoch16(self, epoch16, iso_8601: bool=True):
 
         components = self.breakdown_epoch16(epoch16)
         if iso_8601:
@@ -956,7 +910,7 @@ class CDFepoch:
         a3 = int(275 * m / 9)
         return (367 * y - a1 - a2 + a3 + d + 1721029)
 
-    def compute_epoch16(self, datetimes, to_np=None):  # @NoSelf
+    def compute_epoch16(self, datetimes, to_np=None):
 
         if (not isinstance(datetimes, list) and
                 not isinstance(datetimes, tuple)):
@@ -1119,19 +1073,19 @@ class CDFepoch:
                 epoch.append(epoch16_0)
                 epoch.append(epoch16_1)
             cepoch = complex(epoch[0], epoch[1])
-            if (count == 1):
-                if (to_np is None):
+            if count == 1:
+                if to_np is None:
                     return cepoch
                 else:
                     return np.array(cepoch)
             else:
                 epochs.append(cepoch)
-        if (to_np is None):
+        if to_np is None:
             return epochs
         else:
             return np.array(epochs)
 
-    def breakdown_epoch16(self, epochs, to_np=None):  # @NoSelf
+    def breakdown_epoch16(self, epochs, to_np=None):
 
         if isinstance(epochs, (complex, np.complex128)):
             new_epochs = [epochs]
@@ -1197,7 +1151,7 @@ class CDFepoch:
                 component.append(component_8)
                 component.append(component_9)
             if count == 1:
-                if (to_np is None):
+                if to_np is None:
                     return component
                 else:
                     return np.array(component)
@@ -1208,7 +1162,7 @@ class CDFepoch:
         else:
             return np.array(components)
 
-    def _computeEpoch16(self, y, m, d, h, mn, s, ms, msu, msn, msp):  # @NoSelf
+    def _computeEpoch16(self, y, m, d, h, mn, s, ms, msu, msn, msp):
 
         if (m == 0):
             daysSince0AD = self._JulianDay(y, 1, 1) + (d - 1) - 1721060
@@ -1248,7 +1202,7 @@ class CDFepoch:
         else:
             return epoch
 
-    def epochrange_epoch16(self, epochs, starttime=None, endtime=None):  # @NoSelf
+    def epochrange_epoch16(self, epochs, starttime=None, endtime=None):
 
         if (isinstance(epochs, complex) or isinstance(epochs, np.complex128)):
             new_epochs = [epochs]
@@ -1263,7 +1217,7 @@ class CDFepoch:
         else:
             print('Bad data')
             return None
-        if (starttime is None):
+        if starttime is None:
             stime = []
             stime.append(-1.0E31)
             stime.append(-1.0E31)
@@ -1281,7 +1235,7 @@ class CDFepoch:
             else:
                 print('Bad start time')
                 return None
-        if (endtime is not None):
+        if endtime is not None:
             if (isinstance(endtime, complex) or
                     isinstance(endtime, np.complex128)):
                 etime = []
@@ -1372,7 +1326,7 @@ class CDFepoch:
             encodeds.append(encoded)
         return encodeds
 
-    def _encodex_epoch(self, epoch, iso_8601=None):  # @NoSelf
+    def _encodex_epoch(self, epoch, iso_8601=None):
 
         components = self.breakdown_epoch(epoch)
         if (iso_8601):
@@ -1407,7 +1361,7 @@ class CDFepoch:
             encoded += str(components[6]).zfill(3)
         return encoded
 
-    def compute_epoch(self, dates, to_np=None):  # @NoSelf
+    def compute_epoch(self, dates, to_np=None):
 
         if (not isinstance(dates, list) and not isinstance(dates, tuple)):
             print('Bad input')
@@ -1503,8 +1457,8 @@ class CDFepoch:
             else:
                 msecInDay = (3600000 * hour) + (60000 * minute) + (1000 * second) + msec
             if (count == 1):
-                if (to_np is None):
-                    return (86400000.0 * daysSince0AD + msecInDay)
+                if to_np is None:
+                    return 86400000.0 * daysSince0AD + msecInDay
                 else:
                     return np.array((86400000.0 * daysSince0AD + msecInDay))
             epochs.append(86400000.0 * daysSince0AD + msecInDay)
@@ -1513,7 +1467,7 @@ class CDFepoch:
         else:
             return np.array(epochs)
 
-    def _computeEpoch(self, y, m, d, h, mn, s, ms):  # @NoSelf
+    def _computeEpoch(self, y, m, d, h, mn, s, ms):
 
         if (m == 0):
             daysSince0AD = self._JulianDay(y, 1, 1) + (d - 1) - 1721060
@@ -1594,7 +1548,7 @@ class CDFepoch:
         else:
             return components
 
-    def epochrange_epoch(self, epochs, starttime=None, endtime=None):  # @NoSelf
+    def epochrange_epoch(self, epochs, starttime=None, endtime=None):
 
         if (isinstance(epochs, float) or isinstance(epochs, np.float64)):
             # new2_epochs = [epochs]
@@ -1611,7 +1565,7 @@ class CDFepoch:
         else:
             print('Bad data')
             return None
-        if (starttime is None):
+        if starttime is None:
             stime = 0.0
         else:
             if (isinstance(starttime, float) or isinstance(starttime, int) or
@@ -1622,12 +1576,11 @@ class CDFepoch:
             else:
                 print('Bad start time')
                 return None
-        if (endtime is not None):
-            if (isinstance(endtime, float) or isinstance(endtime, int) or
-                    isinstance(endtime, np.float64)):
+        if endtime is not None:
+            if isinstance(endtime, (float, int, np.float64)):
                 etime = endtime
-            elif (isinstance(endtime, list) or isinstance(endtime, tuple)):
-                etime = self.compute_epoch(endtime)
+            elif isinstance(endtime, (list, tuple)):
+                etime = CDFepoch.compute_epoch(endtime)
             else:
                 print('Bad end time')
                 return None
@@ -1642,7 +1595,29 @@ class CDFepoch:
             new_epochs = epochs
         return np.where(np.logical_and(new_epochs >= stime, new_epochs <= etime))[0]
 
-    def parse(self, value, to_np=None):  # @NoSelf
+    def parse(self, value, to_np=None):
+        """
+        Parses the provided date/time string(s) into CDF epoch value(s).
+
+        For CDF_EPOCH:
+                The string has to be in the form of 'dd-mmm-yyyy hh:mm:ss.xxx' or
+                'yyyy-mm-ddThh:mm:ss.xxx' (in iso_8601). The string is the output
+                from encode function.
+
+        For CDF_EPOCH16:
+                The string has to be in the form of
+                'dd-mmm-yyyy hh:mm:ss.mmm.uuu.nnn.ppp' or
+                'yyyy-mm-ddThh:mm:ss.mmmuuunnnppp' (in iso_8601). The string is
+                the output from encode function.
+
+        For TT2000:
+                The string has to be in the form of
+                'dd-mmm-yyyy hh:mm:ss.mmm.uuu.nnn' or
+                'yyyy-mm-ddThh:mm:ss.mmmuuunnn' (in iso_8601). The string is
+                the output from encode function.
+
+        Specify to_np to True, if the result should be in numpy class.
+        """
         if ((isinstance(value, list) or isinstance(value, tuple)) and
                 not (isinstance(value[0], str))):
             print('Invalid value... should be a string or a list of string')
@@ -1655,17 +1630,17 @@ class CDFepoch:
                 epochs = []
                 for x in range(0, num):
                     epochs.append(self._parse_epoch(value[x]))
-                if (to_np is None):
+                if to_np is None:
                     return epochs
                 else:
                     return np.array(epochs)
             else:
-                if (to_np is None):
+                if to_np is None:
                     return self._parse_epoch(value)
                 else:
                     return np.array(self._parse_epoch(value))
 
-    def _parse_epoch(self, value):  # @NoSelf
+    def _parse_epoch(self, value):
         if (isinstance(value, list) or isinstance(value, tuple)):
             epochs = []
             for x in range(0, len(value)):
@@ -1805,10 +1780,16 @@ class CDFepoch:
         else:
             return -1
 
-    def getVersion(self):  # @NoSelf
-        print('epochs version:', str(self.version) + '.' +
-              str(self.release) + '.' + str(self.increment))
+    def getVersion():  # @NoSelf
+        """
+        Shows the code version.
+        """
+        print('epochs version:', str(CDFepoch.version) + '.' +
+              str(CDFepoch.release) + '.'+str(CDFepoch.increment))
 
-    def getLeapSecondLastUpdated(self):  # @NoSelf
-        print('Leap second last updated:', str(self.LTS[-1][0]) + '-' +
-              str(self.LTS[-1][1]) + '-' + str(self.LTS[-1][2]))
+    def getLeapSecondLastUpdated():  # @NoSelf
+        """
+        Shows the latest date a leap second was added to the leap second table.
+        """
+        print('Leap second last updated:', str(CDFepoch.LTS[-1][0]) + '-' +
+              str(CDFepoch.LTS[-1][1]) + '-' + str(CDFepoch.LTS[-1][2]))
