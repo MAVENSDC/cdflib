@@ -48,8 +48,9 @@ def test_checksum():
 # %% Open the file to read
     reader = cdfread.CDF(fncsum, validate=True)
     # Test CDF info
-    var = reader.varget("Variable1")
-    assert (var == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).all()
+    assert (reader.varget("Variable1") == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).all()
+# %% test convenience read
+    assert (reader["Variable1"] == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).all()
 
 
 def test_checksum_compressed():
@@ -567,4 +568,4 @@ def test_create_2d_r_and_z_variables():
 
 
 if __name__ == '__main__':
-    pytest.main(['-x', __file__])
+    pytest.main(['-xrsv', __file__])
