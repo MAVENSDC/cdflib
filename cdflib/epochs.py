@@ -156,7 +156,7 @@ class CDFepoch:
         self.currentJDay = -1
         self.currentLeapSeconds = -1
 
-    def encode(self, epochs, iso_8601=True):
+    def encode(self, epochs, iso_8601: bool=True):
         """
         Encodes the epoch(s) into UTC string(s).
 
@@ -188,14 +188,12 @@ class CDFepoch:
             return self.encode_epoch(epochs, iso_8601)
         elif isinstance(epochs, (complex, np.complex128)):
             return self.encode_epoch16(epochs, iso_8601)
-        elif (isinstance(epochs, list) or isinstance(epochs, np.ndarray)):
-            if (isinstance(epochs[0], int) or isinstance(epochs[0], np.int64)):
+        elif isinstance(epochs, (list, np.ndarray)):
+            if isinstance(epochs[0], (int,  np.int64)):
                 return self.encode_tt2000(epochs, iso_8601)
-            elif (isinstance(epochs[0], float) or
-                  isinstance(epochs[0], np.float64)):
+            elif isinstance(epochs[0], (float, np.float64)):
                 return self.encode_epoch(epochs, iso_8601)
-            elif (isinstance(epochs[0], complex) or
-                  isinstance(epochs[0], np.complex128)):
+            elif isinstance(epochs[0], (complex, np.complex128)):
                 return self.encode_epoch16(epochs, iso_8601)
             else:
                 raise TypeError('Bad input')
@@ -844,11 +842,8 @@ class CDFepoch:
         encodeds = []
         for x in range(count):
             # complex
-            if ((new_epochs[x].real == -1.0E31) and (new_epochs[x].imag == -1.0E31)):
-                if iso_8601:
-                    encoded = '9999-12-31T23:59:59.999999999999'
-                else:
-                    encoded = '31-Dec-9999 23:59:59.999.999.999.999'
+            if (new_epochs[x].real == -1.0E31) and (new_epochs[x].imag == -1.0E31):
+                encoded = '9999-12-31T23:59:59.999999999999' if iso_8601 else '31-Dec-9999 23:59:59.999.999.999.999'
             else:
                 encoded = self._encodex_epoch16(new_epochs[x], iso_8601)
             if (count == 1):
