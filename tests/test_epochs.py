@@ -247,4 +247,4 @@ def test_findepochrange_cdfepoch16():
 
 
 if __name__ == '__main__':
-    pytest.main(['-x', __file__])
+    pytest.main(['-xrsv', __file__])

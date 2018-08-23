@@ -1126,7 +1126,7 @@ class CDF(object):
 
         return name, next_adr_loc
 
-    def _read_adr_fast2(self, byte_loc):
+    def _read_adr_fast2(self, byte_loc: int) -> Tuple[str, int]:
         with self.file.open('rb') as f:
             # Position of next ADR
             f.seek(byte_loc+8, 0)
@@ -1139,7 +1139,7 @@ class CDF(object):
 
         return name, next_adr_loc
 
-    def _read_aedr_fast(self, byte_loc):
+    def _read_aedr_fast(self, byte_loc: int) -> Tuple[int, int]:
         with self.file.open('rb') as f:
             f.seek(byte_loc+12, 0)
             next_aedr = int.from_bytes(f.read(8), 'big', signed=True)
@@ -1150,7 +1150,7 @@ class CDF(object):
 
         return entry_num, next_aedr
 
-    def _read_aedr_fast2(self, byte_loc):
+    def _read_aedr_fast2(self, byte_loc: int) -> Tuple[int, int]:
         with self.file.open('rb') as f:
             f.seek(byte_loc+8, 0)
             next_aedr = int.from_bytes(f.read(4), 'big', signed=True)
@@ -1161,7 +1161,7 @@ class CDF(object):
 
         return entry_num, next_aedr
 
-    def _read_aedr(self, byte_loc, to_np=True):
+    def _read_aedr(self, byte_loc: int, to_np: bool=True) -> Dict[str, Any]:
         '''
         Reads an Attribute Entry Descriptor Record at a specific byte location.
 
@@ -1211,11 +1211,12 @@ class CDF(object):
 
         return return_dict
 
-    def _read_aedr2(self, byte_loc, to_np=True):
-        f = self.file
-        f.seek(byte_loc, 0)
-        block_size = int.from_bytes(f.read(4), 'big')
-        aedr = f.read(block_size-4)
+    def _read_aedr2(self, byte_loc: int, to_np: bool=True) -> Dict[str, Any]:
+        with self.file.open('rb') as f:
+            f.seek(byte_loc, 0)
+            block_size = int.from_bytes(f.read(4), 'big')
+            aedr = f.read(block_size-4)
+
         next_aedr = int.from_bytes(aedr[4:8], 'big', signed=True)
         data_type = int.from_bytes(aedr[12:16], 'big', signed=True)
 
@@ -1228,10 +1229,11 @@ class CDF(object):
         if to_np:
             entry = self._read_data(byte_stream, data_type, 1, num_elements)
         else:
-            if (data_type == 32):
+            if data_type == 32:
                 entry = self._convert_data(byte_stream, data_type, 1, 2, num_elements)
             else:
                 entry = self._convert_data(byte_stream, data_type, 1, 1, num_elements)
+
         return_dict = {}
         return_dict['entry'] = entry
         return_dict['data_type'] = data_type
@@ -1239,6 +1241,7 @@ class CDF(object):
         # return_dict['num_strings'] = num_strings
         return_dict['next_aedr'] = next_aedr
         return_dict['entry_num'] = entry_num
+
         return return_dict
 
     def _read_vdr(self, byte_loc):
@@ -1682,9 +1685,7 @@ class CDF(object):
         Determines endianess of the CDF file
         Only used in __init__
         '''
-        if (self._encoding == 1 or self._encoding == 2 or self._encoding == 5 or
-            self._encoding == 7 or self._encoding == 9 or self._encoding == 11 or
-                self._encoding == 12):
+        if self._encoding in (1, 2, 5, 7, 9, 11, 12):
             return 'big-endian'
         else:
             return 'little-endian'
@@ -1782,7 +1783,7 @@ class CDF(object):
 
         return ret
 
-    def _num_values(self, vdr_dict):
+    def _num_values(self, vdr_dict: dict):
         '''
         Returns the number of values in a record, using a given VDR
         dictionary. Multiplies the dimension sizes of each dimension,
@@ -1792,9 +1793,11 @@ class CDF(object):
         for x in range(0, vdr_dict['num_dims']):
             if (vdr_dict['dim_vary'][x] != 0):
                 values = values * vdr_dict['dim_sizes'][x]
+
         return values
 
-    def _get_attdata(self, adr_info, entry_num, num_entry, first_entry, to_np=True):
+    def _get_attdata(self, adr_info, entry_num: int,
+                     num_entry: int, first_entry: int, to_np: bool=True) -> Dict[str, Any]:
         position = first_entry
         for _ in range(0, num_entry):
             if (self.cdfversion == 3):
@@ -1806,10 +1809,11 @@ class CDF(object):
                     aedr_info = self._read_aedr(position, to_np=to_np)
                 else:
                     aedr_info = self._read_aedr2(position, to_np=to_np)
+
                 return_dict = {}
                 return_dict['Item_Size'] = _type_size(aedr_info['data_type'],
                                                       aedr_info['num_elements'])
-                return_dict['Data_Type'] = _datatype_token(aedr_info['data_type'])
+                return_dict['Data_Type'] = _datatype_token(aedr_info['data_type'])  # type: ignore
 
                 return_dict['Num_Items'] = aedr_info['num_elements']
                 return_dict['Data'] = aedr_info['entry']
@@ -1818,8 +1822,7 @@ class CDF(object):
                     if (aedr_info['num_strings'] > 1):
                         return_dict['Data'] = aedr_info['entry'].split('\\N ')
                 if not to_np and (aedr_info['data_type'] == 32):
-                    return_dict['Data'] = complex(aedr_info['entry'][0],
-                                                  aedr_info['entry'][1])
+                    return_dict['Data'] = complex(aedr_info['entry'][0], aedr_info['entry'][1])  # type: ignore
                 return return_dict
             else:
                 position = next_aedr
@@ -1827,8 +1830,8 @@ class CDF(object):
         raise KeyError('The entry does not exist')
 
     def _read_vardata(self, vdr_info, epoch=None, starttime=None, endtime=None,
-                      startrec=0, endrec=None, record_range_only=False,
-                      expand=False, to_np=True):
+                      startrec=0, endrec=None, record_range_only: bool=False,
+                      expand: bool=False, to_np: bool=True):
 
         # Error checking
         if startrec:
@@ -1973,7 +1976,7 @@ class CDF(object):
         ret.setflags('WRITEABLE')
         return ret
 
-    def _read_vvr_block(self, offset):
+    def _read_vvr_block(self, offset: int):
         '''
         Returns a VVR or decompressed CVVR block
         '''
@@ -1990,7 +1993,7 @@ class CDF(object):
             # a VVR
             return block[4:]
 
-    def _read_vvr_block2(self, offset):
+    def _read_vvr_block2(self, offset: int):
         '''
         Returns a VVR or decompressed CVVR block
         '''

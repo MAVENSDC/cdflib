@@ -39,7 +39,10 @@ from pathlib import Path
 import logging
 import urllib.request
 import csv
-from typing import List, Union   # noqa: F401
+from typing import List, Union, Sequence   # noqa: F401
+
+FILLED_TT2000_VALUE = int(-9223372036854775808)
+DEFAULT_TT2000_PADVALUE = int(-9223372036854775807)
 
 
 class CDFepoch:
@@ -69,8 +72,8 @@ class CDFepoch:
         # Julian days for 1707-09-22 and 2292-04-11, the valid TT2000 range
         self.JDY17070922 = 2344793
         self.JDY22920411 = 2558297
-        self.DEFAULT_TT2000_PADVALUE = int(-9223372036854775807)
-        self.FILLED_TT2000_VALUE = int(-9223372036854775808)
+        self.DEFAULT_TT2000_PADVALUE = DEFAULT_TT2000_PADVALUE
+        self.FILLED_TT2000_VALUE = FILLED_TT2000_VALUE
         self.NERA1 = 14
 
         # LASTLEAPSECONDDAY = 20170101
@@ -200,7 +203,7 @@ class CDFepoch:
         else:
             raise TypeError('Bad input')
 
-    def breakdown(self, epochs, to_np=None):
+    def breakdown(self, epochs, to_np: bool=False):
 
         if (isinstance(epochs, int) or isinstance(epochs, np.int64)):
             return self.breakdown_tt2000(epochs, to_np)
@@ -223,7 +226,7 @@ class CDFepoch:
         else:
             raise TypeError('Bad input')
 
-    def unixtime(self, cdf_time, to_np=False):
+    def unixtime(self, cdf_time, to_np: bool=False):
         """
         Encodes the epoch(s) into seconds after 1970-01-01.  Precision is only
         kept to the nearest microsecond.
@@ -231,23 +234,12 @@ class CDFepoch:
         If to_np is True, then the values will be returned in a numpy array.
         """
         time_list = self.breakdown(cdf_time, to_np=False)
-        unixtime = []
-        for t in time_list:
-            date = ['year', 'month', 'day', 'hour', 'minute', 'second', 'microsecond']
-            for i in range(0, len(t)):
-                if i > 7:
-                    continue
-                elif i == 6:
-                    date[i] = 1000 * t[i]
-                elif i == 7:
-                    date[i - 1] += t[i]
-                else:
-                    date[i] = t[i]
-            unixtime.append(datetime.datetime(*date).replace(tzinfo=datetime.timezone.utc).timestamp())
+       # breakpoint()
+        unixtime = [datetime.datetime(*t[:6], t[6]*1000+t[7]).replace(tzinfo=datetime.timezone.utc).timestamp() for t in time_list]
 
         return np.array(unixtime) if to_np else unixtime
 
-    def compute(self, datetimes, to_np=None):
+    def compute(self, datetimes, to_np: bool=False):
         """
         Computes the provided date/time components into CDF epoch value(s).
 
@@ -289,16 +281,16 @@ class CDFepoch:
         elif isinstance(datetimes[0], (list, tuple, np.ndarray)):
             items = len(datetimes[0])
         else:
-            print('Unknown input')
-            return
-        if (items == 7):
-            return self.compute_epoch(datetimes, to_np)
-        elif (items == 10):
-            return self.compute_epoch16(datetimes, to_np)
-        elif (items == 9):
+            raise TypeError('Unknown input')
+
+        if items == 7:
+            return compute_epoch(datetimes, to_np)
+        elif items == 10:
+            return compute_epoch16(datetimes, to_np)
+        elif items == 9:
             return self.compute_tt2000(datetimes, to_np)
         else:
-            raise TypeError('Bad input')
+            raise ValueError('Bad input')
 
     def findepochrange(self, epochs, starttime=None, endtime=None):
         """
@@ -345,18 +337,19 @@ class CDFepoch:
             raise TypeError('Bad input')
         count = len(new_tt2000)
         encodeds = []
-        for x in range(0, count):
+        for x in range(count):
             nanoSecSinceJ2000 = new_tt2000[x]
-            if (nanoSecSinceJ2000 == self.FILLED_TT2000_VALUE):
-                if (iso_8601 is None or iso_8601):
+            if nanoSecSinceJ2000 == self.FILLED_TT2000_VALUE:
+                if iso_8601 is None or iso_8601:
                     return '9999-12-31T23:59:59.999999999'
                 else:
                     return '31-Dec-9999 23:59:59.999.999.999'
-            if (nanoSecSinceJ2000 == self.DEFAULT_TT2000_PADVALUE):
-                if (iso_8601 is None or iso_8601):
+            if nanoSecSinceJ2000 == self.DEFAULT_TT2000_PADVALUE:
+                if iso_8601 is None or iso_8601:
                     return '0000-01-01T00:00:00.000000000'
                 else:
                     return '01-Jan-0000 00:00:00.000.000.000'
+
             datetime = self.breakdown_tt2000(nanoSecSinceJ2000)
             ly = datetime[0]
             lm = datetime[1]
@@ -367,7 +360,8 @@ class CDFepoch:
             ll = datetime[6]
             lu = datetime[7]
             la = datetime[8]
-            if (iso_8601 is None or iso_8601):
+
+            if iso_8601 is None or iso_8601:
                 # yyyy-mm-ddThh:mm:ss.mmmuuunnn
                 encoded = str(ly).zfill(4)
                 encoded += '-'
@@ -404,13 +398,13 @@ class CDFepoch:
                 encoded += '.'
                 encoded += str(la).zfill(3)
 
-            if (count == 1):
+            if count == 1:
                 return encoded
             else:
                 encodeds.append(encoded)
         return encodeds
 
-    def breakdown_tt2000(self, tt2000, to_np=None):
+    def breakdown_tt2000(self, tt2000, to_np: bool=False):
         """
         Breaks down the epoch(s) into UTC components.
 
@@ -438,7 +432,7 @@ class CDFepoch:
             return None
         count = len(new_tt2000)
         toutcs = []
-        for x in range(0, count):
+        for x in range(count):
             nanoSecSinceJ2000 = new_tt2000[x]
             # toPlus = 0.0
             t3 = nanoSecSinceJ2000
@@ -551,163 +545,17 @@ class CDFepoch:
             datetime.append(ma1)
             datetime.append(na1)
             if (count == 1):
-                if to_np is None:
+                if not to_np:
                     return datetime
                 else:
                     return np.array(datetime)
             else:
                 toutcs.append(datetime)
-        if to_np is None:
+
+        if not to_np:
             return toutcs
         else:
             return np.array(toutcs)
-
-    def compute_tt2000(self, datetimes, to_np=None):
-
-        if (not isinstance(datetimes, list) and not isinstance(datetimes, tuple)):
-            print('datetime must be in list form')
-            return None
-        if (isinstance(datetimes[0], numbers.Number)):
-            new_datetimes = [datetimes]
-            count = 1
-        else:
-            count = len(datetimes)
-            new_datetimes = datetimes
-        nanoSecSinceJ2000s = []
-        for x in range(0, count):
-            datetime = new_datetimes[x]
-            year = int(datetime[0])
-            month = int(datetime[1])
-            items = len(datetime)
-            if (items > 8):
-                # y m d h m s ms us ns
-                day = int(datetime[2])
-                hour = int(datetime[3])
-                minute = int(datetime[4])
-                second = int(datetime[5])
-                msec = int(datetime[6])
-                usec = int(datetime[7])
-                nsec = int(datetime[8])
-            elif (items > 7):
-                # y m d h m s ms us
-                day = int(datetime[2])
-                hour = int(datetime[3])
-                minute = int(datetime[4])
-                second = int(datetime[5])
-                msec = int(datetime[6])
-                usec = int(datetime[7])
-                nsec = int(1000.0 * (datetime[7] - usec))
-            elif (items > 6):
-                # y m d h m s ms
-                day = int(datetime[2])
-                hour = int(datetime[3])
-                minute = int(datetime[4])
-                second = int(datetime[5])
-                msec = int(datetime[6])
-                xxx = float(1000.0 * (datetime[6] - msec))
-                usec = int(xxx)
-                nsec = int(1000.0 * (xxx - usec))
-            elif (items > 5):
-                # y m d h m s
-                day = int(datetime[2])
-                hour = int(datetime[3])
-                minute = int(datetime[4])
-                second = int(datetime[5])
-                xxx = float(1000.0 * (datetime[5] - second))
-                msec = int(xxx)
-                xxx = float(1000.0 * (xxx - msec))
-                usec = int(xxx)
-                nsec = int(1000.0 * (xxx - usec))
-            elif (items > 4):
-                # y m d h m
-                day = int(datetime[2])
-                hour = int(datetime[3])
-                minute = int(datetime[4])
-                xxx = float(60.0 * (datetime[4] - minute))
-                second = int(xxx)
-                xxx = float(1000.0 * (xxx - second))
-                msec = int(xxx)
-                xxx = float(1000.0 * (xxx - msec))
-                usec = int(xxx)
-                nsec = int(1000.0 * (xxx - usec))
-            elif (items > 3):
-                # y m d h
-                day = int(datetime[2])
-                hour = int(datetime[3])
-                xxx = float(60.0 * (datetime[3] - hour))
-                minute = int(xxx)
-                xxx = float(60.0 * (xxx - minute))
-                second = int(xxx)
-                xxx = float(1000.0 * (xxx - second))
-                msec = int(xxx)
-                xxx = float(1000.0 * (xxx - msec))
-                usec = int(xxx)
-                nsec = int(1000.0 * (xxx - usec))
-            elif (items > 2):
-                # y m d
-                day = int(datetime[2])
-                xxx = float(24.0 * (datetime[2] - day))
-                hour = int(xxx)
-                xxx = float(60.0 * (xxx - hour))
-                minute = int(xxx)
-                xxx = float(60.0 * (xxx - minute))
-                second = int(xxx)
-                xxx = float(1000.0 * (xxx - second))
-                msec = int(xxx)
-                xxx = float(1000.0 * (xxx - msec))
-                usec = int(xxx)
-                nsec = int(1000.0 * (xxx - usec))
-            else:
-                print('Invalid tt2000 components')
-                return None
-            if (month == 0):
-                month = 1
-            if (year == 9999 and month == 12 and day == 31 and hour == 23 and
-                minute == 59 and second == 59 and msec == 999 and
-                    usec == 999 and nsec == 999):
-                nanoSecSinceJ2000 = self.FILLED_TT2000_VALUE
-            elif (year == 0 and month == 1 and day == 1 and hour == 0 and
-                  minute == 0 and second == 0 and msec == 0 and usec == 0 and
-                  nsec == 0):
-                nanoSecSinceJ2000 = self.DEFAULT_TT2000_PADVALUE
-            else:
-                iy = 10000000 * month + 10000 * day + year
-                if (iy != self.currentDay):
-                    self.currentDay = iy
-                    self.currentLeapSeconds = self._LeapSecondsfromYMD(year, month, day)
-                    self.currentJDay = self._JulianDay(year, month, day)
-                jd = self.currentJDay
-                jd = jd - self.JulianDateJ2000_12h
-                subDayinNanoSecs = int(hour * self.HOURinNanoSecs +
-                                       minute * self.MINUTEinNanoSecs +
-                                       second * self.SECinNanoSecs + msec * 1000000 +
-                                       usec * 1000 + nsec)
-                nanoSecSinceJ2000 = int(jd * self.DAYinNanoSecs +
-                                        subDayinNanoSecs)
-                t2 = int(self.currentLeapSeconds * self.SECinNanoSecs)
-                if (nanoSecSinceJ2000 < 0):
-                    nanoSecSinceJ2000 = int(nanoSecSinceJ2000 + t2)
-                    nanoSecSinceJ2000 = int(nanoSecSinceJ2000 +
-                                            self.dTinNanoSecs)
-                    nanoSecSinceJ2000 = int(nanoSecSinceJ2000 -
-                                            self.T12hinNanoSecs)
-                else:
-                    nanoSecSinceJ2000 = int(nanoSecSinceJ2000 -
-                                            self.T12hinNanoSecs)
-                    nanoSecSinceJ2000 = int(nanoSecSinceJ2000 + t2)
-                    nanoSecSinceJ2000 = int(nanoSecSinceJ2000 +
-                                            self.dTinNanoSecs)
-            if (count == 1):
-                if (to_np is None):
-                    return int(nanoSecSinceJ2000)
-                else:
-                    return np.array(int(nanoSecSinceJ2000))
-            else:
-                nanoSecSinceJ2000s.append(int(nanoSecSinceJ2000))
-        if (to_np is None):
-            return nanoSecSinceJ2000s
-        else:
-            return np.array(nanoSecSinceJ2000s)
 
     def _LeapSecondsfromYMD(self, year, month, day):
 
@@ -723,7 +571,7 @@ class CDFepoch:
         da = self.LTS[j][3]
         # pre-1972
         if (j < self.NERA1):
-            jda = self._JulianDay(year, month, day)
+            jda = _JulianDay(year, month, day)
             da = da + ((jda - self.MJDbase) - self.LTS[j][4]) * self.LTS[j][5]
         return da
 
@@ -750,7 +598,7 @@ class CDFepoch:
     def _LoadLeapNanoSecondsTable(self):
 
         self.NST = []
-        for ix in range(0, self.NERA1):
+        for ix in range(self.NERA1):
             self.NST.append(self.FILLED_TT2000_VALUE)
         for ix in range(self.NERA1, self.NDAT):
             self.NST.append(self.compute_tt2000([int(self.LTS[ix][0]),
@@ -896,189 +744,7 @@ class CDFepoch:
             encoded += str(components[9]).zfill(3)
         return encoded
 
-    def _JulianDay(self, y, m, d):  # @NoSelf
-
-        a1 = int(7 * (int(y + int((m + 9) / 12))) / 4)
-        a2 = int(3 * (int(int(y + int((m - 9) / 7)) / 100) + 1) / 4)
-        a3 = int(275 * m / 9)
-        return (367 * y - a1 - a2 + a3 + d + 1721029)
-
-    def compute_epoch16(self, datetimes, to_np=None):
-
-        if (not isinstance(datetimes, list) and
-                not isinstance(datetimes, tuple)):
-            print('Bad input')
-            return None
-        if (not isinstance(datetimes[0], list) and
-                not isinstance(datetimes[0], tuple)):
-            new_dates = []
-            new_dates = [datetimes]
-        else:
-            new_dates = datetimes
-        count = len(new_dates)
-        if (count == 0):
-            return None
-        epochs = []
-        for x in range(0, count):
-            epoch = []
-            date = new_dates[x]
-            items = len(date)
-            year = date[0]
-            month = date[1]
-            if (items > 9):
-                # y m d h m s ms us ns ps
-                day = int(date[2])
-                hour = int(date[3])
-                minute = int(date[4])
-                second = int(date[5])
-                msec = int(date[6])
-                usec = int(date[7])
-                nsec = int(date[8])
-                psec = int(date[9])
-            elif (items > 8):
-                # y m d h m s ms us ns
-                day = int(date[2])
-                hour = int(date[3])
-                minute = int(date[4])
-                second = int(date[5])
-                msec = int(date[6])
-                usec = int(date[7])
-                nsec = int(date[8])
-                psec = int(1000.0 * (date[8] - nsec))
-            elif (items > 7):
-                # y m d h m s ms us
-                day = int(date[2])
-                hour = int(date[3])
-                minute = int(date[4])
-                second = int(date[5])
-                msec = int(date[6])
-                usec = int(date[7])
-                xxx = int(1000.0 * (date[7] - usec))
-                nsec = int(xxx)
-                psec = int(1000.0 * (xxx - nsec))
-            elif (items > 6):
-                # y m d h m s ms
-                day = int(date[2])
-                hour = int(date[3])
-                minute = int(date[4])
-                second = int(date[5])
-                msec = int(date[6])
-                xxx = float(1000.0 * (date[6] - msec))
-                usec = int(xxx)
-                xxx = int(1000.0 * (xxx - usec))
-                nsec = int(xxx)
-                psec = int(1000.0 * (xxx - nsec))
-            elif (items > 5):
-                # y m d h m s
-                day = int(date[2])
-                hour = int(date[3])
-                minute = int(date[4])
-                second = int(date[5])
-                xxx = float(1000.0 * (date[5] - second))
-                msec = int(xxx)
-                xxx = float(1000.0 * (xxx - msec))
-                usec = int(xxx)
-                xxx = int(1000.0 * (xxx - usec))
-                nsec = int(xxx)
-                psec = int(1000.0 * (xxx - nsec))
-            elif (items > 4):
-                # y m d h m
-                day = int(date[2])
-                hour = int(date[3])
-                minute = int(date[4])
-                xxx = float(60.0 * (date[4] - minute))
-                second = int(xxx)
-                xxx = float(1000.0 * (xxx - second))
-                msec = int(xxx)
-                xxx = float(1000.0 * (xxx - msec))
-                usec = int(xxx)
-                xxx = int(1000.0 * (xxx - usec))
-                nsec = int(xxx)
-                psec = int(1000.0 * (xxx - nsec))
-            elif (items > 3):
-                # y m d h
-                day = int(date[2])
-                hour = int(date[3])
-                xxx = float(60.0 * (date[3] - hour))
-                minute = int(xxx)
-                xxx = float(60.0 * (xxx - minute))
-                second = int(xxx)
-                xxx = float(1000.0 * (xxx - second))
-                msec = int(xxx)
-                xxx = float(1000.0 * (xxx - msec))
-                usec = int(xxx)
-                xxx = int(1000.0 * (xxx - usec))
-                nsec = int(xxx)
-                psec = int(1000.0 * (xxx - nsec))
-            elif (items > 2):
-                # y m d
-                day = int(date[2])
-                xxx = float(24.0 * (date[2] - day))
-                hour = int(xxx)
-                xxx = float(60.0 * (xxx - hour))
-                minute = int(xxx)
-                xxx = float(60.0 * (xxx - minute))
-                second = int(xxx)
-                xxx = float(1000.0 * (xxx - second))
-                msec = int(xxx)
-                xxx = float(1000.0 * (xxx - msec))
-                usec = int(xxx)
-                xxx = int(1000.0 * (xxx - usec))
-                nsec = int(xxx)
-                psec = int(1000.0 * (xxx - nsec))
-            else:
-                print('Invalid epoch16 components')
-                return None
-            if (year < 0):
-                print('Illegal epoch field')
-                return
-            if (year == 9999 and month == 12 and day == 31 and hour == 23 and
-                minute == 59 and second == 59 and msec == 999 and
-                    usec == 999 and nsec == 999 and psec == 999):
-                epoch.append(-1.0E31)
-                epoch.append(-1.0E31)
-            elif ((year > 9999) or (month < 0 or month > 12) or
-                  (hour < 0 or hour > 23) or (minute < 0 or minute > 59) or
-                  (second < 0 or second > 59) or (msec < 0 or msec > 999) or
-                  (usec < 0 or usec > 999) or (nsec < 0 or nsec > 999) or
-                  (psec < 0 or psec > 999)):
-                epoch = self._computeEpoch16(year, month, day, hour,
-                                             minute, second, msec,
-                                             usec, nsec, psec)
-            else:
-                if (month == 0):
-                    if (day < 1 or day > 366):
-                        epoch = self._computeEpoch16(year, month, day, hour,
-                                                     minute, second, msec,
-                                                     usec, nsec, psec)
-                else:
-                    if (day < 1 or day > 31):
-                        epoch = self._computeEpoch16(year, month, day, hour,
-                                                     minute, second, msec,
-                                                     usec, nsec, psec)
-                if (month == 0):
-                    daysSince0AD = self._JulianDay(year, 1, 1) + (day - 1) - 1721060
-                else:
-                    daysSince0AD = self._JulianDay(year, month, day) - 1721060
-                secInDay = (3600 * hour) + (60 * minute) + second
-                epoch16_0 = float(86400.0 * daysSince0AD) + float(secInDay)
-                epoch16_1 = float(psec) + float(1000.0 * nsec) + float(1000000.0 * usec) + float(1000000000.0 * msec)
-                epoch.append(epoch16_0)
-                epoch.append(epoch16_1)
-            cepoch = complex(epoch[0], epoch[1])
-            if count == 1:
-                if to_np is None:
-                    return cepoch
-                else:
-                    return np.array(cepoch)
-            else:
-                epochs.append(cepoch)
-        if to_np is None:
-            return epochs
-        else:
-            return np.array(epochs)
-
-    def breakdown_epoch16(self, epochs, to_np=None):
+    def breakdown_epoch16(self, epochs, to_np: bool=False):
 
         if isinstance(epochs, (complex, np.complex128)):
             new_epochs = [epochs]
@@ -1089,7 +755,7 @@ class CDFepoch:
 
         count = len(new_epochs)
         components = []
-        for x in range(0, count):
+        for x in range(count):
             component = []
             epoch16 = []
             # complex
@@ -1144,56 +810,16 @@ class CDFepoch:
                 component.append(component_8)
                 component.append(component_9)
             if count == 1:
-                if to_np is None:
+                if not to_np:
                     return component
                 else:
                     return np.array(component)
             else:
                 components.append(component)
-        if to_np is None:
+        if not to_np:
             return components
         else:
             return np.array(components)
-
-    def _computeEpoch16(self, y, m, d, h, mn, s, ms, msu, msn, msp):
-
-        if (m == 0):
-            daysSince0AD = self._JulianDay(y, 1, 1) + (d - 1) - 1721060
-        else:
-            if (m < 0):
-                y = y - 1
-                m = 13 + m
-            daysSince0AD = self._JulianDay(y, m, d) - 1721060
-        if (daysSince0AD < 0):
-            raise ValueError('Illegal epoch')
-
-        epoch = []
-        epoch.append(float(86400.0 * daysSince0AD + 3600.0 * h + 60.0 * mn) + float(s))
-        epoch.append(float(msp) + float(1000.0 * msn) + float(1000000.0 * msu) + math.pow(10.0, 9) * ms)
-        if (epoch[1] < 0.0 or epoch[1] >= math.pow(10.0, 12)):
-            if (epoch[1] < 0.0):
-                sec = int(epoch[1] / math.pow(10.0, 12))
-                tmp = epoch[1] - sec * math.pow(10.0, 12)
-                if (tmp != 0.0 and tmp != -0.0):
-                    epoch[0] = epoch[0] + sec - 1
-                    epoch[1] = math.pow(10.0, 12.0) + tmp
-                else:
-                    epoch[0] = epoch[0] + sec
-                    epoch[1] = 0.0
-            else:
-                sec = int(epoch[1] / math.pow(10.0, 12))
-                tmp = epoch[1] - sec * math.pow(10.0, 12)
-                if (tmp != 0.0 and tmp != -0.0):
-                    epoch[1] = tmp
-                    epoch[0] = epoch[0] + sec
-                else:
-                    epoch[1] = 0.0
-                    epoch[0] = epoch[0] + sec
-        if (epoch[0] < 0.0):
-            print('Illegal epoch')
-            return None
-        else:
-            return epoch
 
     def epochrange_epoch16(self, epochs, starttime=None, endtime=None):
 
@@ -1219,7 +845,7 @@ class CDFepoch:
                 stime.append(starttime.real)
                 stime.append(starttime.imag)
             elif (isinstance(starttime, list) or isinstance(starttime, tuple)):
-                sstime = self.compute_epoch16(starttime)
+                sstime = compute_epoch16(starttime)
                 stime = []
                 stime.append(sstime.real)
                 stime.append(sstime.imag)
@@ -1233,7 +859,7 @@ class CDFepoch:
                 etime.append(endtime.real)
                 etime.append(endtime.imag)
             elif (isinstance(endtime, list) or isinstance(endtime, tuple)):
-                eetime = self.compute_epoch16(endtime)
+                eetime = compute_epoch16(endtime)
                 etime = []
                 etime.append(eetime.real)
                 etime.append(eetime.imag)
@@ -1249,7 +875,7 @@ class CDFepoch:
             return None
         count = len(new_epochs)
         epoch16 = []
-        for x in range(0, count):
+        for x in range(count):
             epoch16.append(new_epochs[x].real)
             epoch16.append(new_epochs[x].imag)
         count = count * 2
@@ -1302,7 +928,7 @@ class CDFepoch:
             raise ValueError('Bad data')
         count = len(new_epochs)
         encodeds = []
-        for x in range(0, count):
+        for x in range(count):
             epoch = new_epochs[x]
             if (epoch == -1.0E31):
                 if (iso_8601):
@@ -1351,132 +977,7 @@ class CDFepoch:
             encoded += str(components[6]).zfill(3)
         return encoded
 
-    def compute_epoch(self, dates, to_np=None):
-
-        if (not isinstance(dates, list) and not isinstance(dates, tuple)):
-            print('Bad input')
-            return None
-        if (not isinstance(dates[0], list) and not isinstance(dates[0], tuple)):
-            new_dates = []
-            new_dates = [dates]
-        else:
-            new_dates = dates
-        count = len(new_dates)
-        if (count == 0):
-            return None
-        epochs = []
-        for x in range(0, count):
-            date = new_dates[x]
-            year = date[0]
-            month = date[1]
-            items = len(date)
-            if (items > 6):
-                # y m d h m s ms
-                day = int(date[2])
-                hour = int(date[3])
-                minute = int(date[4])
-                second = int(date[5])
-                msec = int(date[6])
-            elif (items > 5):
-                # y m d h m s
-                day = int(date[2])
-                hour = int(date[3])
-                minute = int(date[4])
-                second = int(date[5])
-                msec = int(1000.0 * (date[5] - second))
-            elif (items > 4):
-                # y m d h m
-                day = int(date[2])
-                hour = int(date[3])
-                minute = int(date[4])
-                xxx = float(60.0 * (date[4] - minute))
-                second = int(xxx)
-                msec = int(1000.0 * (xxx - second))
-            elif (items > 3):
-                # y m d h
-                day = int(date[2])
-                hour = int(date[3])
-                xxx = float(60.0 * (date[3] - hour))
-                minute = int(xxx)
-                xxx = float(60.0 * (xxx - minute))
-                second = int(xxx)
-                msec = int(1000.0 * (xxx - second))
-            elif (items > 2):
-                # y m d
-                day = int(date[2])
-                xxx = float(24.0 * (date[2] - day))
-                hour = int(xxx)
-                xxx = float(60.0 * (xxx - hour))
-                minute = int(xxx)
-                xxx = float(60.0 * (xxx - minute))
-                second = int(xxx)
-                msec = int(1000.0 * (xxx - second))
-            else:
-                print('Invalid epoch components')
-                return None
-            if (year == 9999 and month == 12 and day == 31 and hour == 23 and
-                    minute == 59 and second == 59 and msec == 999):
-                epochs.append(-1.0E31)
-            if (year < 0):
-                print('ILLEGAL_EPOCH_FIELD')
-                return None
-            if ((year > 9999) or (month < 0 or month > 12) or
-                (hour < 0 or hour > 23) or (minute < 0 or minute > 59) or
-                    (second < 0 or second > 59) or (msec < 0 or msec > 999)):
-                epochs.append(self._computeEpoch(year, month, day, hour, minute,
-                                                 second, msec))
-            if (month == 0):
-                if (day < 1 or day > 366):
-                    epochs.append(self._computeEpoch(year, month, day, hour,
-                                                     minute, second, msec))
-            else:
-                if (day < 1 or day > 31):
-                    epochs.append(self._computeEpoch(year, month, day, hour,
-                                                     minute, second, msec))
-            if (hour == 0 and minute == 0 and second == 0):
-                if (msec < 0 or msec > 86399999):
-                    epochs.append(self._computeEpoch(year, month, day, hour,
-                                                     minute, second, msec))
-
-            if (month == 0):
-                daysSince0AD = self._JulianDay(year, 1, 1) + (day - 1) - 1721060
-            else:
-                daysSince0AD = self._JulianDay(year, month, day) - 1721060
-            if (hour == 0 and minute == 0 and second == 0):
-                msecInDay = msec
-            else:
-                msecInDay = (3600000 * hour) + (60000 * minute) + (1000 * second) + msec
-            if (count == 1):
-                if to_np is None:
-                    return 86400000.0 * daysSince0AD + msecInDay
-                else:
-                    return np.array((86400000.0 * daysSince0AD + msecInDay))
-            epochs.append(86400000.0 * daysSince0AD + msecInDay)
-        if (to_np is None):
-            return epochs
-        else:
-            return np.array(epochs)
-
-    def _computeEpoch(self, y, m, d, h, mn, s, ms):
-
-        if (m == 0):
-            daysSince0AD = self._JulianDay(y, 1, 1) + (d - 1) - 1721060
-        else:
-            if (m < 0):
-                --y
-                m = 13 + m
-            daysSince0AD = self._JulianDay(y, m, d) - 1721060
-        if (daysSince0AD < 1):
-            print('ILLEGAL_EPOCH_FIELD')
-            return None
-        msecInDay = float(3600000.0 * h + 60000.0 * mn + 1000.0 * s) + float(ms)
-        msecFromEpoch = float(86400000.0 * daysSince0AD + msecInDay)
-        if (msecFromEpoch < 0.0):
-            return -1.0
-        else:
-            return msecFromEpoch
-
-    def breakdown_epoch(self, epochs, to_np=False):
+    def breakdown_epoch(self, epochs, to_np: bool=False):
 
         if isinstance(epochs, (float, np.float64)):
             new_epochs = [epochs]
@@ -1486,7 +987,7 @@ class CDFepoch:
             raise ValueError('Bad data')
         count = len(new_epochs)
         components = []
-        for x in range(0, count):
+        for x in range(count):
             component = []
             epoch = new_epochs[x]
             if (epoch == -1.0E31):
@@ -1557,14 +1058,14 @@ class CDFepoch:
             if isinstance(starttime, (float, int, np.float64)):
                 stime = starttime
             elif isinstance(starttime, (list, tuple)):
-                stime = self.compute_epoch(starttime)
+                stime = compute_epoch(starttime)
             else:
                 raise ValueError('Bad start time')
         if endtime is not None:
             if isinstance(endtime, (float, int, np.float64)):
                 etime = endtime
             elif isinstance(endtime, (list, tuple)):
-                etime = self.compute_epoch(endtime)
+                etime = compute_epoch(endtime)
             else:
                 raise ValueError('Bad end time')
         else:
@@ -1577,7 +1078,7 @@ class CDFepoch:
             new_epochs = epochs
         return np.where(np.logical_and(new_epochs >= stime, new_epochs <= etime))[0]
 
-    def parse(self, value, to_np=None):
+    def parse(self, value, to_np: bool=False):
         """
         Parses the provided date/time string(s) into CDF epoch value(s).
 
@@ -1610,14 +1111,14 @@ class CDFepoch:
             if isinstance(value, (list, tuple)):
                 num = len(value)
                 epochs = []
-                for x in range(0, num):
+                for x in range(num):
                     epochs.append(self._parse_epoch(value[x]))
-                if to_np is None:
+                if not to_np:
                     return epochs
                 else:
                     return np.array(epochs)
             else:
-                if to_np is None:
+                if not to_np:
                     return self._parse_epoch(value)
                 else:
                     return np.array(self._parse_epoch(value))
@@ -1625,17 +1126,16 @@ class CDFepoch:
     def _parse_epoch(self, value):
         if isinstance(value, (list, tuple)):
             epochs = []
-            for x in range(0, len(value)):
+            for x in range(len(value)):
                 epochs.append(value[x])
             return epochs
         else:
-            if (len(value) == 23 or len(value) == 24):
+            if len(value) in (23, 24):
                 # CDF_EPOCH
-                if (value.lower() == '31-dec-9999 23:59:59.999' or
-                        value.lower() == '9999-12-31t23:59:59.999'):
+                if value.lower() in ('31-dec-9999 23:59:59.999', '9999-12-31t23:59:59.999'):
                     return -1.0E31
                 else:
-                    if (len(value) == 24):
+                    if len(value) == 24:
                         date = re.findall('(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)', value)
                         dd = int(date[0][0])
                         mm = self._month_index(date[0][1])
@@ -1654,7 +1154,9 @@ class CDFepoch:
                         mn = int(date[0][4])
                         ss = int(date[0][5])
                         ms = int(date[0][6])
-                    return self.compute_epoch([yy, mm, dd, hh, mn, ss, ms])
+
+                    return compute_epoch([yy, mm, dd, hh, mn, ss, ms])
+
             elif (len(value) == 36 or (len(value) == 32 and
                                        value[10].lower() == 't')):
                 # CDF_EPOCH16
@@ -1691,9 +1193,9 @@ class CDFepoch:
                         subus = int(subms % 1000000)
                         ns = int(subus / 1000)
                         ps = int(subus % 1000)
-                    return self.compute_epoch16([yy, mm, dd, hh, mn, ss, ms, us, ns, ps])
-            elif (len(value) == 29 or (len(value) == 32 and
-                                       value[11] == ' ')):
+                    return compute_epoch16([yy, mm, dd, hh, mn, ss, ms, us, ns, ps])
+
+            elif len(value) == 29 or (len(value) == 32 and value[11] == ' '):
                 # CDF_TIME_TT2000
                 value = value.lower()
                 if (value == '9999-12-31t23:59:59.999999999' or
@@ -1745,6 +1247,501 @@ class CDFepoch:
         Shows the latest date a leap second was added to the leap second table.
         """
         print('Leap second last updated: {}-{}-{}'.format(self.LTS[-1][0], self.LTS[-1][1], self.LTS[-1][2]))
+
+    def compute_tt2000(self, datetimes, to_np: bool=False):
+
+        if not isinstance(datetimes, (list, tuple)):
+            raise TypeError('datetime must be in list form')
+
+        new_datetimes = [datetimes] if isinstance(datetimes[0], numbers.Number) else datetimes
+
+        count = len(new_datetimes)
+
+        nanoSecSinceJ2000s = []
+        for x in range(count):
+            datetime = new_datetimes[x]
+            year = int(datetime[0])
+            month = int(datetime[1])
+            items = len(datetime)
+            if (items > 8):
+                # y m d h m s ms us ns
+                day = int(datetime[2])
+                hour = int(datetime[3])
+                minute = int(datetime[4])
+                second = int(datetime[5])
+                msec = int(datetime[6])
+                usec = int(datetime[7])
+                nsec = int(datetime[8])
+            elif (items > 7):
+                # y m d h m s ms us
+                day = int(datetime[2])
+                hour = int(datetime[3])
+                minute = int(datetime[4])
+                second = int(datetime[5])
+                msec = int(datetime[6])
+                usec = int(datetime[7])
+                nsec = int(1000.0 * (datetime[7] - usec))
+            elif (items > 6):
+                # y m d h m s ms
+                day = int(datetime[2])
+                hour = int(datetime[3])
+                minute = int(datetime[4])
+                second = int(datetime[5])
+                msec = int(datetime[6])
+                xxx = float(1000.0 * (datetime[6] - msec))
+                usec = int(xxx)
+                nsec = int(1000.0 * (xxx - usec))
+            elif (items > 5):
+                # y m d h m s
+                day = int(datetime[2])
+                hour = int(datetime[3])
+                minute = int(datetime[4])
+                second = int(datetime[5])
+                xxx = float(1000.0 * (datetime[5] - second))
+                msec = int(xxx)
+                xxx = float(1000.0 * (xxx - msec))
+                usec = int(xxx)
+                nsec = int(1000.0 * (xxx - usec))
+            elif (items > 4):
+                # y m d h m
+                day = int(datetime[2])
+                hour = int(datetime[3])
+                minute = int(datetime[4])
+                xxx = float(60.0 * (datetime[4] - minute))
+                second = int(xxx)
+                xxx = float(1000.0 * (xxx - second))
+                msec = int(xxx)
+                xxx = float(1000.0 * (xxx - msec))
+                usec = int(xxx)
+                nsec = int(1000.0 * (xxx - usec))
+            elif (items > 3):
+                # y m d h
+                day = int(datetime[2])
+                hour = int(datetime[3])
+                xxx = float(60.0 * (datetime[3] - hour))
+                minute = int(xxx)
+                xxx = float(60.0 * (xxx - minute))
+                second = int(xxx)
+                xxx = float(1000.0 * (xxx - second))
+                msec = int(xxx)
+                xxx = float(1000.0 * (xxx - msec))
+                usec = int(xxx)
+                nsec = int(1000.0 * (xxx - usec))
+            elif (items > 2):
+                # y m d
+                day = int(datetime[2])
+                xxx = float(24.0 * (datetime[2] - day))
+                hour = int(xxx)
+                xxx = float(60.0 * (xxx - hour))
+                minute = int(xxx)
+                xxx = float(60.0 * (xxx - minute))
+                second = int(xxx)
+                xxx = float(1000.0 * (xxx - second))
+                msec = int(xxx)
+                xxx = float(1000.0 * (xxx - msec))
+                usec = int(xxx)
+                nsec = int(1000.0 * (xxx - usec))
+            else:
+                print('Invalid tt2000 components')
+                return None
+            if (month == 0):
+                month = 1
+            if (year == 9999 and month == 12 and day == 31 and hour == 23 and
+                minute == 59 and second == 59 and msec == 999 and
+                    usec == 999 and nsec == 999):
+                nanoSecSinceJ2000 = FILLED_TT2000_VALUE
+            elif (year == 0 and month == 1 and day == 1 and hour == 0 and
+                  minute == 0 and second == 0 and msec == 0 and usec == 0 and
+                  nsec == 0):
+                nanoSecSinceJ2000 = DEFAULT_TT2000_PADVALUE
+            else:
+                iy = 10000000 * month + 10000 * day + year
+                if (iy != self.currentDay):
+                    self.currentDay = iy
+                    self.currentLeapSeconds = self._LeapSecondsfromYMD(year, month, day)
+                    self.currentJDay = _JulianDay(year, month, day)
+                jd = self.currentJDay
+                jd = jd - self.JulianDateJ2000_12h
+                subDayinNanoSecs = int(hour * self.HOURinNanoSecs +
+                                       minute * self.MINUTEinNanoSecs +
+                                       second * self.SECinNanoSecs + msec * 1000000 +
+                                       usec * 1000 + nsec)
+                nanoSecSinceJ2000 = int(jd * self.DAYinNanoSecs +
+                                        subDayinNanoSecs)
+                t2 = int(self.currentLeapSeconds * self.SECinNanoSecs)
+                if (nanoSecSinceJ2000 < 0):
+                    nanoSecSinceJ2000 = int(nanoSecSinceJ2000 + t2)
+                    nanoSecSinceJ2000 = int(nanoSecSinceJ2000 +
+                                            self.dTinNanoSecs)
+                    nanoSecSinceJ2000 = int(nanoSecSinceJ2000 -
+                                            self.T12hinNanoSecs)
+                else:
+                    nanoSecSinceJ2000 = int(nanoSecSinceJ2000 -
+                                            self.T12hinNanoSecs)
+                    nanoSecSinceJ2000 = int(nanoSecSinceJ2000 + t2)
+                    nanoSecSinceJ2000 = int(nanoSecSinceJ2000 +
+                                            self.dTinNanoSecs)
+            if count == 1:
+                if not to_np:
+                    return int(nanoSecSinceJ2000)
+                else:
+                    return np.array(int(nanoSecSinceJ2000))
+            else:
+                nanoSecSinceJ2000s.append(int(nanoSecSinceJ2000))
+
+        if not to_np:
+            return nanoSecSinceJ2000s
+        else:
+            return np.array(nanoSecSinceJ2000s)
+
+
+def compute_epoch16(datetimes, to_np: bool=False) -> np.ndarray:
+
+    if not isinstance(datetimes, (list, tuple)):
+        raise TypeError('Bad input')
+
+    new_dates = datetimes if isinstance(datetimes[0], (list, tuple)) else [datetimes]
+
+    count = len(new_dates)
+    if count == 0:
+        return None
+
+    epochs = []
+    for x in range(count):
+        epoch = []
+        date = new_dates[x]
+        items = len(date)
+        year = date[0]
+        month = date[1]
+        if (items > 9):
+            # y m d h m s ms us ns ps
+            day = int(date[2])
+            hour = int(date[3])
+            minute = int(date[4])
+            second = int(date[5])
+            msec = int(date[6])
+            usec = int(date[7])
+            nsec = int(date[8])
+            psec = int(date[9])
+        elif (items > 8):
+            # y m d h m s ms us ns
+            day = int(date[2])
+            hour = int(date[3])
+            minute = int(date[4])
+            second = int(date[5])
+            msec = int(date[6])
+            usec = int(date[7])
+            nsec = int(date[8])
+            psec = int(1000.0 * (date[8] - nsec))
+        elif (items > 7):
+            # y m d h m s ms us
+            day = int(date[2])
+            hour = int(date[3])
+            minute = int(date[4])
+            second = int(date[5])
+            msec = int(date[6])
+            usec = int(date[7])
+            xxx = int(1000.0 * (date[7] - usec))  # type: Union[float, int]
+            nsec = int(xxx)
+            psec = int(1000.0 * (xxx - nsec))
+        elif (items > 6):
+            # y m d h m s ms
+            day = int(date[2])
+            hour = int(date[3])
+            minute = int(date[4])
+            second = int(date[5])
+            msec = int(date[6])
+            xxx = float(1000.0 * (date[6] - msec))
+            usec = int(xxx)
+            xxx = int(1000.0 * (xxx - usec))
+            nsec = int(xxx)
+            psec = int(1000.0 * (xxx - nsec))
+        elif (items > 5):
+            # y m d h m s
+            day = int(date[2])
+            hour = int(date[3])
+            minute = int(date[4])
+            second = int(date[5])
+            xxx = float(1000.0 * (date[5] - second))
+            msec = int(xxx)
+            xxx = float(1000.0 * (xxx - msec))
+            usec = int(xxx)
+            xxx = int(1000.0 * (xxx - usec))
+            nsec = int(xxx)
+            psec = int(1000.0 * (xxx - nsec))
+        elif (items > 4):
+            # y m d h m
+            day = int(date[2])
+            hour = int(date[3])
+            minute = int(date[4])
+            xxx = float(60.0 * (date[4] - minute))
+            second = int(xxx)
+            xxx = float(1000.0 * (xxx - second))
+            msec = int(xxx)
+            xxx = float(1000.0 * (xxx - msec))
+            usec = int(xxx)
+            xxx = int(1000.0 * (xxx - usec))
+            nsec = int(xxx)
+            psec = int(1000.0 * (xxx - nsec))
+        elif (items > 3):
+            # y m d h
+            day = int(date[2])
+            hour = int(date[3])
+            xxx = float(60.0 * (date[3] - hour))
+            minute = int(xxx)
+            xxx = float(60.0 * (xxx - minute))
+            second = int(xxx)
+            xxx = float(1000.0 * (xxx - second))
+            msec = int(xxx)
+            xxx = float(1000.0 * (xxx - msec))
+            usec = int(xxx)
+            xxx = int(1000.0 * (xxx - usec))
+            nsec = int(xxx)
+            psec = int(1000.0 * (xxx - nsec))
+        elif (items > 2):
+            # y m d
+            day = int(date[2])
+            xxx = float(24.0 * (date[2] - day))
+            hour = int(xxx)
+            xxx = float(60.0 * (xxx - hour))
+            minute = int(xxx)
+            xxx = float(60.0 * (xxx - minute))
+            second = int(xxx)
+            xxx = float(1000.0 * (xxx - second))
+            msec = int(xxx)
+            xxx = float(1000.0 * (xxx - msec))
+            usec = int(xxx)
+            xxx = int(1000.0 * (xxx - usec))
+            nsec = int(xxx)
+            psec = int(1000.0 * (xxx - nsec))
+        else:
+            raise ValueError('Invalid epoch16 components')
+
+        if year < 0:
+            raise ValueError('Illegal epoch field')
+
+        if (year == 9999 and month == 12 and day == 31 and hour == 23 and
+            minute == 59 and second == 59 and msec == 999 and
+                usec == 999 and nsec == 999 and psec == 999):
+            epoch.append(-1.0E31)
+            epoch.append(-1.0E31)
+        elif ((year > 9999) or (month < 0 or month > 12) or
+              (hour < 0 or hour > 23) or (minute < 0 or minute > 59) or
+              (second < 0 or second > 59) or (msec < 0 or msec > 999) or
+              (usec < 0 or usec > 999) or (nsec < 0 or nsec > 999) or
+              (psec < 0 or psec > 999)):
+            epoch = _computeEpoch16(year, month, day, hour,
+                                    minute, second, msec,
+                                    usec, nsec, psec)
+        else:
+            if (month == 0):
+                if (day < 1 or day > 366):
+                    epoch = _computeEpoch16(year, month, day, hour,
+                                            minute, second, msec,
+                                            usec, nsec, psec)
+            else:
+                if (day < 1 or day > 31):
+                    epoch = _computeEpoch16(year, month, day, hour,
+                                            minute, second, msec,
+                                            usec, nsec, psec)
+            if (month == 0):
+                daysSince0AD = _JulianDay(year, 1, 1) + (day - 1) - 1721060
+            else:
+                daysSince0AD = _JulianDay(year, month, day) - 1721060
+            secInDay = (3600 * hour) + (60 * minute) + second
+            epoch16_0 = float(86400.0 * daysSince0AD) + float(secInDay)
+            epoch16_1 = float(psec) + float(1000.0 * nsec) + float(1000000.0 * usec) + float(1000000000.0 * msec)
+            epoch.append(epoch16_0)
+            epoch.append(epoch16_1)
+        cepoch = complex(epoch[0], epoch[1])
+        if count == 1:
+            if not to_np:
+                return cepoch
+            else:
+                return np.array(cepoch)
+        else:
+            epochs.append(cepoch)
+
+    if not to_np:
+        return epochs
+    else:
+        return np.array(epochs)
+
+
+def _computeEpoch16(y: int, m: int, d: int, h: int, mn: int, s: int, ms: int, msu: int, msn: int, msp: int):
+
+    if (m == 0):
+        daysSince0AD = _JulianDay(y, 1, 1) + (d - 1) - 1721060
+    else:
+        if (m < 0):
+            y = y - 1
+            m = 13 + m
+        daysSince0AD = _JulianDay(y, m, d) - 1721060
+
+    if daysSince0AD < 0:
+        raise ValueError('Illegal epoch')
+
+    epoch = []
+    epoch.append(float(86400.0 * daysSince0AD + 3600.0 * h + 60.0 * mn) + float(s))
+    epoch.append(float(msp) + float(1000.0 * msn) + float(1000000.0 * msu) + 10.0**9 * ms)
+    if (epoch[1] < 0.0 or epoch[1] >= math.pow(10.0, 12)):
+        if (epoch[1] < 0.0):
+            sec = int(epoch[1] / math.pow(10.0, 12))
+            tmp = epoch[1] - sec * math.pow(10.0, 12)
+            if (tmp != 0.0 and tmp != -0.0):
+                epoch[0] = epoch[0] + sec - 1
+                epoch[1] = math.pow(10.0, 12.0) + tmp
+            else:
+                epoch[0] = epoch[0] + sec
+                epoch[1] = 0.0
+        else:
+            sec = int(epoch[1] / math.pow(10.0, 12))
+            tmp = epoch[1] - sec * math.pow(10.0, 12)
+            if (tmp != 0.0 and tmp != -0.0):
+                epoch[1] = tmp
+                epoch[0] = epoch[0] + sec
+            else:
+                epoch[1] = 0.0
+                epoch[0] = epoch[0] + sec
+
+    if (epoch[0] < 0.0):
+        raise ValueError('Illegal epoch')
+
+    return epoch
+
+
+def compute_epoch(dates: Sequence[Sequence[int]], to_np: bool=False):
+
+    if not isinstance(dates, (list, tuple)):
+        raise TypeError('Bad input')
+
+    new_dates = dates if isinstance(dates[0], (list, tuple)) else [dates]
+
+    count = len(new_dates)
+    if count == 0:
+        return None
+
+    epochs = []
+    for x in range(count):
+        date = new_dates[x]
+        year = date[0]
+        month = date[1]
+        items = len(date)
+        if (items > 6):
+            # y m d h m s ms
+            day = int(date[2])
+            hour = int(date[3])
+            minute = int(date[4])
+            second = int(date[5])
+            msec = int(date[6])
+        elif (items > 5):
+            # y m d h m s
+            day = int(date[2])
+            hour = int(date[3])
+            minute = int(date[4])
+            second = int(date[5])
+            msec = int(1000.0 * (date[5] - second))
+        elif (items > 4):
+            # y m d h m
+            day = int(date[2])
+            hour = int(date[3])
+            minute = int(date[4])
+            xxx = float(60.0 * (date[4] - minute))
+            second = int(xxx)
+            msec = int(1000.0 * (xxx - second))
+        elif (items > 3):
+            # y m d h
+            day = int(date[2])
+            hour = int(date[3])
+            xxx = float(60.0 * (date[3] - hour))
+            minute = int(xxx)
+            xxx = float(60.0 * (xxx - minute))
+            second = int(xxx)
+            msec = int(1000.0 * (xxx - second))
+        elif (items > 2):
+            # y m d
+            day = int(date[2])
+            xxx = float(24.0 * (date[2] - day))
+            hour = int(xxx)
+            xxx = float(60.0 * (xxx - hour))
+            minute = int(xxx)
+            xxx = float(60.0 * (xxx - minute))
+            second = int(xxx)
+            msec = int(1000.0 * (xxx - second))
+        else:
+            print('Invalid epoch components')
+            return None
+        if (year == 9999 and month == 12 and day == 31 and hour == 23 and
+                minute == 59 and second == 59 and msec == 999):
+            epochs.append(-1.0E31)
+        if (year < 0):
+            print('ILLEGAL_EPOCH_FIELD')
+            return None
+        if (year > 9999 or not 0 <= month <= 12 or
+            not 0 <= hour <= 23 or not 0 <= minute <= 59 or
+                not 0 <= second <= 59 or 0 <= msec <= 999):
+            epochs.append(_computeEpoch(year, month, day, hour, minute,
+                                        second, msec))
+        if month == 0:
+            if not 1 <= day <= 366:
+                epochs.append(_computeEpoch(year, month, day, hour,
+                                            minute, second, msec))
+        else:
+            if not 1 <= day <= 31:
+                epochs.append(_computeEpoch(year, month, day, hour,
+                                            minute, second, msec))
+        if (hour == 0 and minute == 0 and second == 0):
+            if not 0 <= msec <= 86399999:
+                epochs.append(_computeEpoch(year, month, day, hour,
+                                            minute, second, msec))
+
+        if (month == 0):
+            daysSince0AD = _JulianDay(year, 1, 1) + (day - 1) - 1721060
+        else:
+            daysSince0AD = _JulianDay(year, month, day) - 1721060
+        if (hour == 0 and minute == 0 and second == 0):
+            msecInDay = msec
+        else:
+            msecInDay = (3600000 * hour) + (60000 * minute) + (1000 * second) + msec
+        if (count == 1):
+            if not to_np:
+                return 86400000.0 * daysSince0AD + msecInDay
+            else:
+                return np.array((86400000.0 * daysSince0AD + msecInDay))
+        epochs.append(86400000.0 * daysSince0AD + msecInDay)
+    if (not to_np):
+        return epochs
+    else:
+        return np.array(epochs)
+
+
+def _computeEpoch(y: int, m: int, d: int, h: int, mn: int, s: int, ms: float):
+
+    if (m == 0):
+        daysSince0AD = _JulianDay(y, 1, 1) + (d - 1) - 1721060
+    else:
+        if (m < 0):
+            --y
+            m = 13 + m
+        daysSince0AD = _JulianDay(y, m, d) - 1721060
+    if (daysSince0AD < 1):
+        print('ILLEGAL_EPOCH_FIELD')
+        return None
+    msecInDay = float(3600000.0 * h + 60000.0 * mn + 1000.0 * s) + float(ms)
+    msecFromEpoch = float(86400000.0 * daysSince0AD + msecInDay)
+
+    if msecFromEpoch < 0.0:
+        return -1.0
+    else:
+        return msecFromEpoch
+
+
+def _JulianDay(y: int, m: int, d: int) -> int:
+
+    a1 = int(7 * (int(y + int((m + 9) / 12))) / 4)
+    a2 = int(3 * (int(int(y + int((m - 9) / 7)) / 100) + 1) / 4)
+    a3 = int(275 * m / 9)
+    return (367 * y - a1 - a2 + a3 + d + 1721029)
 
 
 def _month_index(month: str) -> int:
