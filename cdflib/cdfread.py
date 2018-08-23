@@ -101,7 +101,7 @@ class CDF(object):
             raise OSError('This package does not support multi-format CDF')
 
         if cdr_info['encoding'] in (3, 14, 15):
-            raise OSError('This package does not support CDFs with this ' + CDF._encoding_token(cdr_info['encoding'])+' encoding')
+            raise OSError('This package does not support CDFs with this ' + _encoding_token(cdr_info['encoding'])+' encoding')
 
         # SET GLOBAL VARIABLES
         self._post25 = cdr_info['post25']
@@ -828,7 +828,7 @@ class CDF(object):
                 adr_info = self._read_adr(position)
             else:
                 adr_info = self._read_adr2(position)
-            attr[adr_info['name']] = CDF._scope_token(int(adr_info['scope']))
+            attr[adr_info['name']] = _scope_token(int(adr_info['scope']))
             attrs.append(attr)
             position = adr_info['next_adr_location']
         return attrs
