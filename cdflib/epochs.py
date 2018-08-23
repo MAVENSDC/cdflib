@@ -422,8 +422,8 @@ class CDFepoch:
         elif isinstance(tt2000, (list, tuple, np.ndarray)):
             new_tt2000 = tt2000
         else:
-            print('Bad input data')
-            return None
+            raise TypeError('Bad input data')
+
         count = len(new_tt2000)
         toutcs = []
         for x in range(count):
@@ -453,10 +453,10 @@ class CDFepoch:
                 secSinceJ2000 = secSinceJ2000 - int(datx[0])
                 epoch = self.J2000Since0AD12hSec + secSinceJ2000
                 if (datx[1] == 0.0):
-                    date1 = self._EPOCHbreakdownTT2000(epoch)
+                    date1 = _EPOCHbreakdownTT2000(epoch)
                 else:
                     epoch = epoch - 1
-                    date1 = self._EPOCHbreakdownTT2000(epoch)
+                    date1 = _EPOCHbreakdownTT2000(epoch)
                     date1[5] = date1[5] + 1
                 ye1 = date1[0]
                 mo1 = date1[1]
@@ -467,7 +467,7 @@ class CDFepoch:
             else:
                 # pre-1972...
                 epoch = secSinceJ2000 + self.J2000Since0AD12hSec
-                xdate1 = self._EPOCHbreakdownTT2000(epoch)
+                xdate1 = _EPOCHbreakdownTT2000(epoch)
                 xdate1.append(0)
                 xdate1.append(0)
                 xdate1.append(nansec)
@@ -482,7 +482,7 @@ class CDFepoch:
                     nansec = self.SECinNanoSecs + nansec
                     tmpy = tmpy - 1
                     epoch = tmpy + self.J2000Since0AD12hSec
-                    xdate1 = self._EPOCHbreakdownTT2000(epoch)
+                    xdate1 = _EPOCHbreakdownTT2000(epoch)
                     xdate1.append(0)
                     xdate1.append(0)
                     xdate1.append(nansec)
@@ -497,7 +497,7 @@ class CDFepoch:
                         nansec = self.SECinNanoSecs + nansec
                         tmpy = tmpy - 1
                     epoch = tmpy + self.J2000Since0AD12hSec
-                    xdate1 = self._EPOCHbreakdownTT2000(epoch)
+                    xdate1 = _EPOCHbreakdownTT2000(epoch)
                     xdate1.append(0)
                     xdate1.append(0)
                     xdate1.append(nansec)
@@ -514,7 +514,7 @@ class CDFepoch:
                             tmpy = tmpy - 1
                         epoch = tmpy + self.J2000Since0AD12hSec
                         # One more determination
-                        xdate1 = self._EPOCHbreakdownTT2000(epoch)
+                        xdate1 = _EPOCHbreakdownTT2000(epoch)
                 ye1 = int(xdate1[0])
                 mo1 = int(xdate1[1])
                 da1 = int(xdate1[2])
@@ -599,34 +599,6 @@ class CDFepoch:
                                                  int(self.LTS[ix][1]),
                                                  int(self.LTS[ix][2]),
                                                  0, 0, 0, 0, 0, 0]))
-
-    def _EPOCHbreakdownTT2000(self, epoch):
-
-        second_AD = epoch
-        minute_AD = second_AD / 60.0
-        hour_AD = minute_AD / 60.0
-        day_AD = hour_AD / 24.0
-
-        jd = int(1721060 + day_AD)
-        L = jd + 68569
-        n = int(4 * L / 146097)
-        L = L - int((146097 * n + 3) / 4)
-        i = int(4000 * (L + 1) / 1461001)
-        L = L - int(1461 * i / 4) + 31
-        j = int(80 * L / 2447)
-        k = L - int(2447 * j / 80)
-        L = int(j / 11)
-        j = j + 2 - 12 * L
-        i = 100 * (n - 49) + i + L
-
-        date = []
-        date.append(i)
-        date.append(j)
-        date.append(k)
-        date.append(int(hour_AD % 24.0))
-        date.append(int(minute_AD % 60.0))
-        date.append(int(second_AD % 60.0))
-        return date
 
     def epochrange_tt2000(self, epochs, starttime=None, endtime=None):
 
@@ -1119,6 +1091,36 @@ class CDFepoch:
             return nanoSecSinceJ2000s
         else:
             return np.array(nanoSecSinceJ2000s)
+
+
+def _EPOCHbreakdownTT2000(epoch: float) -> List[int]:
+
+    second_AD = epoch
+    minute_AD = second_AD / 60.0
+    hour_AD = minute_AD / 60.0
+    day_AD = hour_AD / 24.0
+
+    jd = int(1721060 + day_AD)
+    L = jd + 68569
+    n = int(4 * L / 146097)
+    L = L - int((146097 * n + 3) / 4)
+    i = int(4000 * (L + 1) / 1461001)
+    L = L - int(1461 * i / 4) + 31
+    j = int(80 * L / 2447)
+    k = L - int(2447 * j / 80)
+    L = int(j / 11)
+    j = j + 2 - 12 * L
+    i = 100 * (n - 49) + i + L
+
+    date = []
+    date.append(i)
+    date.append(j)
+    date.append(k)
+    date.append(int(hour_AD % 24.0))
+    date.append(int(minute_AD % 60.0))
+    date.append(int(second_AD % 60.0))
+
+    return date
 
 
 def encode_epoch16(epochs: Sequence[complex], iso_8601: bool=True):
