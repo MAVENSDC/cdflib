@@ -568,4 +568,4 @@ def test_create_2d_r_and_z_variables():
 
 
 if __name__ == '__main__':
-    pytest.main(['-xv', __file__])
+    pytest.main(['-xrsv', __file__])
