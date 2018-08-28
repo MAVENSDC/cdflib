@@ -2363,7 +2363,8 @@ class CDF(object):
         elif (isinstance(indata, np.ndarray)):
             tofrom = self._convert_option()
             npdata = CDF._convert_nptype(data_type, indata)
-            recs = len(indata)
+            # Contournement pour le projet
+            recs = 1
             dt_string = CDF._convert_type(data_type)
             if (data_type == CDF.CDF_EPOCH16):
                 num_elems = 2 * num_elems
