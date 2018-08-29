@@ -221,7 +221,25 @@ class CDFepoch:
         else:
             raise TypeError('Bad input')
 
-    def unixtime(self, cdf_time, to_np: bool=False):
+    def to_datetime(self, cdf_time: Sequence[float], to_np: bool=False) -> List[datetime.datetime]:
+        """
+        Encodes the epoch(s) into Python datetime.  Precision is only
+        kept to the nearest microsecond.
+
+        If to_np is True, then the values will be returned in a numpy array.
+        """
+        time_list = self.breakdown(cdf_time, to_np=False)
+
+        if len(time_list[0]) == 8:
+            dt = [datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5], microsecond=t[6]*1000+t[7]) for t in time_list]
+        elif len(time_list[0]) == 7:
+            dt = [datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5], microsecond=t[6]*1000) for t in time_list]
+        else:
+            raise ValueError('unknown cdf_time format')
+
+        return np.array(dt) if to_np else dt
+
+    def unixtime(self, cdf_time: Sequence[float], to_np: bool=False):
         """
         Encodes the epoch(s) into seconds after 1970-01-01.  Precision is only
         kept to the nearest microsecond.
