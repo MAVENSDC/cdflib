@@ -286,7 +286,7 @@ class CDF(object):
                 print('NAME: ' + name + ', NUMBER: ' + str(x) + ', SCOPE: ' + attrs[x][name])
             return attrs
 
-    def attget(self, attribute=None, entry=None, to_np=True):
+    def attget(self, attribute: Union[str, int]=None, entry=0, to_np=True):
         """
         Returns the value of the attribute at the entry number provided.
 
