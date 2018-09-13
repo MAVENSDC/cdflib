@@ -81,7 +81,7 @@ class CDF(object):
             new_path = self._uncompress_file(path)
             if new_path is None:
                 raise OSError("Decompression was unsuccessful.  Only GZIP compression is currently supported.")
-                
+
             self.compressed_file = self.file
             self.file = new_path
 
@@ -536,7 +536,7 @@ class CDF(object):
             return vdr_info
         else:
             if (vdr_info['max_records'] < 0):
-                    #print('No data is written for this variable')
+                    # print('No data is written for this variable')
                 return None
             return self._read_vardata(vdr_info, epoch=epoch, starttime=starttime, endtime=endtime,
                                       startrec=startrec, endrec=endrec, record_range_only=record_range_only,
@@ -726,7 +726,7 @@ class CDF(object):
             block_size = int.from_bytes(f.read(8), 'big')
             f.seek(byte_loc+12)
             cproffset = int.from_bytes(f.read(8), 'big')
-            
+
         data_start = byte_loc + 32
         data_size = block_size - 32
         cType, cParams = self._read_cpr(cproffset)
@@ -763,7 +763,7 @@ class CDF(object):
             f.seek(byte_loc, 0)
             block_size = int.from_bytes(f.read(4), 'big')
             cpr = f.read(block_size-4)
-            
+
         cType = int.from_bytes(cpr[4:8], 'big')
         cParams = int.from_bytes(cpr[16:20], 'big')
 
@@ -1591,31 +1591,32 @@ class CDF(object):
 
         with self.file.open('rb') as f:
             f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(4), 'big', signed=True)  # Block Size
+            block_size = int.from_bytes(f.read(4), 'big', signed=True)
             vxrs = f.read(block_size-4)
-        next_vxr_pos = int.from_bytes(vxrs[4:8], 'big', signed=True)
-        num_ent = int.from_bytes(vxrs[8:12], 'big', signed=True)
-        num_ent_used = int.from_bytes(vxrs[12:16], 'big', signed=True)
-        # coff = 16
-        for ix in range(0, num_ent_used):
-            soffset = 16 + 4 * ix
-            num_start = int.from_bytes(vxrs[soffset:soffset+4], 'big',
-                                       signed=True)
-            eoffset = 16 + 4 * num_ent + 4 * ix
-            num_end = int.from_bytes(vxrs[eoffset:eoffset+4], 'big', signed=True)
-            ooffset = 16 + 2 * 4 * num_ent + 4 * ix
-            rec_offset = int.from_bytes(vxrs[ooffset:ooffset+4], 'big',
-                                        signed=True)
-            type_offset = 4 + rec_offset
-            f.seek(type_offset, 0)
-            next_type = int.from_bytes(f.read(4), 'big', signed=True)
-            if next_type == 6:
-                vvr_offsets, vvr_start, vvr_end = self._read_vxrs2(rec_offset,
-                                                                   vvr_offsets=vvr_offsets, vvr_start=vvr_start, vvr_end=vvr_end)
-            else:
-                vvr_offsets.extend([rec_offset])
-                vvr_start.extend([num_start])
-                vvr_end.extend([num_end])
+
+            next_vxr_pos = int.from_bytes(vxrs[4:8], 'big', signed=True)
+            num_ent = int.from_bytes(vxrs[8:12], 'big', signed=True)
+            num_ent_used = int.from_bytes(vxrs[12:16], 'big', signed=True)
+            # coff = 16
+            for ix in range(0, num_ent_used):
+                soffset = 16 + 4 * ix
+                num_start = int.from_bytes(vxrs[soffset:soffset+4], 'big',
+                                           signed=True)
+                eoffset = 16 + 4 * num_ent + 4 * ix
+                num_end = int.from_bytes(vxrs[eoffset:eoffset+4], 'big', signed=True)
+                ooffset = 16 + 2 * 4 * num_ent + 4 * ix
+                rec_offset = int.from_bytes(vxrs[ooffset:ooffset+4], 'big',
+                                            signed=True)
+                type_offset = 4 + rec_offset
+                f.seek(type_offset, 0)
+                next_type = int.from_bytes(f.read(4), 'big', signed=True)
+                if next_type == 6:
+                    vvr_offsets, vvr_start, vvr_end = self._read_vxrs2(rec_offset,
+                                                                       vvr_offsets=vvr_offsets, vvr_start=vvr_start, vvr_end=vvr_end)
+                else:
+                    vvr_offsets.extend([rec_offset])
+                    vvr_start.extend([num_start])
+                    vvr_end.extend([num_end])
 
         if next_vxr_pos != 0:
             vvr_offsets, vvr_start, vvr_end = self._read_vxrs2(next_vxr_pos,
@@ -1665,7 +1666,7 @@ class CDF(object):
                                                    vdr_dict['num_elements'])
             else:
                 filled_data = CDF._convert_np_data(
-                    self._default_pad(vdr_dict['data_type'], 
+                    self._default_pad(vdr_dict['data_type'],
                                       vdr_dict['num_elements']),
                     vdr_dict['data_type'],
                     vdr_dict['num_elements'])
