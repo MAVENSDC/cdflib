@@ -7,6 +7,7 @@ from .epochs import CDFepoch as cdfepoch
 
 
 def CDF(path, cdf_spec=None, delete=False, validate=None):
+    path = os.path.expanduser(path)
     if (os.path.exists(path)):
         if delete:
             os.remove(path)
