@@ -1,6 +1,7 @@
 [![image](https://travis-ci.com/scivision/cdflib.svg?branch=master)](https://travis-ci.com/scivision/cdflib)
 [![image](https://coveralls.io/repos/github/scivision/cdflib/badge.svg?branch=master)](https://coveralls.io/github/scivision/cdflib?branch=master)
 [![Build status](https://ci.appveyor.com/api/projects/status/kfhqkd87vifsbc9d?svg=true)](https://ci.appveyor.com/project/scivision/cdflib)
+[![DOI](https://zenodo.org/badge/102912691.svg)](https://zenodo.org/badge/latestdoi/102912691)
 
 # CDFlib
 
