@@ -207,6 +207,8 @@ class CDFepoch:
 
     def breakdown(epochs, to_np=None):  # @NoSelf
 
+        #Returns either a single array, or a array of arrays depending on the input
+
         if (isinstance(epochs, int) or isinstance(epochs, np.int64)):
             return CDFepoch.breakdown_tt2000(epochs, to_np)
         elif (isinstance(epochs, float) or isinstance(epochs, np.float64)):
@@ -239,6 +241,15 @@ class CDFepoch:
         """
         import datetime
         time_list = CDFepoch.breakdown(cdf_time, to_np=False)
+
+        #Check if only one time was input into unixtime.
+        #If so, turn the output of breakdown into a list for this function to work
+        if hasattr(cdf_time, '__len__'):
+           if len(cdf_time) == 1:
+               time_list = [time_list]
+        else:
+            time_list = [time_list]
+
         unixtime = []
         for t in time_list:
             date = ['year', 'month', 'day', 'hour', 'minute', 'second', 'microsecond']
