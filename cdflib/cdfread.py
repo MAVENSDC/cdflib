@@ -125,6 +125,8 @@ class CDF(object):
         if self.compressed_file is not None:
             self.compressed_file = None
 
+    def close(self):
+        pass
 
     def cdf_info(self):
         """
