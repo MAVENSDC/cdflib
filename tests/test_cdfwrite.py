@@ -12,8 +12,10 @@ fncomp = R / "testfiles/testing_compression.cdf"
 
 
 @pytest.fixture
-def cdf_create(fn: Path, spec: dict):
-    return cdfwrite.CDF(fn, cdf_spec=spec, delete=True)
+def cdf_create():
+    def _cdf_create(fn: Path, spec: dict):
+        return cdfwrite.CDF(fn, cdf_spec=spec, delete=True)
+    return _cdf_create
 
 
 def test_cdf_creation(cdf_create):
