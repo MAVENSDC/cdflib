@@ -26,7 +26,7 @@ def test_cdf_creation(cdf_create):
     assert info['Majority'] == 'Column_major'
 
 
-def test_checksum():
+def test_checksum(cdf_create):
     # Setup the test_file
     tfile = cdf_create(fncsum, {'Checksum': True})
 
@@ -52,7 +52,7 @@ def test_checksum():
     assert (var == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).all()
 
 
-def test_checksum_compressed():
+def test_checksum_compressed(cdf_create):
     # Setup the test_file
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
@@ -84,7 +84,7 @@ def test_checksum_compressed():
     assert att['Data'] == '500'
 
 
-def test_file_compression():
+def test_file_compression(cdf_create):
     # Setup the test_file
 
     var_spec = {}
@@ -111,7 +111,7 @@ def test_file_compression():
     assert (var == v).all()
 
 
-def test_globalattrs():
+def test_globalattrs(cdf_create):
     # Setup the test_file
     globalAttrs = {}
     globalAttrs['Global1'] = {0: 'Global Value 1'}
@@ -149,7 +149,7 @@ def test_globalattrs():
         assert entry['Data'][x] == x
 
 
-def test_create_zvariable():
+def test_create_zvariable(cdf_create):
     # Setup the test_file
     vs = {}
     vs['Variable'] = 'Variable1'
@@ -174,7 +174,7 @@ def test_create_zvariable():
     assert (var == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).all()
 
 
-def test_create_rvariable():
+def test_create_rvariable(cdf_create):
     # Setup the test_file
     vs = {}
     vs['Variable'] = 'Variable1'
@@ -201,7 +201,7 @@ def test_create_rvariable():
         assert var[x] == x
 
 
-def test_create_zvariable_no_recvory():
+def test_create_zvariable_no_recvory(cdf_create):
         # Setup the test_file
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
@@ -226,7 +226,7 @@ def test_create_zvariable_no_recvory():
     assert var == 2
 
 
-def test_create_zvariables_with_attributes():
+def test_create_zvariables_with_attributes(cdf_create):
     # Setup the test_file
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
@@ -262,7 +262,7 @@ def test_create_zvariables_with_attributes():
     assert att['Data'] == '1000'
 
 
-def test_create_zvariables_then_attributes():
+def test_create_zvariables_then_attributes(cdf_create):
     # Setup the test_file
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
@@ -295,7 +295,7 @@ def test_create_zvariables_then_attributes():
     att['Data'] == '1000'
 
 
-def test_nonsparse_zvariable_blocking():
+def test_nonsparse_zvariable_blocking(cdf_create):
     # Setup the test_file
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
@@ -318,7 +318,7 @@ def test_nonsparse_zvariable_blocking():
     assert var[99999] == 99999
 
 
-def test_sparse_virtual_zvariable_blocking():
+def test_sparse_virtual_zvariable_blocking(cdf_create):
     # Setup the test_file
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
@@ -355,7 +355,7 @@ def test_sparse_virtual_zvariable_blocking():
     assert var[70001] == 70001
 
 
-def test_sparse_zvariable_blocking():
+def test_sparse_zvariable_blocking(cdf_create):
     # Setup the test_file
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
@@ -392,7 +392,7 @@ def test_sparse_zvariable_blocking():
     assert var[70001] == 30000
 
 
-def test_sparse_zvariable_pad():
+def test_sparse_zvariable_pad(cdf_create):
     # Setup the test_file
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
@@ -420,7 +420,7 @@ def test_sparse_zvariable_pad():
     assert var[3000] == 1
 
 
-def test_sparse_zvariable_previous():
+def test_sparse_zvariable_previous(cdf_create):
     # Setup the test_file
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
@@ -448,7 +448,7 @@ def test_sparse_zvariable_previous():
     assert var[6001] == var[6000]
 
 
-def test_create_2d_rvariable():
+def test_create_2d_rvariable(cdf_create):
     # Setup the test_file
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
@@ -482,7 +482,7 @@ def test_create_2d_rvariable():
         assert var[x][1][1] == 2*x+2
 
 
-def test_create_2d_rvariable_dimvary():
+def test_create_2d_rvariable_dimvary(cdf_create):
     # Setup the test_file
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
@@ -516,7 +516,7 @@ def test_create_2d_rvariable_dimvary():
         assert var[x][1] == 2*x+1
 
 
-def test_create_2d_r_and_z_variables():
+def test_create_2d_r_and_z_variables(cdf_create):
 
     # Setup the test_file
     var_spec = {}
