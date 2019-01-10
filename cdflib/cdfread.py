@@ -1283,10 +1283,11 @@ class CDF(object):
         return return_dict
 
     def _read_aedr2(self, byte_loc, to_np=True):
-        f = self.file
-        f.seek(byte_loc, 0)
-        block_size = int.from_bytes(f.read(4), 'big')
-        aedr = f.read(block_size-4)
+        with self.file.open('rb') as f:
+            f.seek(byte_loc, 0)
+            block_size = int.from_bytes(f.read(4), 'big')
+            aedr = f.read(block_size - 4)
+
         next_aedr = int.from_bytes(aedr[4:8], 'big', signed=True)
         data_type = int.from_bytes(aedr[12:16], 'big', signed=True)
 
