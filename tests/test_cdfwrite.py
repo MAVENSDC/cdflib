@@ -16,7 +16,7 @@ def cdf_create(fn: Path, spec: dict):
     return cdfwrite.CDF(fn, cdf_spec=spec, delete=True)
 
 
-def test_cdf_creation():
+def test_cdf_creation(cdf_create):
     cdf_create(fnbasic, {'rDim_sizes': [1]}).close()
 
     reader = cdfread.CDF(fnbasic)
