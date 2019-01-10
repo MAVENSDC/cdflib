@@ -2174,7 +2174,8 @@ class CDF(object):
         section_type = int.from_bytes(block[0:4], 'big')
         if section_type == 13:
             # a CVVR
-            return gzip.decompress(block[16:])
+            compressed_size = int.from_bytes(block[12:16], 'big')
+            return gzip.decompress(block[16:16+compressed_size])
         elif section_type == 7:
             # a VVR
             return block[4:]
@@ -2191,7 +2192,8 @@ class CDF(object):
         section_type = int.from_bytes(block[0:4], 'big')
         if section_type == 13:
             # a CVVR
-            return gzip.decompress(block[12:])
+            compressed_size = int.from_bytes(block[8:12], 'big')
+            return gzip.decompress(block[12:12+compressed_size])
         elif section_type == 7:
             # a VVR
             return block[4:]
