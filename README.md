@@ -2,6 +2,7 @@
 [![image](https://coveralls.io/repos/github/MAVENSDC/cdflib/badge.svg?branch=master)](https://coveralls.io/github/MAVENSDC/cdflib?branch=master)
 [![Build status](https://ci.appveyor.com/api/projects/status/kfhqkd87vifsbc9d?svg=true)](https://ci.appveyor.com/project/MAVENSDC/cdflib)
 [![DOI](https://zenodo.org/badge/102912691.svg)](https://zenodo.org/badge/latestdoi/102912691)
+[![Documentation Status](https://readthedocs.org/projects/cdflib/badge/?version=latest)](https://cdflib.readthedocs.io/en/latest/?badge=latest)
 
 # CDFlib
 
