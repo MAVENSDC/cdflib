@@ -1905,7 +1905,11 @@ class CDF(object):
                 dt_string += 'c16'
             dt = np.dtype(dt_string)
             ret = np.frombuffer(byte_stream, dtype=dt, count=num_recs*num_elems)
-            ret.setflags('WRITEABLE')
+            try:
+                ret.setflags('WRITEABLE')
+            except ValueError:
+                # If we can't set the writable flag, just continue
+                pass
 
         if squeeze_needed:
             ret = np.squeeze(ret, axis=(ret.ndim-1))
