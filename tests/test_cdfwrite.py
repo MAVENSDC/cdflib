@@ -10,14 +10,21 @@ fnbasic = 'testing.cdf'
 
 
 def cdf_create(fn: Path, spec: dict):
-    return cdfwrite.CDF(fn, cdf_spec=spec)
+    # str(fn) is a Python==3.5 workaround
+    return cdfwrite.CDF(str(fn), cdf_spec=spec)
+
+
+def cdf_read(fn: Path, validate: bool = False):
+    # str(fn) is a Python==3.5 workaround
+    return cdfread.CDF(str(fn), validate=validate)
 
 
 def test_cdf_creation(tmp_path):
+
     fn = tmp_path / fnbasic
     cdf_create(fn, {'rDim_sizes': [1]}).close()
 
-    reader = cdfread.CDF(fn)
+    reader = cdf_read(fn)
 
     # Test CDF info
     info = reader.cdf_info()
@@ -45,7 +52,7 @@ def test_checksum(tmp_path):
     tfile.close()
 
 # %% Open the file to read
-    reader = cdfread.CDF(fn, validate=True)
+    reader = cdf_read(fn, validate=True)
     # Test CDF info
     var = reader.varget("Variable1")
     assert (var == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).all()
@@ -74,7 +81,7 @@ def test_checksum_compressed(tmp_path):
 
     tfile.close()
 # %% Open the file to read
-    reader = cdfread.CDF(fn, validate=True)
+    reader = cdf_read(fn, validate=True)
 
     var = reader.varget("Variable1")
     assert (var == v).all()
@@ -108,7 +115,7 @@ def test_file_compression(tmp_path):
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fn)
+    reader = cdf_read(fn)
     # Test CDF info
     var = reader.varget("Variable1")
     assert (var == v).all()
@@ -138,7 +145,7 @@ def test_globalattrs(tmp_path):
 
     tfile.close()
 # %% Open the file to read
-    reader = cdfread.CDF(fn)
+    reader = cdf_read(fn)
 
     # Test CDF info
     attrib = reader.attinq('Global2')
@@ -170,7 +177,7 @@ def test_create_zvariable(tmp_path):
     tfile.close()
 
 # %% Open the file to read
-    reader = cdfread.CDF(fn)
+    reader = cdf_read(fn)
 
     # Test CDF info
     varinfo = reader.varinq("Variable1")
@@ -197,7 +204,7 @@ def test_create_rvariable(tmp_path):
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fn)
+    reader = cdf_read(fn)
 
     # Test CDF info
     varinfo = reader.varinq("Variable1")
@@ -225,7 +232,7 @@ def test_create_zvariable_no_recvory(tmp_path):
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fn)
+    reader = cdf_read(fn)
 
     # Test CDF info
     varinfo = reader.varinq("Variable1")
@@ -263,7 +270,7 @@ def test_create_zvariables_with_attributes(tmp_path):
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fn)
+    reader = cdf_read(fn)
 
     # Test CDF info
     att = reader.attget("Attribute1", entry=0)
@@ -298,7 +305,7 @@ def test_create_zvariables_then_attributes(tmp_path):
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fn)
+    reader = cdf_read(fn)
 
     # Test CDF info
     att = reader.attget("Attribute1", entry=0)
@@ -326,7 +333,7 @@ def test_nonsparse_zvariable_blocking(tmp_path):
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fn)
+    reader = cdf_read(fn)
 
     # Test CDF info
     var = reader.varget("Variable1")
@@ -361,7 +368,7 @@ def test_sparse_virtual_zvariable_blocking(tmp_path):
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fn)
+    reader = cdf_read(fn)
 
     # Test CDF info
     varinq = reader.varinq("Variable1")
@@ -400,7 +407,7 @@ def test_sparse_zvariable_blocking(tmp_path):
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fn)
+    reader = cdf_read(fn)
 
     # Test CDF info
     # tfile = cdf_create(fn, {'rDim_sizes': [1]})
@@ -430,7 +437,7 @@ def test_sparse_zvariable_pad(tmp_path):
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fn)
+    reader = cdf_read(fn)
 
     # Test CDF info
     varinq = reader.varinq("Variable1")
@@ -460,7 +467,7 @@ def test_sparse_zvariable_previous(tmp_path):
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fn)
+    reader = cdf_read(fn)
 
     # Test CDF info
     varinq = reader.varinq("Variable1")
@@ -493,7 +500,7 @@ def test_create_2d_rvariable(tmp_path):
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fn)
+    reader = cdf_read(fn)
 
     # Test CDF info
     varinfo = reader.varinq("Variable1")
@@ -531,7 +538,7 @@ def test_create_2d_rvariable_dimvary(tmp_path):
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fn)
+    reader = cdf_read(fn)
 
     # Test CDF info
     varinfo = reader.varinq("Variable1")
@@ -573,7 +580,7 @@ def test_create_2d_r_and_z_variables(tmp_path):
 
     tfile.close()
     # Open the file to read
-    reader = cdfread.CDF(fn)
+    reader = cdf_read(fn)
 
     # Test CDF info
     varinfo = reader.varinq("Variable1")
