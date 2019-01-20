@@ -1681,7 +1681,7 @@ class CDFepoch:
                     return -1.0E31
                 else:
                     if (len(value) == 24):
-                        date = re.findall('(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)', value)
+                        date = re.findall(r'(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)', value)
                         dd = int(date[0][0])
                         mm = CDFepoch._month_index(date[0][1])
                         yy = int(date[0][2])
@@ -1690,7 +1690,7 @@ class CDFepoch:
                         ss = int(date[0][5])
                         ms = int(date[0][6])
                     else:
-                        date = re.findall('(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)\.(\d+)',
+                        date = re.findall(r'(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)\.(\d+)',
                                           value)
                         yy = int(date[0][0])
                         mm = int(date[0][1])
@@ -1708,7 +1708,7 @@ class CDFepoch:
                     return -1.0E31-1.0E31j
                 else:
                     if (len(value) == 36):
-                        date = re.findall('(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)\.(\d+)\.(\d+)\.(\d+)',
+                        date = re.findall(r'(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)\.(\d+)\.(\d+)\.(\d+)',
                                           value)
                         dd = int(date[0][0])
                         mm = CDFepoch._month_index(date[0][1])
@@ -1721,7 +1721,7 @@ class CDFepoch:
                         ns = int(date[0][8])
                         ps = int(date[0][9])
                     else:
-                        date = re.findall('(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)\.(\d+)',
+                        date = re.findall(r'(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)\.(\d+)',
                                           value)
                         yy = int(date[0][0])
                         mm = int(date[0][1])
@@ -1749,7 +1749,7 @@ class CDFepoch:
                     return -9223372036854775807
                 else:
                     if (len(value) == 29):
-                        date = re.findall('(\d+)\-(\d+)\-(\d+)t(\d+)\:(\d+)\:(\d+)\.(\d+)',
+                        date = re.findall(r'(\d+)\-(\d+)\-(\d+)t(\d+)\:(\d+)\:(\d+)\.(\d+)',
                                           value)
                         yy = int(date[0][0])
                         mm = int(date[0][1])
@@ -1763,7 +1763,7 @@ class CDFepoch:
                         us = int(subms / 1000)
                         ns = int(subms % 1000)
                     else:
-                        date = re.findall('(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)\.(\d+)\.(\d+)',
+                        date = re.findall(r'(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)\.(\d+)\.(\d+)',
                                           value)
                         dd = int(date[0][0])
                         mm = CDFepoch._month_index(date[0][1])
