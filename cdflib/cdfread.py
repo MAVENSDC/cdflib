@@ -667,19 +667,19 @@ class CDF(object):
                                 entryWithType.append(entryData.tolist()[0])
                             else:
                                 if (dataType != 33):
-                                    entryWithType.append(epoch.CDFepoch.encode(entryData.tolist()[0], \
+                                    entryWithType.append(epoch.epochs.encode(entryData.tolist()[0], \
                                                                                iso_8601=False))
                                 else:
-                                    entryWithType.append(epoch.CDFepoch.encode(entryData.tolist()[0]))
+                                    entryWithType.append(epoch.epochs.encode(entryData.tolist()[0]))
                         else:
                             if (dataType != 31 and dataType != 32 and dataType != 33):
                                 entryWithType.append(entryData.tolist())
                             else:
                                 if (dataType != 33):
-                                    entryWithType.append(epoch.CDFepoch.encode(entryData.tolist(), \
+                                    entryWithType.append(epoch.epochs.encode(entryData.tolist(), \
                                                                                iso_8601=False))
                                 else:
-                                    entryWithType.append(epoch.CDFepoch.encode(entryData.tolist()))
+                                    entryWithType.append(epoch.epochs.encode(entryData.tolist()))
                     entryWithType.append(CDF._datatype_token(aedr_info['data_type']))
                     entries[aedr_info['entry_num']] = entryWithType
                 aedr_byte_loc = aedr_info['next_aedr']
@@ -1132,16 +1132,16 @@ class CDF(object):
                         else:
                             if (len(entryData.tolist()) == 1):
                                 if (dataType != 33):
-                                    entryWithType.append(epoch.CDFepoch.encode(entryData.tolist()[0], \
+                                    entryWithType.append(epoch.epochs.encode(entryData.tolist()[0], \
                                                          iso_8601=False))
                                 else:
-                                    entryWithType.append(epoch.CDFepoch.encode(entryData.tolist()[0]))
+                                    entryWithType.append(epoch.epochs.encode(entryData.tolist()[0]))
                             else:
                                 if (dataType != 33):
-                                    entryWithType.append(epoch.CDFepoch.encode(entryData.tolist(), \
+                                    entryWithType.append(epoch.epochs.encode(entryData.tolist(), \
                                                          iso_8601=False))
                                 else:
-                                    entryWithType.append(epoch.CDFepoch.encode(entryData.tolist()))
+                                    entryWithType.append(epoch.epochs.encode(entryData.tolist()))
                     entryWithType.append(CDF._datatype_token(aedr_info['data_type']))
                     return_dict[adr_info['name']] = entryWithType
                 found = 1
@@ -2084,7 +2084,7 @@ class CDF(object):
     def _findrangerecords(self, data_type, epochtimes, starttime, endtime):
         if (data_type == 31 or data_type == 32 or data_type == 33):
             #CDF_EPOCH or CDF_EPOCH16 or CDF_TIME_TT2000
-            recs = epoch.CDFepoch.findepochrange(epochtimes, starttime, endtime)
+            recs = epoch.epochs.findepochrange(epochtimes, starttime, endtime)
         else:
             print('Not a CDF epoch type...')
             return None

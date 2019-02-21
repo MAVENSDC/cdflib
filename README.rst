@@ -471,12 +471,12 @@ new CDF file::
 CDF Epochs
 ##########
 
-Importing cdflib also imports the module CDFepoch, which handles CDF-based epochs.  
+Importing cdflib also imports the module epochs, which handles CDF-based epochs.
 The following functions can be used to convert back and forth between different ways to display the date.
 You can call these functions like so::
     import cdflib
     
-    cdf_file = cdflib.cdfepoch.compute_epoch([2017,1,1,1,1,1,111])
+    cdf_file = cdflib.epochs.compute_epoch([2017,1,1,1,1,1,111])
 
 There are three (3) epoch data types in CDF: CDF_EPOCH, CDF_EPOCH16 and 
 CDF_TIME_TT2000. 
@@ -620,15 +620,5 @@ to the epoch's data type.
 
 The start/end times should be in either be in epoch units, or in the list 
 format described in "compute_epoch/epoch16/tt2000" section.  
-
-getVersion ()
-==========
-
-Shows the code version.
-
-getLeapSecondLastUpdated ()
-========================
-
-Shows the latest date a leap second was added to the leap second table.
 
 @author: Bryan Harter, Michael Liu

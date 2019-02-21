@@ -597,13 +597,13 @@ class CDF(object):
                                     numElems = len(data)
                                     for x in range(0, numElems):
                                         if (isinstance(data[x], str)):
-                                            cvalue.append(cdfepoch.CDFepoch.parse(data[x]))
+                                            cvalue.append(cdfepoch.parse(data[x]))
                                         else:
                                             cvalue.append(data[x])
                                     data = cvalue
                                 else:
                                     if (isinstance(data, str)):
-                                        data = cdfepoch.CDFepoch.parse(data)
+                                        data = cdfepoch.parse(data)
                                     numElems = 1
                             else:
                                 if (isinstance(data, list) or
@@ -740,7 +740,7 @@ class CDF(object):
                                     numElems = len(data)
                                     for x in range(0, numElems):
                                         if (isinstance(data[x], str)):
-                                            avalue = cdfepoch.CDFepoch.parse(data[x])
+                                            avalue = cdfepoch.parse(data[x])
                                         else:
                                             avalue = data[x]
                                         if (dataType == CDF.CDF_EPOCH16):
@@ -751,7 +751,7 @@ class CDF(object):
                                             data = cvalue
                                 else:
                                     if (isinstance(data, str)):
-                                        data = cdfepoch.CDFepoch.parse(data)
+                                        data = cdfepoch.parse(data)
                                     numElems = 1
                             else:
                                 if (isinstance(data, list) or isinstance(data, tuple)):
@@ -1011,10 +1011,10 @@ class CDF(object):
                         if (isinstance(data, list) or isinstance(data, tuple)):
                             numElems = len(data)
                             for x in range(0, numElems):
-                                cvalue.append(cdfepoch.CDFepoch.parse(data[x]))
+                                cvalue.append(cdfepoch.parse(data[x]))
                             data = cvalue
                         else:
-                            data = cdfepoch.CDFepoch.parse(data)
+                            data = cdfepoch.parse(data)
                             numElems = 1
             else:
                 # No data type defined...
