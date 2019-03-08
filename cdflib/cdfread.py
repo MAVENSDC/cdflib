@@ -140,13 +140,13 @@ class CDF(object):
                 +---------------+--------------------------------------------------------------------------------+
                 | ['Checksum']  | the checksum indicator                                                         |
                 +---------------+--------------------------------------------------------------------------------+
-                | ['Num_rdim']  | the number of dimensions, applicable only to rVariables
+                | ['Num_rdim']  | the number of dimensions, applicable only to rVariables                        |
                 +---------------+--------------------------------------------------------------------------------+
-                | ['rDim_sizes'] | the dimensional sizes, applicable only to rVariables
-                +----------------+--------------------------------------------------------------------------------+
-                | ['Compressed']| CDF is compressed at the file-level
+                | ['rDim_sizes'] | the dimensional sizes, applicable only to rVariables                          |
+                +----------------+-------------------------------------------------------------------------------+
+                | ['Compressed']| CDF is compressed at the file-level                                            |
                 +---------------+--------------------------------------------------------------------------------+
-                | ['LeapSecondUpdated']| The last updated for the leap second table, if applicable
+                | ['LeapSecondUpdated']| The last updated for the leap second table, if applicable               |
                 +---------------+--------------------------------------------------------------------------------+
 
         """
