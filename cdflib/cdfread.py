@@ -28,7 +28,7 @@ Sample use::
 
 @author: Bryan Harter, Michael Liu
 '''
-from pathlib import Path
+import pathlib
 import tempfile
 import numpy as np
 import sys
@@ -46,7 +46,7 @@ class CDF(object):
 
     def __init__(self, path, validate=None):
 
-        path = Path(path).expanduser()
+        path = pathlib.Path(path).expanduser()
         if not path.is_file():
             path = path.with_suffix('.cdf')
             if not path.is_file():
@@ -415,6 +415,7 @@ class CDF(object):
 
         If "expand" is set as True, a dictionary is returned
         with the following defined keys for the output
+
                 +-----------------+--------------------------------------------------------------------------------+
                 | ['Rec_Ndim']         | the dimension number of each variable record                              |
                 +-----------------+--------------------------------------------------------------------------------+
@@ -703,7 +704,7 @@ class CDF(object):
             f.seek(data_start)
             decompressed_data = gzip.decompress(f.read(data_size))
 
-        newpath = Path(tempfile.NamedTemporaryFile(suffix='.cdf').name)
+        newpath = pathlib.Path(tempfile.NamedTemporaryFile(suffix='.cdf').name)
         with newpath.open('wb') as g:
             g.write(bytearray.fromhex('cdf30001'))
             g.write(bytearray.fromhex('0000ffff'))

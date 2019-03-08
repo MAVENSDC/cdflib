@@ -1,11 +1,7 @@
 """
-This is a python module to write a CDF file from scratch without needing to
-install the CDF NASA library. This Python code only creates V3 CDFs.
-
-    This is a python script to write a CDF file from scratch
+This is a python script to write a CDF file from scratch
 without needing to install the CDF NASA library.
-    This Python code only creates V3 CDFs.
-    This code is based on Python 3.
+This Python code only creates V3 CDFs.
 
 @author: Mike Liu
 """
@@ -20,7 +16,7 @@ import binascii
 import cdflib.epochs as cdfepoch
 import numbers
 import math
-from pathlib import Path
+import pathlib
 
 
 class CDF(object):
@@ -167,7 +163,7 @@ class CDF(object):
     level = 0
 
     def __init__(self, path, cdf_spec=None, delete=False):
-        path = Path(path).expanduser()
+        path = pathlib.Path(path).expanduser()
 
         if cdf_spec is not None:
             major = cdf_spec.get('Majority', 2)  # default is column
@@ -257,10 +253,11 @@ class CDF(object):
     def close(self):
         '''
         Closes the CDF Class.
-        1. If compression was set, this is where the compressed file is
-           written.
-        2. If a checksum is needed, this will place the checksum at the end
-           of the file.
+
+            1. If compression was set, this is where the compressed file is
+               written.
+            2. If a checksum is needed, this will place the checksum at the end
+               of the file.
 
         '''
 
