@@ -6,6 +6,7 @@ from random import randint
 import pytest
 import unittest
 import numpy as np
+from datetime import datetime
 
 import cdflib
 
@@ -185,6 +186,10 @@ class CDFEpochTestCase(unittest.TestCase):
         self.assertEqual(x, "2004-03-01T12:24:22.351793238")
         parsed = cdflib.cdfepoch.parse(x)
         self.assertEqual(parsed, input_time)
+
+        Epoch = cdflib.cdfepoch()
+        self.assertEqual(Epoch.to_datetime(x),
+                         datetime(2004,3,1,12,24,22,351793238))
 
     def test_findepochrange_cdfepoch(self):
         start_time = "2013-12-01T12:24:22.000"

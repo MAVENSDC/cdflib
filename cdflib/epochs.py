@@ -36,6 +36,8 @@ import math
 import re
 import numbers
 import os
+from typing import Sequence, List
+import datetime
 
 LEAPSEC_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                             'CDFLeapSeconds.txt')
@@ -166,6 +168,26 @@ class CDFepoch:
                 raise ValueError('Bad input')
         else:
             raise ValueError('Bad input')
+
+
+def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[datetime.datetime]:
+        """
+        Encodes the epoch(s) into Python datetime.  Precision is only
+        kept to the nearest microsecond for Python < 3.7.
+
+        If to_np is True, then the values will be returned in a numpy array.
+        """
+        time_list = breakdown(cdf_time, to_np=False)
+
+        if len(time_list[0]) == 8:
+            dt = [datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5], microsecond=t[6]*1000+t[7]) for t in time_list]
+        elif len(time_list[0]) == 7:
+            dt = [datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5], microsecond=t[6]*1000) for t in time_list]
+        else:
+            raise ValueError('unknown cdf_time format')
+
+        return np.array(dt) if to_np else dt
+
 
     def unixtime(cdf_time, to_np=False):  # @NoSelf
         """
