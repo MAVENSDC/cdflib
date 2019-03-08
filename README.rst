@@ -621,4 +621,15 @@ to the epoch's data type.
 The start/end times should be in either be in epoch units, or in the list 
 format described in "compute_epoch/epoch16/tt2000" section.  
 
+getVersion ()
+=============
+
+Shows the code version.
+
+
+getLeapSecondLastUpdated ()
+=============
+
+Shows the latest date a leap second was added to the leap second table.
+
 @author: Bryan Harter, Michael Liu

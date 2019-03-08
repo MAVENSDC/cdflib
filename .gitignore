@@ -1,3 +1,7 @@
+.mypy_cache/
+*.cdf
+*.tmp
+.pytest_cache/
 *.tar
 *.pyc
 *.tar.gz
@@ -9,3 +13,8 @@ build
 /.pydevproject
 *.ipynb
 /*.html
+/testing.py
+/.coverage
+doc/_build
+doc/api
+.eggs/*

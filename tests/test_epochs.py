@@ -7,11 +7,11 @@ from random import randint
 '''
 To check code coverage, first:
 
-pip install coverage
+pip install pytest-cov
 
-Then change to the cdflib directory, and type:
+Then
 
-coverage run --source=. -m unittest discover -s tests/
+pytest --cov
 
 This will run all unit tests.  To view the coverage results:
 

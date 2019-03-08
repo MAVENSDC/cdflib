@@ -6,12 +6,12 @@ CDF Epochs
 Importing cdflib also imports the module CDFepoch, which handles CDF-based epochs.
 The following functions can be used to convert back and forth between different ways to display the date.
 You can call these functions like so::
+
     import cdflib
     cdf_file = cdflib.cdfepoch.compute_epoch([2017,1,1,1,1,1,111])
 
 There are three (3) epoch data types in CDF: CDF_EPOCH, CDF_EPOCH16 and
 CDF_TIME_TT2000.
-
 - CDF_EPOCH is milliseconds since Year 0.
 - CDF_EPOCH16 is picoseconds since Year 0.
 - CDF_TIME_TT2000 (TT2000 as short) is nanoseconds since J2000 with
@@ -34,7 +34,6 @@ import os
 import datetime
 
 from astropy.time import Time
-
 
 class CDFepoch:
 
@@ -231,9 +230,6 @@ class CDFepoch:
 
         If to_np is True, then the values will be returned in a numpy array.
         """
-        import datetime
-        time_list = CDFepoch.breakdown(cdf_time, to_np=False)
-
         unix_times = CDFepoch.encode(cdf_time, iso_8601=False, unixtime=True)
         if to_np:
             unix_times = np.array(unix_times)
@@ -383,6 +379,7 @@ class CDFepoch:
             return None
         count = len(new_tt2000)
         toutcs = list()
+
         for x in range(0, count):
             nanoSecSinceJ2000 = new_tt2000[x]
             toPlus = 0.0
@@ -391,6 +388,7 @@ class CDFepoch:
             if nanoSecSinceJ2000 > 0:
                 secSinceJ2000 = int(nanoSecSinceJ2000 / CDFepoch.SECinNanoSecsD)
                 nansec = int(nanoSecSinceJ2000 - secSinceJ2000 * CDFepoch.SECinNanoSecs)
+
                 secSinceJ2000 = secSinceJ2000 - 32
                 secSinceJ2000 = secSinceJ2000 + 43200
                 nansec = nansec - 184000000
@@ -400,6 +398,7 @@ class CDFepoch:
                 secSinceJ2000 = int(nanoSecSinceJ2000 / CDFepoch.SECinNanoSecsD)
                 nansec = int(nanoSecSinceJ2000 - secSinceJ2000 * CDFepoch.SECinNanoSecs)
             if nansec < 0:
+
                 nansec = CDFepoch.SECinNanoSecs + nansec
                 secSinceJ2000 = secSinceJ2000 - 1
             t2 = secSinceJ2000 * CDFepoch.SECinNanoSecs + nansec
@@ -408,6 +407,7 @@ class CDFepoch:
                 secSinceJ2000 = secSinceJ2000 - int(datx[0])
                 epoch = CDFepoch.J2000Since0AD12hSec + secSinceJ2000
                 if datx[1] == 0.0:
+
                     date1 = CDFepoch._EPOCHbreakdownTT2000(epoch)
                 else:
                     epoch = epoch - 1
@@ -426,12 +426,14 @@ class CDFepoch:
                 epoch = secSinceJ2000 + CDFepoch.J2000Since0AD12hSec
                 if encoding:
                     return epoch, nansec
+
                 xdate1 = CDFepoch._EPOCHbreakdownTT2000(epoch)
                 xdate1.append(0)
                 xdate1.append(0)
                 xdate1.append(nansec)
                 tmpNanosecs = CDFepoch.compute_tt2000(xdate1)
                 if tmpNanosecs != t3:
+
                     dat0 = CDFepoch._LeapSecondsfromYMD(xdate1[0],
                                                xdate1[1], xdate1[2])
                     tmpx = t2 - int(dat0 * CDFepoch.SECinNanoSecs)
