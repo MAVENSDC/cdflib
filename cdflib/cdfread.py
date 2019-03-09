@@ -38,7 +38,15 @@ import hashlib
 import cdflib.epochs as epoch
 
 
-class CDF(object):
+class CDF:
+    """
+    Main CDF class.
+
+    Parameters
+    ----------
+    path :
+    validate :
+    """
 
     version = 3
     release = 7
@@ -54,7 +62,7 @@ class CDF(object):
 
         self.file = path
 
-        with self.file.open('rb')  as f:
+        with self.file.open('rb') as f:
             magic_number = f.read(4).hex()
             compressed_bool = f.read(4).hex()
 
@@ -200,6 +208,10 @@ class CDF(object):
                 +-----------------+--------------------------------------------------------------------------------+
                 | ['Block_Factor']| the blocking factor if the variable is compressed                              |
                 +-----------------+--------------------------------------------------------------------------------+
+
+        Parameters
+        ----------
+        variable :
         """
         vdr_info = self.varget(variable=variable, inq=True)
         if vdr_info == None:
