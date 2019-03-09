@@ -6,9 +6,12 @@ CDF NASA library.
 
 Installing
 ----------
-cdflib requires python 3 and numpy. To install use
+cdflib requires python 3 and numpy. To install run
 
-    pip install cdflib
+.. code::
+   bash
+
+   pip install cdflib
 
 .. toctree::
    :maxdepth: 2

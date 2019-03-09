@@ -39,6 +39,9 @@ import os
 
 
 class CDFepoch:
+    """
+    Epoch class.
+    """
 
     version = 3
     release = 7
@@ -301,7 +304,7 @@ class CDFepoch:
 
         if not isinstance(datetimes, (list, tuple, np.ndarray)):
             raise TypeError('datetime must be in list form')
-            
+
         if isinstance(datetimes[0], numbers.Number):
             items = len(datetimes)
         elif isinstance(datetimes[0], (list, tuple, np.ndarray)):
@@ -309,7 +312,7 @@ class CDFepoch:
         else:
             print('Unknown input')
             return
-          
+
         if (items == 7):
             return CDFepoch.compute_epoch(datetimes, to_np)
         elif (items == 10):
