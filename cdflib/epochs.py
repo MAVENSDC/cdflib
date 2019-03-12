@@ -36,7 +36,7 @@ import math
 import re
 import numbers
 import os
-from typing import Sequence, List
+from typing import Sequence, List, Union
 import datetime
 
 LEAPSEC_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -124,25 +124,22 @@ class CDFepoch:
                 Or, if iso_8601 is set to False,
                 02-Feb-2008 06:08:10.012.014.016
         """
-        if (isinstance(epochs, int) or isinstance(epochs, np.int64)):
+        if isinstance(epochs, (int, np.int64)):
             return CDFepoch.encode_tt2000(epochs, iso_8601)
-        elif (isinstance(epochs, float) or isinstance(epochs, np.float64)):
+        elif isinstance(epochs, (float, np.float64)):
             return CDFepoch.encode_epoch(epochs, iso_8601)
-        elif (isinstance(epochs, complex) or isinstance(epochs, np.complex128)):
+        elif isinstance(epochs, (complex, np.complex128)):
             return CDFepoch.encode_epoch16(epochs, iso_8601)
-        elif (isinstance(epochs, list) or isinstance(epochs, np.ndarray)):
-            if (isinstance(epochs[0], int) or isinstance(epochs[0], np.int64)):
+        elif isinstance(epochs, (list, np.ndarray)):
+            if isinstance(epochs[0], (int, np.int64)):
                 return CDFepoch.encode_tt2000(epochs, iso_8601)
-            elif (isinstance(epochs[0], float) or
-                  isinstance(epochs[0], np.float64)):
+            elif isinstance(epochs[0], (float, np.float64)):
                 return CDFepoch.encode_epoch(epochs, iso_8601)
-            elif (isinstance(epochs[0], complex) or
-                  isinstance(epochs[0], np.complex128)):
+            elif isinstance(epochs[0], (complex, np.complex128)):
                 return CDFepoch.encode_epoch16(epochs, iso_8601)
-            else:
-                raise ValueError('Bad input')
-        else:
-            raise ValueError('Bad input')
+
+        raise TypeError('Not sure how to handle type {}'.format(type(epochs)))
+
 
     @staticmethod
     def breakdown(epochs, to_np: bool = False):
@@ -162,18 +159,12 @@ class CDFepoch:
                 return CDFepoch.breakdown_epoch(epochs, to_np)
             elif isinstance(epochs[0], (complex, np.complex128)):
                 return CDFepoch.breakdown_epoch16(epochs, to_np)
-<<<<<<< HEAD
-            else:
-                raise ValueError('Bad input')
-        else:
-            raise ValueError('Bad input')
-=======
 
         raise TypeError('Not sure how to handle type {}'.format(type(epochs)))
->>>>>>> correct logic
 
 
-def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[datetime.datetime]:
+    def to_datetime(self, cdf_time: Union[int, Sequence[int]],
+                    to_np: bool = False) -> List[datetime.datetime]:
         """
         Encodes the epoch(s) into Python datetime.  Precision is only
         kept to the nearest microsecond.
@@ -183,7 +174,7 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
         If to_np is True, then the values will be returned in a numpy array.
         """
         time_list = self.breakdown(cdf_time, to_np=False)
-        if isinstance(time_list[0], int):  # single time
+        if isinstance(time_list[0], (float, int, complex)):  # single time
             time_list = [time_list]
 
         if len(time_list[0]) >= 8:
@@ -274,7 +265,7 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
         elif isinstance(datetimes[0], (list, tuple, np.ndarray)):
             items = len(datetimes[0])
         else:
-            raise ValueError('Unknown input')
+            raise TypeError('Not sure how to handle type {}'.format(type(datetimes)))
 
         if (items == 7):
             return CDFepoch.compute_epoch(datetimes, to_np)
@@ -283,7 +274,8 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
         elif (items == 9):
             return CDFepoch.compute_tt2000(datetimes, to_np)
         else:
-            raise ValueError('Unknown input')
+            raise TypeError('Unknown input')
+
 
     def findepochrange(epochs, starttime=None, endtime=None):  # @NoSelf
         """
@@ -315,41 +307,30 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
             elif (isinstance(epochs[0], complex) or
                   isinstance(epochs[0], np.complex128)):
                 return CDFepoch.epochrange_epoch16(epochs, starttime, endtime)
-<<<<<<< HEAD
-            else:
-                raise ValueError('Bad input')
-        else:
-            raise ValueError('Bad input')
-=======
 
         raise TypeError('Bad input')
 
->>>>>>> correct logic
 
-    def encode_tt2000(tt2000, iso_8601=None):  # @NoSelf
+    def encode_tt2000(tt2000, iso_8601: bool = True):  # @NoSelf
 
         if (isinstance(tt2000, int) or isinstance(tt2000, np.int64)):
             new_tt2000 = [tt2000]
         elif (isinstance(tt2000, list) or isinstance(tt2000, np.ndarray)):
             new_tt2000 = tt2000
         else:
-<<<<<<< HEAD
-            raise ValueError('Bad input')
-=======
             raise TypeError('Bad input')
 
->>>>>>> correct logic
         count = len(new_tt2000)
         encodeds = []
-        for x in range(0, count):
+        for x in range(count):
             nanoSecSinceJ2000 = new_tt2000[x]
             if (nanoSecSinceJ2000 == CDFepoch.FILLED_TT2000_VALUE):
-                if (iso_8601 == None or iso_8601 != False):
+                if iso_8601:
                     return '9999-12-31T23:59:59.999999999'
                 else:
                     return '31-Dec-9999 23:59:59.999.999.999'
             if (nanoSecSinceJ2000 == CDFepoch.DEFAULT_TT2000_PADVALUE):
-                if (iso_8601 == None or iso_8601 != False):
+                if iso_8601:
                     return '0000-01-01T00:00:00.000000000'
                 else:
                     return '01-Jan-0000 00:00:00.000.000.000'
@@ -363,7 +344,7 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
             ll = datetime[6]
             lu = datetime[7]
             la = datetime[8]
-            if (iso_8601 == None or iso_8601 != False):
+            if iso_8601:
                 # yyyy-mm-ddThh:mm:ss.mmmuuunnn
                 encoded = str(ly).zfill(4)
                 encoded += '-'
@@ -400,7 +381,7 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
                 encoded += '.'
                 encoded += str(la).zfill(3)
 
-            if (count == 1):
+            if count == 1:
                 return encoded
             else:
                 encodeds.append(encoded)
@@ -430,12 +411,8 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
         elif isinstance(tt2000, (list, tuple, np.ndarray)):
             new_tt2000 = tt2000
         else:
-<<<<<<< HEAD
-            raise ValueError('Bad input data')
-=======
             raise TypeError('unsure how to handle {}'.format(type(tt2000)))
 
->>>>>>> correct logic
         count = len(new_tt2000)
         toutcs = []
         for x in range(count):
@@ -565,16 +542,10 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
     @staticmethod
     def compute_tt2000(datetimes, to_np: bool = False):
 
-<<<<<<< HEAD
-        if (not isinstance(datetimes, list) and not isinstance(datetimes, tuple)):
-            raise ValueError('datetime must be in list form')
-        if (isinstance(datetimes[0], numbers.Number)):
-=======
         if not isinstance(datetimes, (list, tuple)):
             raise TypeError('datetime must be in list form')
 
         if isinstance(datetimes[0], numbers.Number):
->>>>>>> correct logic
             new_datetimes = [datetimes]
             count = 1
         else:
@@ -666,10 +637,7 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
                 nsec = int(1000.0 * (xxx - usec))
             else:
                 raise ValueError('Invalid tt2000 components')
-<<<<<<< HEAD
-=======
 
->>>>>>> correct logic
             if (month == 0):
                 month = 1
             if (year == 9999 and month == 12 and day == 31 and hour == 23 and
@@ -835,19 +803,19 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
             new_epochs = epochs
         return np.where(np.logical_and(new_epochs >= stime, new_epochs <= etime))[0]
 
-    def encode_epoch16(epochs, iso_8601=True):  # @NoSelf
+    @staticmethod
+    def encode_epoch16(epochs, iso_8601: bool = True):
 
-        if (isinstance(epochs, complex) or
-                isinstance(epochs, np.complex128)):
+        if isinstance(epochs, (complex, np.complex128)):
             new_epochs = [epochs]
-        elif (isinstance(epochs, list) or isinstance(epochs, tuple) or
-              isinstance(epochs, np.ndarray)):
+        elif isinstance(epochs, (list, tuple, np.ndarray)):
             new_epochs = epochs
         else:
-            raise ValueError('Bad data')
+            raise TypeError('bad data')
+
         count = len(new_epochs)
         encodeds = []
-        for x in range(0, count):
+        for x in range(count):
             # complex
             if ((new_epochs[x].real == -1.0E31) and (new_epochs[x].imag == -1.0E31)):
                 if iso_8601:
@@ -856,13 +824,14 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
                     encoded = '31-Dec-9999 23:59:59.999.999.999.999'
             else:
                 encoded = CDFepoch._encodex_epoch16(new_epochs[x], iso_8601)
-            if (count == 1):
+            if count == 1:
                 return encoded
             else:
                 encodeds.append(encoded)
         return encodeds
 
-    def _encodex_epoch16(epoch16, iso_8601=True):  # @NoSelf
+    @staticmethod
+    def _encodex_epoch16(epoch16, iso_8601: bool = True) -> str:
 
         components = CDFepoch.breakdown_epoch16(epoch16)
         if iso_8601:
@@ -917,18 +886,10 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
     @staticmethod
     def compute_epoch16(datetimes, to_np: bool = False):
 
-<<<<<<< HEAD
-        if (not isinstance(datetimes, list) and
-                not isinstance(datetimes, tuple)):
-            raise ValueError('Bad input')
-        if (not isinstance(datetimes[0], list) and
-                not isinstance(datetimes[0], tuple)):
-=======
         if not isinstance(datetimes, (list, tuple)):
             raise TypeError('Bad input')
 
         if not isinstance(datetimes[0], (list, tuple)):
->>>>>>> correct logic
             new_dates = []
             new_dates = [datetimes]
         else:
@@ -1046,15 +1007,10 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
                 psec = int(1000.0 * (xxx - nsec))
             else:
                 raise ValueError('Invalid epoch16 components')
-<<<<<<< HEAD
-            if (year < 0):
-                raise ValueError('Illegal epoch field')
-=======
 
             if (year < 0):
                 raise ValueError('Illegal epoch field')
 
->>>>>>> correct logic
             if (year == 9999 and month == 12 and day == 31 and hour == 23 and
                 minute == 59 and second == 59 and msec == 999 and
                     usec == 999 and nsec == 999 and psec == 999):
@@ -1109,13 +1065,8 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
         elif isinstance(epochs, (list, tuple, np.ndarray)):
             new_epochs = epochs
         else:
-<<<<<<< HEAD
-            raise ValueError('Bad data')
-            return
-=======
             raise TypeError('Bad data')
 
->>>>>>> correct logic
         count = len(new_epochs)
         components = []
         for x in range(0, count):
@@ -1316,14 +1267,16 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
             indx.append(int(count/2)-1)
         return np.arange(indx[0], indx[1]+1, step=1)
 
-    def encode_epoch(epochs, iso_8601=True):  # @NoSelf
+    @staticmethod
+    def encode_epoch(epochs, iso_8601: bool = True):  # @NoSelf
 
-        if (isinstance(epochs, float) or isinstance(epochs, np.float64)):
+        if isinstance(epochs, (float, np.float64)):
             new_epochs = [epochs]
-        elif (isinstance(epochs, list) or isinstance(epochs, np.ndarray)):
+        elif isinstance(epochs, (list, np.ndarray)):
             new_epochs = epochs
         else:
-            raise ValueError('Bad data')
+            raise TypeError('Bad data')
+
         count = len(new_epochs)
         encodeds = []
         for x in range(0, count):
@@ -1340,7 +1293,8 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
             encodeds.append(encoded)
         return encodeds
 
-    def _encodex_epoch(epoch, iso_8601=None):  # @NoSelf
+    @staticmethod
+    def _encodex_epoch(epoch, iso_8601: bool = True):  # @NoSelf
 
         components = CDFepoch.breakdown_epoch(epoch)
         if (iso_8601):
@@ -1626,18 +1580,16 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
 
         Specify to_np to True, if the result should be in numpy class.
         """
-        if ((isinstance(value, list) or isinstance(value, tuple)) and
-                not (isinstance(value[0], str))):
-            raise ValueError('Invalid value... should be a string or a list of string')
-        elif ((not (isinstance(value, list))) and
-              (not (isinstance(value, tuple))) and
-              (not (isinstance(value, str)))):
-            raise ValueError('Invalid value... should be a string or a list of string')
+        if isinstance(value, (list, tuple)) and not isinstance(value[0], str):
+            raise TypeError('should be a string or a list of string')
+
+        elif not isinstance(value, (list, tuple, str)):
+            raise TypeError('Invalid value... should be a string or a list of string')
         else:
-            if (isinstance(value, list) or isinstance(value, tuple)):
+            if isinstance(value, (list, tuple)):
                 num = len(value)
                 epochs = []
-                for x in range(0, num):
+                for x in range(num):
                     epochs.append(CDFepoch._parse_epoch(value[x]))
                 if not to_np:
                     return epochs
@@ -1650,19 +1602,19 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
                     return np.array(CDFepoch._parse_epoch(value))
 
     def _parse_epoch(value):  # @NoSelf
-        if (isinstance(value, list) or isinstance(value, tuple)):
+        if isinstance(value, (list, tuple)):
             epochs = []
             for x in range(0, len(value)):
                 epochs.append(value[x])
             return epochs
         else:
-            if (len(value) == 23 or len(value) == 24):
+            if len(value) in (23, 24):
                 # CDF_EPOCH
-                if (value.lower() == '31-dec-9999 23:59:59.999' or
-                        value.lower() == '9999-12-31t23:59:59.999'):
+                if value.lower() in ('31-dec-9999 23:59:59.999',
+                                     '9999-12-31t23:59:59.999'):
                     return -1.0E31
                 else:
-                    if (len(value) == 24):
+                    if len(value) == 24:
                         date = re.findall(r'(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)', value)
                         dd = int(date[0][0])
                         mm = CDFepoch._month_index(date[0][1])
@@ -1682,11 +1634,11 @@ def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[da
                         ss = int(date[0][5])
                         ms = int(date[0][6])
                     return CDFepoch.compute_epoch([yy, mm, dd, hh, mn, ss, ms])
-            elif (len(value) == 36 or (len(value) == 32 and
-                                       value[10].lower() == 't')):
+            elif len(value) == 36 or (len(value) == 32 and
+                                       value[10].lower() == 't'):
                 # CDF_EPOCH16
-                if (value.lower() == '31-dec-9999 23:59:59.999.999.999.999' or
-                        value.lower() == '9999-12-31t23:59:59.999999999999'):
+                if value.lower() in ('31-dec-9999 23:59:59.999.999.999.999',
+                                      '9999-12-31t23:59:59.999999999999'):
                     return -1.0E31-1.0E31j
                 else:
                     if (len(value) == 36):

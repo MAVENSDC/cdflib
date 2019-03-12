@@ -1,7 +1,7 @@
 import os
 from . import cdfread
 from . import cdfwrite
-from .epochs import CDFepoch as cdfepoch
+from .epochs import CDFepoch as cdfepoch  # noqa: F401
 
 # This function determines if we are reading or writing a file
 

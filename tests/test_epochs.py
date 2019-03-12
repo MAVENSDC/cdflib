@@ -182,11 +182,14 @@ def test_parse_cdfepoch():
 
 
 def test_parse_cdfepoch16():
-    input_time = np.complex(53467976543.0, 543218654100)
+    input_time = 53467976543.0 + 543218654100j
     x = cdflib.cdfepoch.encode(input_time)
     assert x == "1694-05-01T07:42:23.543218654100"
-    parsed = cdflib.cdfepoch.parse(x, to_np=True)
+    parsed = cdflib.cdfepoch.parse(x)
     assert parsed == input_time
+
+    assert cdflib.cdfepoch().to_datetime(parsed) == [datetime(1694, 5, 1, 7, 42, 23, 543218)]
+
 
 
 def test_parse_cdftt2000():
