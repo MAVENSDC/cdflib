@@ -196,8 +196,7 @@ def test_parse_cdftt2000():
     parsed = cdflib.cdfepoch.parse(x)
     assert parsed == input_time
 
-    Epoch = cdflib.cdfepoch()
-    assert Epoch.to_datetime(parsed) == datetime(2004, 3, 1, 12, 24, 22, 351793238)
+    assert cdflib.cdfepoch().to_datetime(parsed) == [datetime(2004, 3, 1, 12, 24, 22, 351793)]
 
 
 def test_findepochrange_cdfepoch():

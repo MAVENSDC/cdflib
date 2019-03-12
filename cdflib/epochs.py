@@ -176,16 +176,22 @@ class CDFepoch:
 def to_datetime(self, cdf_time: Sequence[float], to_np: bool = False) -> List[datetime.datetime]:
         """
         Encodes the epoch(s) into Python datetime.  Precision is only
-        kept to the nearest microsecond for Python < 3.7.
+        kept to the nearest microsecond.
+
+        Possible len() from breakdown for each time are in range 6..9
 
         If to_np is True, then the values will be returned in a numpy array.
         """
         time_list = self.breakdown(cdf_time, to_np=False)
+        if isinstance(time_list[0], int):  # single time
+            time_list = [time_list]
 
-        if len(time_list[0]) == 8:
+        if len(time_list[0]) >= 8:
             dt = [datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5], microsecond=t[6]*1000+t[7]) for t in time_list]
         elif len(time_list[0]) == 7:
             dt = [datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5], microsecond=t[6]*1000) for t in time_list]
+        elif len(time_list[0]) == 6:
+            dt = [datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5]) for t in time_list]
         else:
             raise ValueError('unknown cdf_time format')
 
