@@ -28,7 +28,7 @@ Sample use::
 
 @author: Bryan Harter, Michael Liu
 '''
-import pathlib
+from pathlib import Path
 import tempfile
 import numpy as np
 import sys
@@ -54,7 +54,7 @@ class CDF:
 
     def __init__(self, path, validate=None):
 
-        path = pathlib.Path(path).expanduser()
+        path = Path(path).expanduser()
         if not path.is_file():
             path = path.with_suffix('.cdf')
             if not path.is_file():
@@ -153,13 +153,13 @@ class CDF:
                 +---------------+--------------------------------------------------------------------------------+
                 | ['Checksum']  | the checksum indicator                                                         |
                 +---------------+--------------------------------------------------------------------------------+
-                | ['Num_rdim']  | the number of dimensions, applicable only to rVariables                        |
+                | ['Num_rdim']  | the number of dimensions, applicable only to rVariables
                 +---------------+--------------------------------------------------------------------------------+
-                | ['rDim_sizes'] | the dimensional sizes, applicable only to rVariables                          |
-                +----------------+-------------------------------------------------------------------------------+
-                | ['Compressed']| CDF is compressed at the file-level                                            |
+                | ['rDim_sizes'] | the dimensional sizes, applicable only to rVariables
+                +----------------+--------------------------------------------------------------------------------+
+                | ['Compressed']| CDF is compressed at the file-level
                 +---------------+--------------------------------------------------------------------------------+
-                | ['LeapSecondUpdated']| The last updated for the leap second table, if applicable               |
+                | ['LeapSecondUpdated']| The last updated for the leap second table, if applicable
                 +---------------+--------------------------------------------------------------------------------+
 
         """
@@ -563,7 +563,7 @@ class CDF:
         """
         byte_loc = self._first_adr
         return_dict = {}
-        for _ in range(0, self._num_att):
+        for _ in range(self._num_att):
             adr_info = self._read_adr(byte_loc)
 
             if (adr_info['scope'] != 1):
@@ -579,7 +579,7 @@ class CDF:
             else:
                 entries = {}
             aedr_byte_loc = adr_info['first_gr_entry']
-            for _ in range(0, adr_info['num_gr_entry']):
+            for _ in range(adr_info['num_gr_entry']):
                 if (self.cdfversion == 3):
                     aedr_info = self._read_aedr(aedr_byte_loc, to_np=to_np)
                 else:
@@ -694,7 +694,7 @@ class CDF:
             f.seek(data_start)
             decompressed_data = gzip.decompress(f.read(data_size))
 
-        newpath = pathlib.Path(tempfile.NamedTemporaryFile(suffix='.cdf').name)
+        newpath = Path(tempfile.NamedTemporaryFile(suffix='.cdf').name)
         with newpath.open('wb') as g:
             g.write(bytearray.fromhex('cdf30001'))
             g.write(bytearray.fromhex('0000ffff'))
