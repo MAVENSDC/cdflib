@@ -30,12 +30,36 @@ All these epoch values can come from from CDF.varget function.
 
 @author: Michael Liu
 """
-
+import logging
 import numpy as np
 import math
 import re
 import numbers
 from pathlib import Path
+import urllib.request
+
+LEAPSECOND_URL = "http://cdf.gsfc.nasa.gov/html/CDFLeapSeconds.txt"
+LEAPSECOND_FN = Path(__file__).parent / 'CDFLeapSeconds.txt'
+
+
+def download_leapsecond(fn: Path):
+    """
+    Attempt to download latest leap second table.
+
+    Don't run this function over and over or you might get banned by NASA server.
+
+    Parameters
+    ----------
+
+    fn : pathlib.Path
+        filename to write from download
+    """
+    try:
+        page = urllib.request.urlopen(LEAPSECOND_URL)
+        with fn.open("wb") as lsfile:
+            lsfile.write(page.read())
+    except urllib.error.HTTPError:
+        logging.error("Can't download new leap second table")
 
 
 class CDFepoch:
@@ -73,26 +97,15 @@ class CDFepoch:
 
     #LASTLEAPSECONDDAY = 20170101
 
-    # Attempt to download latest leap second table
-    try:
-        import urllib.request
-        leapsecond_files_url = "https://cdf.gsfc.nasa.gov/html/CDFLeapSeconds.txt"
-        page = urllib.request.urlopen(leapsecond_files_url)
-
-        library_path = Path(__file__).parent
-        with (library_path / 'CDFLeapSeconds.txt').open("wb") as lsfile:
-            lsfile.write(page.read())
-    except:
-        print("Can't download new leap second table")
-
+    if not LEAPSECOND_FN.is_file() or LEAPSECOND_FN.stat().st_size == 0:
+        download_leapsecond(LEAPSECOND_FN)
 
     # Attempt to load the leap second table saved in the cdflib
     try:
         import csv
         library_path = Path(__file__).parent
-        leap_seconds_file = library_path / 'CDFLeapSeconds.txt'
         LTS = []
-        with leap_seconds_file.open() as lsfile:
+        with LEAPSECOND_FN.open() as lsfile:
             lsreader = csv.reader(lsfile, delimiter=' ')
             for row in lsreader:
                 if row[0] == ";":
@@ -1683,7 +1696,7 @@ class CDFepoch:
                     return -1.0E31
                 else:
                     if (len(value) == 24):
-                        date = re.findall('(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)', value)
+                        date = re.findall(r'(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)', value)
                         dd = int(date[0][0])
                         mm = CDFepoch._month_index(date[0][1])
                         yy = int(date[0][2])
@@ -1692,7 +1705,7 @@ class CDFepoch:
                         ss = int(date[0][5])
                         ms = int(date[0][6])
                     else:
-                        date = re.findall('(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)\.(\d+)',
+                        date = re.findall(r'(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)\.(\d+)',
                                           value)
                         yy = int(date[0][0])
                         mm = int(date[0][1])
@@ -1710,7 +1723,7 @@ class CDFepoch:
                     return -1.0E31-1.0E31j
                 else:
                     if (len(value) == 36):
-                        date = re.findall('(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)\.(\d+)\.(\d+)\.(\d+)',
+                        date = re.findall(r'(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)\.(\d+)\.(\d+)\.(\d+)',
                                           value)
                         dd = int(date[0][0])
                         mm = CDFepoch._month_index(date[0][1])
@@ -1723,7 +1736,7 @@ class CDFepoch:
                         ns = int(date[0][8])
                         ps = int(date[0][9])
                     else:
-                        date = re.findall('(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)\.(\d+)',
+                        date = re.findall(r'(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)\.(\d+)',
                                           value)
                         yy = int(date[0][0])
                         mm = int(date[0][1])
@@ -1751,7 +1764,7 @@ class CDFepoch:
                     return -9223372036854775807
                 else:
                     if (len(value) == 29):
-                        date = re.findall('(\d+)\-(\d+)\-(\d+)t(\d+)\:(\d+)\:(\d+)\.(\d+)',
+                        date = re.findall(r'(\d+)\-(\d+)\-(\d+)t(\d+)\:(\d+)\:(\d+)\.(\d+)',
                                           value)
                         yy = int(date[0][0])
                         mm = int(date[0][1])
@@ -1765,7 +1778,7 @@ class CDFepoch:
                         us = int(subms / 1000)
                         ns = int(subms % 1000)
                     else:
-                        date = re.findall('(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)\.(\d+)\.(\d+)',
+                        date = re.findall(r'(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)\.(\d+)\.(\d+)',
                                           value)
                         dd = int(date[0][0])
                         mm = CDFepoch._month_index(date[0][1])
