@@ -37,6 +37,7 @@ import re
 import numbers
 from pathlib import Path
 import urllib.request
+import urllib.error
 
 LEAPSECOND_URL = "http://cdf.gsfc.nasa.gov/html/CDFLeapSeconds.txt"
 LEAPSECOND_FN = Path(__file__).parent / 'CDFLeapSeconds.txt'
