@@ -102,27 +102,13 @@ class CDFepoch:
 
     # Attempt to load the leap second table saved in the cdflib
     try:
-        import csv
-        library_path = Path(__file__).parent
-        LTS = []
-        with LEAPSECOND_FN.open() as lsfile:
-            lsreader = csv.reader(lsfile, delimiter=' ')
-            for row in lsreader:
-                if row[0] == ";":
-                    continue
-                row = list(filter(('').__ne__, row))
-                row[0] = int(row[0])
-                row[1] = int(row[1])
-                row[2] = int(row[2])
-                row[3] = float(row[3])
-                row[4] = float(row[4])
-                row[5] = float(row[5])
-                LTS.append(row)
-    except:
+        LTS = np.loadtxt(LEAPSECOND_FN, comments=';')
+    except FileNotFoundError:
         print("Can't find leap second table.  Using one built into code.")
         print("Last leap second in built in table is on Jan 01 2017. ")
         # Use a built in leap second table
-        LTS = [[1960,  1,  1,  1.4178180, 37300.0, 0.0012960],
+        LTS = np.array(
+              [[1960,  1,  1,  1.4178180, 37300.0, 0.0012960],
                [1961,  1,  1,  1.4228180, 37300.0, 0.0012960],
                [1961,  8,  1,  1.3728180, 37300.0, 0.0012960],
                [1962,  1,  1,  1.8458580, 37665.0, 0.0011232],
@@ -163,7 +149,7 @@ class CDFepoch:
                [2009,  1,  1, 34.0,           0.0, 0.0],
                [2012,  7,  1, 35.0,           0.0, 0.0],
                [2015,  7,  1, 36.0,           0.0, 0.0],
-               [2017,  1,  1, 37.0,           0.0, 0.0]]
+               [2017,  1,  1, 37.0,           0.0, 0.0]])
 
     NDAT = len(LTS)
 
