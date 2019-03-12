@@ -35,7 +35,7 @@ import numpy as np
 import math
 import re
 import numbers
-import os
+from pathlib import Path
 
 
 class CDFepoch:
@@ -78,22 +78,21 @@ class CDFepoch:
         import urllib.request
         leapsecond_files_url = "https://cdf.gsfc.nasa.gov/html/CDFLeapSeconds.txt"
         page = urllib.request.urlopen(leapsecond_files_url)
-        full_path = os.path.realpath(__file__)
-        library_path = os.path.dirname(full_path)
-        with open(os.path.join(library_path, 'CDFLeapSeconds.txt'), "wb") as lsfile:
+
+        library_path = Path(__file__).parent
+        with (library_path / 'CDFLeapSeconds.txt').open("wb") as lsfile:
             lsfile.write(page.read())
     except:
         print("Can't download new leap second table")
-        pass
+
 
     # Attempt to load the leap second table saved in the cdflib
     try:
         import csv
-        full_path = os.path.realpath(__file__)
-        library_path = os.path.dirname(full_path)
-        leap_seconds_file = os.path.join(library_path, 'CDFLeapSeconds.txt')
+        library_path = Path(__file__).parent
+        leap_seconds_file = library_path / 'CDFLeapSeconds.txt'
         LTS = []
-        with open(leap_seconds_file) as lsfile:
+        with leap_seconds_file.open() as lsfile:
             lsreader = csv.reader(lsfile, delimiter=' ')
             for row in lsreader:
                 if row[0] == ";":
