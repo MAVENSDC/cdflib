@@ -98,7 +98,8 @@ class CDFepoch:
     currentJDay = -1
     currentLeapSeconds = -1
 
-    def encode(epochs, iso_8601=True):  # @NoSelf
+    @staticmethod
+    def encode(epochs, iso_8601: bool = True):  # @NoSelf
         """
         Encodes the epoch(s) into UTC string(s).
 
@@ -1517,40 +1518,39 @@ class CDFepoch:
     @staticmethod
     def epochrange_epoch(epochs, starttime=None, endtime=None):  # @NoSelf
 
-        if (isinstance(epochs, float) or isinstance(epochs, np.float64)):
+        if isinstance(epochs, (float, np.float64)):
             new2_epochs = [epochs]
-        elif (isinstance(epochs, list) or isinstance(epochs, tuple) or
-              isinstance(epochs, np.ndarray)):
-            if (isinstance(epochs[0], float) or
-                    isinstance(epochs[0], np.float64)):
+        elif isinstance(epochs, (list, tuple, np.ndarray)):
+            if isinstance(epochs[0], (float, np.float64)):
                 new2_epochs = epochs
             else:
-                raise ValueError('Bad data')
+                raise TypeError('Bad data')
         else:
-            raise ValueError('Bad data')
-        if (starttime == None):
+            raise TypeError('Bad data')
+
+        if (starttime is None):
             stime = 0.0
         else:
-            if (isinstance(starttime, float) or isinstance(starttime, int) or
-                    isinstance(starttime, np.float64)):
+            if isinstance(starttime, (float, int, np.float64)):
                 stime = starttime
-            elif (isinstance(starttime, list) or isinstance(starttime, tuple)):
+            elif isinstance(starttime, (list, tuple)):
                 stime = CDFepoch.compute_epoch(starttime)
             else:
-                raise ValueError('Bad start time')
-        if (endtime != None):
-            if (isinstance(endtime, float) or isinstance(endtime, int) or
-                    isinstance(endtime, np.float64)):
+                raise TypeError('Bad start time')
+
+        if (endtime is not None):
+            if isinstance(endtime, (float, int, np.float64)):
                 etime = endtime
-            elif (isinstance(endtime, list) or isinstance(endtime, tuple)):
+            elif isinstance(endtime, (list, tuple)):
                 etime = CDFepoch.compute_epoch(endtime)
             else:
-                raise ValueError('Bad end time')
+                raise TypeError('Bad end time')
         else:
             etime = 1.0E31
         if (stime > etime):
             raise ValueError('Invalid start/end time')
-        if (isinstance(epochs, list) or isinstance(epochs, tuple)):
+
+        if isinstance(epochs, (list, tuple)):
             new_epochs = np.array(epochs)
         else:
             new_epochs = epochs
