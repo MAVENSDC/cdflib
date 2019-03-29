@@ -1170,9 +1170,9 @@ class CDF:
 
     def _read_adr_fast(self, position):
         if (self.cdfversion == 3):
-            return = self._read_adr_fast3(position)
+            return self._read_adr_fast3(position)
         else:
-            return = self._read_adr_fast2(position)
+            return self._read_adr_fast2(position)
 
     def _read_adr_fast3(self, byte_loc):
         with self.file.open('rb') as f:
