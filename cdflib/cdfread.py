@@ -882,7 +882,6 @@ class CDF:
             position = adr_info['next_adr_location']
         return attrs
 
-
     def _read_cdr(self, byte_loc: int):
         with self.file.open('rb') as f:
             f.seek(byte_loc, 0)
@@ -1171,7 +1170,7 @@ class CDF:
 
     def _read_adr_fast(self, position):
         if (self.cdfversion == 3):
-            return = self._read_adr_fast(position)
+            return = self._read_adr_fast3(position)
         else:
             return = self._read_adr_fast2(position)
 
