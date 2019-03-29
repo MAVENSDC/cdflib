@@ -97,7 +97,9 @@ class CDF:
             raise OSError('This package does not support multi-format CDF')
 
         if cdr_info['encoding'] in (3, 14, 15):
-            raise OSError('This package does not support CDFs with this ' + CDF._encoding_token(cdr_info['encoding'])+' encoding')
+            raise OSError('This package does not support CDFs with this ' +
+                          CDF._encoding_token(cdr_info['encoding']) +
+                          ' encoding')
 
         # SET GLOBAL VARIABLES
         self._post25 = cdr_info['post25']
@@ -240,7 +242,17 @@ class CDF:
 
     def attinq(self, attribute=None):
         """
-        Returns a python dictionary of attribute information.
+        Get attribute information.
+
+        Parameters
+        ----------
+        attribute : str, int
+            Attribute to get information for.
+
+        Returns
+        -------
+        dict
+            Dictionary of attribute information.
 
         If no attribute is provided, a list of all attributes is printed.
         """
@@ -273,15 +285,18 @@ class CDF:
             else:
                 return self._read_adr2(position)
         else:
-            print('Please set attribute keyword equal to the name or ',
-                  'number of an attribute')
+            raise ValueError('attribute keyword must be a string or integer')
 
-            attrs = self._get_attnames()
-            print(attrs)
-            for x in range(0, self._num_att):
-                name = list(attrs[x].keys())[0]
-                print('NAME: ' + name + ', NUMBER: ' + str(x) + ', SCOPE: ' + attrs[x][name])
-            return attrs
+    def print_attrs(self):
+        """
+        Print all attribute information.
+        """
+        attrs = self._get_attnames()
+        print(attrs)
+        for x in range(0, self._num_att):
+            name = list(attrs[x].keys())[0]
+            print('NAME: ' + name + ', NUMBER: ' + str(x) + ', SCOPE: ' + attrs[x][name])
+        return attrs
 
     def attget(self, attribute=None, entry=None, to_np=True):
         """
