@@ -30,12 +30,15 @@ All these epoch values can come from from CDF.varget function.
 
 @author: Michael Liu
 """
-
+import csv
 import numpy as np
 import math
 import re
 import numbers
 import os
+
+LEAPSEC_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'CDFLeapSeconds.txt')
 
 
 class CDFepoch:
@@ -71,87 +74,20 @@ class CDFepoch:
     FILLED_TT2000_VALUE = int(-9223372036854775808)
     NERA1 = 14
 
-    #LASTLEAPSECONDDAY = 20170101
-
-    # Attempt to download latest leap second table
-    try:
-        import urllib.request
-        leapsecond_files_url = "https://cdf.gsfc.nasa.gov/html/CDFLeapSeconds.txt"
-        page = urllib.request.urlopen(leapsecond_files_url)
-        full_path = os.path.realpath(__file__)
-        library_path = os.path.dirname(full_path)
-        with open(os.path.join(library_path, 'CDFLeapSeconds.txt'), "wb") as lsfile:
-            lsfile.write(page.read())
-    except:
-        print("Can't download new leap second table")
-        pass
-
-    # Attempt to load the leap second table saved in the cdflib
-    try:
-        import csv
-        full_path = os.path.realpath(__file__)
-        library_path = os.path.dirname(full_path)
-        leap_seconds_file = os.path.join(library_path, 'CDFLeapSeconds.txt')
-        LTS = []
-        with open(leap_seconds_file) as lsfile:
-            lsreader = csv.reader(lsfile, delimiter=' ')
-            for row in lsreader:
-                if row[0] == ";":
-                    continue
-                row = list(filter(('').__ne__, row))
-                row[0] = int(row[0])
-                row[1] = int(row[1])
-                row[2] = int(row[2])
-                row[3] = float(row[3])
-                row[4] = float(row[4])
-                row[5] = float(row[5])
-                LTS.append(row)
-    except:
-        print("Can't find leap second table.  Using one built into code.")
-        print("Last leap second in built in table is on Jan 01 2017. ")
-        # Use a built in leap second table
-        LTS = [[1960,  1,  1,  1.4178180, 37300.0, 0.0012960],
-               [1961,  1,  1,  1.4228180, 37300.0, 0.0012960],
-               [1961,  8,  1,  1.3728180, 37300.0, 0.0012960],
-               [1962,  1,  1,  1.8458580, 37665.0, 0.0011232],
-               [1963, 11,  1,  1.9458580, 37665.0, 0.0011232],
-               [1964,  1,  1,  3.2401300, 38761.0, 0.0012960],
-               [1964,  4,  1,  3.3401300, 38761.0, 0.0012960],
-               [1964,  9,  1,  3.4401300, 38761.0, 0.0012960],
-               [1965,  1,  1,  3.5401300, 38761.0, 0.0012960],
-               [1965,  3,  1,  3.6401300, 38761.0, 0.0012960],
-               [1965,  7,  1,  3.7401300, 38761.0, 0.0012960],
-               [1965,  9,  1,  3.8401300, 38761.0, 0.0012960],
-               [1966,  1,  1,  4.3131700, 39126.0, 0.0025920],
-               [1968,  2,  1,  4.2131700, 39126.0, 0.0025920],
-               [1972,  1,  1, 10.0,           0.0, 0.0],
-               [1972,  7,  1, 11.0,           0.0, 0.0],
-               [1973,  1,  1, 12.0,           0.0, 0.0],
-               [1974,  1,  1, 13.0,           0.0, 0.0],
-               [1975,  1,  1, 14.0,           0.0, 0.0],
-               [1976,  1,  1, 15.0,           0.0, 0.0],
-               [1977,  1,  1, 16.0,           0.0, 0.0],
-               [1978,  1,  1, 17.0,           0.0, 0.0],
-               [1979,  1,  1, 18.0,           0.0, 0.0],
-               [1980,  1,  1, 19.0,           0.0, 0.0],
-               [1981,  7,  1, 20.0,           0.0, 0.0],
-               [1982,  7,  1, 21.0,           0.0, 0.0],
-               [1983,  7,  1, 22.0,           0.0, 0.0],
-               [1985,  7,  1, 23.0,           0.0, 0.0],
-               [1988,  1,  1, 24.0,           0.0, 0.0],
-               [1990,  1,  1, 25.0,           0.0, 0.0],
-               [1991,  1,  1, 26.0,           0.0, 0.0],
-               [1992,  7,  1, 27.0,           0.0, 0.0],
-               [1993,  7,  1, 28.0,           0.0, 0.0],
-               [1994,  7,  1, 29.0,           0.0, 0.0],
-               [1996,  1,  1, 30.0,           0.0, 0.0],
-               [1997,  7,  1, 31.0,           0.0, 0.0],
-               [1999,  1,  1, 32.0,           0.0, 0.0],
-               [2006,  1,  1, 33.0,           0.0, 0.0],
-               [2009,  1,  1, 34.0,           0.0, 0.0],
-               [2012,  7,  1, 35.0,           0.0, 0.0],
-               [2015,  7,  1, 36.0,           0.0, 0.0],
-               [2017,  1,  1, 37.0,           0.0, 0.0]]
+    LTS = []
+    with open(LEAPSEC_FILE) as lsfile:
+        lsreader = csv.reader(lsfile, delimiter=' ')
+        for row in lsreader:
+            if row[0] == ";":
+                continue
+            row = list(filter(('').__ne__, row))
+            row[0] = int(row[0])
+            row[1] = int(row[1])
+            row[2] = int(row[2])
+            row[3] = float(row[3])
+            row[4] = float(row[4])
+            row[5] = float(row[5])
+            LTS.append(row)
 
     NDAT = len(LTS)
 
