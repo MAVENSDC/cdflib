@@ -2184,6 +2184,8 @@ class CDF(object):
 
         recSize = CDF._datatype_size(data_type, num_elems) * num_values
         if (isinstance(indata, list) or isinstance(indata, tuple)):
+            if (num_values != 1) and (len(indata) != num_values):
+                raise Exception("Use numpy for inputting multidimensional arrays")
             size = len(indata)
             if (data_type == CDF.CDF_CHAR or data_type == CDF.CDF_UCHAR):
                 odata = ''
@@ -2230,7 +2232,10 @@ class CDF(object):
         elif (isinstance(indata, np.ndarray)):
             tofrom = self._convert_option()
             npdata = CDF._convert_nptype(data_type, indata)
-            recs = len(indata)
+            if indata.size == num_values: #Check if only one record is being read in
+                recs = 1
+            else:
+                recs = len(indata)
             dt_string = CDF._convert_type(data_type)
             if (data_type == CDF.CDF_EPOCH16):
                 num_elems = 2 * num_elems
