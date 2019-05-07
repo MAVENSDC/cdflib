@@ -1,9 +1,13 @@
 #!/usr/bin/env python
+import filecmp
+import urllib.request
+from random import randint
+
 import pytest
 import unittest
 import numpy as np
+
 import cdflib
-from random import randint
 
 '''
 To check code coverage, first:
@@ -17,9 +21,7 @@ pytest --cov
 This will run all unit tests.  To view the coverage results:
 
 coverage report
-'''
 
-'''
 Each of these results were hand checked using either IDL or
 other online resources.
 '''
@@ -237,6 +239,12 @@ class CDFEpochTestCase(unittest.TestCase):
         self.assertLessEqual(time_array[index[-1]].real, cdflib.cdfepoch.compute(test_end).real)
         self.assertGreaterEqual(time_array[index[-1]+1].real, cdflib.cdfepoch.compute(test_end).real)
 
+
+def test_latest_leapsecs():
+    # Check that the built in leapseconds table is the latest one
+    local = cdflib.epochs.LEAPSEC_FILE
+    remote, _ = urllib.request.urlretrieve('https://cdf.gsfc.nasa.gov/html/CDFLeapSeconds.txt')
+    assert filecmp.cmp(local, remote)
 
 if __name__ == '__main__':
     pytest.main(['-x', __file__])

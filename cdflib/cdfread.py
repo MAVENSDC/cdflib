@@ -216,7 +216,7 @@ class CDF:
         variable :
         """
         vdr_info = self.varget(variable=variable, inq=True)
-        if vdr_info == None:
+        if vdr_info is None:
             raise KeyError("Variable {} not found.".format(variable))
 
         var = {}
@@ -240,6 +240,12 @@ class CDF:
 
         return var
 
+    def _read_adr(self, position):
+        if (self.cdfversion == 3):
+            return self._read_adr3(position)
+        else:
+            return self._read_adr2(position)
+
     def attinq(self, attribute=None):
         """
         Get attribute information.
@@ -254,20 +260,18 @@ class CDF:
         dict
             Dictionary of attribute information.
 
-        If no attribute is provided, a list of all attributes is printed.
+        Returns
+        -------
+        dict
+            Dictionary of attribution infromation.
         """
         position = self._first_adr
         if isinstance(attribute, str):
             for _ in range(0, self._num_att):
-                if (self.cdfversion == 3):
-                    name, next_adr = self._read_adr_fast(position)
-                else:
-                    name, next_adr = self._read_adr_fast2(position)
+                name, next_adr = self._read_adr_fast(position)
                 if name.strip().lower() == attribute.strip().lower():
-                    if (self.cdfversion == 3):
-                        return self._read_adr(position)
-                    else:
-                        return self._read_adr2(position)
+                    return self._read_adr(position)
+
                 position = next_adr
             raise KeyError('No attribute {}'.format(attribute))
 
@@ -275,15 +279,10 @@ class CDF:
             if (attribute < 0 or attribute > self._num_zvariable):
                 raise KeyError('No attribute {}'.format(attribute))
             for _ in range(0, attribute):
-                if (self.cdfversion == 3):
-                    name, next_adr = self._read_adr_fast(position)
-                else:
-                    name, next_adr = self._read_adr_fast2(position)
+                name, next_adr = self._read_adr_fast(position)
                 position = next_adr
-            if (self.cdfversion == 3):
-                return self._read_adr(position)
-            else:
-                return self._read_adr2(position)
+
+            return self._read_adr(position)
         else:
             raise ValueError('attribute keyword must be a string or integer')
 
@@ -314,6 +313,13 @@ class CDF:
                 +-----------------+--------------------------------------------------------------------------------+
                 | ['Data']        | retrieved attribute data as a scalar value, a numpy array or a string          |
                 +-----------------+--------------------------------------------------------------------------------+
+
+        Parameters
+        ----------
+        attribute : str, int, optional
+            Attribute name or number to get.
+        entry : int, optional
+        tp_np : bool, optional
         """
         # Starting position
         position = self._first_adr
@@ -322,20 +328,14 @@ class CDF:
         adr_info = None
         if isinstance(attribute, str):
             for _ in range(0, self._num_att):
-                if (self.cdfversion == 3):
-                    name, next_adr = self._read_adr_fast(position)
-                else:
-                    name, next_adr = self._read_adr_fast2(position)
+                name, next_adr = self._read_adr_fast(position)
                 if (name.strip().lower() == attribute.strip().lower()):
-                    if (self.cdfversion == 3):
-                        adr_info = self._read_adr(position)
-                    else:
-                        adr_info = self._read_adr2(position)
+                    adr_info = self._read_adr(position)
                     break
                 else:
                     position = next_adr
 
-            if adr_info == None:
+            if adr_info is None:
                 raise KeyError('No attribute {}'.format(attribute))
 
         elif isinstance(attribute, int):
@@ -345,23 +345,14 @@ class CDF:
                 raise TypeError('{} has to be a number.'.format(entry))
 
             for _ in range(0, attribute):
-                if (self.cdfversion == 3):
-                    name, next_adr = self._read_adr_fast(position)
-                else:
-                    name, next_adr = self._read_adr_fast2(position)
+                name, next_adr = self._read_adr_fast(position)
                 position = next_adr
-            if (self.cdfversion == 3):
-                adr_info = self._read_adr(position)
-            else:
-                adr_info = self._read_adr2(position)
+            adr_info = self._read_adr(position)
         else:
             print('Please set attribute keyword equal to the name or ',
                   'number of an attribute')
             for x in range(0, self._num_att):
-                if (self.cdfversion == 3):
-                    name, next_adr = self._read_adr_fast(position)
-                else:
-                    name, next_adr = self._read_adr_fast2(position)
+                name, next_adr = self._read_adr_fast(position)
                 print('NAME:' + name + ' NUMBER: ' + str(x))
                 position = next_adr
             return
@@ -588,10 +579,8 @@ class CDF:
         byte_loc = self._first_adr
         return_dict = {}
         for _ in range(0, self._num_att):
-            if (self.cdfversion == 3):
-                adr_info = self._read_adr(byte_loc)
-            else:
-                adr_info = self._read_adr2(byte_loc)
+            adr_info = self._read_adr(byte_loc)
+
             if (adr_info['scope'] != 1):
                 byte_loc = adr_info['next_adr_location']
                 continue
@@ -902,15 +891,11 @@ class CDF:
         position = self._first_adr
         for _ in range(0, self._num_att):
             attr = {}
-            if (self.cdfversion == 3):
-                adr_info = self._read_adr(position)
-            else:
-                adr_info = self._read_adr2(position)
+            adr_info = self._read_adr(position)
             attr[adr_info['name']] = CDF._scope_token(int(adr_info['scope']))
             attrs.append(attr)
             position = adr_info['next_adr_location']
         return attrs
-
 
     def _read_cdr(self, byte_loc: int):
         with self.file.open('rb') as f:
@@ -1072,10 +1057,7 @@ class CDF:
         byte_loc = self._first_adr
         return_dict = {}
         for z in range(0, self._num_att):
-            if (self.cdfversion == 3):
-                adr_info = self._read_adr(byte_loc)
-            else:
-                adr_info = self._read_adr2(byte_loc)
+            adr_info = self._read_adr(byte_loc)
             if (adr_info['scope'] == 1):
                 byte_loc = adr_info['next_adr_location']
                 continue
@@ -1134,7 +1116,7 @@ class CDF:
                 return_dict[adr_info['name']] = None
         return return_dict
 
-    def _read_adr(self, byte_loc):
+    def _read_adr3(self, byte_loc):
         with self.file.open('rb') as f:
             f.seek(byte_loc, 0)
             block_size = int.from_bytes(f.read(8), 'big')  # Block Size
@@ -1201,7 +1183,13 @@ class CDF:
 
         return return_dict
 
-    def _read_adr_fast(self, byte_loc):
+    def _read_adr_fast(self, position):
+        if (self.cdfversion == 3):
+            return self._read_adr_fast3(position)
+        else:
+            return self._read_adr_fast2(position)
+
+    def _read_adr_fast3(self, byte_loc):
         with self.file.open('rb') as f:
             # Position of next ADR
             f.seek(byte_loc+12, 0)
