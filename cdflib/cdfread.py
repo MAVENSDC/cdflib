@@ -2153,7 +2153,11 @@ class CDF:
 
         dt = np.dtype(dt_string)
         ret = np.frombuffer(pad_value, dtype=dt, count=1)
-        ret.setflags('WRITEABLE')
+        try:
+            ret.setflags('WRITEABLE')
+        except:
+            #TODO: Figure out why we need to array set to writeable
+            pass
         return ret
 
     def _convert_np_data(data, data_type, num_elems):   # @NoSelf
