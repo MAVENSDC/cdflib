@@ -349,19 +349,13 @@ class CDF:
                 position = next_adr
             adr_info = self._read_adr(position)
         else:
-            print('Please set attribute keyword equal to the name or ',
-                  'number of an attribute')
-            for x in range(0, self._num_att):
-                name, next_adr = self._read_adr_fast(position)
-                print('NAME:' + name + ' NUMBER: ' + str(x))
-                position = next_adr
-            return
+            raise ValueError('Please set attribute keyword equal to '
+                             'the name or number of an attribute')
 
         # Find the correct entry from the "entry" variable
         if adr_info['scope'] == 1:
             if not isinstance(entry, int):
-                print('Global entry should be an integer')
-                return
+                raise ValueError('"entry" must be an integer')
             num_entry_string = 'num_gr_entry'
             first_entry_string = 'first_gr_entry'
             max_entry_string = 'max_gr_entry'
@@ -395,13 +389,13 @@ class CDF:
                             break
                         positionx = vdr_next
                 if var_num == -1:
-                    print('No variable by this name:', entry)
-                    return
+                    raise ValueError(
+                        'No variable by this name: {}'.format(entry))
                 entry_num = var_num
             else:
                 if (self._num_zvariable > 0 and self._num_rvariable > 0):
-                    print('This CDF has both r and z variables. Use variable name')
-                    return
+                    raise ValueError('This CDF has both r and z variables. '
+                                     'Use variable name instead')
                 if self._num_zvariable > 0:
                     zvar = True
                 entry_num = entry
@@ -414,8 +408,7 @@ class CDF:
                 first_entry_string = 'first_gr_entry'
                 max_entry_string = 'max_gr_entry'
         if entry_num > adr_info[max_entry_string]:
-            print('The entry does not exist')
-            return
+            raise ValueError('The entry does not exist')
         return self._get_attdata(adr_info, entry_num, adr_info[num_entry_string],
                                  adr_info[first_entry_string], to_np=to_np)
 
@@ -476,14 +469,12 @@ class CDF:
         """
         if (isinstance(variable, int) and self._num_zvariable > 0 and
                 self._num_rvariable > 0):
-            print('This CDF has both r and z variables. Use variable name')
-            return
-
+            raise ValueError('This CDF has both r and z variables. '
+                             'Use variable name instead')
 
         if ((starttime is not None or endtime is not None) and
                 (startrec != 0 or endrec is not None)):
-            print('Can\'t specify both time and record range')
-            return
+            raise ValueError('Can\'t specify both time and record range')
 
         if isinstance(variable, str):
             # Check z variables for the name, then r variables
@@ -506,8 +497,7 @@ class CDF:
                 position = self._first_rvariable
                 num_variables = self._num_rvariable
             if vdr_info is None:
-                print("Variable name not found.")
-                return
+                raise ValueError("Variable name not found.")
         elif isinstance(variable, int):
             if self._num_zvariable > 0:
                 position = self._first_zvariable
@@ -518,8 +508,8 @@ class CDF:
                 num_variable = self._num_rvariable
                 # zVar = False
             if (variable < 0 or variable >= num_variable):
-                print('No variable by this number:', variable)
-                return
+                raise ValueError(
+                    'No variable by this number: {}'.format(variable))
             for _ in range(0, variable):
                 if (self.cdfversion == 3):
                     name, next_vdr = self._read_vdr_fast(position)
@@ -531,23 +521,15 @@ class CDF:
             else:
                 vdr_info = self._read_vdr2(position)
         else:
-            print('Please set variable keyword equal to the name or ',
-                  'number of an variable')
-            rvars, zvars = self._get_varnames()
-            print("RVARIABLES: ")
-            for x in rvars:
-                print("NAME: " + str(x))
-            print("ZVARIABLES: ")
-            for x in zvars:
-                print("NAME: " + str(x))
-            return
+            raise ValueError('Please set variable keyword equal to '
+                             'the name or number of an variable')
 
         if inq:
             return vdr_info
         else:
             if (vdr_info['max_records'] < 0):
-                    # print('No data is written for this variable')
-                return None
+                raise ValueError('No data is written for this variable')
+
             return self._read_vardata(vdr_info, epoch=epoch, starttime=starttime, endtime=endtime,
                                       startrec=startrec, endrec=endrec, record_range_only=record_range_only,
                                       expand=expand, to_np=to_np)
@@ -657,8 +639,7 @@ class CDF:
         None value.
         """
         if (isinstance(variable, int) and self._num_zvariable > 0 and self._num_rvariable > 0):
-            print('This CDF has both r and z variables. Use variable name')
-            return None
+            raise ValueError('This CDF has both r and z variables. Use variable name')
         if isinstance(variable, str):
             position = self._first_zvariable
             num_variables = self._num_zvariable
@@ -677,8 +658,7 @@ class CDF:
                     position = vdr_next
                 position = self._first_rvariable
                 num_variables = self._num_rvariable
-            print('No variable by this name:', variable)
-            return None
+            raise ValueError('No variable by this name: {}'.format(variable))
         elif isinstance(variable, int):
             if self._num_zvariable > 0:
                 num_variable = self._num_zvariable
@@ -687,20 +667,11 @@ class CDF:
                 num_variable = self._num_rvariable
                 zVar = False
             if (variable < 0 or variable >= num_variable):
-                print('No variable by this number:', variable)
-                return None
+                raise ValueError('No variable by this number: {}'.format(variable))
             return self._read_varatts(variable, zVar, expand, to_np=to_np)
         else:
-            print('Please set variable keyword equal to the name or ',
-                  'number of an variable')
-            rvars, zvars = self._get_varnames()
-            print("RVARIABLES: ")
-            for x in rvars:
-                print("NAME: " + str(x))
-            print("ZVARIABLES: ")
-            for x in zvars:
-                print("NAME: " + str(x))
-            return
+            raise ValueError('Please set variable keyword equal to '
+                             'the name or number of an variable')
 
     def _uncompress_file(self, path):
         '''
@@ -1976,16 +1947,14 @@ class CDF:
         # Error checking
         if startrec:
             if (startrec < 0):
-                print('Invalid start recond')
-                return None
+                raise ValueError('Invalid start recond')
             if not (vdr_info['record_vary']):
                 startrec = 0
 
         if not (endrec is None):
             if ((endrec < 0) or (endrec > vdr_info['max_records']) or
                     (endrec < startrec)):
-                print('Invalid end recond')
-                return None
+                raise ValueErro('Invalid end recond')
             if not (vdr_info['record_vary']):
                 endrec = 0
         else:
@@ -2003,9 +1972,9 @@ class CDF:
                 recs = self._findtimerecords(vdr_info['name'], starttime,
                                              endtime, epoch=epoch)
                 if recs is None:
-                    return None
+                    return
                 if len(recs) == 0:
-                    return None
+                    return
                 else:
                     startrec = recs[0]
                     endrec = recs[-1]
@@ -2046,8 +2015,7 @@ class CDF:
         if (epoch != None):
             vdr_info = self.varinq(epoch)
             if (vdr_info == None):
-                print('Epoch not found')
-                return None
+                raise ValueError('Epoch not found')
             if (vdr_info['Data_Type'] == 31 or vdr_info['Data_Type'] == 32 or
                     vdr_info['Data_Type'] == 33):
                 epochtimes = self.varget(epoch)
@@ -2059,17 +2027,20 @@ class CDF:
             else:
                 # acquire depend_0 variable
                 dependVar = self.attget('DEPEND_0', var_name)
-                if (dependVar == None):
-                    print('No corresponding epoch from \'DEPEND_0\' attribute ',
-                          'for variable:', var_name)
-                    print('Use \'epoch\' argument to specify its time-based variable')
-                    return None
+                if (dependVar is None):
+                    raise ValueError(
+                        "No corresponding epoch from 'DEPEND_0' attribute "
+                        "for variable: {}".format(var_name) +
+                        "Use 'epoch' argument to specify its time-based "
+                        "variable")
+
                 vdr_info = self.varinq(dependVar['Data'])
                 if (vdr_info['Data_Type'] != 31 and vdr_info['Data_Type'] != 32
                         and vdr_info['Data_Type'] != 33):
-                    print('Corresponding variable from \'DEPEND_0\' attribute ',
-                          'for variable:', var_name, ' is not a CDF epoch type')
-                    return None
+                    raise ValueError(
+                        "Corresponding variable from 'DEPEND_0' attribute "
+                        "for variable: {}".format(var_name) +
+                        ' is not a CDF epoch type')
                 epochtimes = self.varget(dependVar['Data'])
 
         return self._findrangerecords(vdr_info['Data_Type'], epochtimes,
@@ -2077,11 +2048,10 @@ class CDF:
 
     def _findrangerecords(self, data_type, epochtimes, starttime, endtime):
         if (data_type == 31 or data_type == 32 or data_type == 33):
-            #CDF_EPOCH or CDF_EPOCH16 or CDF_TIME_TT2000
+            # CDF_EPOCH or CDF_EPOCH16 or CDF_TIME_TT2000
             recs = epoch.CDFepoch.findepochrange(epochtimes, starttime, endtime)
         else:
-            print('Not a CDF epoch type...')
-            return None
+            raise ValueError('Not a CDF epoch type')
         return recs
 
     def _convert_type(self, data_type):
@@ -2248,7 +2218,7 @@ class CDF:
 
     def getVersion():   # @NoSelf
         """
-        Shows the code version and last modified date.
+        Prints the code version and last modified date.
         """
         print('CDFread version:', str(CDF.version) + '.' + str(CDF.release) +
               '.' + str(CDF.increment))
