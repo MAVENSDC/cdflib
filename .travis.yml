@@ -1,5 +1,4 @@
 language: python
-sudo: required
 dist: xenial
 group: travis_latest
 
@@ -24,7 +23,7 @@ script:
 
 after_success:
 - if [[ $TRAVIS_PYTHON_VERSION == 3.6* ]]; then
-  pytest --cov --cov-config=setup.cfg;
+  pytest --cov
   coveralls;
   fi
 

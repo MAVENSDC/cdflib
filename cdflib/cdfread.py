@@ -124,6 +124,9 @@ class CDF:
         if self.compressed_file is not None:
             self.compressed_file = None
 
+    def __getitem__(self, variable: str) -> np.ndarray:
+        return self.varget(variable)
+
     def close(self):
         pass
 

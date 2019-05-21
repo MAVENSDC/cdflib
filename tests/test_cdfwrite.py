@@ -6,31 +6,35 @@ import pytest
 from pathlib import Path
 
 R = Path(__file__).parent
-fnbasic = R / "testfiles/testing.cdf"
-fncsum = R / "testfiles/testing_checksum.cdf"
-fncomp = R / "testfiles/testing_compression.cdf"
+fnbasic = 'testing.cdf'
 
 
-@pytest.fixture
-def cdf_create():
-    def _cdf_create(fn: Path, spec: dict):
-        return cdfwrite.CDF(fn, cdf_spec=spec, delete=True)
-    return _cdf_create
+def cdf_create(fn: Path, spec: dict):
+    # str(fn) is a Python==3.5 workaround
+    return cdfwrite.CDF(str(fn), cdf_spec=spec)
 
 
-def test_cdf_creation(cdf_create):
-    cdf_create(fnbasic, {'rDim_sizes': [1]}).close()
+def cdf_read(fn: Path, validate: bool = False):
+    # str(fn) is a Python==3.5 workaround
+    return cdfread.CDF(str(fn), validate=validate)
 
-    reader = cdfread.CDF(fnbasic)
+
+def test_cdf_creation(tmp_path):
+
+    fn = tmp_path / fnbasic
+    cdf_create(fn, {'rDim_sizes': [1]}).close()
+
+    reader = cdf_read(fn)
 
     # Test CDF info
     info = reader.cdf_info()
     assert info['Majority'] == 'Column_major'
 
 
-def test_checksum(cdf_create):
+def test_checksum(tmp_path):
     # Setup the test_file
-    tfile = cdf_create(fncsum, {'Checksum': True})
+    fn = tmp_path / fnbasic
+    tfile = cdf_create(fn, {'Checksum': True})
 
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
@@ -48,14 +52,17 @@ def test_checksum(cdf_create):
     tfile.close()
 
 # %% Open the file to read
-    reader = cdfread.CDF(fncsum, validate=True)
+    reader = cdf_read(fn, validate=True)
     # Test CDF info
     var = reader.varget("Variable1")
     assert (var == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).all()
+    # test convenience info
+    assert (reader["Variable1"] == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).all()
 
 
-def test_checksum_compressed(cdf_create):
+def test_checksum_compressed(tmp_path):
     # Setup the test_file
+    fn = tmp_path / fnbasic
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
     var_spec['Data_Type'] = 2
@@ -68,13 +75,13 @@ def test_checksum_compressed(cdf_create):
 
     v = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
-    tfile = cdf_create(fncomp, {'Compressed': 6, 'Checksum': True})
+    tfile = cdf_create(fn, {'Compressed': 6, 'Checksum': True})
     tfile.write_var(var_spec, var_attrs=varatts,
                     var_data=v)
 
     tfile.close()
 # %% Open the file to read
-    reader = cdfread.CDF(fncomp, validate=True)
+    reader = cdf_read(fn, validate=True)
 
     var = reader.varget("Variable1")
     assert (var == v).all()
@@ -86,8 +93,9 @@ def test_checksum_compressed(cdf_create):
     assert att['Data'] == '500'
 
 
-def test_file_compression(cdf_create):
+def test_file_compression(tmp_path):
     # Setup the test_file
+    fn = tmp_path / fnbasic
 
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
@@ -101,20 +109,22 @@ def test_file_compression(cdf_create):
 
     v = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
-    tfile = cdf_create(fncomp, {'Compressed': 6, 'Checksum': True})
+    tfile = cdf_create(fn, {'Compressed': 6, 'Checksum': True})
     tfile.write_var(var_spec, var_attrs=varatts,
                     var_data=v)
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fncomp)
+    reader = cdf_read(fn)
     # Test CDF info
     var = reader.varget("Variable1")
     assert (var == v).all()
 
 
-def test_globalattrs(cdf_create):
+def test_globalattrs(tmp_path):
     # Setup the test_file
+    fn = tmp_path / fnbasic
+
     globalAttrs = {}
     globalAttrs['Global1'] = {0: 'Global Value 1'}
     globalAttrs['Global2'] = {0: 'Global Value 2'}
@@ -130,12 +140,12 @@ def test_globalattrs(cdf_create):
 
     globalAttrs['Global6'] = GA6
 
-    tfile = cdf_create(fncsum, {'Checksum': True})
+    tfile = cdf_create(fn, {'Checksum': True})
     tfile.write_globalattrs(globalAttrs)
 
     tfile.close()
 # %% Open the file to read
-    reader = cdfread.CDF(fncsum)
+    reader = cdf_read(fn)
 
     # Test CDF info
     attrib = reader.attinq('Global2')
@@ -151,8 +161,9 @@ def test_globalattrs(cdf_create):
         assert entry['Data'][x] == x
 
 
-def test_create_zvariable(cdf_create):
+def test_create_zvariable(tmp_path):
     # Setup the test_file
+    fn = tmp_path / fnbasic
     vs = {}
     vs['Variable'] = 'Variable1'
     vs['Data_Type'] = 1
@@ -161,12 +172,12 @@ def test_create_zvariable(cdf_create):
     vs['Dim_Sizes'] = []
     vs['Dim_Vary'] = True
 
-    tfile = cdf_create(fncsum, {'Checksum': True})
+    tfile = cdf_create(fn, {'Checksum': True})
     tfile.write_var(vs, var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
     tfile.close()
 
 # %% Open the file to read
-    reader = cdfread.CDF(fncsum)
+    reader = cdf_read(fn)
 
     # Test CDF info
     varinfo = reader.varinq("Variable1")
@@ -176,8 +187,9 @@ def test_create_zvariable(cdf_create):
     assert (var == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).all()
 
 
-def test_create_rvariable(cdf_create):
+def test_create_rvariable(tmp_path):
     # Setup the test_file
+    fn = tmp_path / fnbasic
     vs = {}
     vs['Variable'] = 'Variable1'
     vs['Var_Type'] = 'rvariable'
@@ -187,12 +199,12 @@ def test_create_rvariable(cdf_create):
     vs['Dim_Sizes'] = []
     vs['Dim_Vary'] = [True]
 
-    tfile = cdf_create(fnbasic, {'rDim_sizes': [1]})
+    tfile = cdf_create(fn, {'rDim_sizes': [1]})
     tfile.write_var(vs, var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fnbasic)
+    reader = cdf_read(fn)
 
     # Test CDF info
     varinfo = reader.varinq("Variable1")
@@ -203,8 +215,10 @@ def test_create_rvariable(cdf_create):
         assert var[x] == x
 
 
-def test_create_zvariable_no_recvory(cdf_create):
-        # Setup the test_file
+def test_create_zvariable_no_recvory(tmp_path):
+    # Setup the test_file
+    fn = tmp_path / fnbasic
+
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
     var_spec['Data_Type'] = 8
@@ -213,12 +227,12 @@ def test_create_zvariable_no_recvory(cdf_create):
     var_spec['Dim_Sizes'] = []
     var_spec['Dim_Vary'] = True
 
-    tfile = cdf_create(fnbasic, {'rDim_sizes': [1]})
+    tfile = cdf_create(fn, {'rDim_sizes': [1]})
     tfile.write_var(var_spec, var_data=np.array([2]))
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fnbasic)
+    reader = cdf_read(fn)
 
     # Test CDF info
     varinfo = reader.varinq("Variable1")
@@ -228,8 +242,10 @@ def test_create_zvariable_no_recvory(cdf_create):
     assert var == 2
 
 
-def test_create_zvariables_with_attributes(cdf_create):
+def test_create_zvariables_with_attributes(tmp_path):
     # Setup the test_file
+    fn = tmp_path / fnbasic
+
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
     var_spec['Data_Type'] = 8
@@ -240,7 +256,7 @@ def test_create_zvariables_with_attributes(cdf_create):
     varatts['Attribute1'] = 1
     varatts['Attribute2'] = '500'
 
-    tfile = cdf_create(fnbasic, {'rDim_sizes': [1]})
+    tfile = cdf_create(fn, {'rDim_sizes': [1]})
     tfile.write_var(var_spec, var_attrs=varatts,
                     var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
 
@@ -254,7 +270,7 @@ def test_create_zvariables_with_attributes(cdf_create):
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fnbasic)
+    reader = cdf_read(fn)
 
     # Test CDF info
     att = reader.attget("Attribute1", entry=0)
@@ -264,8 +280,10 @@ def test_create_zvariables_with_attributes(cdf_create):
     assert att['Data'] == '1000'
 
 
-def test_create_zvariables_then_attributes(cdf_create):
+def test_create_zvariables_then_attributes(tmp_path):
     # Setup the test_file
+    fn = tmp_path / fnbasic
+
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
     var_spec['Data_Type'] = 8
@@ -273,7 +291,7 @@ def test_create_zvariables_then_attributes(cdf_create):
     var_spec['Rec_Vary'] = True
     var_spec['Dim_Sizes'] = []
 
-    tfile = cdf_create(fnbasic, {'rDim_sizes': [1]})
+    tfile = cdf_create(fn, {'rDim_sizes': [1]})
     tfile.write_var(var_spec, var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
 
     var_spec['Variable'] = 'Variable2'
@@ -287,7 +305,7 @@ def test_create_zvariables_then_attributes(cdf_create):
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fnbasic)
+    reader = cdf_read(fn)
 
     # Test CDF info
     att = reader.attget("Attribute1", entry=0)
@@ -297,8 +315,10 @@ def test_create_zvariables_then_attributes(cdf_create):
     att['Data'] == '1000'
 
 
-def test_nonsparse_zvariable_blocking(cdf_create):
+def test_nonsparse_zvariable_blocking(tmp_path):
     # Setup the test_file
+    fn = tmp_path / fnbasic
+
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
     var_spec['Data_Type'] = 8
@@ -308,20 +328,22 @@ def test_nonsparse_zvariable_blocking(cdf_create):
     var_spec['Block_Factor'] = 10000
     data = np.linspace(0, 999999, num=1000000)
 
-    tfile = cdf_create(fnbasic, {'rDim_sizes': [1]})
+    tfile = cdf_create(fn, {'rDim_sizes': [1]})
     tfile.write_var(var_spec, var_data=data)
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fnbasic)
+    reader = cdf_read(fn)
 
     # Test CDF info
     var = reader.varget("Variable1")
     assert var[99999] == 99999
 
 
-def test_sparse_virtual_zvariable_blocking(cdf_create):
+def test_sparse_virtual_zvariable_blocking(tmp_path):
     # Setup the test_file
+    fn = tmp_path / fnbasic
+
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
     var_spec['Data_Type'] = 8
@@ -341,12 +363,12 @@ def test_sparse_virtual_zvariable_blocking(cdf_create):
                                        physical_records4)).astype(int)
     sparse_data = [physical_records, data]
 
-    tfile = cdf_create(fnbasic, {'rDim_sizes': [1]})
+    tfile = cdf_create(fn, {'rDim_sizes': [1]})
     tfile.write_var(var_spec, var_data=sparse_data)
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fnbasic)
+    reader = cdf_read(fn)
 
     # Test CDF info
     varinq = reader.varinq("Variable1")
@@ -357,8 +379,10 @@ def test_sparse_virtual_zvariable_blocking(cdf_create):
     assert var[70001] == 70001
 
 
-def test_sparse_zvariable_blocking(cdf_create):
+def test_sparse_zvariable_blocking(tmp_path):
     # Setup the test_file
+    fn = tmp_path / fnbasic
+
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
     var_spec['Data_Type'] = 8
@@ -378,14 +402,15 @@ def test_sparse_zvariable_blocking(cdf_create):
                                        physical_records4)).astype(int)
     sparse_data = [physical_records, data]
 
-    tfile = cdf_create(fnbasic, {'rDim_sizes': [1]})
+    tfile = cdf_create(fn, {'rDim_sizes': [1]})
     tfile.write_var(var_spec, var_data=sparse_data)
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fnbasic)
+    reader = cdf_read(fn)
 
-    # Test CDF infotfile = cdf_create(fnbasic, {'rDim_sizes': [1]})
+    # Test CDF info
+    # tfile = cdf_create(fn, {'rDim_sizes': [1]})
     varinq = reader.varinq("Variable1")
     var = reader.varget("Variable1")
     pad_num = varinq['Pad'][0]
@@ -394,8 +419,9 @@ def test_sparse_zvariable_blocking(cdf_create):
     assert var[70001] == 30000
 
 
-def test_sparse_zvariable_pad(cdf_create):
+def test_sparse_zvariable_pad(tmp_path):
     # Setup the test_file
+    fn = tmp_path / fnbasic
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
     var_spec['Data_Type'] = 8
@@ -406,12 +432,12 @@ def test_sparse_zvariable_pad(cdf_create):
     data = [[200, 3000, 3100, 3500, 4000, 5000, 6000, 10000, 10001, 10002, 20000],
             np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])]
 
-    tfile = cdf_create(fnbasic, {'rDim_sizes': [1]})
+    tfile = cdf_create(fn, {'rDim_sizes': [1]})
     tfile.write_var(var_spec, var_data=data)
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fnbasic)
+    reader = cdf_read(fn)
 
     # Test CDF info
     varinq = reader.varinq("Variable1")
@@ -422,8 +448,10 @@ def test_sparse_zvariable_pad(cdf_create):
     assert var[3000] == 1
 
 
-def test_sparse_zvariable_previous(cdf_create):
+def test_sparse_zvariable_previous(tmp_path):
     # Setup the test_file
+    fn = tmp_path / fnbasic
+
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
     var_spec['Data_Type'] = 8
@@ -434,12 +462,12 @@ def test_sparse_zvariable_previous(cdf_create):
     data = [[200, 3000, 3100, 3500, 4000, 5000, 6000, 10000, 10001, 10002, 20000],
             np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])]
 
-    tfile = cdf_create(fnbasic, {'rDim_sizes': [1]})
+    tfile = cdf_create(fn, {'rDim_sizes': [1]})
     tfile.write_var(var_spec, var_data=data)
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fnbasic)
+    reader = cdf_read(fn)
 
     # Test CDF info
     varinq = reader.varinq("Variable1")
@@ -450,8 +478,10 @@ def test_sparse_zvariable_previous(cdf_create):
     assert var[6001] == var[6000]
 
 
-def test_create_2d_rvariable(cdf_create):
+def test_create_2d_rvariable(tmp_path):
     # Setup the test_file
+    fn = tmp_path / fnbasic
+
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
     var_spec['Var_Type'] = 'rvariable'
@@ -461,7 +491,7 @@ def test_create_2d_rvariable(cdf_create):
     var_spec['Dim_Sizes'] = []
     var_spec['Dim_Vary'] = [True, True]
 
-    tfile = cdf_create(fnbasic, {'rDim_sizes': [2, 2]})
+    tfile = cdf_create(fn, {'rDim_sizes': [2, 2]})
     tfile.write_var(var_spec, var_data=np.array([[[0, 1], [1, 2]],
                                                  [[2, 3], [3, 4]],
                                                  [[4, 5], [5, 6]],
@@ -470,7 +500,7 @@ def test_create_2d_rvariable(cdf_create):
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fnbasic)
+    reader = cdf_read(fn)
 
     # Test CDF info
     varinfo = reader.varinq("Variable1")
@@ -484,8 +514,10 @@ def test_create_2d_rvariable(cdf_create):
         assert var[x][1][1] == 2*x+2
 
 
-def test_create_2d_rvariable_dimvary(cdf_create):
+def test_create_2d_rvariable_dimvary(tmp_path):
     # Setup the test_file
+    fn = tmp_path / fnbasic
+
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
     var_spec['Var_Type'] = 'rvariable'
@@ -495,7 +527,7 @@ def test_create_2d_rvariable_dimvary(cdf_create):
     var_spec['Dim_Sizes'] = []
     var_spec['Dim_Vary'] = [True, False]
 
-    tfile = cdf_create(fnbasic,  {'rDim_sizes': [2, 20]})
+    tfile = cdf_create(fn,  {'rDim_sizes': [2, 20]})
 
     tfile.write_var(var_spec, var_data=np.array([[0, 1],
                                                  [2, 3],
@@ -506,7 +538,7 @@ def test_create_2d_rvariable_dimvary(cdf_create):
     tfile.close()
 
     # Open the file to read
-    reader = cdfread.CDF(fnbasic)
+    reader = cdf_read(fn)
 
     # Test CDF info
     varinfo = reader.varinq("Variable1")
@@ -518,9 +550,10 @@ def test_create_2d_rvariable_dimvary(cdf_create):
         assert var[x][1] == 2*x+1
 
 
-def test_create_2d_r_and_z_variables(cdf_create):
-
+def test_create_2d_r_and_z_variables(tmp_path):
     # Setup the test_file
+    fn = tmp_path / fnbasic
+
     var_spec = {}
     var_spec['Variable'] = 'Variable1'
     var_spec['Var_Type'] = 'rvariable'
@@ -530,7 +563,7 @@ def test_create_2d_r_and_z_variables(cdf_create):
     var_spec['Dim_Sizes'] = []
     var_spec['Dim_Vary'] = [True, False]
 
-    tfile = cdf_create(fnbasic,  {'rDim_sizes': [2, 20]})
+    tfile = cdf_create(fn,  {'rDim_sizes': [2, 20]})
     tfile.write_var(var_spec, var_data=np.array([[0, 1],
                                                  [2, 3],
                                                  [4, 5],
@@ -547,7 +580,7 @@ def test_create_2d_r_and_z_variables(cdf_create):
 
     tfile.close()
     # Open the file to read
-    reader = cdfread.CDF(fnbasic)
+    reader = cdf_read(fn)
 
     # Test CDF info
     varinfo = reader.varinq("Variable1")
