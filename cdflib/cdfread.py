@@ -1469,9 +1469,9 @@ class CDF:
             byte_stream = vdr[coff:]
             try:
                 pad = self._read_data(byte_stream, data_type, 1, num_elements)
-            except:
+            except Exception:
                 if (data_type == 51 or data_type == 52):
-                    pad = ' '*num_elements
+                    pad = ' ' * num_elements
 
         return_dict = {}
         return_dict['data_type'] = data_type
@@ -2128,7 +2128,7 @@ class CDF:
         ret = np.frombuffer(pad_value, dtype=dt, count=1)
         try:
             ret.setflags('WRITEABLE')
-        except:
+        except Exception:
             #TODO: Figure out why we need to array set to writeable
             pass
         return ret
