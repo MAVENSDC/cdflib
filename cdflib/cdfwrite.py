@@ -17,6 +17,7 @@ import cdflib.epochs as cdfepoch
 import numbers
 import math
 import pathlib
+import warnings
 
 
 class CDF(object):
@@ -367,7 +368,7 @@ class CDF(object):
                                         dataType == CDF.CDF_UCHAR):
                                     if (isinstance(data, list) or
                                             isinstance(data, tuple)):
-                                        print('Invalid global attribute value.... Skip')
+                                        warnings.warn('Invalid global attribute value')
                                         return
                                     numElems = len(data)
                                 elif (dataType == CDF.CDF_EPOCH or
@@ -408,7 +409,7 @@ class CDF(object):
                         data = value
                         numElems, dataType = CDF._datatype_define(value)
                         if (numElems is None):
-                            print('Unknown data.... Skip')
+                            warnings.warn('Unknown data')
                             return
 
                     offset = self._write_aedr(f, True, attrNum, entryNum, data,
@@ -575,7 +576,7 @@ class CDF(object):
                         data = value
                         numElems, dataType = CDF._datatype_define(value)
                         if (numElems is None):
-                            print('Unknown data.... Skip')
+                            warnings.warn('Unknown data')
                             return
                     offset = self._write_aedr(f, False, attrNum, entryNum, data,
                                               dataType, numElems, zVar)
@@ -839,8 +840,7 @@ class CDF(object):
 
         for attr, entry in var_attrs.items():
             if (attr in self.gattrs):
-                print('Attribute: ', attr,
-                      ' already defined as a global attribute... Skip')
+                warnings.warn('Attribute: {}'.format(attr) + ' already defined as a global attribute... Skip')
                 continue
 
             if not (attr in self.attrs):
@@ -1317,8 +1317,8 @@ class CDF(object):
                   'COLUMN_MAJOR': 2}
         try:
             return majors[major.upper()]
-        except:
-            print('bad major....', major)
+        except Exception:
+            warnings.warn('bad major.... {}'.format(major))
             return 0
 
     def _encoding_token(encoding):    # @NoSelf
@@ -1344,8 +1344,8 @@ class CDF(object):
                      'ARM_BIG_ENCODING': 18}
         try:
             return encodings[encoding.upper()]
-        except:
-            print('bad encoding....', encoding)
+        except Exception:
+            warnings.warn('bad encoding.... {}'.format(encoding))
             return 0
 
     def _datatype_token(datatype):    # @NoSelf
@@ -1386,7 +1386,7 @@ class CDF(object):
             elif (isinstance(value, complex)):
                 return numElems, CDF.CDF_EPOCH16
             else:
-                print('Invalid data type for data.... Skip')
+                warnings.warn('Invalid data type for data.... Skip')
                 return None, None
 
     def _datatype_size(datatype, numElms):    # @NoSelf
@@ -2539,7 +2539,7 @@ class CDF(object):
             try:
                 data = data['Data']
             except:
-                print('Unknown dictionary.... Skip')
+                warnings.warn('Unknown dictionary.... Skip')
                 return None
         if (isinstance(data, np.ndarray)):
             if (len(records) == len(data)):
@@ -2551,8 +2551,8 @@ class CDF(object):
                 return self._make_sparse_blocks_with_virtual(variable, records,
                                                              data)
             else:
-                print('Invalid sparse data... ',
-                      'Less data than the specified records... Skip')
+                warnings.warn('Invalid sparse data... ',
+                              'Less data than the specified records... Skip')
         elif (isinstance(data, bytes)):
             record_length = len(records)
             for z in range(0, variable['Num_Dims']):
@@ -2566,8 +2566,8 @@ class CDF(object):
                 return self._make_sparse_blocks_with_virtual(variable, records,
                                                              data)
             else:
-                print('Invalid sparse data... ',
-                      'Less data than the specified records... Skip')
+                warnings.warn('Invalid sparse data... ',
+                              'Less data than the specified records... Skip')
         elif (isinstance(data, list)):
             if (isinstance(data[0], list)):
                 if not (all(isinstance(el, str) for el in data[0])):
