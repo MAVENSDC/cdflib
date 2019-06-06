@@ -138,11 +138,9 @@ class CDFepoch:
                   isinstance(epochs[0], np.complex128)):
                 return CDFepoch.encode_epoch16(epochs, iso_8601)
             else:
-                print('Bad input')
-                return None
+                raise ValueError('Bad input')
         else:
-            print('Bad input')
-            return None
+            raise ValueError('Bad input')
 
     def breakdown(epochs, to_np=None):  # @NoSelf
 
@@ -165,11 +163,9 @@ class CDFepoch:
                   isinstance(epochs[0], np.complex128)):
                 return CDFepoch.breakdown_epoch16(epochs, to_np)
             else:
-                print('Bad input')
-                return None
+                raise ValueError('Bad input')
         else:
-            print('Bad input')
-            return None
+            raise ValueError('Bad input')
 
     def unixtime(cdf_time, to_np=False):  # @NoSelf
         """
@@ -246,8 +242,7 @@ class CDFepoch:
         elif isinstance(datetimes[0], (list, tuple, np.ndarray)):
             items = len(datetimes[0])
         else:
-            print('Unknown input')
-            return
+            raise ValueError('Unknown input')
 
         if (items == 7):
             return CDFepoch.compute_epoch(datetimes, to_np)
@@ -256,8 +251,7 @@ class CDFepoch:
         elif (items == 9):
             return CDFepoch.compute_tt2000(datetimes, to_np)
         else:
-            print('Unknown input')
-            return
+            raise ValueError('Unknown input')
 
     def findepochrange(epochs, starttime=None, endtime=None):  # @NoSelf
         """
@@ -290,11 +284,9 @@ class CDFepoch:
                   isinstance(epochs[0], np.complex128)):
                 return CDFepoch.epochrange_epoch16(epochs, starttime, endtime)
             else:
-                print('Bad input')
-                return None
+                raise ValueError('Bad input')
         else:
-            print('Bad input')
-            return None
+            raise ValueError('Bad input')
 
     def encode_tt2000(tt2000, iso_8601=None):  # @NoSelf
 
@@ -303,8 +295,7 @@ class CDFepoch:
         elif (isinstance(tt2000, list) or isinstance(tt2000, np.ndarray)):
             new_tt2000 = tt2000
         else:
-            print('Bad input')
-            return None
+            raise ValueError('Bad input')
         count = len(new_tt2000)
         encodeds = []
         for x in range(0, count):
@@ -396,8 +387,7 @@ class CDFepoch:
               isinstance(tt2000, np.ndarray)):
             new_tt2000 = tt2000
         else:
-            print('Bad input data')
-            return None
+            raise ValueError('Bad input data')
         count = len(new_tt2000)
         toutcs = []
         for x in range(0, count):
@@ -527,8 +517,7 @@ class CDFepoch:
     def compute_tt2000(datetimes, to_np=None):  # @NoSelf
 
         if (not isinstance(datetimes, list) and not isinstance(datetimes, tuple)):
-            print('datetime must be in list form')
-            return None
+            raise ValueError('datetime must be in list form')
         if (isinstance(datetimes[0], numbers.Number)):
             new_datetimes = [datetimes]
             count = 1
@@ -620,8 +609,7 @@ class CDFepoch:
                 usec = int(xxx)
                 nsec = int(1000.0 * (xxx - usec))
             else:
-                print('Invalid tt2000 components')
-                return None
+                raise ValueError('Invalid tt2000 components')
             if (month == 0):
                 month = 1
             if (year == 9999 and month == 12 and day == 31 and hour == 23 and
@@ -758,11 +746,9 @@ class CDFepoch:
                     isinstance(epochs[0], np.int64)):
                 new2_epochs = epochs
             else:
-                print('Bad data')
-                return None
+                raise ValueError('Bad data')
         else:
-            print('Bad data')
-            return None
+            raise ValueError('Bad data')
         if (starttime == None):
             stime = int(-9223372036854775807)
         else:
@@ -771,21 +757,18 @@ class CDFepoch:
             elif (isinstance(starttime, list)):
                 stime = CDFepoch.compute_tt2000(starttime)
             else:
-                print('Bad start time')
-                return None
+                raise ValueError('Bad start time')
         if (endtime != None):
             if (isinstance(endtime, int) or isinstance(endtime, np.int64)):
                 etime = endtime
             elif (isinstance(endtime, list) or isinstance(endtime, tuple)):
                 etime = CDFepoch.compute_tt2000(endtime)
             else:
-                print('Bad end time')
-                return None
+                raise ValueError('Bad end time')
         else:
             etime = int(9223372036854775807)
         if (stime > etime):
-            print('Invalid start/end time')
-            return None
+            raise ValueError('Invalid start/end time')
         if (isinstance(epochs, list) or isinstance(epochs, tuple)):
             new_epochs = np.array(epochs)
         else:
@@ -801,8 +784,7 @@ class CDFepoch:
               isinstance(epochs, np.ndarray)):
             new_epochs = epochs
         else:
-            print('Bad data')
-            return None
+            raise ValueError('Bad data')
         count = len(new_epochs)
         encodeds = []
         for x in range(0, count):
@@ -875,8 +857,7 @@ class CDFepoch:
 
         if (not isinstance(datetimes, list) and
                 not isinstance(datetimes, tuple)):
-            print('Bad input')
-            return None
+            raise ValueError('Bad input')
         if (not isinstance(datetimes[0], list) and
                 not isinstance(datetimes[0], tuple)):
             new_dates = []
@@ -885,7 +866,7 @@ class CDFepoch:
             new_dates = datetimes
         count = len(new_dates)
         if (count == 0):
-            return None
+            return
         epochs = []
         for x in range(0, count):
             epoch = []
@@ -995,11 +976,9 @@ class CDFepoch:
                 nsec = int(xxx)
                 psec = int(1000.0 * (xxx - nsec))
             else:
-                print('Invalid epoch16 components')
-                return None
+                raise ValueError('Invalid epoch16 components')
             if (year < 0):
-                print('Illegal epoch field')
-                return
+                raise ValueError('Illegal epoch field')
             if (year == 9999 and month == 12 and day == 31 and hour == 23 and
                 minute == 59 and second == 59 and msec == 999 and
                     usec == 999 and nsec == 999 and psec == 999):
@@ -1055,7 +1034,7 @@ class CDFepoch:
               isinstance(epochs, np.ndarray)):
             new_epochs = epochs
         else:
-            print('Bad data')
+            raise ValueError('Bad data')
             return
         count = len(new_epochs)
         components = []
@@ -1135,8 +1114,7 @@ class CDFepoch:
                 m = 13 + m
             daysSince0AD = CDFepoch._JulianDay(y, m, d) - 1721060
         if (daysSince0AD < 0):
-            print('Illegal epoch')
-            return None
+            raise ValueError('Illegal epoch')
         epoch = []
         epoch.append(float(86400.0 * daysSince0AD + 3600.0 * h + 60.0 * mn) + float(s))
         epoch.append(float(msp) + float(1000.0 * msn) + float(1000000.0 * msu) + math.pow(10.0, 9) * ms)
@@ -1160,8 +1138,7 @@ class CDFepoch:
                     epoch[1] = 0.0
                     epoch[0] = epoch[0] + sec
         if (epoch[0] < 0.0):
-            print('Illegal epoch')
-            return None
+            raise ValueError('Illegal epoch')
         else:
             return epoch
 
@@ -1175,11 +1152,9 @@ class CDFepoch:
                     isinstance(epochs[0], np.complex128)):
                 new_epochs = epochs
             else:
-                print('Bad data')
-                return None
+                raise ValueError('Bad data')
         else:
-            print('Bad data')
-            return None
+            raise ValueError('Bad data')
         if (starttime == None):
             stime = []
             stime.append(-1.0E31)
@@ -1196,8 +1171,7 @@ class CDFepoch:
                 stime.append(sstime.real)
                 stime.append(sstime.imag)
             else:
-                print('Bad start time')
-                return None
+                raise ValueError('Bad start time')
         if (endtime != None):
             if (isinstance(endtime, complex) or
                     isinstance(endtime, np.complex128)):
@@ -1210,15 +1184,13 @@ class CDFepoch:
                 etime.append(eetime.real)
                 etime.append(eetime.imag)
             else:
-                print('Bad start time')
-                return None
+                raise ValueError('Bad start time')
         else:
             etime = []
             etime.append(1.0E31)
             etime.append(1.0E31)
         if (stime[0] > etime[0] or (stime[0] == etime[0] and stime[1] > etime[1])):
-            print('Invalid start/end time')
-            return None
+            raise ValueError('Invalid start/end time')
         count = len(new_epochs)
         epoch16 = []
         for x in range(0, count):
@@ -1228,11 +1200,11 @@ class CDFepoch:
         indx = []
         if (epoch16[0] > etime[0] or (epoch16[0] == etime[0] and
                                       epoch16[1] > etime[1])):
-            return None
+            return
         if (epoch16[count-2] < stime[0] or
             (epoch16[count-2] == stime[0] and
              epoch16[count-1] < stime[1])):
-            return None
+            return
         for x in range(0, count, 2):
             if (epoch16[x] < stime[0]):
                 continue
@@ -1271,8 +1243,7 @@ class CDFepoch:
         elif (isinstance(epochs, list) or isinstance(epochs, np.ndarray)):
             new_epochs = epochs
         else:
-            print('Bad data')
-            return None
+            raise ValueError('Bad data')
         count = len(new_epochs)
         encodeds = []
         for x in range(0, count):
@@ -1327,8 +1298,7 @@ class CDFepoch:
     def compute_epoch(dates, to_np=None):  # @NoSelf
 
         if (not isinstance(dates, list) and not isinstance(dates, tuple)):
-            print('Bad input')
-            return None
+            raise ValueError('Bad input')
         if (not isinstance(dates[0], list) and not isinstance(dates[0], tuple)):
             new_dates = []
             new_dates = [dates]
@@ -1336,7 +1306,7 @@ class CDFepoch:
             new_dates = dates
         count = len(new_dates)
         if (count == 0):
-            return None
+            return
         epochs = []
         for x in range(0, count):
             date = new_dates[x]
@@ -1385,14 +1355,12 @@ class CDFepoch:
                 second = int(xxx)
                 msec = int(1000.0 * (xxx - second))
             else:
-                print('Invalid epoch components')
-                return None
+                raise ValueError('Invalid epoch components')
             if (year == 9999 and month == 12 and day == 31 and hour == 23 and
                     minute == 59 and second == 59 and msec == 999):
                 epochs.append(-1.0E31)
             if (year < 0):
-                print('ILLEGAL_EPOCH_FIELD')
-                return None
+                raise ValueError('ILLEGAL_EPOCH_FIELD')
             if ((year > 9999) or (month < 0 or month > 12) or
                 (hour < 0 or hour > 23) or (minute < 0 or minute > 59) or
                     (second < 0 or second > 59) or (msec < 0 or msec > 999)):
@@ -1440,8 +1408,7 @@ class CDFepoch:
                 m = 13 + m
             daysSince0AD = CDFepoch._JulianDay(y, m, d) - 1721060
         if (daysSince0AD < 1):
-            print('ILLEGAL_EPOCH_FIELD')
-            return None
+            raise ValueError('ILLEGAL_EPOCH_FIELD')
         msecInDay = float(3600000.0 * h + 60000.0 * mn + 1000.0 * s) + float(ms)
         msecFromEpoch = float(86400000.0 * daysSince0AD + msecInDay)
         if (msecFromEpoch < 0.0):
@@ -1457,8 +1424,7 @@ class CDFepoch:
               isinstance(epochs, np.ndarray)):
             new_epochs = epochs
         else:
-            print('Bad data')
-            return None
+            raise ValueError('Bad data')
         count = len(new_epochs)
         components = []
         for x in range(0, count):
@@ -1522,11 +1488,9 @@ class CDFepoch:
                     isinstance(epochs[0], np.float64)):
                 new2_epochs = epochs
             else:
-                print('Bad data')
-                return None
+                raise ValueError('Bad data')
         else:
-            print('Bad data')
-            return None
+            raise ValueError('Bad data')
         if (starttime == None):
             stime = 0.0
         else:
@@ -1536,8 +1500,7 @@ class CDFepoch:
             elif (isinstance(starttime, list) or isinstance(starttime, tuple)):
                 stime = CDFepoch.compute_epoch(starttime)
             else:
-                print('Bad start time')
-                return None
+                raise ValueError('Bad start time')
         if (endtime != None):
             if (isinstance(endtime, float) or isinstance(endtime, int) or
                     isinstance(endtime, np.float64)):
@@ -1545,13 +1508,11 @@ class CDFepoch:
             elif (isinstance(endtime, list) or isinstance(endtime, tuple)):
                 etime = CDFepoch.compute_epoch(endtime)
             else:
-                print('Bad end time')
-                return None
+                raise ValueError('Bad end time')
         else:
             etime = 1.0E31
         if (stime > etime):
-            print('Invalid start/end time')
-            return None
+            raise ValueError('Invalid start/end time')
         if (isinstance(epochs, list) or isinstance(epochs, tuple)):
             new_epochs = np.array(epochs)
         else:
@@ -1583,13 +1544,11 @@ class CDFepoch:
         """
         if ((isinstance(value, list) or isinstance(value, tuple)) and
                 not (isinstance(value[0], str))):
-            print('Invalid value... should be a string or a list of string')
-            return None
+            raise ValueError('Invalid value... should be a string or a list of string')
         elif ((not (isinstance(value, list))) and
               (not (isinstance(value, tuple))) and
               (not (isinstance(value, str)))):
-            print('Invalid value... should be a string or a list of string')
-            return None
+            raise ValueError('Invalid value... should be a string or a list of string')
         else:
             if (isinstance(value, list) or isinstance(value, tuple)):
                 num = len(value)
@@ -1715,8 +1674,7 @@ class CDFepoch:
                         ns = int(date[0][8])
                     return CDFepoch.compute_tt2000([yy, mm, dd, hh, mn, ss, ms, us, ns])
             else:
-                print('Invalid cdf epoch type...')
-                return None
+                raise ValueError('Invalid cdf epoch type...')
 
     def _month_index(month):  # @NoSelf
         if (month.lower() == 'jan'):
@@ -1748,14 +1706,14 @@ class CDFepoch:
 
     def getVersion():  # @NoSelf
         """
-        Shows the code version.
+        Prints the code version.
         """
         print('epochs version:', str(CDFepoch.version) + '.' +
               str(CDFepoch.release) + '.'+str(CDFepoch.increment))
 
     def getLeapSecondLastUpdated():  # @NoSelf
         """
-        Shows the latest date a leap second was added to the leap second table.
+        Prints the latest date a leap second was added to the leap second table.
         """
         print('Leap second last updated:', str(CDFepoch.LTS[-1][0]) + '-' +
               str(CDFepoch.LTS[-1][1]) + '-' + str(CDFepoch.LTS[-1][2]))

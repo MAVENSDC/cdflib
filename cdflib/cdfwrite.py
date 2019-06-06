@@ -332,8 +332,7 @@ class CDF(object):
                 f.write_globalattrs(globalAttrs)
         '''
         if not (isinstance(globalAttrs, dict)):
-            print('Global attribute(s) not in dictionary form.... Stop')
-            return
+            raise ValueError('Global attribute(s) not in dictionary form')
         dataType = None
         numElems = None
         with self.path.open('rb+') as f:
@@ -456,19 +455,18 @@ class CDF(object):
                 f.write_variableattrs(variableAttrs)
         """
         if not (isinstance(variableAttrs, dict)):
-            print('Variable attribute(s) not in dictionary form.... Stop')
-            return
+            raise ValueError('Variable attribute(s) not in dictionary form')
         dataType = None
         numElems = None
         with self.path.open('rb+') as f:
             f.seek(0, 2)  # EOF (appending)
             for attr, attrs in variableAttrs.items():
                 if not (isinstance(attr, str)):
-                    print('Attribute name should be a string... Stop')
+                    raise ValueError('Attribute name must be a string')
                     return
                 if (attr in self.gattrs):
-                    print('Variable attribute: ', attr,
-                          ' is already a global variable... Stop')
+                    raise ValueError('Variable attribute: {}'.format(attr) +
+                                     ' is already a global variable')
                     return
                 if (attr in self.vattrs):
                     attrNum = self.vattrs.index(attr)
@@ -476,12 +474,10 @@ class CDF(object):
                 else:
                     attrNum, offsetA = self._write_adr(f, False, attr)
                 entries = 0
-                if (attrs == None):
+                if (attrs is None):
                     continue
                 if not (isinstance(attrs, dict)):
-                    print('An attribute''s attribute(s) not in dictionary form.... ',
-                          'Stop')
-                    return
+                    raise ValueError('An attribute''s attribute(s) not in dictionary form')
                 entryNumX = -1
                 poffset = -1
                 for entryID, value in attrs.items():
@@ -506,19 +502,16 @@ class CDF(object):
                     else:
                         entryNum = int(entryID)
                         if (len(self.zvars) > 0 and len(self.rvars) > 0):
-                            print('Can not use integer form for variable id as there ',
-                                  'are both zVariables and rVaribales... Stop')
-                            return
+                            raise ValueError('Can not use integer form for variable id as there ',
+                                             'are both zVariables and rVaribales')
                         if (len(self.zvars) > 0):
                             if (entryNum >= len(self.zvars)):
-                                print('Variable id: ', entryID, ' not found... Stop')
-                                return
+                                raise ValueError('Variable id: ', entryID, ' not found')
                             else:
                                 zVar = True
                         else:
                             if (entryNum >= len(self.rvars)):
-                                print('Variable id: ', entryID, ' not found... Stop')
-                                return
+                                raise ValueError('Variable id: ', entryID, ' not found')
                             else:
                                 zVar = False
                     if (entryNum > entryNumX):
@@ -533,8 +526,7 @@ class CDF(object):
                                         dataType == CDF.CDF_UCHAR):
                                     if (isinstance(data, list) or
                                             isinstance(data, tuple)):
-                                        print('Invalid variable attribute value.... Skip')
-                                        continue
+                                        raise ValueError('Invalid variable attribute value')
                                     numElems = len(data)
                                 elif (dataType == CDF.CDF_EPOCH or
                                       dataType == CDF.CDF_EPOCH16
