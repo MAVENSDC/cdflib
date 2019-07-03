@@ -1897,6 +1897,13 @@ class CDF:
         if self._convert_option() != '=':
             ret = ret.byteswap().newbyteorder()
 
+        # Numpy defaults to row major when reading from buffer
+        # Swap the ordering if the CDF is in column_major format
+        if self._majority == "Column_major":
+            shape = ret.shape
+            ret = ret.flatten()
+            ret = ret.reshape(shape, order='F')
+
         return ret
 
     def _num_values(self, vdr_dict):
@@ -1957,7 +1964,7 @@ class CDF:
         if not (endrec is None):
             if ((endrec < 0) or (endrec > vdr_info['max_records']) or
                     (endrec < startrec)):
-                raise ValueErro('Invalid end recond')
+                raise ValueError('Invalid end recond')
             if not (vdr_info['record_vary']):
                 endrec = 0
         else:
