@@ -28,7 +28,7 @@ def test_cdf_creation(tmp_path):
 
     # Test CDF info
     info = reader.cdf_info()
-    assert info['Majority'] == 'Column_major'
+    assert info['Majority'] == 'Row_major'
 
 
 def test_checksum(tmp_path):
