@@ -166,8 +166,8 @@ class CDF(object):
     def __init__(self, path, cdf_spec=None, delete=False):
         path = pathlib.Path(path).expanduser()
 
+        major = 1
         if cdf_spec is not None:
-            major = cdf_spec.get('Majority', 2)  # default is column
             if (isinstance(major, str)):
                 major = CDF._majority_token(major)
 
@@ -188,12 +188,12 @@ class CDF(object):
             num_rdim = len(rdim_sizes) if rdim_sizes is not None else 0
 
         else:
-            major = 2
             encoding = 8
             checksum = False
             cdf_compression = 0
             num_rdim = 0
             rdim_sizes = None
+
         if (major < 1 or major > 2):
             raise OSError('Bad major.')
 
@@ -242,6 +242,7 @@ class CDF(object):
         self.compression = cdf_compression  # Compression level (or True/False)
         self.num_rdim = num_rdim  # Number of r dimensions
         self.rdim_sizes = rdim_sizes  # Size of r dimensions
+        self.majority = major
 
         with path.open('wb') as f:
             f.write(binascii.unhexlify(CDF.V3magicNUMBER_1))
