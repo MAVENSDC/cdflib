@@ -135,7 +135,7 @@ class CDFAstropy:
     def findepochrange(epochs, starttime=None, endtime=None):  # @NoSelf
         if isinstance(starttime, list):
             start = CDFAstropy.compute(starttime)
-        if isinstance(starttime, list):
+        if isinstance(endtime, list):
             end = CDFAstropy.compute(endtime)
 
         epochs = CDFAstropy.convert_to_astropy(epochs)
