@@ -154,13 +154,13 @@ class CDFAstropy:
         times = []
         for t in tt2000strings:
             date, time = t.split(" ")
-            yyyy, mm, dd = date.split("-")
+            yyyy, mon, dd = date.split("-")
             hhmmss, decimal_seconds = time.split(".")
             decimal_seconds = "."+decimal_seconds
             hh, mm, ss = hhmmss.split(":")
             time_as_list = []
             time_as_list.append(int(yyyy))  # year
-            time_as_list.append(int(mm))  # month
+            time_as_list.append(int(mon))  # month
             time_as_list.append(int(dd))  # day
             time_as_list.append(int(hh))  # hour
             time_as_list.append(int(mm))  # minute
@@ -185,13 +185,13 @@ class CDFAstropy:
         for t in epoch16strings:
             time_as_list = []
             date, time = t.split(" ")
-            yyyy, mm, dd = date.split("-")
+            yyyy, mon, dd = date.split("-")
             hhmmss, decimal_seconds = time.split(".")
             decimal_seconds = "." + decimal_seconds
             hh, mm, ss = hhmmss.split(":")
             time_as_list = []
             time_as_list.append(int(yyyy))  # year
-            time_as_list.append(int(mm))  # month
+            time_as_list.append(int(mon))  # month
             time_as_list.append(int(dd))  # day
             time_as_list.append(int(hh))  # hour
             time_as_list.append(int(mm))  # minute
@@ -218,13 +218,13 @@ class CDFAstropy:
         times = []
         for t in epochstrings:
             date, time = t.split(" ")
-            yyyy, mm, dd = date.split("-")
+            yyyy, mon, dd = date.split("-")
             hhmmss, decimal_seconds = time.split(".")
             decimal_seconds = "." + decimal_seconds
             hh, mm, ss = hhmmss.split(":")
             time_as_list = []
             time_as_list.append(int(yyyy))  # year
-            time_as_list.append(int(mm))  # month
+            time_as_list.append(int(mon))  # month
             time_as_list.append(int(dd))  # day
             time_as_list.append(int(hh))  # hour
             time_as_list.append(int(mm))  # minute
