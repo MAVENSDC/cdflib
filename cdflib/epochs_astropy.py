@@ -149,18 +149,23 @@ class CDFAstropy:
     @staticmethod
     def breakdown_tt2000(tt2000, to_np: bool = False):
         tt2000strings = tt2000.iso
-        if not isinstance(tt2000strings, list):
+        if not isinstance(tt2000strings, (list, np.ndarray)):
             tt2000strings = [tt2000strings]
         times = []
         for t in tt2000strings:
+            date, time = t.split(" ")
+            yyyy, mm, dd = date.split("-")
+            hhmmss, decimal_seconds = time.split(".")
+            decimal_seconds = "."+decimal_seconds
+            hh, mm, ss = hhmmss.split(":")
             time_as_list = []
-            time_as_list.append(int(t[0:4]))  # year
-            time_as_list.append(int(t[5:7]))  # month
-            time_as_list.append(int(t[8:10]))  # day
-            time_as_list.append(int(t[11:13]))  # hour
-            time_as_list.append(int(t[14:16]))  # minute
-            time_as_list.append(int(t[17:19]))  # second
-            decimal_seconds = float(t[19:])
+            time_as_list.append(int(yyyy))  # year
+            time_as_list.append(int(mm))  # month
+            time_as_list.append(int(dd))  # day
+            time_as_list.append(int(hh))  # hour
+            time_as_list.append(int(mm))  # minute
+            time_as_list.append(int(ss))  # second
+            decimal_seconds = float(decimal_seconds)
             milliseconds = decimal_seconds*1000
             time_as_list.append(int(milliseconds)) # milliseconds
             microseconds = (milliseconds % 1) * 1000
@@ -174,17 +179,24 @@ class CDFAstropy:
     @staticmethod
     def breakdown_epoch16(epochs, to_np: bool = False):  # @NoSelf
         epoch16strings = epochs.iso
-        if not isinstance(epoch16strings, list):
+        if not isinstance(epoch16strings, (list,np.ndarray)):
             epoch16strings = [epoch16strings]
         times = []
         for t in epoch16strings:
             time_as_list = []
-            time_as_list.append(int(t[0:4]))  # year
-            time_as_list.append(int(t[5:7]))  # month
-            time_as_list.append(int(t[8:10]))  # day
-            time_as_list.append(int(t[11:13]))  # hour
-            time_as_list.append(int(t[14:16]))  # minute
-            time_as_list.append(int(t[17:19]))  # second
+            date, time = t.split(" ")
+            yyyy, mm, dd = date.split("-")
+            hhmmss, decimal_seconds = time.split(".")
+            decimal_seconds = "." + decimal_seconds
+            hh, mm, ss = hhmmss.split(":")
+            time_as_list = []
+            time_as_list.append(int(yyyy))  # year
+            time_as_list.append(int(mm))  # month
+            time_as_list.append(int(dd))  # day
+            time_as_list.append(int(hh))  # hour
+            time_as_list.append(int(mm))  # minute
+            time_as_list.append(int(ss))  # second
+            decimal_seconds = float(decimal_seconds)
             decimal_seconds = float(t[19:])
             milliseconds = decimal_seconds*1000
             time_as_list.append(int(milliseconds)) # milliseconds
@@ -201,18 +213,23 @@ class CDFAstropy:
     @staticmethod
     def breakdown_epoch(epochs, to_np: bool = False):  # @NoSelf
         epochstrings = epochs.iso
-        if not isinstance(epochstrings, list):
+        if not isinstance(epochstrings, (list, np.ndarray)):
             epochstrings = [epochstrings]
         times = []
         for t in epochstrings:
+            date, time = t.split(" ")
+            yyyy, mm, dd = date.split("-")
+            hhmmss, decimal_seconds = time.split(".")
+            decimal_seconds = "." + decimal_seconds
+            hh, mm, ss = hhmmss.split(":")
             time_as_list = []
-            time_as_list.append(int(t[0:4]))  # year
-            time_as_list.append(int(t[5:7]))  # month
-            time_as_list.append(int(t[8:10]))  # day
-            time_as_list.append(int(t[11:13]))  # hour
-            time_as_list.append(int(t[14:16]))  # minute
-            time_as_list.append(int(t[17:19]))  # second
-            decimal_seconds = float(t[19:])
+            time_as_list.append(int(yyyy))  # year
+            time_as_list.append(int(mm))  # month
+            time_as_list.append(int(dd))  # day
+            time_as_list.append(int(hh))  # hour
+            time_as_list.append(int(mm))  # minute
+            time_as_list.append(int(ss))  # second
+            decimal_seconds = float(decimal_seconds)
             milliseconds = decimal_seconds*1000
             time_as_list.append(int(milliseconds)) # milliseconds
             times.append(time_as_list)
@@ -224,56 +241,39 @@ class CDFAstropy:
         Parses the provided date/time string(s) into CDF epoch value(s).
 
         For CDF_EPOCH:
-                The string has to be in the form of 'dd-mmm-yyyy hh:mm:ss.xxx' or
-                'yyyy-mm-ddThh:mm:ss.xxx' (in iso_8601). The string is the output
+                'yyyy-mm-dd hh:mm:ss.xxx' (in iso_8601). The string is the output
                 from encode function.
 
         For CDF_EPOCH16:
                 The string has to be in the form of
-                'dd-mmm-yyyy hh:mm:ss.mmm.uuu.nnn.ppp' or
-                'yyyy-mm-ddThh:mm:ss.mmmuuunnnppp' (in iso_8601). The string is
+                'yyyy-mm-dd hh:mm:ss.mmmuuunnnppp' (in iso_8601). The string is
                 the output from encode function.
 
         For TT2000:
                 The string has to be in the form of
-                'dd-mmm-yyyy hh:mm:ss.mmm.uuu.nnn' or
-                'yyyy-mm-ddThh:mm:ss.mmmuuunnn' (in iso_8601). The string is
+                'yyyy-mm-dd hh:mm:ss.mmmuuunnn' (in iso_8601). The string is
                 the output from encode function.
 
         Specify to_np to True, if the result should be in numpy class.
         """
-        if not isinstance(value, list):
+        if not isinstance(value, (list, np.ndarray)):
             value = [value]
 
         time_list = []
 
-        # Determine the input format
-        if len(value[0].split("-")[0]) == 2:
-            time_format = '%d-%b-Y %H:%M:%S'
-        else:
-            time_format = '%d-%b-Y %H:%M:%S'
-
-        # Set precision
-        if len(value[0] == 24):
-            p = 9
-        else:
-            p = 9
-
         for t in value:
-            sec = datetime.strptime(t[0:20].lower(), strftime=time_format).replace(tzinfo=timezone.utc).timestamp()
-            subs = t[20:].replace(".", "")
+            date, subs = t.split(".")
             if len(subs) == 3:
-                time_list.append(Time(sec, float(subs), format='unix', precision=p).cdf_epoch)
+                time_list.append(Time(t, precision=9).cdf_epoch)
             if len(subs) == 12:
-                time_list.append(Time(sec, float(subs), format='unix', precision=p).cdf_epoch16)
+                time_list.append(Time(t, precision=9).cdf_epoch16)
             if len(subs) == 9:
-                time_list.append(Time(sec, float(subs), format='unix', precision=p).cdf_epoch16)
+                time_list.append(int(Time(t, precision=9).cdf_tt2000))
 
-        times = np.array(time_list)
         if not to_np:
-            return times.tolist()
+            return time_list
         else:
-            return times
+            return np.array(time_list)
 
     def getVersion():  # @NoSelf
         """
