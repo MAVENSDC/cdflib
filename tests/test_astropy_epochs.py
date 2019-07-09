@@ -8,7 +8,7 @@ from pytest import approx
 import numpy as np
 from datetime import datetime
 
-from cdflib.epoch_astropy import CDFAstropy as cdfepoch
+from cdflib.epochs_astropy import CDFAstropy as cdfepoch
 
 def test_encode_cdfepoch():
     x = cdfepoch.encode([62285326000000.0, 62985326000000.0])
