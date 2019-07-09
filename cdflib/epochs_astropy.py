@@ -7,7 +7,8 @@ CDF Astropy Epochs
 """
 import numpy as np
 from typing import Sequence, List, Union
-import datetime import timezone
+import datetime
+from datetime import timezone
 from astropy.time import Time, TimeFormat
 from astropy.time.formats import erfa, TimeFromEpoch
 
