@@ -8,6 +8,7 @@ from pytest import approx
 import numpy as np
 from datetime import datetime
 
+from cdflib import epochs
 from cdflib.epochs import CDFepoch as cdfepoch
 
 '''

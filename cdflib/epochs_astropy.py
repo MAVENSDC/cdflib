@@ -48,7 +48,16 @@ class CDFAstropy:
     increment = 0
 
     @staticmethod
-    def convert_to_astropy(epochs):  # @NoSelf
+    def convert_to_astropy(epochs, format=None):  # @NoSelf
+        # If already in Astropy time Units, do nothing
+        if isinstance(epochs, Time):
+            return epochs
+
+        # If format is specified, then force it to do that
+        if format is not None:
+            return Time(epochs, format=format, precision=9)
+
+        # Determine best format for the input type
         if isinstance(epochs, (int, np.int64)):
             return Time(epochs, format='cdf_tt2000', precision=9)
         elif isinstance(epochs, (float, np.float64)):
@@ -62,10 +71,8 @@ class CDFAstropy:
                 return Time(epochs, format='cdf_epoch', precision=9)
             elif isinstance(epochs[0], (complex, np.complex128)):
                 return Time(epochs.real, epochs.imag/1000000000000.0, format='cdf_epoch16', precision=9)
-        elif isinstance(epochs, TimeFromEpoch):
-            return epochs
-
-        raise TypeError('Not sure how to handle type {}'.format(type(epochs)))
+        else:
+            raise TypeError('Not sure how to handle type {}'.format(type(epochs)))
 
 
     @staticmethod
@@ -142,9 +149,8 @@ class CDFAstropy:
         epochs = CDFAstropy.convert_to_astropy(epochs)
 
         epochs_as_np = epochs.value
-        epochs_range = (epochs_as_np > start) * (epochs_as_np < end)
-        indices = epochs_as_np.where(epochs_range)
-        return min(indices), max(indices)
+        indices = np.where((epochs_as_np >= start) & (epochs_as_np <= end))
+        return min(indices[0]), max(indices[0])
 
     @staticmethod
     def breakdown_tt2000(tt2000, to_np: bool = False):

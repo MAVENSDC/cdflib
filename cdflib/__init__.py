@@ -1,9 +1,11 @@
 from . import cdfread
 from . import cdfwrite
+
+from .epochs import CDFepoch as cdfepoch  # noqa: F401
 try:
-    from .epochs_astropy import CDFAstropy as cdfepoch
+    from .epochs_astropy import CDFAstropy as cdfastropy
 except:
-    from .epochs import CDFepoch as cdfepoch  # noqa: F401
+    pass
 from pathlib import Path
 # This function determines if we are reading or writing a file
 
