@@ -96,8 +96,8 @@ class CDFAstropy:
             return CDFAstropy.breakdown_epoch16(epochs, to_np)
         raise TypeError('Not sure how to handle type {}'.format(type(epochs)))
 
-
-    def to_datetime(self, cdf_time) -> List[datetime.datetime]:
+    @staticmethod
+    def to_datetime(cdf_time) -> List[datetime.datetime]:  # @NoSelf
         cdf_time = CDFAstropy.convert_to_astropy(cdf_time)
         return cdf_time.datetime
 
@@ -140,6 +140,7 @@ class CDFAstropy:
         else:
             return cdf_time
 
+    @staticmethod
     def findepochrange(epochs, starttime=None, endtime=None):  # @NoSelf
         if isinstance(starttime, list):
             start = CDFAstropy.compute(starttime)

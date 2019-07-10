@@ -178,7 +178,7 @@ def test_parse_cdfepoch16():
     parsed = cdfepoch.parse(add_precision)
     assert parsed[0] == approx(53467976543 + .543218654)
 
-    assert cdfepoch().to_datetime(input_time) == [datetime(1694, 5, 1, 7, 42, 23, 543219)]
+    assert cdfepoch().to_datetime(input_time) == datetime(1694, 5, 1, 7, 42, 23, 543219)
 
 
 
