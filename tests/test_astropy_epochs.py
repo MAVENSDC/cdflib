@@ -111,7 +111,7 @@ def test_compute_cdfepoch():
     random_time.append(randint(0, 999))  # Millisecond
     x = cdfepoch.breakdown(cdfepoch.compute(random_time))
     i = 0
-    for t in x:
+    for t in x[0]:
         assert t == random_time[i], 'Time {} was not equal to {}'.format(random_time, x)
         i += 1
 
@@ -130,7 +130,7 @@ def test_compute_cdfepoch16():
     random_time.append(randint(0, 999))  # Picosecond
     x = cdfepoch.breakdown(cdfepoch.compute(random_time))
     i = 0
-    for t in x:
+    for t in x[0]:
         assert t == random_time[i], 'Time {} was not equal to {}'.format(random_time, x)
         i += 1
 
@@ -148,7 +148,7 @@ def test_compute_cdftt2000():
     random_time.append(randint(0, 999))  # Nanosecond
     x = cdfepoch.breakdown(cdfepoch.compute(random_time))
     i = 0
-    for t in x:
+    for t in x[0]:
         assert t == random_time[i], 'Time {} was not equal to {}'.format(random_time, x)
         i += 1
 
@@ -178,7 +178,7 @@ def test_parse_cdftt2000():
     parsed = cdfepoch.parse(x)
     assert parsed == [131415926535793232]
 
-    assert cdfepoch().to_datetime(parsed) == [datetime.datetime(2004, 3, 1, 12, 25, 26, 535793)]
+    assert cdfepoch().to_datetime(parsed) == [datetime(2004, 3, 1, 12, 25, 26, 535793)]
 
 
 def test_findepochrange_cdfepoch():
