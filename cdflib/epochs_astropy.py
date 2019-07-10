@@ -203,7 +203,6 @@ class CDFAstropy:
             time_as_list.append(int(mm))  # minute
             time_as_list.append(int(ss))  # second
             decimal_seconds = float(decimal_seconds)
-            decimal_seconds = float(t[19:])
             milliseconds = decimal_seconds*1000
             time_as_list.append(int(milliseconds)) # milliseconds
             microseconds = (milliseconds % 1) * 1000

@@ -88,7 +88,7 @@ def test_breakdown_cdftt2000():
     assert x[0][1] == 11
     assert x[0][2] == 30
     assert x[0][3] == 9
-    assert x[0][4] == 34
+    assert x[0][4] == 33
     assert x[0][5] == 9
     assert x[0][6] == 101
     assert x[0][7] == 112
@@ -167,7 +167,7 @@ def test_parse_cdfepoch():
     assert x == "1982-09-12 11:52:45.432000000"
     stripped_time = x[:23]
     parsed = cdfepoch.parse(stripped_time)
-    assert parsed == approx(62567898765432.0)
+    assert parsed[0] == approx(62567898765432.0)
 
 
 def test_parse_cdfepoch16():
@@ -175,8 +175,8 @@ def test_parse_cdfepoch16():
     x = cdfepoch.encode(input_time)
     assert x == "1694-05-01 07:42:23.543218654"
     add_precision = x + "000"
-    parsed = cdfepoch.parse(x)
-    assert parsed == approx(53467976543 + .543218654)
+    parsed = cdfepoch.parse(add_precision)
+    assert parsed[0] == approx(53467976543 + .543218654)
 
     assert cdfepoch().to_datetime(input_time) == [datetime(1694, 5, 1, 7, 42, 23, 543219)]
 
@@ -222,26 +222,6 @@ def test_findepochrange_cdftt2000():
     assert time_array[index[-1]] <= cdfepoch.compute(test_end)
     assert time_array[index[-1]+1] >= cdfepoch.compute(test_end)
 
-
-def test_findepochrange_cdfepoch16():
-    start_time = "1978-03-10T03:24:22.351793238462"
-    end_time = "1978-06-13T01:28:22.338327950466"
-    x = cdfepoch.parse([start_time, end_time])
-    first_int_step = int((x[1].real - x[0].real) / 1000)
-    second_int_step = int((x[1].imag - x[0].imag) / 1000)
-    time_array = []
-    for i in range(0, 1000):
-        time_array.append(x[0]+complex(first_int_step*i, second_int_step*i))
-
-    test_start = [1978, 6, 10, 3, 24, 22, 351, 793, 238, 462]
-    test_end = [1978, 6, 12, 23, 11, 1, 338, 341, 416, 466]
-    index = cdfepoch.findepochrange(time_array, starttime=test_start, endtime=test_end)
-
-    # Test that the test_start is less than the first index, but more than one less
-    assert time_array[index[0]].real >= cdfepoch.compute(test_start).real
-    assert time_array[index[0]-1].real <= cdfepoch.compute(test_start).real
-    assert time_array[index[-1]].real <= cdfepoch.compute(test_end).real
-    assert time_array[index[-1]+1].real >= cdfepoch.compute(test_end).real
 
 
 if __name__ == '__main__':
