@@ -553,4 +553,43 @@ Shows the code version.
 
 Shows the latest date a leap second was added to the leap second table.
 
-@author: Bryan Harter, Michael Liu
+
+## CDF Astropy Epochs
+
+If the user has astropy installed, importing cdflib also imports the module
+cdflib.cdfastropy, which contains all of the functionality of the above module, 
+but uses the Astropy Time class for all conversions.  It can be used in the same
+way as the above module:
+
+```python
+import cdflib
+
+cdf_file = cdflib.cdfastropy.compute_epoch([2017,1,1,1,1,1,111])
+```
+
+Additionally, and perhaps most importantly, there is an additonal function that converts 
+CDF_EPOCH/EPOCH16/TT2000 times to the Astropy Time class:
+
+### convert_to_astropy (epochs, format=None)
+
+Converts the epoch(s) into Astropy Time(s).
+
+* CDF_EPOCH: The input should be either a float or list of floats (in numpy, a
+  np.float64 or a np.ndarray of np.float64).  If you'd like to ignore the input type and convert
+  to CDF_EPOCH directly, specify format='cdf_epoch' when you call the function.   
+* CDF_EPOCH16: The input should be either a complex or list of complex(in numpy, a
+  np.complex128 or a np.ndarray of np.complex128).  If you'd like to ignore the input type and convert
+  to CDF_EPOCH directly, specify format='cdf_epoch16' when you call the function.   
+* TT2000: The input should be either a int or list of ints (in numpy, a
+  np.int64 or a np.ndarray of np.int64).  If you'd like to ignore the input type and convert
+  to CDF_EPOCH directly, specify format='cdf_tt2000' when you call the function.   
+
+
+  
+For more information about Astropy Times and all the functionality it contains, take a look at the astropy documentation
+
+https://docs.astropy.org/en/stable/time/
+
+
+ 
+
