@@ -1816,6 +1816,8 @@ class CDF:
         # the matrix later, to get rid of this extra dimension.
         dt_string = self._convert_option()
         if dimensions != None:
+            if self._majority == 'Column_major':
+                dimensions = list(reversed(dimensions))
             if (len(dimensions) == 1):
                 dimensions.append(1)
                 squeeze_needed = True
@@ -1860,6 +1862,10 @@ class CDF:
                             onerec.append(string1)
                         strings.append(onerec)
                 ret = strings
+                ret = np.array(ret).reshape((num_recs,) + tuple(dimensions))
+                if self._majority == 'Column_major':
+                    axes = [0] + list(range(len(dimensions), 0, -1))
+                    ret = np.transpose(ret, axes=axes)
             return ret
         else:
             if (data_type == 1) or (data_type == 41):
@@ -1892,17 +1898,19 @@ class CDF:
 
         if squeeze_needed:
             ret = np.squeeze(ret, axis=(ret.ndim-1))
+            if dimensions is not None:
+                dimensions.pop()
 
         # Put the data into system byte order
         if self._convert_option() != '=':
             ret = ret.byteswap().newbyteorder()
 
-        # Numpy defaults to row major when reading from buffer
-        # Swap the ordering if the CDF is in column_major format
-        if self._majority == "Column_major":
-            shape = ret.shape
-            ret = ret.flatten()
-            ret = ret.reshape(shape, order='F')
+        if self._majority == 'Column_major':
+            if dimensions is not None:
+                axes = [0] + list(range(len(dimensions), 0, -1))
+            else:
+                axes = None
+            ret = np.transpose(ret, axes=axes)
 
         return ret
 
