@@ -1796,6 +1796,7 @@ class CDF(object):
         if compression > 0:
             offsetCPRorSPR = self._write_cpr(f, CDF.GZIP_COMPRESSION,
                                              compression)
+            flags = CDF._set_bit(flags, 2)
         else:
             offsetCPRorSPR = -1
 
