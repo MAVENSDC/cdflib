@@ -986,6 +986,13 @@ class CDF(object):
                 blockingfactor = default_blockingfactor
             if (blockingfactor == 0):
                 blockingfactor = 1
+
+            #Update the blocking factor
+            f.seek(vdr_offset + 80, 0)
+            # VDR's BlockingFactor
+            self._update_offset_value(f, vdr_offset + 80, 4,
+                                      blockingfactor)
+
             # set blocking factor
             if (recs < blockingfactor):
                 blockingfactor = recs
@@ -1007,20 +1014,8 @@ class CDF(object):
                 bdata = data[startloc:endloc]
                 cdata = gzip.compress(bdata, compression)
                 if (len(cdata) < len(bdata)):
-                    if not editedVDR:
-                        f.seek(vdr_offset+44, 0)
-                        # VDR's Flags
-                        flags = int.from_bytes(f.read(4), 'big', signed=True)
-                        flags = CDF._set_bit(flags, 2)
-                        self._update_offset_value(f, vdr_offset+44, 4, flags)
-                        f.seek(vdr_offset+80, 0)
-                        # VDR's BlockingFactor
-                        self._update_offset_value(f, vdr_offset+80, 4,
-                                                  blockingfactor)
-                        editedVDR = True
                     n1offset = self._write_cvvr(f, cdata)
                 else:
-                    # Not worth compressing
                     n1offset = self._write_vvr(f, bdata)
                 if (x == 0):
                     # Create a VXR
