@@ -531,7 +531,7 @@ class CDF:
             return vdr_info
         else:
             if (vdr_info['max_records'] < 0):
-                raise ValueError('No data is written for this variable')
+                return
 
             return self._read_vardata(vdr_info, epoch=epoch, starttime=starttime, endtime=endtime,
                                       startrec=startrec, endrec=endrec, record_range_only=record_range_only,
