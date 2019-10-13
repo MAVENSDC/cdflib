@@ -38,6 +38,9 @@ import hashlib
 import cdflib.epochs as epoch
 
 
+__all__ = ['CDF']
+
+
 class CDF:
     """
     Main CDF class.
@@ -153,13 +156,13 @@ class CDF:
                 +---------------+--------------------------------------------------------------------------------+
                 | ['Checksum']  | the checksum indicator                                                         |
                 +---------------+--------------------------------------------------------------------------------+
-                | ['Num_rdim']  | the number of dimensions, applicable only to rVariables
+                | ['Num_rdim']  | the number of dimensions, applicable only to rVariables                        |
                 +---------------+--------------------------------------------------------------------------------+
-                | ['rDim_sizes'] | the dimensional sizes, applicable only to rVariables
-                +----------------+--------------------------------------------------------------------------------+
-                | ['Compressed']| CDF is compressed at the file-level
+                | ['rDim_sizes'] | the dimensional sizes, applicable only to rVariables                          |
+                +----------------+-------------------------------------------------------------------------------+
+                | ['Compressed']| CDF is compressed at the file-level                                            |
                 +---------------+--------------------------------------------------------------------------------+
-                | ['LeapSecondUpdated']| The last updated for the leap second table, if applicable
+                | ['LeapSecondUpdated']| The last updated for the leap second table, if applicable               |
                 +---------------+--------------------------------------------------------------------------------+
 
         """
@@ -257,11 +260,6 @@ class CDF:
         ----------
         attribute : str, int
             Attribute to get information for.
-
-        Returns
-        -------
-        dict
-            Dictionary of attribute information.
 
         Returns
         -------
