@@ -6,11 +6,6 @@ git:
   depth: 3
   quiet: true
 
-python:
-- 3.7
-- 3.6
-- 3.5
-
 os:
 - linux
 
