@@ -498,7 +498,7 @@ class CDF:
                 position = self._first_rvariable
                 num_variables = self._num_rvariable
             if vdr_info is None:
-                raise ValueError("Variable name not found.")
+                raise ValueError(f"Variable name '{variable}' not found.")
         elif isinstance(variable, int):
             if self._num_zvariable > 0:
                 position = self._first_zvariable
