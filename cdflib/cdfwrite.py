@@ -616,7 +616,7 @@ class CDF(object):
 
             For zVariables:
 
-            - ['Dims_Sizes']: The dimensional sizes for zVariables only.
+            - ['Dim_Sizes']: The dimensional sizes for zVariables only.
               Use [] for 0-dimension. Each and
               every dimension is varying for zVariables.
 
