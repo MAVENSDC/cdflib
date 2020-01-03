@@ -6,10 +6,10 @@ CDF Astropy Epochs
 @author: Bryan Harter
 """
 import numpy as np
-from typing import Union
+from typing import List
 import datetime
 from datetime import timezone
-from astropy.time import Time, TimeFormat
+from astropy.time import Time
 from astropy.time.formats import erfa, TimeFromEpoch
 
 
