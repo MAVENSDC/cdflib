@@ -2,6 +2,7 @@
 import filecmp
 import urllib.request
 from random import randint
+from pathlib import Path
 
 import pytest
 from pytest import approx
@@ -259,8 +260,13 @@ def test_findepochrange_cdfepoch16():
 def test_latest_leapsecs():
     # Check that the built in leapseconds table is the latest one
     local = epochs.LEAPSEC_FILE
-    remote, _ = urllib.request.urlretrieve('https://cdf.gsfc.nasa.gov/html/CDFLeapSeconds.txt')
-    assert filecmp.cmp(local, remote)
+    try:
+        remote, _ = urllib.request.urlretrieve('https://cdf.gsfc.nasa.gov/html/CDFLeapSeconds.txt')
+    except Exception as excp:
+        pytest.skip('problem downloading leapseconds file: {}'.format(excp))
+    if not filecmp.cmp(local, remote):
+        feedback = Path(remote).read_text(errors='ignore')
+        pytest.skip('problem downloading leapseconds file: \n\n{}'.format(feedback))
 
 
 if __name__ == '__main__':
