@@ -6,13 +6,14 @@
 
 # CDFlib
 
-`cdflib` is a python module to read/write CDF (Common Data Format `.cdf`) files without needing to install the 
+`cdflib` is a python module to read/write CDF (Common Data Format `.cdf`) files without needing to install the
 [CDF NASA library](https://cdf.gsfc.nasa.gov/).
 
 Python &ge; 3.5 is required.
 This module uses only Numpy, no complicated prereqs.
 
 ## Install
+
 To install, open up your terminal/command prompt, and type:
 ```sh
 pip install cdflib
@@ -24,24 +25,28 @@ Future implementations, however, will unify these two classes.
 
 ## CDF Reader Class
 
-To begin accessing the data within a CDF file, first create a new CDF class. 
+To begin accessing the data within a CDF file, first create a new CDF class.
 This can be done with the following commands
+
 ```python
 import cdflib
 
 cdf_file = cdflib.CDF('/path/to/cdf_file.cdf')
 ```
-Then, you can call various functions on the variable. 
+
+Then, you can call various functions on the variable.
 For example:
+
 ```python
 x = cdf_file.varget("NameOfVariable", startrec = 0, endrec = 150)
 ```
-This command will return all data inside of the variable `Variable1`, from records 0 to 150. 
+
+This command will return all data inside of the variable `Variable1`, from records 0 to 150.
 Below is a list of the 8 different functions you can call.
 
 ### cdf_info()
 
-Returns a dictionary that shows the basic CDF information. 
+Returns a dictionary that shows the basic CDF information.
 This information includes
 
 * `CDF` the name of the CDF
@@ -59,8 +64,9 @@ This information includes
 
 ### varinq(variable)
 
-Returns a dictionary that shows the basic variable information. 
+Returns a dictionary that shows the basic variable information.
 This information includes
+
 * `Variable` the name of the variable
 * `Num` the variable number
 * `Var_Type` the variable type: zVariable or rVariable
@@ -95,8 +101,8 @@ dictionary is returned with the following defined keys
 
 ### varattsget(variable = None, expand = False)
 
-Gets all variable attributes. 
-Unlike attget, which returns a single attribute entry value, this function returns all of the variable attribute entries, in a `dict()`. 
+Gets all variable attributes.
+Unlike attget, which returns a single attribute entry value, this function returns all of the variable attribute entries, in a `dict()`.
 If there is no entry found, `None` is returned. If
 no variable name is provided, a list of variables are printed. If expand
 is entered with non-False, then each entry's data type is also returned
@@ -113,6 +119,7 @@ type is also returned in a list form as `[entry, 'CDF_xxxx']`.
 For attributes without any entries, they will also return with None value.
 
 ### varget()
+
 ```python
 varget( variable = None, [epoch=None], [[starttime=None, endtime=None] | [startrec=0, endrec = None]], [,expand=True])
 ```
@@ -124,6 +131,7 @@ data and its specification.
 
 If `expand=True`, a dictionary is returned with the
 following defined keys for the output
+
 * `Rec_Ndim` the dimension number of each variable record
 * `Rec_Shape` the shape of the variable record dimensions
 * `Num_Records` the total number of records
@@ -144,14 +152,15 @@ possible minimum or maximum value for the specific epoch data type is
 assumed. If either the start or end record is not specified, the range
 starts at 0 or/and ends at the last of the written data.
 
-The start (and end) time should be presented in a list as: 
-* [year month day hour minute second millisec] for CDF_EPOCH 
+The start (and end) time should be presented in a list as:
+
+* [year month day hour minute second millisec] for CDF_EPOCH
 * [year month day hour minute second millisec microsec nanosec picosec] for CDF_EPOCH16
-* [year month day hour minute second millisec microsec nanosec] for CDF_TIME_TT2000 
+* [year month day hour minute second millisec microsec nanosec] for CDF_TIME_TT2000
 
 If not enough time components are presented, only the last item can have the floating portion for the sub-time components.
 
-Note: CDF's CDF_EPOCH16 data type uses 2 8-byte doubles for each data value. 
+Note: CDF's CDF_EPOCH16 data type uses 2 8-byte doubles for each data value.
 In Python, each value is presented as a complex or
 numpy.complex128.
 
@@ -160,8 +169,9 @@ numpy.complex128.
 ```python
 epochrange( epoch, [starttime=None, endtime=None])
 ```
-Get epoch range. 
-Returns `list()` of the record numbers, representing the corresponding starting and ending records within the time range from the epoch data. 
+
+Get epoch range.
+Returns `list()` of the record numbers, representing the corresponding starting and ending records within the time range from the epoch data.
 `None` is returned if there is no data either written or found in the time range.
 
 ### getVersion ()
@@ -169,9 +179,9 @@ Returns `list()` of the record numbers, representing the corresponding starting 
 Shows the code version.
 
 ```python
-import cdflib 
+import cdflib
 
-swea_cdf_file = cdflib.CDF('/path/to/swea_file.cdf') swea_cdf_file.cdf_info() 
+swea_cdf_file = cdflib.CDF('/path/to/swea_file.cdf') swea_cdf_file.cdf_info()
 
 x = swea_cdf_file.varget('NameOfVariable') swea_cdf_file.close()
 ```
@@ -181,10 +191,11 @@ x = swea_cdf_file.varget('NameOfVariable') swea_cdf_file.close()
 ### CDF (path, cdf_spec=None, delete=False)
 
 Creates an empty CDF file. path is the path name of the CDF (with or
-without .cdf extension). 
+without .cdf extension).
 `cdf_spec` is the optional specification of the
 CDF file, in the form of a dictionary. The dictionary can have the
 following values:
+
 * `Majority` 'row_major' or 'column_major', or its corresponding value. Default is 'column_major'.
 * `Encoding` Data encoding scheme. See the CDF documentation about the valid values. Can be in string or its numeric corresponding value. Default is 'host'.
 * `Checksum` Whether to set the data validation upon file creation. The default is False.
@@ -196,29 +207,38 @@ following values:
 Writes the global attributes. **globalAttrs** is a dictionary that has
 global attribute name(s) and their value(s) pair(s). The value(s) is a
 dictionary of entry number and value pair(s). For example:
+
 ```python
 globalAttrs={}
 globalAttrs['Global1']={0: 'Global Value 1'}
 globalAttrs['Global2']={0: 'Global Value 2'}
 ```
+
 For a non-string value, use a list with the value and its CDF data type.
 For example:
+
 ```python
 globalAttrs['Global3']={0: [12, 'cdf_int4']}
 globalAttrs['Global4']={0: [12.34, 'cdf_double']}
 ```
+
 If the data type is not provided, a corresponding CDF data type is
 assumed:
+
 ```python
 globalAttrs['Global3']={0: 12}     as 'cdf_int4'
 globalAttrs['Global4']={0: 12.34}  as 'cdf_double'
 ```
+
 CDF allows multi-values for non-string data for an attribute:
+
 ```python
 globalAttrs['Global5']={0: [[12.34,21.43], 'cdf_double']}
 ```
+
 For multi-entries from a global variable, they should be presented in
 this form:
+
 ```python
 GA6={}
 GA6[0]='abcd'
@@ -237,23 +257,24 @@ Writes a variable's attributes, provided the variable already exists.
 its entry value pair(s). The entry value is also a dictionary of
 variable id and value pair(s). Variable id can be the variable name or
 its id number in the file. Use write_var function if the variable does
-not exist. 
+not exist.
 For example:
+
 ```python
-variableAttrs={} 
+variableAttrs={}
 entries_1={}
 
 entries_1['var_name_1'] = 'abcd'
-entries_1['var_name_2'] = [12, 'cdf_int4'] 
+entries_1['var_name_2'] = [12, 'cdf_int4']
 ....
-variableAttrs['attr_name_1'] = entries_1 
+variableAttrs['attr_name_1'] = entries_1
 
 entries_2={}
-entries_2['var_name_1'] = 'xyz' 
-entries_2['var_name_2'] = [[12, 34], 'cdf_int4'] 
+entries_2['var_name_1'] = 'xyz'
+entries_2['var_name_2'] = [[12, 34], 'cdf_int4']
 ....
-variableAttrs['attr_name_2']=entries_2 
-.... 
+variableAttrs['attr_name_2']=entries_2
+....
 f.write_variableattrs(variableAttrs)
 ```
 
@@ -285,13 +306,14 @@ Optional keys:
 * `Compress` Set the gzip compression level (0 to 9), 0 for no compression. The default is to compress with level 6 (done only if the compressed data is less than the uncompressed data).
 * `Block_Factor` The blocking factor, the number of records in a chunk when the variable is compressed.
 * `Pad` The padded value (in bytes, numpy.ndarray or string)
-      
+
 **var_attrs** is a dictionary, with {attribute:value} pairs. The
 attribute is the name of a variable attribute. The value can have its
 data type specified for the numeric data. If not, based on Python's
 type, a corresponding CDF type is assumed: CDF_INT4 for int,
 CDF_DOUBLE for float, CDF_EPOCH16 for complex and and CDF_INT8 for
-long. For example: 
+long. For example:
+
 ```python
 var_attrs= { 'attr1': 'value1', 'attr2': 12.45, 'attr3': [3,4,5], .....} -or- var_attrs= { 'attr1': 'value1', 'attr2': [12.45, 'CDF_DOUBLE'], 'attr3': [[3,4,5], 'CDF_INT4'], ..... }
 ```
@@ -307,8 +329,9 @@ Variable data can have just physical records' data (with the same
 number of records as the first element) or have data from both physical
 records and virtual records (which with filled data). The var_data has
 the form:
+
 ```python
-[[[rec]()#1,rec_#2,rec_#3,...], [[data]()#1,data_#2,data_#3,...]] 
+[[[rec]()#1,rec_#2,rec_#3,...], [[data]()#1,data_#2,data_#3,...]]
 ```
 See the sample for its setup.
 
@@ -318,22 +341,24 @@ Shows the code version and modified date.
 
 Note: The attribute entry value for the CDF epoch data type, CDF_EPOCH,
 CDF_EPOCH16 or CDF_TIME_TT2000, can be presented in either a numeric
-form, or an encoded string form. 
+form, or an encoded string form.
 For numeric, the CDF_EPOCH data is 8-byte float, CDF_EPOCH16 16-byte complex and CDF_TIME_TT2000 8-byte
 long. The default encoded string for the epoch `data should have this
 form:
+
 ```python
 CDF_EPOCH: 'dd-mon-year hh:mm:ss.mmm'
 CDF_EPOCH16: 'dd-mon-year hh:mm:ss.mmm.uuu.nnn.ppp'
 CDF_TIME_TT2000: 'year-mm-ddThh:mm:ss.mmmuuunnn'
 ```
+
 where mon is a 3-character month.
 
 Sample use -
 
 Use a master CDF file as the template for creating a CDF. Both global
-and variable meta-data comes from the master CDF. 
-Each variable's specification also is copied from the master CDF. 
+and variable meta-data comes from the master CDF.
+Each variable's specification also is copied from the master CDF.
 Just fill the variable data to write a new CDF file:
 
 ```python
@@ -349,7 +374,7 @@ cdf_file=cdfwrite.CDF('/path/to/swea_file.cdf',cdf_spec=info,delete=True)
 if (cdf_file.file == None):
     cdf_master.close()
     raise OSError('Problem writing file.... Stop')
-    
+
 # Get the global attributes
 globalaAttrs=cdf_master.globalattsget(expand=True)
 # Write the global attributes
@@ -381,7 +406,7 @@ for x in range (0, len(zvars)):
         # 3 physical records at [0,5,10]:
         # vardata = [[  5.55000000e+01, -1.00000002e+30,  6.65999985e+01],
         #            [  6.66659973e+02,  7.77770020e+02,  8.88880005e+02],
-        #            [  2.00500000e+02,  2.10600006e+02,  2.20699997e+02]] 
+        #            [  2.00500000e+02,  2.10600006e+02,  2.20699997e+02]]
         # Or, with virtual record data embedded in the data:
         # vardata = [[  5.55000000e+01, -1.00000002e+30,  6.65999985e+01],
         #            [ -1.00000002e+30, -1.00000002e+30, -1.00000002e+30],
@@ -437,9 +462,9 @@ cdf_file = cdflib.cdfepoch.compute_epoch([2017,1,1,1,1,1,111])
 There are three (3) epoch data types in CDF: CDF_EPOCH, CDF_EPOCH16
 and CDF_TIME_TT2000.
 
--   CDF_EPOCH is milliseconds since Year 0.
--   CDF_EPOCH16 is picoseconds since Year 0.
--   CDF_TIME_TT2000 (TT2000 as short) is nanoseconds since J2000 with
+- CDF_EPOCH is milliseconds since Year 0.
+- DF_EPOCH16 is picoseconds since Year 0.
+-  CDF_TIME_TT2000 (TT2000 as short) is nanoseconds since J2000 with
     leap seconds.
 
 CDF_EPOCH is a single double(as float in Python), CDF_EPOCH16 is
@@ -470,7 +495,7 @@ Encodes the epoch(s) into UTC string(s).
 
 ### unixtime (epochs, to_np=False)
 
-Encodes the epoch(s) into seconds after 1970-01-01. 
+Encodes the epoch(s) into seconds after 1970-01-01.
 Precision is only kept to the nearest microsecond.
 
 If `to_np=True`, then the values will be returned in a numpy array.
@@ -492,9 +517,11 @@ Computes the provided date/time components into CDF epoch value(s).
 For CDF_EPOCH: For computing into CDF_EPOCH value, each date/time elements should
 have exactly seven (7) components, as year, month, day, hour,
 minute, second and millisecond, in a list. For example:
+
 ```python
-[[2017,1,1,1,1,1,111],[2017,2,2,2,2,2,222]] 
+[[2017,1,1,1,1,1,111],[2017,2,2,2,2,2,222]]
 ```
+
 Or, call function
 compute_epoch directly, instead, with at least three (3) first (up
 to seven) components. The last component, if not the 7th, can be a
@@ -503,9 +530,11 @@ float that can have a fraction of the unit.
 For CDF_EPOCH16: They should have exactly ten (10) components, as year, month, day,
 hour, minute, second, millisecond, microsecond, nanosecond and
 picosecond, in a list. For example:
+
 ```python
 [[2017,1,1,1,1,1,123,456,789,999],[2017,2,2,2,2,2,987,654,321,999]]
 ```
+
 Or, call function compute_epoch directly, instead, with at least
 three (3) first (up to ten) components. The last component, if not
 the 10th, can be a float that can have a fraction of the unit.
@@ -513,9 +542,11 @@ the 10th, can be a float that can have a fraction of the unit.
 For TT2000: Each TT2000 typed date/time should have exactly nine (9) components,
 as year, month, day, hour, minute, second, millisecond, microsecond,
 and nanosecond, in a list. For example:
+
 ```python
 [[2017,1,1,1,1,1,123,456,789],[2017,2,2,2,2,2,987,654,321]]
 ```
+
 Or, call function compute_tt2000 directly, instead, with at least
 three (3) first (up to nine) components. The last component, if not
 the 9th, can be a float that can have a fraction of the unit.
@@ -553,11 +584,10 @@ Shows the code version.
 
 Shows the latest date a leap second was added to the leap second table.
 
-
 ## CDF Astropy Epochs
 
 If the user has astropy installed, importing cdflib also imports the module
-cdflib.cdfastropy, which contains all of the functionality of the above module, 
+cdflib.cdfastropy, which contains all of the functionality of the above module,
 but uses the Astropy Time class for all conversions.  It can be used in the same
 way as the above module:
 
@@ -567,7 +597,7 @@ import cdflib
 cdf_file = cdflib.cdfastropy.compute_epoch([2017,1,1,1,1,1,111])
 ```
 
-Additionally, and perhaps most importantly, there is an additonal function that converts 
+Additionally, and perhaps most importantly, there is an additonal function that converts
 CDF_EPOCH/EPOCH16/TT2000 times to the Astropy Time class:
 
 ### convert_to_astropy (epochs, format=None)
@@ -576,20 +606,14 @@ Converts the epoch(s) into Astropy Time(s).
 
 * CDF_EPOCH: The input should be either a float or list of floats (in numpy, a
   np.float64 or a np.ndarray of np.float64).  If you'd like to ignore the input type and convert
-  to CDF_EPOCH directly, specify format='cdf_epoch' when you call the function.   
+  to CDF_EPOCH directly, specify format='cdf_epoch' when you call the function.
 * CDF_EPOCH16: The input should be either a complex or list of complex(in numpy, a
   np.complex128 or a np.ndarray of np.complex128).  If you'd like to ignore the input type and convert
-  to CDF_EPOCH directly, specify format='cdf_epoch16' when you call the function.   
+  to CDF_EPOCH directly, specify format='cdf_epoch16' when you call the function.
 * TT2000: The input should be either a int or list of ints (in numpy, a
   np.int64 or a np.ndarray of np.int64).  If you'd like to ignore the input type and convert
-  to CDF_EPOCH directly, specify format='cdf_tt2000' when you call the function.   
+  to CDF_EPOCH directly, specify format='cdf_tt2000' when you call the function.
 
-
-  
 For more information about Astropy Times and all the functionality it contains, take a look at the astropy documentation
 
 https://docs.astropy.org/en/stable/time/
-
-
- 
-
