@@ -51,8 +51,8 @@ def test_encode_cdfepoch16():
     x = cdfepoch.encode(np.complex128(63300946758.000000 + 176214648000.00000j))
     assert x == '2005-12-04T20:19:18.176214648000'
     y = cdfepoch.encode(np.complex128([33300946758.000000 + 106014648000.00000j,
-                                              61234543210.000000 + 000011148000.00000j]),
-                               iso_8601=False)
+                                       61234543210.000000 + 000011148000.00000j]),
+                        iso_8601=False)
     assert y[0] == '07-Apr-1055 14:59:18.106.014.648.000'
     assert y[1] == '12-Jun-1940 03:20:10.000.011.148.000'
 
@@ -61,7 +61,7 @@ def test_encode_cdftt2000():
     x = cdfepoch.encode(186999622360321123)
     assert x == '2005-12-04T20:19:18.176321123'
     y = cdfepoch.encode([500000000100, 123456789101112131],
-                               iso_8601=False)
+                        iso_8601=False)
     assert y[0] == '01-Jan-2000 12:07:15.816.000.100'
     assert y[1] == '30-Nov-2003 09:32:04.917.112.131'
 
@@ -192,7 +192,6 @@ def test_parse_cdfepoch16():
     assert cdfepoch().to_datetime(parsed) == [datetime(1694, 5, 1, 7, 42, 23, 543218)]
 
 
-
 def test_parse_cdftt2000():
     input_time = 131415926535793238
     x = cdfepoch.encode(input_time)
@@ -263,5 +262,6 @@ def test_latest_leapsecs():
     remote, _ = urllib.request.urlretrieve('https://cdf.gsfc.nasa.gov/html/CDFLeapSeconds.txt')
     assert filecmp.cmp(local, remote)
 
+
 if __name__ == '__main__':
-    pytest.main(['-x', __file__])
+    pytest.main([__file__])

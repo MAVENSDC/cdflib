@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-import filecmp
-import urllib.request
 from random import randint
 
 import pytest
@@ -9,6 +7,7 @@ import numpy as np
 from datetime import datetime
 
 from cdflib.epochs_astropy import CDFAstropy as cdfepoch
+
 
 def test_encode_cdfepoch():
     x = cdfepoch.encode([62285326000000.0, 62985326000000.0])
@@ -29,7 +28,7 @@ def test_encode_cdfepoch16():
     x = cdfepoch.encode(np.complex128(63300946758.000000 + 176214648000.00000j))
     assert x == '2005-12-04 20:19:18.176214648'
     y = cdfepoch.encode(np.complex128([33300946758.000000 + 106014648000.00000j,
-                                              61234543210.000000 + 000011148000.00000j]))
+                                       61234543210.000000 + 000011148000.00000j]))
     assert y[0] == '1055-04-07 14:59:18.106014648'
     assert y[1] == '1940-06-12 03:20:10.000011148'
 
@@ -94,7 +93,7 @@ def test_breakdown_cdftt2000():
     assert x[0][7] == 112
 
     # Apparently there is a loss of precision at this level
-    #assert x[0][8] == 131
+    # assert x[0][8] == 131
 
 
 def test_compute_cdfepoch():
@@ -162,6 +161,7 @@ def test_compute_cdftt2000():
         i += 1
     '''
 
+
 def test_parse_cdfepoch():
     x = cdfepoch.encode(62567898765432.0)
     assert x == "1982-09-12 11:52:45.432000000"
@@ -179,7 +179,6 @@ def test_parse_cdfepoch16():
     assert parsed[0] == approx(53467976543 + .543218654)
 
     assert cdfepoch.to_datetime(input_time) == datetime(1694, 5, 1, 7, 42, 23, 543219)
-
 
 
 def test_parse_cdftt2000():
@@ -223,6 +222,5 @@ def test_findepochrange_cdftt2000():
     assert time_array[index[-1]+1] >= cdfepoch.compute(test_end)
 
 
-
 if __name__ == '__main__':
-    pytest.main(['-x', __file__])
+    pytest.main([__file__])
