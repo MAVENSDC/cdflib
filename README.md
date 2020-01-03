@@ -463,8 +463,8 @@ There are three (3) epoch data types in CDF: CDF_EPOCH, CDF_EPOCH16
 and CDF_TIME_TT2000.
 
 - CDF_EPOCH is milliseconds since Year 0.
-- DF_EPOCH16 is picoseconds since Year 0.
--  CDF_TIME_TT2000 (TT2000 as short) is nanoseconds since J2000 with
+- CDF_EPOCH16 is picoseconds since Year 0.
+- CDF_TIME_TT2000 (TT2000 as short) is nanoseconds since J2000 with
     leap seconds.
 
 CDF_EPOCH is a single double(as float in Python), CDF_EPOCH16 is
