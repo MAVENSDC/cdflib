@@ -141,11 +141,10 @@ class CDFepoch:
 
         raise TypeError('Not sure how to handle type {}'.format(type(epochs)))
 
-
     @staticmethod
     def breakdown(epochs, to_np: bool = False):
 
-        #Returns either a single array, or a array of arrays depending on the input
+        # Returns either a single array, or a array of arrays depending on the input
 
         if isinstance(epochs, (int, np.int64)):
             return CDFepoch.breakdown_tt2000(epochs, to_np)
@@ -162,7 +161,6 @@ class CDFepoch:
                 return CDFepoch.breakdown_epoch16(epochs, to_np)
 
         raise TypeError('Not sure how to handle type {}'.format(type(epochs)))
-
 
     def to_datetime(self, cdf_time: Union[int, Sequence[int]],
                     to_np: bool = False) -> List[datetime.datetime]:
@@ -200,11 +198,11 @@ class CDFepoch:
         import datetime
         time_list = CDFepoch.breakdown(cdf_time, to_np=False)
 
-        #Check if only one time was input into unixtime.
-        #If so, turn the output of breakdown into a list for this function to work
+        # Check if only one time was input into unixtime.
+        # If so, turn the output of breakdown into a list for this function to work
         if hasattr(cdf_time, '__len__'):
-           if len(cdf_time) == 1:
-               time_list = [time_list]
+            if len(cdf_time) == 1:
+                time_list = [time_list]
         else:
             time_list = [time_list]
 
@@ -277,7 +275,6 @@ class CDFepoch:
         else:
             raise TypeError('Unknown input')
 
-
     def findepochrange(epochs, starttime=None, endtime=None):  # @NoSelf
         """
         Finds the record range within the start and end time from values
@@ -310,7 +307,6 @@ class CDFepoch:
                 return CDFepoch.epochrange_epoch16(epochs, starttime, endtime)
 
         raise TypeError('Bad input')
-
 
     def encode_tt2000(tt2000, iso_8601: bool = True):  # @NoSelf
 
@@ -1635,10 +1631,10 @@ class CDFepoch:
                         ms = int(date[0][6])
                     return CDFepoch.compute_epoch([yy, mm, dd, hh, mn, ss, ms])
             elif len(value) == 36 or (len(value) == 32 and
-                                       value[10].lower() == 't'):
+                                      value[10].lower() == 't'):
                 # CDF_EPOCH16
                 if value.lower() in ('31-dec-9999 23:59:59.999.999.999.999',
-                                      '9999-12-31t23:59:59.999999999999'):
+                                     '9999-12-31t23:59:59.999999999999'):
                     return -1.0E31-1.0E31j
                 else:
                     if (len(value) == 36):

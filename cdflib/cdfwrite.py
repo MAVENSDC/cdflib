@@ -5,6 +5,7 @@ This Python code only creates V3 CDFs.
 
 @author: Mike Liu
 """
+from typing import Tuple
 import logging
 import numpy as np
 import sys
@@ -102,8 +103,8 @@ class CDF(object):
     ROW_MAJOR = 1
     COLUMN_MAJOR = 2
 
-    #SINGLE_FILE = 1
-    #MULTI_FILE = 2
+    # SINGLE_FILE = 1
+    # MULTI_FILE = 2
 
     NO_CHECKSUM = 0
     MD5_CHECKSUM = 1
@@ -112,14 +113,14 @@ class CDF(object):
     GLOBAL_SCOPE = 1
     VARIABLE_SCOPE = 2
 
-    #NO_COMPRESSION = 0
-    #RLE_COMPRESSION = 1
-    #HUFF_COMPRESSION = 2
-    #AHUFF_COMPRESSION = 3
+    # NO_COMPRESSION = 0
+    # RLE_COMPRESSION = 1
+    # HUFF_COMPRESSION = 2
+    # AHUFF_COMPRESSION = 3
     GZIP_COMPRESSION = 5
 
-    #RLE_OF_ZEROs	= 0
-    #NO_SPARSEARRAYS = 0
+    # RLE_OF_ZEROs	= 0
+    # NO_SPARSEARRAYS = 0
     NO_SPARSERECORDS = 0
     PAD_SPARSERECORDS = 1
     PREV_SPARSERECORDS = 2
@@ -349,7 +350,7 @@ class CDF(object):
 
                 attrNum, offsetADR = self._write_adr(f, True, attr)
                 entries = 0
-                if (entry == None):
+                if entry is None:
                     continue
                 entryNumMaX = -1
                 poffset = -1
@@ -574,7 +575,7 @@ class CDF(object):
                     offset = self._write_aedr(f, False, attrNum, entryNum, data,
                                               dataType, numElems, zVar)
                     if (entries == 0):
-                        if (zVar == True):
+                        if zVar:
                             # ADR's AzEDRhead
                             self._update_offset_value(f, offsetA+48, 8, offset)
                         else:
@@ -585,7 +586,7 @@ class CDF(object):
                         self._update_offset_value(f, poffset+12, 8, offset)
                     poffset = offset
                     entries = entries + 1
-                if (zVar == True):
+                if zVar:
                     # ADR's NzEntries
                     self._update_offset_value(f, offsetA+56, 4, entries)
                     # ADR's MAXzEntry
@@ -910,8 +911,8 @@ class CDF(object):
 
             self._update_aedr_link(f, attrNum, zVar, varNum, offset)
 
-    def _write_var_data_nonsparse(self, f, zVar, var, dataType, numElems,
-                                  recVary, compression, blockingfactor, indata):
+    def _write_var_data_nonsparse(self, f, zVar: bool, var, dataType, numElems,
+                                  recVary, compression, blockingfactor, indata) -> int:
         '''
         Creates VVRs and the corresponding VXRs full of "indata" data.
         If there is no compression, creates exactly one VXR and VVR
@@ -987,7 +988,7 @@ class CDF(object):
             if (blockingfactor == 0):
                 blockingfactor = 1
 
-            #Update the blocking factor
+            # Update the blocking factor
             f.seek(vdr_offset + 80, 0)
             # VDR's BlockingFactor
             self._update_offset_value(f, vdr_offset + 80, 4,
@@ -1060,7 +1061,7 @@ class CDF(object):
 
         return (recs-1)
 
-    def _write_var_data_sparse(self, f, zVar, var, dataType, numElems, recVary,
+    def _write_var_data_sparse(self, f, zVar: bool, var, dataType, numElems, recVary,
                                oneblock):
         '''
         Writes a VVR and a VXR for this block of sparse data
@@ -1359,10 +1360,11 @@ class CDF(object):
                      'CDF_UCHAR': 52}
         try:
             return datatypes[datatype.upper()]
-        except:
+        except Exception:
             return 0
 
-    def _datatype_define(value):    # @NoSelf
+    @staticmethod
+    def _datatype_define(value):
         if (isinstance(value, str)):
             return len(value), CDF.CDF_CHAR
         else:
@@ -1377,7 +1379,8 @@ class CDF(object):
                 warnings.warn('Invalid data type for data.... Skip')
                 return None, None
 
-    def _datatype_size(datatype, numElms):    # @NoSelf
+    @staticmethod
+    def _datatype_size(datatype, numElms):
         '''
         Gets datatype size
 
@@ -1439,7 +1442,8 @@ class CDF(object):
         except Exception:
             return -1
 
-    def _sparse_token(sparse):  # @NoSelf
+    @staticmethod
+    def _sparse_token(sparse):
         '''
         Returns the numerical CDF value for sparseness.
         '''
@@ -1449,10 +1453,10 @@ class CDF(object):
                    'prev_sparse': 2}
         try:
             return sparses[sparse.lower()]
-        except:
+        except Exception:
             return 0
 
-    def _write_cdr(self, f, major, encoding, checksum):
+    def _write_cdr(self, f, major, encoding, checksum) -> int:
         f.seek(0, 2)
         byte_loc = f.tell()
         block_size = CDF.CDR_BASE_SIZE64 + CDF.CDF_COPYRIGHT_LEN
@@ -1464,7 +1468,7 @@ class CDF(object):
         if (major == 1):
             flag = CDF._set_bit(flag, 0)
         flag = CDF._set_bit(flag, 1)
-        if (checksum == True):
+        if checksum:
             flag = CDF._set_bit(flag, 2)
             flag = CDF._set_bit(flag, 3)
         rfuA = 0
@@ -1497,7 +1501,7 @@ class CDF(object):
 
         return byte_loc
 
-    def _write_gdr(self, f):
+    def _write_gdr(self, f) -> int:
         f.seek(0, 2)
         byte_loc = f.tell()
         block_size = CDF.GDR_BASE_SIZE64 + 4 * self.num_rdim
@@ -1539,7 +1543,7 @@ class CDF(object):
 
         return byte_loc
 
-    def _write_adr(self, f, gORv, name):
+    def _write_adr(self, f, gORv, name) -> Tuple[int, int]:
         '''
         Writes and ADR to the end of the file.
 
@@ -1566,7 +1570,7 @@ class CDF(object):
         section_type = CDF.ADR_
         nextADR = 0
         headAgrEDR = 0
-        if (gORv == True):
+        if gORv:
             scope = 1
         else:
             scope = 2
@@ -2019,8 +2023,8 @@ class CDF(object):
         block_size = CDF.CCR_BASE_SIZE64 + len(cData)
         cprOffset = 0
         ccr1 = bytearray(32)
-        #ccr1[0:4] = binascii.unhexlify(CDF.V3magicNUMBER_1)
-        #ccr1[4:8] = binascii.unhexlify(CDF.V3magicNUMBER_2c)
+        # ccr1[0:4] = binascii.unhexlify(CDF.V3magicNUMBER_1)
+        # ccr1[4:8] = binascii.unhexlify(CDF.V3magicNUMBER_2c)
         ccr1[0:8] = struct.pack('>q', block_size)
         ccr1[8:12] = struct.pack('>i', section_type)
         ccr1[12:20] = struct.pack('>q', cprOffset)
@@ -2221,7 +2225,7 @@ class CDF(object):
         elif (isinstance(indata, np.ndarray)):
             tofrom = self._convert_option()
             npdata = CDF._convert_nptype(data_type, indata)
-            if indata.size == num_values: #Check if only one record is being read in
+            if indata.size == num_values:  # Check if only one record is being read in
                 recs = 1
             else:
                 recs = len(indata)
@@ -2241,7 +2245,7 @@ class CDF(object):
                 num_elems = 2 * num_elems
             try:
                 recs = int(len(indata) / recSize)
-            except:
+            except Exception:
                 recs = 1
             if (data_type == CDF.CDF_EPOCH16):
                 complex_data = []
@@ -2260,13 +2264,13 @@ class CDF(object):
             else:
                 return recs, struct.pack(form, indata)
 
-    def _num_values(self, zVar, varNum):
+    def _num_values(self, zVar: bool, varNum):
         '''
         Determines the number of values in a record.
         Set zVar=True if this is a zvariable.
         '''
         values = 1
-        if (zVar == True):
+        if zVar:
             numDims = self.zvarsinfo[varNum][2]
             dimSizes = self.zvarsinfo[varNum][3]
             dimVary = self.zvarsinfo[varNum][4]
@@ -2527,7 +2531,7 @@ class CDF(object):
         if (isinstance(data, dict)):
             try:
                 data = data['Data']
-            except:
+            except Exception:
                 warnings.warn('Unknown dictionary.... Skip')
                 return None
         if (isinstance(data, np.ndarray)):
@@ -2692,7 +2696,7 @@ class CDF(object):
 
         return sparse_data
 
-    def getVersion(): # @NoSelf
+    def getVersion():  # @NoSelf
         """
         Shows the code version and last modified date.
 

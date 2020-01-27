@@ -602,4 +602,4 @@ def test_create_2d_r_and_z_variables(tmp_path):
 
 
 if __name__ == '__main__':
-    pytest.main(['-x', __file__])
+    pytest.main([__file__])

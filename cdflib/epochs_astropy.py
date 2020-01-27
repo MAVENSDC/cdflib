@@ -6,32 +6,34 @@ CDF Astropy Epochs
 @author: Bryan Harter
 """
 import numpy as np
-from typing import Sequence, List, Union
+from typing import List
 import datetime
 from datetime import timezone
-from astropy.time import Time, TimeFormat
+from astropy.time import Time
 from astropy.time.formats import erfa, TimeFromEpoch
 
 
 class CDFEpoch(TimeFromEpoch):
     name = 'cdf_epoch'
-    unit = 1.0 / (erfa.DAYSEC * 1000) # Milliseconds
+    unit = 1.0 / (erfa.DAYSEC * 1000)  # Milliseconds
     epoch_val = '0000-01-01 00:00:00'
     epoch_val2 = None
     epoch_scale = 'utc'
     epoch_format = 'iso'
+
 
 class CDFEpoch16(TimeFromEpoch):
     name = 'cdf_epoch16'
-    unit = 1.0 / (erfa.DAYSEC) # Seconds
+    unit = 1.0 / (erfa.DAYSEC)  # Seconds
     epoch_val = '0000-01-01 00:00:00'
     epoch_val2 = None
     epoch_scale = 'utc'
     epoch_format = 'iso'
 
+
 class CDFTT2000(TimeFromEpoch):
     name = 'cdf_tt2000'
-    unit = 1.0 / (erfa.DAYSEC * 1000 * 1000 * 1000) #Nanoseconds
+    unit = 1.0 / (erfa.DAYSEC * 1000 * 1000 * 1000)  # Nanoseconds
     epoch_val = '2000-01-01 12:00:00'
     epoch_val2 = None
     epoch_scale = 'tt'
@@ -74,7 +76,6 @@ class CDFAstropy:
         else:
             raise TypeError('Not sure how to handle type {}'.format(type(epochs)))
 
-
     @staticmethod
     def encode(epochs, iso_8601: bool = True):  # @NoSelf
         epochs = CDFAstropy.convert_to_astropy(epochs)
@@ -83,16 +84,15 @@ class CDFAstropy:
         else:
             return epochs.strftime('%d-%b-%Y %H:%M:%S.%f')
 
-
     @staticmethod
     def breakdown(epochs, to_np: bool = False):
-        #Returns either a single array, or a array of arrays depending on the input
+        # Returns either a single array, or a array of arrays depending on the input
         epochs = CDFAstropy.convert_to_astropy(epochs)
-        if epochs.format=='cdf_tt2000':
+        if epochs.format == 'cdf_tt2000':
             return CDFAstropy.breakdown_tt2000(epochs, to_np)
-        elif epochs.format=='cdf_epoch':
+        elif epochs.format == 'cdf_epoch':
             return CDFAstropy.breakdown_epoch(epochs, to_np)
-        elif epochs.format=='cdf_epoch16':
+        elif epochs.format == 'cdf_epoch16':
             return CDFAstropy.breakdown_epoch16(epochs, to_np)
         raise TypeError('Not sure how to handle type {}'.format(type(epochs)))
 
@@ -100,7 +100,6 @@ class CDFAstropy:
     def to_datetime(cdf_time) -> List[datetime.datetime]:  # @NoSelf
         cdf_time = CDFAstropy.convert_to_astropy(cdf_time)
         return cdf_time.datetime
-
 
     @staticmethod
     def unixtime(cdf_time, to_np: bool = False):  # @NoSelf
@@ -174,9 +173,9 @@ class CDFAstropy:
             time_as_list.append(int(ss))  # second
             decimal_seconds = float(decimal_seconds)
             milliseconds = decimal_seconds*1000
-            time_as_list.append(int(milliseconds)) # milliseconds
+            time_as_list.append(int(milliseconds))  # milliseconds
             microseconds = (milliseconds % 1) * 1000
-            time_as_list.append(int(microseconds)) # microseconds
+            time_as_list.append(int(microseconds))  # microseconds
             nanoseconds = (microseconds % 1) * 1000
             time_as_list.append(int(nanoseconds))  # microseconds
             times.append(time_as_list)
@@ -186,7 +185,7 @@ class CDFAstropy:
     @staticmethod
     def breakdown_epoch16(epochs, to_np: bool = False):  # @NoSelf
         epoch16strings = epochs.iso
-        if not isinstance(epoch16strings, (list,np.ndarray)):
+        if not isinstance(epoch16strings, (list, np.ndarray)):
             epoch16strings = [epoch16strings]
         times = []
         for t in epoch16strings:
@@ -205,9 +204,9 @@ class CDFAstropy:
             time_as_list.append(int(ss))  # second
             decimal_seconds = float(decimal_seconds)
             milliseconds = decimal_seconds*1000
-            time_as_list.append(int(milliseconds)) # milliseconds
+            time_as_list.append(int(milliseconds))  # milliseconds
             microseconds = (milliseconds % 1) * 1000
-            time_as_list.append(int(microseconds)) # microseconds
+            time_as_list.append(int(microseconds))  # microseconds
             nanoseconds = (microseconds % 1) * 1000
             time_as_list.append(int(nanoseconds))  # nanoseconds
             picoseconds = (nanoseconds % 1) * 1000
@@ -237,7 +236,7 @@ class CDFAstropy:
             time_as_list.append(int(ss))  # second
             decimal_seconds = float(decimal_seconds)
             milliseconds = decimal_seconds*1000
-            time_as_list.append(int(milliseconds)) # milliseconds
+            time_as_list.append(int(milliseconds))  # milliseconds
             times.append(time_as_list)
         return times
 
@@ -281,7 +280,8 @@ class CDFAstropy:
         else:
             return np.array(time_list)
 
-    def getVersion():  # @NoSelf
+    @staticmethod
+    def getVersion():
         """
         Prints the code version.
         """

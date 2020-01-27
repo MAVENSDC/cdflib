@@ -4,7 +4,7 @@ from . import cdfwrite
 from .epochs import CDFepoch as cdfepoch  # noqa: F401
 try:
     from .epochs_astropy import CDFAstropy as cdfastropy
-except:
+except Exception:
     pass
 
 from pathlib import Path
