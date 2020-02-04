@@ -385,6 +385,7 @@ class CDFepoch:
         return encodeds
 
     @staticmethod
+#    @profile
     def breakdown_tt2000(tt2000, to_np: bool = False):
         """
         Breaks down the epoch(s) into UTC components.
