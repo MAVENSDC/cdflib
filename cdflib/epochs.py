@@ -416,15 +416,13 @@ class CDFepoch:
 
         for x in range(count):
             nanoSecSinceJ2000 = new_tt2000[x]
-            toPlus = 0.0
             t3 = nanoSecSinceJ2000
             datx = CDFepoch._LeapSecondsfromJ2000(nanoSecSinceJ2000)
             if (nanoSecSinceJ2000 > 0):
                 secSinceJ2000 = int(nanoSecSinceJ2000/CDFepoch.SECinNanoSecsD)
                 nansec = int(nanoSecSinceJ2000 - secSinceJ2000 *
                              CDFepoch.SECinNanoSecs)
-                secSinceJ2000 = secSinceJ2000 - 32
-                secSinceJ2000 = secSinceJ2000 + 43200
+                secSinceJ2000 = secSinceJ2000 - 32 + 43200
                 nansec = nansec - 184000000
             else:
                 nanoSecSinceJ2000 = nanoSecSinceJ2000 + CDFepoch.T12hinNanoSecs
@@ -687,11 +685,9 @@ class CDFepoch:
 
     def _LeapSecondsfromJ2000(nanosecs):  # @NoSelf
 
-        da = []
-        da.append(0.0)
-        da.append(0.0)
+        da = [0.0, 0.0]
         j = -1
-        if (CDFepoch.NST == None):
+        if (CDFepoch.NST is None):
             CDFepoch._LoadLeapNanoSecondsTable()
         for i, _ in reversed(list(enumerate(CDFepoch.NST))):
             if (nanosecs >= CDFepoch.NST[i]):
@@ -700,9 +696,8 @@ class CDFepoch:
                     if ((nanosecs + 1000000000) >= CDFepoch.NST[i+1]):
                         da[1] = 1.0
                 break
-        if (j <= CDFepoch.NERA1):
-            return da
-        da[0] = CDFepoch.LTS[j][3]
+        if (j > CDFepoch.NERA1):
+            da[0] = CDFepoch.LTS[j][3]
         return da
 
     def _LoadLeapNanoSecondsTable():  # @NoSelf
