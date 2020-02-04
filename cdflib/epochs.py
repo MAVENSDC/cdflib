@@ -425,6 +425,15 @@ class CDFepoch:
         secsSinceJ2000 = (nanoSecsSinceJ2000 / CDFepoch.SECinNanoSecsD).astype(np.longlong)
         nansecs = (nanoSecsSinceJ2000 - secsSinceJ2000 * CDFepoch.SECinNanoSecs).astype(np.longlong)
 
+        posNanoSecs = nanoSecsSinceJ2000 > 0
+        secsSinceJ2000[posNanoSecs] -= 32
+        secsSinceJ2000[posNanoSecs] += 43200
+        nansecs[posNanoSecs] -= 184000000
+
+        negNanoSecs = nansecs < 0
+        nansecs[negNanoSecs] += CDFepoch.SECinNanoSecs
+        secsSinceJ2000[negNanoSecs] -= 1
+
         for x in range(count):
             t3 = new_tt2000[x]
             datx = datxs[x]
@@ -433,12 +442,6 @@ class CDFepoch:
             secSinceJ2000 = secsSinceJ2000[x]
             nansec = nansecs[x]
 
-            if (nanoSecSinceJ2000 > 0):
-                secSinceJ2000 = secSinceJ2000 - 32 + 43200
-                nansec = nansec - 184000000
-            if (nansec < 0):
-                nansec = CDFepoch.SECinNanoSecs + nansec
-                secSinceJ2000 = secSinceJ2000 - 1
             t2 = secSinceJ2000 * CDFepoch.SECinNanoSecs + nansec
             if (datx[0] > 0.0):
                 # post-1972...
