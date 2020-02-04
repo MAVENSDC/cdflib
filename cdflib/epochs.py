@@ -446,17 +446,18 @@ class CDFepoch:
         xdates = CDFepoch._EPOCHbreakdownTT2000(epochs)
         xdates[5, post72 & ~datxzero] += 1
 
-        for x in range(count):
-            secSinceJ2000 = secsSinceJ2000[x]
-            epoch = epochs[x]
-            xdate = xdates[:, x]
+        # Set toutcs, then loop through and correct for pre-1972
+        toutcs[:, :6] = xdates.T[:, :6]
 
+        for x in range(count):
             if datxs[x, 0] <= 0.0:
                 # pre-1972...
+                secSinceJ2000 = secsSinceJ2000[x]
+                epoch = epochs[x]
                 t2 = t2s[x]
                 t3 = new_tt2000[x]
                 nansec = nansecs[x]
-                xdate = xdate.tolist()
+                xdate = xdates[:, x].tolist()
 
                 xdate.append(0)
                 xdate.append(0)
@@ -506,7 +507,9 @@ class CDFepoch:
                         # One more determination
                         xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)
                 nansecs[x] = nansec
-            toutcs[x, :6] = xdate[:6]
+                toutcs[x, :6] = xdate[:6]
+
+        # Finished pre-1972 correction
         ml1 = nansecs // 1000000
         tmp1 = nansecs - (1000000 * ml1)
 
