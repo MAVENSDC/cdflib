@@ -413,11 +413,12 @@ class CDFepoch:
         count = len(new_tt2000)
         toutcs = np.zeros((count, 9)).astype(int)
         nansecs = np.zeros((count)).astype(int)
+        datxs = [CDFepoch._LeapSecondsfromJ2000(x) for x in new_tt2000]
 
         for x in range(count):
             nanoSecSinceJ2000 = new_tt2000[x]
             t3 = nanoSecSinceJ2000
-            datx = CDFepoch._LeapSecondsfromJ2000(nanoSecSinceJ2000)
+            datx = datxs[x]
             if (nanoSecSinceJ2000 > 0):
                 secSinceJ2000 = int(nanoSecSinceJ2000/CDFepoch.SECinNanoSecsD)
                 nansec = int(nanoSecSinceJ2000 - secSinceJ2000 *
