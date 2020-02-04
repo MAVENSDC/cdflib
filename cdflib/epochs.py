@@ -440,25 +440,23 @@ class CDFepoch:
         secsSinceJ2000[post72] -= datxs[:, 0].astype(int)
         epochs = CDFepoch.J2000Since0AD12hSec + secsSinceJ2000
 
+        datxzero = datxs[:, 1] == 0.0
+        epochs[post72 & ~datxzero] -= 1
+        xdates = CDFepoch._EPOCHbreakdownTT2000(epochs)
+        xdates[5, post72 & ~datxzero] += 1
+
         for x in range(count):
             secSinceJ2000 = secsSinceJ2000[x]
             epoch = epochs[x]
+            xdate = xdates[:, x]
 
-            if (datxs[x, 0] > 0.0):
-                # post-1972...
-                if (datxs[x, 1] == 0.0):
-                    xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)
-                else:
-                    epoch = epoch - 1
-                    xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)
-                    xdate[5] = xdate[5] + 1
-            else:
+            if datxs[x, 0] <= 0.0:
                 # pre-1972...
                 t2 = t2s[x]
                 t3 = new_tt2000[x]
                 nansec = nansecs[x]
+                xdate = xdate.tolist()
 
-                xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)
                 xdate.append(0)
                 xdate.append(0)
                 xdate.append(nansec)
@@ -722,31 +720,30 @@ class CDFepoch:
                                                          0, 0, 0, 0, 0, 0]))
 
     def _EPOCHbreakdownTT2000(epoch):  # @NoSelf
+        epoch = np.atleast_1d(epoch)
 
         second_AD = epoch
         minute_AD = second_AD / 60.0
         hour_AD = minute_AD / 60.0
         day_AD = hour_AD / 24.0
 
-        jd = int(1721060 + day_AD)
+        jd = (1721060 + day_AD).astype(int)
         l = jd+68569
-        n = int(4*l/146097)
-        l = l-int((146097*n+3)/4)
-        i = int(4000*(l+1)/1461001)
-        l = l-int(1461*i/4)+31
-        j = int(80*l/2447)
-        k = l-int(2447*j/80)
-        l = int(j/11)
+        n = (4*l/146097).astype(int)
+        l = l-((146097*n+3)/4).astype(int)
+        i = (4000*(l+1)/1461001).astype(int)
+        l = l-(1461*i/4).astype(int)+31
+        j = (80*l/2447).astype(int)
+        k = l-(2447*j/80).astype(int)
+        l = (j/11).astype(int)
         j = j+2-12*l
         i = 100*(n-49)+i+l
 
-        date = []
-        date.append(i)
-        date.append(j)
-        date.append(k)
-        date.append(int(hour_AD % 24.0))
-        date.append(int(minute_AD % 60.0))
-        date.append(int(second_AD % 60.0))
+        date = np.array(
+            [i, j, k,
+             (hour_AD % 24.0).astype(int),
+             (minute_AD % 60.0).astype(int),
+             (second_AD % 60.0).astype(int)])
         return date
 
     def epochrange_tt2000(epochs, starttime=None, endtime=None):  # @NoSelf
