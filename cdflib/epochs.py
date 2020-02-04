@@ -437,13 +437,9 @@ class CDFepoch:
         t2s = secsSinceJ2000 * CDFepoch.SECinNanoSecs + nansecs
 
         for x in range(count):
-            t3 = new_tt2000[x]
             datx = datxs[x]
-
-            nanoSecSinceJ2000 = nanoSecsSinceJ2000[x]
             secSinceJ2000 = secsSinceJ2000[x]
             nansec = nansecs[x]
-            t2 = t2s[x]
 
             if (datx[0] > 0.0):
                 # post-1972...
@@ -457,6 +453,9 @@ class CDFepoch:
                     xdate[5] = xdate[5] + 1
             else:
                 # pre-1972...
+                t2 = t2s[x]
+                t3 = new_tt2000[x]
+
                 epoch = secSinceJ2000 + CDFepoch.J2000Since0AD12hSec
                 xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)
                 xdate.append(0)
