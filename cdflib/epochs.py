@@ -413,7 +413,6 @@ class CDFepoch:
         new_tt2000 = np.atleast_1d(new_tt2000).astype(np.longlong)
         count = len(new_tt2000)
         toutcs = np.zeros((count, 9)).astype(int)
-        nansecs = np.zeros((count)).astype(int)
         datxs = [CDFepoch._LeapSecondsfromJ2000(x) for x in new_tt2000]
 
         # Do some computations on arrays to speed things up
@@ -439,7 +438,6 @@ class CDFepoch:
         for x in range(count):
             datx = datxs[x]
             secSinceJ2000 = secsSinceJ2000[x]
-            nansec = nansecs[x]
 
             if (datx[0] > 0.0):
                 # post-1972...
@@ -455,6 +453,8 @@ class CDFepoch:
                 # pre-1972...
                 t2 = t2s[x]
                 t3 = new_tt2000[x]
+                nansec = nansecs[x]
+
 
                 epoch = secSinceJ2000 + CDFepoch.J2000Since0AD12hSec
                 xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)
@@ -505,9 +505,8 @@ class CDFepoch:
                         epoch = tmpy + CDFepoch.J2000Since0AD12hSec
                         # One more determination
                         xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)
+                nansecs[x] = nansec
             toutcs[x, :6] = xdate[:6]
-            nansecs[x] = nansec
-
         ml1 = nansecs // 1000000
         tmp1 = nansecs - (1000000 * ml1)
 
