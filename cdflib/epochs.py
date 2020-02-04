@@ -411,7 +411,9 @@ class CDFepoch:
             raise TypeError('unsure how to handle {}'.format(type(tt2000)))
 
         count = len(new_tt2000)
-        toutcs = []
+        toutcs = np.zeros((count, 9)).astype(int)
+        nansecs = np.zeros((count)).astype(int)
+
         for x in range(count):
             nanoSecSinceJ2000 = new_tt2000[x]
             toPlus = 0.0
@@ -439,28 +441,22 @@ class CDFepoch:
                 secSinceJ2000 = secSinceJ2000 - int(datx[0])
                 epoch = CDFepoch.J2000Since0AD12hSec + secSinceJ2000
                 if (datx[1] == 0.0):
-                    date1 = CDFepoch._EPOCHbreakdownTT2000(epoch)
+                    xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)
                 else:
                     epoch = epoch - 1
-                    date1 = CDFepoch._EPOCHbreakdownTT2000(epoch)
-                    date1[5] = date1[5] + 1
-                ye1 = date1[0]
-                mo1 = date1[1]
-                da1 = date1[2]
-                ho1 = date1[3]
-                mi1 = date1[4]
-                se1 = date1[5]
+                    xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)
+                    xdate[5] = xdate[5] + 1
             else:
                 # pre-1972...
                 epoch = secSinceJ2000 + CDFepoch.J2000Since0AD12hSec
-                xdate1 = CDFepoch._EPOCHbreakdownTT2000(epoch)
-                xdate1.append(0)
-                xdate1.append(0)
-                xdate1.append(nansec)
-                tmpNanosecs = CDFepoch.compute_tt2000(xdate1)
+                xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)
+                xdate.append(0)
+                xdate.append(0)
+                xdate.append(nansec)
+                tmpNanosecs = CDFepoch.compute_tt2000(xdate)
                 if (tmpNanosecs != t3):
-                    dat0 = CDFepoch._LeapSecondsfromYMD(xdate1[0],
-                                                        xdate1[1], xdate1[2])
+                    dat0 = CDFepoch._LeapSecondsfromYMD(xdate[0],
+                                                        xdate[1], xdate[2])
                     tmpx = t2 - int(dat0 * CDFepoch.SECinNanoSecs)
                     tmpy = int(float(tmpx/CDFepoch.SECinNanoSecsD))
                     nansec = int(tmpx - tmpy * CDFepoch.SECinNanoSecs)
@@ -468,14 +464,14 @@ class CDFepoch:
                     nansec = CDFepoch.SECinNanoSecs + nansec
                     tmpy = tmpy - 1
                     epoch = tmpy + CDFepoch.J2000Since0AD12hSec
-                    xdate1 = CDFepoch._EPOCHbreakdownTT2000(epoch)
-                    xdate1.append(0)
-                    xdate1.append(0)
-                    xdate1.append(nansec)
-                    tmpNanosecs = CDFepoch.compute_tt2000(xdate1)
+                    xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)
+                    xdate.append(0)
+                    xdate.append(0)
+                    xdate.append(nansec)
+                    tmpNanosecs = CDFepoch.compute_tt2000(xdate)
                 if (tmpNanosecs != t3):
-                    dat0 = CDFepoch._LeapSecondsfromYMD(xdate1[0],
-                                                        xdate1[1], xdate1[2])
+                    dat0 = CDFepoch._LeapSecondsfromYMD(xdate[0],
+                                                        xdate[1], xdate[2])
                     tmpx = t2 - int(dat0 * CDFepoch.SECinNanoSecs)
                     tmpy = int((1.0*tmpx)/CDFepoch.SECinNanoSecsD)
                     nansec = int(tmpx - tmpy * CDFepoch.SECinNanoSecs)
@@ -483,15 +479,15 @@ class CDFepoch:
                         nansec = CDFepoch.SECinNanoSecs + nansec
                         tmpy = tmpy - 1
                     epoch = tmpy + CDFepoch.J2000Since0AD12hSec
-                    xdate1 = CDFepoch._EPOCHbreakdownTT2000(epoch)
-                    xdate1.append(0)
-                    xdate1.append(0)
-                    xdate1.append(nansec)
-                    tmpNanosecs = CDFepoch.compute_tt2000(xdate1)
+                    xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)
+                    xdate.append(0)
+                    xdate.append(0)
+                    xdate.append(nansec)
+                    tmpNanosecs = CDFepoch.compute_tt2000(xdate)
                     if (tmpNanosecs != t3):
-                        dat0 = CDFepoch._LeapSecondsfromYMD(xdate1[0],
-                                                            xdate1[1],
-                                                            xdate1[2])
+                        dat0 = CDFepoch._LeapSecondsfromYMD(xdate[0],
+                                                            xdate[1],
+                                                            xdate[2])
                         tmpx = t2 - int(dat0 * CDFepoch.SECinNanoSecs)
                         tmpy = int((1.0*tmpx)/CDFepoch.SECinNanoSecsD)
                         nansec = int(tmpx - tmpy * CDFepoch.SECinNanoSecs)
@@ -500,41 +496,28 @@ class CDFepoch:
                             tmpy = tmpy - 1
                         epoch = tmpy + CDFepoch.J2000Since0AD12hSec
                         # One more determination
-                        xdate1 = CDFepoch._EPOCHbreakdownTT2000(epoch)
-                ye1 = int(xdate1[0])
-                mo1 = int(xdate1[1])
-                da1 = int(xdate1[2])
-                ho1 = int(xdate1[3])
-                mi1 = int(xdate1[4])
-                se1 = int(xdate1[5])
-            ml1 = int(nansec / 1000000)
-            tmp1 = nansec - 1000000 * ml1
-            if (ml1 > 1000):
-                ml1 = ml1 - 1000
-                se1 = se1 + 1
-            ma1 = int(tmp1 / 1000)
-            na1 = int(tmp1 - 1000 * ma1)
-            datetime = []
-            datetime.append(ye1)
-            datetime.append(mo1)
-            datetime.append(da1)
-            datetime.append(ho1)
-            datetime.append(mi1)
-            datetime.append(se1)
-            datetime.append(ml1)
-            datetime.append(ma1)
-            datetime.append(na1)
-            if count == 1:
-                if not to_np:
-                    return datetime
-                else:
-                    return np.array(datetime)
-            else:
-                toutcs.append(datetime)
+                        xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)
+            toutcs[x, :6] = xdate[:6]
+            nansecs[x] = nansec
+
+        ml1 = nansecs // 1000000
+        tmp1 = nansecs - (1000000 * ml1)
+
+        overflow = ml1 > 1000
+        ml1[overflow] -= 1000
+        toutcs[overflow, 5] += 1
+        ma1 = tmp1 // 1000
+        na1 = tmp1 - 1000 * ma1
+        toutcs[:, 6] = ml1
+        toutcs[:, 7] = ma1
+        toutcs[:, 8] = na1
+        toutcs = toutcs.astype(int)
+
         if not to_np:
-            return toutcs
-        else:
-            return np.array(toutcs)
+            toutcs = toutcs.tolist()
+            if len(toutcs) == 1:
+                return toutcs[0]
+        return toutcs
 
     @staticmethod
     def compute_tt2000(datetimes, to_np: bool = False):
