@@ -410,7 +410,7 @@ class CDFepoch:
         else:
             raise TypeError('unsure how to handle {}'.format(type(tt2000)))
 
-        new_tt2000 = np.atleast_1d(new_tt2000)
+        new_tt2000 = np.atleast_1d(new_tt2000).astype(np.longlong)
         count = len(new_tt2000)
         toutcs = np.zeros((count, 9)).astype(int)
         nansecs = np.zeros((count)).astype(int)
@@ -422,14 +422,17 @@ class CDFepoch:
         nanoSecsSinceJ2000[~post2000] += CDFepoch.T12hinNanoSecs
         nanoSecsSinceJ2000[~post2000] -= CDFepoch.dTinNanoSecs
 
+        secsSinceJ2000 = (nanoSecsSinceJ2000 / CDFepoch.SECinNanoSecsD).astype(np.longlong)
+        nansecs = (nanoSecsSinceJ2000 - secsSinceJ2000 * CDFepoch.SECinNanoSecs).astype(np.longlong)
+
         for x in range(count):
             t3 = new_tt2000[x]
             datx = datxs[x]
 
             nanoSecSinceJ2000 = nanoSecsSinceJ2000[x]
-            secSinceJ2000 = int(nanoSecSinceJ2000/CDFepoch.SECinNanoSecsD)
-            nansec = int(nanoSecSinceJ2000 - secSinceJ2000 *
-                         CDFepoch.SECinNanoSecs)
+            secSinceJ2000 = secsSinceJ2000[x]
+            nansec = nansecs[x]
+
             if (nanoSecSinceJ2000 > 0):
                 secSinceJ2000 = secSinceJ2000 - 32 + 43200
                 nansec = nansec - 184000000
