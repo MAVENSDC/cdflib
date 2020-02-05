@@ -385,7 +385,6 @@ class CDFepoch:
         return encodeds
 
     @staticmethod
-#    @profile
     def breakdown_tt2000(tt2000, to_np: bool = False):
         """
         Breaks down the epoch(s) into UTC components.
@@ -449,7 +448,7 @@ class CDFepoch:
         # Set toutcs, then loop through and correct for pre-1972
         toutcs[:, :6] = xdates.T[:, :6]
 
-        for x in range(count):
+        for x in np.nonzero(~post72)[0]:
             if datxs[x, 0] <= 0.0:
                 # pre-1972...
                 secSinceJ2000 = secsSinceJ2000[x]
