@@ -412,9 +412,8 @@ class CDFepoch:
 
         new_tt2000 = np.atleast_1d(new_tt2000).astype(np.longlong)
         count = len(new_tt2000)
-        toutcs = np.zeros((count, 9)).astype(int)
-        datxs = [CDFepoch._LeapSecondsfromJ2000(x) for x in new_tt2000]
-        datxs = np.array(datxs)
+        toutcs = np.zeros((count, 9), dtype=int)
+        datxs = CDFepoch._LeapSecondsfromJ2000(new_tt2000)
 
         # Do some computations on arrays to speed things up
         post2000 = new_tt2000 > 0
@@ -514,13 +513,13 @@ class CDFepoch:
 
         overflow = ml1 > 1000
         ml1[overflow] -= 1000
+        toutcs[:, 6] = ml1
         toutcs[overflow, 5] += 1
+
         ma1 = tmp1 // 1000
         na1 = tmp1 - 1000 * ma1
-        toutcs[:, 6] = ml1
         toutcs[:, 7] = ma1
         toutcs[:, 8] = na1
-        toutcs = toutcs.astype(int)
 
         if not to_np:
             toutcs = toutcs.tolist()
@@ -695,20 +694,23 @@ class CDFepoch:
         return da
 
     def _LeapSecondsfromJ2000(nanosecs):  # @NoSelf
+        nanosecs = np.atleast_1d(nanosecs)
+        da = np.zeros((nanosecs.size, 2))
+        j = -1 * np.ones(nanosecs.size, dtype=int)
 
-        da = [0.0, 0.0]
-        j = -1
         if (CDFepoch.NST is None):
             CDFepoch._LoadLeapNanoSecondsTable()
         for i, _ in reversed(list(enumerate(CDFepoch.NST))):
-            if (nanosecs >= CDFepoch.NST[i]):
-                j = i
-                if (i < (CDFepoch.NDAT - 1)):
-                    if ((nanosecs + 1000000000) >= CDFepoch.NST[i+1]):
-                        da[1] = 1.0
+            idxs = (j == -1) & (nanosecs >= CDFepoch.NST[i])
+            j[idxs] = i
+            if (i < (CDFepoch.NDAT - 1)):
+                overflow = nanosecs + 1000000000 >= CDFepoch.NST[i+1]
+                da[overflow, 1] = 1.0
+            if np.all(j > 0):
                 break
-        if (j > CDFepoch.NERA1):
-            da[0] = CDFepoch.LTS[j][3]
+
+        LTS = np.array(CDFepoch.LTS)
+        da[j > CDFepoch.NERA1, 0] = LTS[j, 3]
         return da
 
     def _LoadLeapNanoSecondsTable():  # @NoSelf
@@ -721,6 +723,7 @@ class CDFepoch:
                                                          int(CDFepoch.LTS[ix][1]),
                                                          int(CDFepoch.LTS[ix][2]),
                                                          0, 0, 0, 0, 0, 0]))
+        CDFepoch.NST = np.array(CDFepoch.NST)
 
     def _EPOCHbreakdownTT2000(epoch):  # @NoSelf
         epoch = np.atleast_1d(epoch)
