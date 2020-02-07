@@ -412,7 +412,7 @@ class CDFepoch:
 
         new_tt2000 = np.atleast_1d(new_tt2000).astype(np.longlong)
         count = len(new_tt2000)
-        toutcs = np.zeros((count, 9)).astype(int)
+        toutcs = np.zeros((count, 9), dtype=int)
         datxs = CDFepoch._LeapSecondsfromJ2000(new_tt2000)
 
         # Do some computations on arrays to speed things up
@@ -513,13 +513,13 @@ class CDFepoch:
 
         overflow = ml1 > 1000
         ml1[overflow] -= 1000
+        toutcs[:, 6] = ml1
         toutcs[overflow, 5] += 1
+
         ma1 = tmp1 // 1000
         na1 = tmp1 - 1000 * ma1
-        toutcs[:, 6] = ml1
         toutcs[:, 7] = ma1
         toutcs[:, 8] = na1
-        toutcs = toutcs.astype(int)
 
         if not to_np:
             toutcs = toutcs.tolist()
@@ -695,9 +695,9 @@ class CDFepoch:
 
     def _LeapSecondsfromJ2000(nanosecs):  # @NoSelf
         nanosecs = np.atleast_1d(nanosecs)
-        da = [0.0, 0.0]
         da = np.zeros((nanosecs.size, 2))
         j = -1 * np.ones(nanosecs.size, dtype=int)
+
         if (CDFepoch.NST is None):
             CDFepoch._LoadLeapNanoSecondsTable()
         for i, _ in reversed(list(enumerate(CDFepoch.NST))):
