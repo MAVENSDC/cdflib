@@ -424,7 +424,7 @@ class CDFepoch:
         secsSinceJ2000 = (nanoSecsSinceJ2000 / CDFepoch.SECinNanoSecsD).astype(np.longlong)
         nansecs = (nanoSecsSinceJ2000 - secsSinceJ2000 * CDFepoch.SECinNanoSecs).astype(np.longlong)
 
-        posNanoSecs = nanoSecsSinceJ2000 > 0
+        posNanoSecs = new_tt2000 > 0
         secsSinceJ2000[posNanoSecs] -= 32
         secsSinceJ2000[posNanoSecs] += 43200
         nansecs[posNanoSecs] -= 184000000
