@@ -4,7 +4,7 @@ import urllib.request
 from random import randint
 from pathlib import Path
 
-from hypothesis import given, strategies, settings
+from hypothesis import given, strategies, settings, example
 
 import pytest
 from pytest import approx
@@ -164,6 +164,7 @@ def test_compute_cdfepoch16(dtime):
 
 @given(random_dtime)
 @settings(max_examples=100)
+@example(datetime(1972, 1, 1, 0, 0))
 def test_compute_cdftt2000(dtime):
     random_time = [dtime.year, dtime.month, dtime.day,
                    dtime.hour, dtime.minute, dtime.second,
@@ -172,10 +173,8 @@ def test_compute_cdftt2000(dtime):
                    randint(0, 999),     # Nanosecond
                    ]
     x = cdfepoch.breakdown(cdfepoch.compute(random_time))
-    i = 0
-    for t in x:
+    for i, t in enumerate(x):
         assert t == random_time[i], 'Time {} was not equal to {}'.format(random_time, x)
-        i += 1
 
 
 def test_parse_cdfepoch():

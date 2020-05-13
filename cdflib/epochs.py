@@ -471,7 +471,7 @@ class CDFepoch:
                     nansec = CDFepoch.SECinNanoSecs + nansec
                     tmpy = tmpy - 1
                     epoch = tmpy + CDFepoch.J2000Since0AD12hSec
-                    xdate = CDFepoch._EPOCHbreakdownTT2000(epoch).tolist()
+                    xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)[:, 0].tolist()
                     xdate.append(0)
                     xdate.append(0)
                     xdate.append(nansec)
@@ -486,7 +486,7 @@ class CDFepoch:
                         nansec = CDFepoch.SECinNanoSecs + nansec
                         tmpy = tmpy - 1
                     epoch = tmpy + CDFepoch.J2000Since0AD12hSec
-                    xdate = CDFepoch._EPOCHbreakdownTT2000(epoch).tolist()
+                    xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)[:, 0].tolist()
                     xdate.append(0)
                     xdate.append(0)
                     xdate.append(nansec)
