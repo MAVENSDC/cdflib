@@ -19,3 +19,4 @@ doc/_build
 doc/api
 .eggs/*
 dist/*
+.hypothesis/*

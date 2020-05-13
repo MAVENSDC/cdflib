@@ -4,10 +4,12 @@ import urllib.request
 from random import randint
 from pathlib import Path
 
+from hypothesis import given, strategies, settings
+
 import pytest
 from pytest import approx
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from cdflib import epochs
 from cdflib.epochs import CDFepoch as cdfepoch
@@ -28,6 +30,13 @@ coverage report
 Each of these results were hand checked using either IDL or
 other online resources.
 '''
+
+# These are the supported years for CDF files; see
+# https://spdf.gsfc.nasa.gov/pub/software/cdf/doc/cdf371/cdf371ug.pdf
+# page 55
+random_dtime = strategies.datetimes(min_value=datetime(1709, 1, 1),
+                                    max_value=(datetime(2293, 1, 1) -
+                                               timedelta(milliseconds=1)))
 
 
 def test_encode_cdfepoch():
@@ -120,21 +129,15 @@ def test_breakdown_cdftt2000():
     assert x[8] == 131
 
 
-def test_compute_cdfepoch():
+@given(random_dtime)
+@settings(max_examples=100)
+def test_compute_cdfepoch(dtime):
     '''
     Using random numbers for the compute tests
     '''
-    random_time = []
-    # These are the supported years for CDF files; see
-    # https://spdf.gsfc.nasa.gov/pub/software/cdf/doc/cdf371/cdf371ug.pdf
-    # page 55
-    random_time.append(randint(1707, 2292))  # Year
-    random_time.append(randint(1, 12))  # Month
-    random_time.append(randint(1, 28))  # Date
-    random_time.append(randint(0, 23))  # Hour
-    random_time.append(randint(0, 59))  # Minute
-    random_time.append(randint(0, 59))  # Second
-    random_time.append(randint(0, 999))  # Millisecond
+    random_time = [dtime.year, dtime.month, dtime.day,
+                   dtime.hour, dtime.minute, dtime.second,
+                   dtime.microsecond // 1000]
     x = cdfepoch.breakdown(cdfepoch.compute(random_time))
     i = 0
     for t in x:
@@ -142,21 +145,16 @@ def test_compute_cdfepoch():
         i += 1
 
 
-def test_compute_cdfepoch16():
-    random_time = []
-    # These are the supported years for CDF files; see
-    # https://spdf.gsfc.nasa.gov/pub/software/cdf/doc/cdf371/cdf371ug.pdf
-    # page 55
-    random_time.append(randint(1709, 2292))  # Year
-    random_time.append(randint(1, 12))  # Month
-    random_time.append(randint(1, 28))  # Date
-    random_time.append(randint(0, 23))  # Hour
-    random_time.append(randint(0, 59))  # Minute
-    random_time.append(randint(0, 59))  # Second
-    random_time.append(randint(0, 999))  # Millisecond
-    random_time.append(randint(0, 999))  # Microsecond
-    random_time.append(randint(0, 999))  # Nanosecond
-    random_time.append(randint(0, 999))  # Picosecond
+@given(random_dtime)
+@settings(max_examples=100)
+def test_compute_cdfepoch16(dtime):
+    random_time = [dtime.year, dtime.month, dtime.day,
+                   dtime.hour, dtime.minute, dtime.second,
+                   dtime.microsecond // 1000,  # Millisecond
+                   randint(0, 999),     # Microsecond
+                   randint(0, 999),     # Nanosecond
+                   randint(0, 999),     # Picosecond
+                   ]
     x = cdfepoch.breakdown(cdfepoch.compute(random_time))
     i = 0
     for t in x:
@@ -164,20 +162,15 @@ def test_compute_cdfepoch16():
         i += 1
 
 
-def test_compute_cdftt2000():
-    random_time = []
-    # These are the supported years for CDF files; see
-    # https://spdf.gsfc.nasa.gov/pub/software/cdf/doc/cdf371/cdf371ug.pdf
-    # page 55
-    random_time.append(randint(1709, 2292))  # Year
-    random_time.append(randint(1, 12))  # Month
-    random_time.append(randint(1, 28))  # Date
-    random_time.append(randint(0, 23))  # Hour
-    random_time.append(randint(0, 59))  # Minute
-    random_time.append(randint(0, 59))  # Second
-    random_time.append(randint(0, 999))  # Millisecond
-    random_time.append(randint(0, 999))  # Microsecond
-    random_time.append(randint(0, 999))  # Nanosecond
+@given(random_dtime)
+@settings(max_examples=100)
+def test_compute_cdftt2000(dtime):
+    random_time = [dtime.year, dtime.month, dtime.day,
+                   dtime.hour, dtime.minute, dtime.second,
+                   dtime.microsecond // 1000,  # Millisecond
+                   randint(0, 999),     # Microsecond
+                   randint(0, 999),     # Nanosecond
+                   ]
     x = cdfepoch.breakdown(cdfepoch.compute(random_time))
     i = 0
     for t in x:
