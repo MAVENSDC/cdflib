@@ -162,7 +162,8 @@ class CDFepoch:
 
         raise TypeError('Not sure how to handle type {}'.format(type(epochs)))
 
-    def to_datetime(self, cdf_time: Union[int, Sequence[int]],
+    @classmethod
+    def to_datetime(cls, cdf_time: Union[int, Sequence[int]],
                     to_np: bool = False) -> List[datetime.datetime]:
         """
         Encodes the epoch(s) into Python datetime.  Precision is only
@@ -172,7 +173,7 @@ class CDFepoch:
 
         If to_np is True, then the values will be returned in a numpy array.
         """
-        time_list = self.breakdown(cdf_time, to_np=False)
+        time_list = cls.breakdown(cdf_time, to_np=False)
         if isinstance(time_list[0], (float, int, complex)):  # single time
             time_list = [time_list]
 
