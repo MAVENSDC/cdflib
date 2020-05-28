@@ -219,7 +219,7 @@ class CDFepoch:
                     date[i-1] += t[i]
                 else:
                     date[i] = t[i]
-            unixtime.append(datetime.datetime(*date).replace(tzinfo=datetime.timezone.utc).timestamp())
+            unixtime.append(datetime.datetime(*date).timestamp())
         return np.array(unixtime) if to_np else unixtime
 
     @staticmethod
