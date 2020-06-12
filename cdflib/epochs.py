@@ -413,7 +413,7 @@ class CDFepoch:
 
         new_tt2000 = np.atleast_1d(new_tt2000).astype(np.longlong)
         count = len(new_tt2000)
-        toutcs = np.zeros((count, 9), dtype=int)
+        toutcs = np.zeros((9, count), dtype=int)
         datxs = CDFepoch._LeapSecondsfromJ2000(new_tt2000)
 
         # Do some computations on arrays to speed things up
@@ -446,7 +446,7 @@ class CDFepoch:
         xdates[5, post72 & ~datxzero] += 1
 
         # Set toutcs, then loop through and correct for pre-1972
-        toutcs[:, :6] = xdates.T[:, :6]
+        toutcs[:6, :] = xdates[:6, :]
 
         for x in np.nonzero(~post72)[0]:
             if datxs[x, 0] <= 0.0:
@@ -506,7 +506,7 @@ class CDFepoch:
                         # One more determination
                         xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)
                 nansecs[x] = nansec
-                toutcs[x, :6] = xdate[:6]
+                toutcs[:6, x] = xdate[:6]
 
         # Finished pre-1972 correction
         ml1 = nansecs // 1000000
@@ -514,19 +514,20 @@ class CDFepoch:
 
         overflow = ml1 > 1000
         ml1[overflow] -= 1000
-        toutcs[:, 6] = ml1
-        toutcs[overflow, 5] += 1
+        toutcs[6, :] = ml1
+        toutcs[5, overflow] += 1
 
         ma1 = tmp1 // 1000
         na1 = tmp1 - 1000 * ma1
-        toutcs[:, 7] = ma1
-        toutcs[:, 8] = na1
+        toutcs[7, :] = ma1
+        toutcs[8, :] = na1
 
         if not to_np:
-            toutcs = toutcs.tolist()
+            toutcs = toutcs.T.tolist()
             if len(toutcs) == 1:
                 return toutcs[0]
-        return toutcs
+            return toutcs
+        return toutcs.T
 
     @staticmethod
     def compute_tt2000(datetimes, to_np: bool = False):
@@ -729,28 +730,29 @@ class CDFepoch:
     def _EPOCHbreakdownTT2000(epoch):  # @NoSelf
         epoch = np.atleast_1d(epoch)
 
-        second_AD = epoch
-        minute_AD = second_AD / 60.0
-        hour_AD = minute_AD / 60.0
-        day_AD = hour_AD / 24.0
+        minute_AD, second_AD = np.divmod(epoch, 60)
+        hour_AD, minute_AD = np.divmod(minute_AD, 60)
+        day_AD, hour_AD = np.divmod(hour_AD, 24)
+        # minute_AD = second_AD / 60.0
+        # hour_AD = minute_AD / 60.0
+        # day_AD = hour_AD / 24.0
 
-        jd = (1721060 + day_AD).astype(int)
-        l = jd+68569
-        n = (4*l/146097).astype(int)
-        l = l-((146097*n+3)/4).astype(int)
-        i = (4000*(l+1)/1461001).astype(int)
-        l = l-(1461*i/4).astype(int)+31
-        j = (80*l/2447).astype(int)
-        k = l-(2447*j/80).astype(int)
-        l = (j/11).astype(int)
-        j = j+2-12*l
-        i = 100*(n-49)+i+l
+        l = 1721060 + 68569 + day_AD
+        n = (4 * l / 146097).astype(int)
+        l = l - ((146097 * n + 3) / 4).astype(int)
+        i = (4000 * (l + 1) / 1461001).astype(int)
+        l = l - (1461 * i / 4).astype(int) + 31
+        j = (80 * l / 2447).astype(int)
+        k = l - (2447 * j / 80).astype(int)
+        l = (j / 11).astype(int)
+        j = j + 2 - 12 * l
+        i = 100 * (n - 49) + i + l
 
         date = np.array(
             [i, j, k,
-             (hour_AD % 24.0).astype(int),
-             (minute_AD % 60.0).astype(int),
-             (second_AD % 60.0).astype(int)])
+             hour_AD,
+             minute_AD,
+             second_AD])
         return date
 
     def epochrange_tt2000(epochs, starttime=None, endtime=None):  # @NoSelf
