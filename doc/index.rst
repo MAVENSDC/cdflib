@@ -26,6 +26,7 @@ cdflib requires python 3 and numpy. To install run
    modules/cdfread
    modules/cdfwrite
    modules/epochs
+   modules/epochs_astropy
 
 
 
