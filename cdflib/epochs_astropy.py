@@ -13,6 +13,9 @@ from astropy.time import Time
 from astropy.time.formats import erfa, TimeFromEpoch
 
 
+__all__ = ['CDFAstropy']
+
+
 class CDFEpoch(TimeFromEpoch):
     name = 'cdf_epoch'
     unit = 1.0 / (erfa.DAYSEC * 1000)  # Milliseconds

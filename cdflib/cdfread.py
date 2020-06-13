@@ -11,7 +11,7 @@ This can be done with the following commands::
 
 Then, you can call various functions on the variable.  For example::
 
-    x = cdf_file.varget("NameOfVariable", startrec = 0, endrec = 150)
+    x = cdf_file.varget("NameOfVariable", startrec=0, endrec=150)
 
 This command will return all data inside of the variable "Variable1", from
 records 0 to 150.
@@ -47,15 +47,17 @@ class CDF:
 
     Parameters
     ----------
-    path :
-    validate :
+    path : Path, str
+        Path to CDF file.
+    validate : bool
+        If True, validate the MD5 checksum of the CDF file.
     """
 
     version = 3
     release = 7
     increment = 0
 
-    def __init__(self, path, validate=None):
+    def __init__(self, path, validate=False):
 
         path = Path(path).expanduser()
         if not path.is_file():
@@ -303,17 +305,7 @@ class CDF:
         Returns the value of the attribute at the entry number provided.
 
         A variable name can be used instead of its corresponding
-        entry number. A dictionary is returned with the following defined keys
-
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Item_Size']   | the number of bytes for each entry value                                       |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Num_Items']   | total number of values extracted                                               |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Data_Type']   | the CDF data type                                                              |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Data']        | retrieved attribute data as a scalar value, a numpy array or a string          |
-                +-----------------+--------------------------------------------------------------------------------+
+        entry number.
 
         Parameters
         ----------
@@ -321,6 +313,23 @@ class CDF:
             Attribute name or number to get.
         entry : int, optional
         tp_np : bool, optional
+            If True, return a numpy array.
+
+        Returns
+        -------
+        dict
+            A dictionary is returned with the following defined keys
+
+            +-----------------+--------------------------------------------------------------------------------+
+            | ['Item_Size']   | the number of bytes for each entry value                                       |
+            +-----------------+--------------------------------------------------------------------------------+
+            | ['Num_Items']   | total number of values extracted                                               |
+            +-----------------+--------------------------------------------------------------------------------+
+            | ['Data_Type']   | the CDF data type                                                              |
+            +-----------------+--------------------------------------------------------------------------------+
+            | ['Data']        | retrieved attribute data as a scalar value, a numpy array or a string          |
+            +-----------------+--------------------------------------------------------------------------------+
+
         """
         # Starting position
         position = self._first_adr
@@ -543,6 +552,12 @@ class CDF:
         corresponding starting and ending records within the time
         range from the epoch data. A None is returned if there is no
         data either written or found in the time range.
+
+        Parameters
+        ----------
+        epoch :
+        starttime :
+        endtime :
         """
         return self.varget(variable=epoch, starttime=starttime,
                            endtime=endtime, record_range_only=True)
@@ -552,12 +567,18 @@ class CDF:
         Gets all global attributes.
 
         This function returns all of the global attribute entries,
-        in a dictionary (in the form of 'attribute': {entry: value}
-        pair) from a CDF. If there is no entry found, None is
+        in a dictionary (in the form of ``'attribute': {entry: value}``
+        pairs) from a CDF. If there is no entry found, None is
         returned. If expand is entered with non-False, then each
         entry's data type is also returned in a list form as
         [entry, 'CDF_xxxx']. For attributes without any entries,
-        they will also return with None value.
+        they will also return with ``None`` value.
+
+        Parameters
+        ----------
+        expand : bool, optional
+        to_np : bool, optional
+            If True, return a numpy array.
         """
         byte_loc = self._first_adr
         return_dict = {}
@@ -638,6 +659,13 @@ class CDF:
         type is also returned in a list form as [entry, 'CDF_xxxx'].
         For attributes without any entries, they will also return with
         None value.
+
+        Parameters
+        ----------
+        variable :
+        expand : bool, optional
+        to_np: bool, optional
+            If True, return a numpy array.
         """
         if (isinstance(variable, int) and self._num_zvariable > 0 and self._num_rvariable > 0):
             raise ValueError('This CDF has both r and z variables. Use variable name')
