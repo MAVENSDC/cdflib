@@ -13,11 +13,6 @@ cdflib requires python 3 and numpy. To install run
 
    pip install cdflib
 
-.. toctree::
-   :maxdepth: 1
-
-   whatsnew
-
 
 .. toctree::
    :maxdepth: 2
@@ -26,6 +21,7 @@ cdflib requires python 3 and numpy. To install run
    modules/cdfread
    modules/cdfwrite
    modules/epochs
+   modules/epochs_astropy
 
 
 
