@@ -1,0 +1,35 @@
+{% set name = "cdflib" %}
+{% set version = "0.3.18" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  git_url: https://github.com/MAVENSDC/cdflib.git
+  git_depth: 20
+  git_rev: 0.3.18
+
+build:
+  number: 0
+  script: "$HOME/miniconda/bin/python -m pip install . -vv"
+
+requirements:
+  build:
+    - setuptools
+    - python
+    - pip
+  run:
+    - python
+    - numpy
+
+about:
+  home: "https://github.com/MAVENSDC/cdflib"
+  license: "MIT"
+  summary: "cdflib is a python module to read/write CDF (Common Data Format .cdf) files without needing to install the CDF NASA library."
+  doc_url: "https://cdflib.readthedocs.io"
+  dev_url: "https://github.com/MAVENSDC/cdflib"
+
+extra:
+  recipe-maintainers:
+    - MAVENSDC
