@@ -28,6 +28,11 @@ jobs:
     install: pip install .[tests]
     script: pytest --cov
     after_success: coveralls
+  - name: "3.9 tests"
+    python: 3.9-dev
+    install: pip install .[tests]
+    script: pytest --cov
+    after_success: coveralls
   - name: "Docs"
     python: 3.7
     install: pip install .[docs]
