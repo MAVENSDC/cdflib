@@ -9,7 +9,7 @@
 `cdflib` is a python module to read/write CDF (Common Data Format `.cdf`) files without needing to install the
 [CDF NASA library](https://cdf.gsfc.nasa.gov/).
 
-Python &ge; 3.5 is required.
+Python &ge; 3.6 is required.
 This module uses only Numpy, no complicated prereqs.
 
 ## Install
