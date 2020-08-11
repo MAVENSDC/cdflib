@@ -1,5 +1,6 @@
 language: python
 group: travis_latest
+cache: pip
 
 git:
   depth: 25
