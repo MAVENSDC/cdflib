@@ -63,7 +63,7 @@ class CDF:
         if not path.is_file():
             path = path.with_suffix('.cdf')
             if not path.is_file():
-                raise FileNotFoundError('{} not found'.format(path))
+                raise FileNotFoundError(f'{path} not found')
 
         self.file = path
 
@@ -72,7 +72,7 @@ class CDF:
             compressed_bool = f.read(4).hex()
 
         if magic_number not in ('cdf30001', 'cdf26002', '0000ffff'):
-            raise OSError('{} is not a CDF file or a non-supported CDF!'.format(path))
+            raise OSError(f'{path} is not a CDF file or a non-supported CDF!')
 
         self.cdfversion = 3 if magic_number == 'cdf30001' else 2
 
@@ -225,7 +225,7 @@ class CDF:
         """
         vdr_info = self.varget(variable=variable, inq=True)
         if vdr_info is None:
-            raise KeyError("Variable {} not found.".format(variable))
+            raise KeyError(f"Variable {variable} not found.")
 
         var = {}
         var['Variable'] = vdr_info['name']
@@ -276,11 +276,11 @@ class CDF:
                     return self._read_adr(position)
 
                 position = next_adr
-            raise KeyError('No attribute {}'.format(attribute))
+            raise KeyError(f'No attribute {attribute}')
 
         elif isinstance(attribute, int):
             if (attribute < 0 or attribute > self._num_zvariable):
-                raise KeyError('No attribute {}'.format(attribute))
+                raise KeyError(f'No attribute {attribute}')
             for _ in range(0, attribute):
                 name, next_adr = self._read_adr_fast(position)
                 position = next_adr
@@ -346,13 +346,13 @@ class CDF:
                     position = next_adr
 
             if adr_info is None:
-                raise KeyError('No attribute {}'.format(attribute))
+                raise KeyError(f'No attribute {attribute}')
 
         elif isinstance(attribute, int):
             if (attribute < 0) or (attribute > self._num_att):
-                raise KeyError('No attribute {}'.format(attribute))
+                raise KeyError(f'No attribute {attribute}')
             if not isinstance(entry, int):
-                raise TypeError('{} has to be a number.'.format(entry))
+                raise TypeError(f'{entry} has to be a number.')
 
             for _ in range(0, attribute):
                 name, next_adr = self._read_adr_fast(position)
@@ -400,7 +400,7 @@ class CDF:
                         positionx = vdr_next
                 if var_num == -1:
                     raise ValueError(
-                        'No variable by this name: {}'.format(entry))
+                        f'No variable by this name: {entry}')
                 entry_num = var_num
             else:
                 if (self._num_zvariable > 0 and self._num_rvariable > 0):
@@ -519,7 +519,7 @@ class CDF:
                 # zVar = False
             if (variable < 0 or variable >= num_variable):
                 raise ValueError(
-                    'No variable by this number: {}'.format(variable))
+                    f'No variable by this number: {variable}')
             for _ in range(0, variable):
                 if (self.cdfversion == 3):
                     name, next_vdr = self._read_vdr_fast(position)
@@ -687,7 +687,7 @@ class CDF:
                     position = vdr_next
                 position = self._first_rvariable
                 num_variables = self._num_rvariable
-            raise ValueError('No variable by this name: {}'.format(variable))
+            raise ValueError(f'No variable by this name: {variable}')
         elif isinstance(variable, int):
             if self._num_zvariable > 0:
                 num_variable = self._num_zvariable
@@ -696,7 +696,7 @@ class CDF:
                 num_variable = self._num_rvariable
                 zVar = False
             if (variable < 0 or variable >= num_variable):
-                raise ValueError('No variable by this number: {}'.format(variable))
+                raise ValueError(f'No variable by this number: {variable}')
             return self._read_varatts(variable, zVar, expand, to_np=to_np)
         else:
             raise ValueError('Please set variable keyword equal to '
@@ -907,7 +907,7 @@ class CDF:
         # gdroff = int.from_bytes(cdr[4:12], 'big')  # GDR Location
         version = int.from_bytes(cdr[12:16], 'big')
         if version not in (2, 3):
-            raise ValueError('CDF version {} not handled'.format(version))
+            raise ValueError(f'CDF version {version} not handled')
 
         release = int.from_bytes(cdr[16:20], 'big')
         encoding = int.from_bytes(cdr[20:24], 'big')
@@ -921,7 +921,7 @@ class CDF:
         # 4 Reserved for another checksum method. Bit 2 must be set and bit 3 must be clear.
 
         flag = int.from_bytes(cdr[24:28], 'big')
-        flag_bits = '{0:032b}'.format(flag)
+        flag_bits = f'{flag:032b}'
         row_majority = (flag_bits[31] == '1')
         single_format = (flag_bits[30] == '1')
         md5 = (flag_bits[29] == '1' and flag_bits[28] == '1')
@@ -956,7 +956,7 @@ class CDF:
         release = int.from_bytes(cdr[12:16], 'big')
         encoding = int.from_bytes(cdr[16:20], 'big')
         flag = int.from_bytes(cdr[20:24], 'big')
-        flag_bits = '{0:032b}'.format(flag)
+        flag_bits = f'{flag:032b}'
         row_majority = (flag_bits[31] == '1')
         single_format = (flag_bits[30] == '1')
         md5 = (flag_bits[29] == '1' and flag_bits[28] == '1')
@@ -1332,7 +1332,7 @@ class CDF:
         last_vxr = int.from_bytes(vdr[28:36], 'big', signed=True)
         flags = int.from_bytes(vdr[36:40], 'big', signed=True)
 
-        flag_bits = '{0:032b}'.format(flags)
+        flag_bits = f'{flags:032b}'
 
         record_variance_bool = (flag_bits[31] == '1')
         pad_bool = (flag_bits[30] == '1')
@@ -1436,7 +1436,7 @@ class CDF:
         head_vxr = int.from_bytes(vdr[16:20], 'big', signed=True)
         last_vxr = int.from_bytes(vdr[20:24], 'big', signed=True)
         flags = int.from_bytes(vdr[24:28], 'big', signed=True)
-        flag_bits = '{0:032b}'.format(flags)
+        flag_bits = f'{flags:032b}'
         record_variance_bool = (flag_bits[31] == '1')
         pad_bool = (flag_bits[30] == '1')
         compression_bool = (flag_bits[29] == '1')

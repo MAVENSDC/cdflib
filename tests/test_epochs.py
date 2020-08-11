@@ -141,7 +141,7 @@ def test_compute_cdfepoch(dtime):
     x = cdfepoch.breakdown(cdfepoch.compute(random_time))
     i = 0
     for t in x:
-        assert t == random_time[i], 'Time {} was not equal to {}'.format(random_time, x)
+        assert t == random_time[i], f'Time {random_time} was not equal to {x}'
         i += 1
 
 
@@ -158,7 +158,7 @@ def test_compute_cdfepoch16(dtime):
     x = cdfepoch.breakdown(cdfepoch.compute(random_time))
     i = 0
     for t in x:
-        assert t == random_time[i], 'Time {} was not equal to {}'.format(random_time, x)
+        assert t == random_time[i], f'Time {random_time} was not equal to {x}'
         i += 1
 
 
@@ -174,7 +174,7 @@ def test_compute_cdftt2000(dtime):
                    ]
     x = cdfepoch.breakdown(cdfepoch.compute(random_time))
     for i, t in enumerate(x):
-        assert t == random_time[i], 'Time {} was not equal to {}'.format(random_time, x)
+        assert t == random_time[i], f'Time {random_time} was not equal to {x}'
 
 
 def test_parse_cdfepoch():
@@ -264,10 +264,10 @@ def test_latest_leapsecs():
     try:
         remote, _ = urllib.request.urlretrieve('https://cdf.gsfc.nasa.gov/html/CDFLeapSeconds.txt')
     except Exception as excp:
-        pytest.skip('problem downloading leapseconds file: {}'.format(excp))
+        pytest.skip(f'problem downloading leapseconds file: {excp}')
     if not filecmp.cmp(local, remote):
         feedback = Path(remote).read_text(errors='ignore')
-        pytest.skip('problem downloading leapseconds file: \n\n{}'.format(feedback))
+        pytest.skip(f'problem downloading leapseconds file: \n\n{feedback}')
 
 
 if __name__ == '__main__':
