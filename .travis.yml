@@ -1,5 +1,6 @@
 language: python
 group: travis_latest
+cache: pip
 
 git:
   depth: 25
@@ -25,6 +26,11 @@ jobs:
     script: pytest
   - name: "3.8 tests"
     python: 3.8
+    install: pip install .[tests]
+    script: pytest --cov
+    after_success: coveralls
+  - name: "3.9 tests"
+    python: 3.9-dev
     install: pip install .[tests]
     script: pytest --cov
     after_success: coveralls
