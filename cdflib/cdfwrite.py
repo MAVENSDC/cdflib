@@ -2115,6 +2115,9 @@ class CDF(object):
             return np.float64(data).tobytes()
         elif (data_type == 32):
             return np.complex128(data).tobytes()
+        elif ((data_type) == 51) or ((data_type)==52):
+            utf8_bytes = np.asarray(data).astype('U').tobytes()
+            return  utf8_bytes.decode().replace('\x00', '').encode('ASCII')
         else:
             return data
 
