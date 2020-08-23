@@ -31,6 +31,13 @@ Each of these results were hand checked using either IDL or
 other online resources.
 '''
 
+# These are the supported years for TT2000 dates; see
+# https://cdf.gsfc.nasa.gov/html/leapseconds_requirements.html
+# section 2.1
+random_tt2000_dtime = strategies.datetimes(
+    min_value=datetime(1707, 9, 22, 12, 13, 16),
+    max_value=(datetime(2292, 4, 11, 11, 46, 8)))
+
 # These are the supported years for CDF files; see
 # https://spdf.gsfc.nasa.gov/pub/software/cdf/doc/cdf371/cdf371ug.pdf
 # page 55
@@ -162,7 +169,7 @@ def test_compute_cdfepoch16(dtime):
         i += 1
 
 
-@given(random_dtime)
+@given(random_tt2000_dtime)
 @settings(max_examples=100)
 @example(datetime(1972, 1, 1, 0, 0))
 def test_compute_cdftt2000(dtime):
