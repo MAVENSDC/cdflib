@@ -1,5 +1,5 @@
 {% set name = "cdflib" %}
-{% set version = "0.3.18" %}
+{% set version = "0.3.19" %}
 
 package:
   name: "{{ name|lower }}"
@@ -8,7 +8,7 @@ package:
 source:
   git_url: https://github.com/MAVENSDC/cdflib.git
   git_depth: 20
-  git_rev: 0.3.18
+  git_rev: 0.3.19
 
 build:
   number: 0

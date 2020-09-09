@@ -28,21 +28,6 @@ jobs:
         $HOME/miniconda/bin/conda install conda-build --yes
         $HOME/miniconda/bin/conda install anaconda-client --yes
         $HOME/miniconda/bin/conda config --add channels mavensdc
-        $HOME/miniconda/bin/conda-build --python 3.5 --output-folder . .
-        $HOME/miniconda/bin/conda convert -p linux-32 linux-64/*.tar.bz2
-        $HOME/miniconda/bin/conda convert -p win-32 linux-64/*.tar.bz2
-        $HOME/miniconda/bin/conda convert -p osx-64 linux-64/*.tar.bz2
-        $HOME/miniconda/bin/conda convert -p win-64 linux-64/*.tar.bz2
-        $HOME/miniconda/bin/anaconda upload --label main linux-64/*.tar.bz2
-        $HOME/miniconda/bin/anaconda upload --label main osx-64/*.tar.bz2
-        $HOME/miniconda/bin/anaconda upload --label main win-64/*.tar.bz2
-        $HOME/miniconda/bin/anaconda upload --label main win-32/*.tar.bz2
-        $HOME/miniconda/bin/anaconda upload --label main linux-32/*.tar.bz2
-        rm -r linux-64
-        rm -r linux-32
-        rm -r osx-64
-        rm -r win-64
-        rm -r win-32
         $HOME/miniconda/bin/conda-build --python 3.6 --output-folder . .
         $HOME/miniconda/bin/conda convert -p linux-32 linux-64/*.tar.bz2
         $HOME/miniconda/bin/conda convert -p win-32 linux-64/*.tar.bz2
