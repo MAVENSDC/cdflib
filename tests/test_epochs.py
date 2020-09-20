@@ -2,6 +2,7 @@
 import filecmp
 import urllib.request
 from random import randint
+import os
 from pathlib import Path
 
 from hypothesis import given, strategies, settings, example
@@ -87,6 +88,20 @@ def test_unixtime():
     x = cdfepoch.unixtime([500000000100, 123456789101112131])
     assert x[0] == 946728435.816
     assert x[1] == 1070184724.917112
+
+
+@pytest.mark.parametrize('tzone', ['UTC', 'EST'])
+def test_unixtime_roundtrip(tzone):
+    _environ = os.environ.copy()
+    try:
+        os.environ['TZ'] = tzone
+        y, m, d = 2000, 1, 1
+        epoch = cdfepoch.compute_tt2000([[y, m, d]])
+        unixtime = cdfepoch.unixtime(epoch)
+        assert unixtime == [946684800.0]
+    finally:
+        os.environ.clear()
+        os.environ.update(_environ)
 
 
 def test_breakdown_cdfepoch():
