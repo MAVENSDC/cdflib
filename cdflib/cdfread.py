@@ -1866,7 +1866,7 @@ class CDF:
                     z = byte_data[y:y+num_elems].find(b'\x00')
                     if (z > -1 and z < (num_elems-1)):
                         byte_data[y+z+1:y+num_elems] = b'\x00' * (num_elems - z - 1)
-                ret = byte_data[0:num_recs*num_elems].decode('unicode_escape').replace('\x00', '')
+                ret = byte_data[0:num_recs*num_elems].decode('cp1252').replace('\x00', '')
             else:
                 # Count total number of strings
                 count = 1
