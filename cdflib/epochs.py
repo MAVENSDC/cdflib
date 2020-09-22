@@ -7,7 +7,7 @@ Importing cdflib also imports the module CDFepoch, which handles
 CDF-based epochs.
 
 The following functions can be used to convert back and forth between
-ifferent ways to display the date.
+different ways to display the date.
 
 You can call these functions like so::
 
@@ -208,18 +208,19 @@ class CDFepoch:
             time_list = [time_list]
 
         unixtime = []
+        utc = datetime.timezone(datetime.timedelta())
         for t in time_list:
             date = ['year', 'month', 'day', 'hour', 'minute', 'second', 'microsecond']
             for i in range(0, len(t)):
                 if i > 7:
                     continue
                 elif i == 6:
-                    date[i] = 1000*t[i]
+                    date[i] = 1000 * t[i]
                 elif i == 7:
-                    date[i-1] += t[i]
+                    date[i - 1] += t[i]
                 else:
                     date[i] = t[i]
-            unixtime.append(datetime.datetime(*date).timestamp())
+            unixtime.append(datetime.datetime(*date, tzinfo=utc).timestamp())
         return np.array(unixtime) if to_np else unixtime
 
     @staticmethod
@@ -265,7 +266,7 @@ class CDFepoch:
         elif isinstance(datetimes[0], (list, tuple, np.ndarray)):
             items = len(datetimes[0])
         else:
-            raise TypeError('Not sure how to handle type {}'.format(type(datetimes)))
+            raise TypeError('Not sure how to handle type {}'.format(type(datetimes[0])))
 
         if (items == 7):
             return CDFepoch.compute_epoch(datetimes, to_np)
