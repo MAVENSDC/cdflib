@@ -429,6 +429,18 @@ class CDF:
         """
         Returns the variable data.
 
+        Parameters
+        ----------
+        variable: str
+            Variable name to fetch.
+        startrec: int
+            Index of the first record to get.
+        endrec : int
+            Index of the last record to get. All records from *startrec* to
+            *endrec* inclusive are fetched.
+
+        Notes
+        -----
         Variable can be entered either
         a name or a variable number. By default, it returns a
         'numpy.ndarray' or 'list' class object, depending on the
