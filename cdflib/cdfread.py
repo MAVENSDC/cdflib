@@ -510,10 +510,7 @@ class CDF:
                     else:
                         name, vdr_next = self._read_vdr_fast2(position)
                     if name.strip().lower() == variable.strip().lower():
-                        if (self.cdfversion == 3):
-                            vdr_info = self._read_vdr(position)
-                        else:
-                            vdr_info = self._read_vdr2(position)
+                        vdr_info = self._read_vdr(position)
                         break
                     position = vdr_next
                 position = self._first_rvariable
@@ -538,10 +535,7 @@ class CDF:
                 else:
                     name, next_vdr = self._read_vdr_fast2(position)
                 position = next_vdr
-            if (self.cdfversion == 3):
-                vdr_info = self._read_vdr(position)
-            else:
-                vdr_info = self._read_vdr2(position)
+            vdr_info = self._read_vdr(position)
         else:
             raise ValueError('Please set variable keyword equal to '
                              'the name or number of an variable')
@@ -691,10 +685,7 @@ class CDF:
                     else:
                         name, vdr_next = self._read_vdr_fast2(position)
                     if name.strip().lower() == variable.strip().lower():
-                        if (self.cdfversion == 3):
-                            vdr_info = self._read_vdr(position)
-                        else:
-                            vdr_info = self._read_vdr2(position)
+                        vdr_info = self._read_vdr(position)
                         return self._read_varatts(vdr_info['variable_number'], zVar, expand, to_np=to_np)
                     position = vdr_next
                 position = self._first_rvariable
@@ -1325,16 +1316,22 @@ class CDF:
         return_dict['entry'] = entry
         return_dict['data_type'] = data_type
         return_dict['num_elements'] = num_elements
-        #return_dict['num_strings'] = num_strings
+        # return_dict['num_strings'] = num_strings
         return_dict['next_aedr'] = next_aedr
         return_dict['entry_num'] = entry_num
         return return_dict
 
     def _read_vdr(self, byte_loc):
+        if self.cdfversion == 3:
+            return self._read_vdr3(byte_loc)
+        else:
+            return self._read_vdr2(byte_lco)
+
+    def _read_vdr3(self, byte_loc):
         with self.file.open('rb') as f:
             f.seek(byte_loc, 0)
             block_size = int.from_bytes(f.read(8), 'big')
-            vdr = f.read(block_size-8)
+            vdr = f.read(block_size - 8)
         # Type of internal record
         section_type = int.from_bytes(vdr[0:4], 'big')
         next_vdr = int.from_bytes(vdr[4:12], 'big', signed=True)
@@ -1432,7 +1429,7 @@ class CDF:
 
     def _read_vdr2(self, byte_loc):
 
-        if (self._post25 == True):
+        if (self._post25 is True):
             toadd = 0
         else:
             toadd = 128
