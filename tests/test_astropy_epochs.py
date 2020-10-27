@@ -111,7 +111,7 @@ def test_compute_cdfepoch():
     x = cdfepoch.breakdown(cdfepoch.compute(random_time))
     i = 0
     for t in x[0]:
-        assert t == random_time[i], 'Time {} was not equal to {}'.format(random_time, x)
+        assert t == random_time[i], f'Time {random_time} was not equal to {x}'
         i += 1
 
 
@@ -131,7 +131,7 @@ def test_compute_cdfepoch16():
     x = cdfepoch.breakdown(cdftime)
     i = 0
     for t in x[0]:
-        assert t == random_time[i], 'Time {} was not equal to {}'.format(random_time, x)
+        assert t == random_time[i], f'Time {random_time} was not equal to {x}'
         i += 1
         # Unfortunately, currently there is a pretty big loss of precision that comes with
         # the compute function.  Need to stop testing early.

@@ -21,7 +21,7 @@ import pathlib
 import warnings
 
 
-class CDF(object):
+class CDF:
     """
     Creates an empty CDF file.
 
@@ -342,10 +342,10 @@ class CDF(object):
             f.seek(0, 2)  # EOF (appending)
             for attr, entry in globalAttrs.items():
                 if (attr in self.gattrs):
-                    raise ValueError('Global attribute: {} already exists.'.format(attr))
+                    raise ValueError(f'Global attribute: {attr} already exists.')
 
                 if (attr in self.vattrs):
-                    logging.warning('Attribute: {} already defined as a variable attribute.'.format(attr))
+                    logging.warning(f'Attribute: {attr} already defined as a variable attribute.')
                     continue
 
                 attrNum, offsetADR = self._write_adr(f, True, attr)
@@ -468,7 +468,7 @@ class CDF(object):
                     raise ValueError('Attribute name must be a string')
                     return
                 if (attr in self.gattrs):
-                    raise ValueError('Variable attribute: {}'.format(attr) +
+                    raise ValueError(f'Variable attribute: {attr}' +
                                      ' is already a global variable')
                     return
                 if (attr in self.vattrs):
@@ -486,11 +486,11 @@ class CDF(object):
                 for entryID, value in attrs.items():
                     if (isinstance(entryID, str) and (not (entryID in self.zvars) and
                                                       not (entryID in self.rvars))):
-                        raise KeyError('{} not found in the CDF'.format(entryID))
+                        raise KeyError(f'{entryID} not found in the CDF')
 
                     if (isinstance(entryID, numbers.Number) and
                             (len(self.zvars) > 0 and len(self.rvars) > 0)):
-                        raise ValueError('{} can not be used as the CDF has both zVariables and rVariables'.format(entryID))
+                        raise ValueError(f'{entryID} can not be used as the CDF has both zVariables and rVariables')
 
                     if (isinstance(entryID, str)):
                         try:
@@ -501,7 +501,7 @@ class CDF(object):
                                 entryNum = self.rvars.index(entryID)
                                 zVar = False
                             except Exception:
-                                raise KeyError('{} not found'.format(entryID))
+                                raise KeyError(f'{entryID} not found')
                     else:
                         entryNum = int(entryID)
                         if (len(self.zvars) > 0 and len(self.rvars) > 0):
@@ -754,7 +754,7 @@ class CDF(object):
             pad = pad[0]
 
         if (name in self.zvars or name in self.rvars):
-            raise ValueError('{} already exists'.format(name))
+            raise ValueError(f'{name} already exists')
 
         with self.path.open('rb+') as f:
             f.seek(0, 2)  # EOF (appending)
@@ -834,7 +834,7 @@ class CDF(object):
 
         for attr, entry in var_attrs.items():
             if (attr in self.gattrs):
-                warnings.warn('Attribute: {}'.format(attr) + ' already defined as a global attribute... Skip')
+                warnings.warn(f'Attribute: {attr}' + ' already defined as a global attribute... Skip')
                 continue
 
             if not (attr in self.attrs):
@@ -871,10 +871,10 @@ class CDF(object):
                         if isinstance(data, (list, tuple)):
                             items = len(data)
                             odata = data
-                            data = str('')
+                            data = ''
                             for x in range(0, items):
                                 if (x > 0):
-                                    data += str('\\N ')
+                                    data += '\\N '
                                     data += odata[x]
                                 else:
                                     data = odata[x]
@@ -896,10 +896,10 @@ class CDF(object):
                 if isinstance(entry, (list, tuple)):
                     numElems, dataType = CDF._datatype_define(entry[0])
                     if (dataType == CDF.CDF_CHAR or dataType == CDF.CDF_UCHAR):
-                        data = str('')
+                        data = ''
                         for x in range(0, len(entry)):
                             if (x > 0):
-                                data += str('\\N ')
+                                data += '\\N '
                                 data += entry[x]
                             else:
                                 data = entry[x]
@@ -1307,7 +1307,7 @@ class CDF(object):
         try:
             return majors[major.upper()]
         except Exception:
-            warnings.warn('bad major.... {}'.format(major))
+            warnings.warn(f'bad major.... {major}')
             return 0
 
     def _encoding_token(encoding):    # @NoSelf
@@ -1334,7 +1334,7 @@ class CDF(object):
         try:
             return encodings[encoding.upper()]
         except Exception:
-            warnings.warn('bad encoding.... {}'.format(encoding))
+            warnings.warn(f'bad encoding.... {encoding}')
             return 0
 
     def _datatype_token(datatype):    # @NoSelf

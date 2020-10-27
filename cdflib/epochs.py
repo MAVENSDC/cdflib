@@ -1418,7 +1418,7 @@ class CDFepoch:
                 if not to_np:
                     return (86400000.0*daysSince0AD+msecInDay)
                 else:
-                    return np.array((86400000.0*daysSince0AD+msecInDay))
+                    return np.array(86400000.0*daysSince0AD+msecInDay)
             epochs.append(86400000.0*daysSince0AD+msecInDay)
         if not to_np:
             return epochs

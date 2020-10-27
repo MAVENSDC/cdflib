@@ -12,10 +12,6 @@ os:
 
 jobs:
   include:
-  - name: "3.5 tests"
-    python: 3.6
-    install: pip install .[tests]
-    script: pytest
   - name: "3.6 tests"
     python: 3.6
     install: pip install .[tests]
