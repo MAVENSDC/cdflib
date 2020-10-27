@@ -31,6 +31,7 @@ Sample use::
 from pathlib import Path
 import tempfile
 import numpy as np
+import os
 import sys
 import struct
 import gzip
@@ -78,14 +79,15 @@ class CDF:
 
         self._compressed = not (compressed_bool == '0000ffff')
         self.compressed_file = None
+        self.temp_file = None
 
         if self._compressed:
-            new_path = self._uncompress_file(path)
-            if new_path is None:
+            self._uncompress_file(path)
+            if self.temp_file is None:
                 raise OSError("Decompression was unsuccessful.  Only GZIP compression is currently supported.")
 
             self.compressed_file = self.file
-            self.file = new_path
+            self.file = self.temp_file
 
         if (self.cdfversion == 3):
             cdr_info, foffs = self._read_cdr(8)
@@ -128,6 +130,12 @@ class CDF:
 
         if self.compressed_file is not None:
             self.compressed_file = None
+
+    def __del__(self):
+        # This implicitly will delete a temporary uncompressed file if we
+        # created it earlier.
+        if self.temp_file is not None:
+            os.remove(self.temp_file)
 
     def __getitem__(self, variable: str) -> np.ndarray:
         return self.varget(variable)
@@ -723,13 +731,11 @@ class CDF:
             f.seek(data_start)
             decompressed_data = gzip.decompress(f.read(data_size))
 
-        newpath = Path(tempfile.NamedTemporaryFile(suffix='.cdf').name)
-        with newpath.open('wb') as g:
+        self.temp_file = Path(tempfile.NamedTemporaryFile(suffix='.cdf').name)
+        with self.temp_file.open('wb') as g:
             g.write(bytearray.fromhex('cdf30001'))
             g.write(bytearray.fromhex('0000ffff'))
             g.write(decompressed_data)
-
-        return newpath
 
     def _read_ccr(self, byte_loc):
         with self.file.open('rb') as f:
