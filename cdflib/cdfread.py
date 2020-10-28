@@ -50,15 +50,16 @@ class CDF:
     ----------
     path : Path, str
         Path to CDF file.
-    validate : bool
+    validate : bool, optional
         If True, validate the MD5 checksum of the CDF file.
+    string_encoding : str, optional
+        The encoding used to read strings. Defaults to 'utf-8'.
     """
-
     version = 3
     release = 7
     increment = 0
 
-    def __init__(self, path, validate=False):
+    def __init__(self, path, validate=False, string_encoding='utf-8'):
 
         path = Path(path).expanduser()
         if not path.is_file():
@@ -67,6 +68,7 @@ class CDF:
                 raise FileNotFoundError(f'{path} not found')
 
         self.file = path
+        self.string_encoding = string_encoding
 
         with self.file.open('rb') as f:
             magic_number = f.read(4).hex()
@@ -883,6 +885,9 @@ class CDF:
         return attrs
 
     def _read_cdr(self, byte_loc: int):
+        """
+        Read a CDF descriptor record (CDR).
+        """
         with self.file.open('rb') as f:
             f.seek(byte_loc, 0)
             block_size = int.from_bytes(f.read(8), 'big')
@@ -899,11 +904,16 @@ class CDF:
 
         # FLAG
         #
-        # 0 The majority of variable values within a variable record. Variable records are described in Chapter 4. Set indicates row-majority. Clear indicates column-majority.
-        # 1 The file format of the CDF. Set indicates single-file. Clear indicates multi-file.
+        # 0 The majority of variable values within a variable record.
+        #   Variable records are described in Chapter 4. Set indicates
+        #   row-majority. Clear indicates column-majority.
+        # 1 The file format of the CDF. Set indicates single-file.
+        #   Clear indicates multi-file.
         # 2 The checksum of the CDF. Set indicates a checksum method is used.
-        # 3 The MD5 checksum method indicator. Set indicates MD5 method is used for the checksum. Bit 2 must be set.
-        # 4 Reserved for another checksum method. Bit 2 must be set and bit 3 must be clear.
+        # 3 The MD5 checksum method indicator.
+        #   Set indicates MD5 method is used for the checksum. Bit 2 must be set.
+        # 4 Reserved for another checksum method.
+        #   Bit 2 must be set and bit 3 must be clear.
 
         flag = int.from_bytes(cdr[24:28], 'big')
         flag_bits = f'{flag:032b}'
@@ -911,7 +921,7 @@ class CDF:
         single_format = (flag_bits[30] == '1')
         md5 = (flag_bits[29] == '1' and flag_bits[28] == '1')
         increment = int.from_bytes(cdr[36:40], 'big')
-        cdfcopyright = cdr[48:].decode('utf-8')
+        cdfcopyright = cdr[48:].decode(self.string_encoding)
         cdfcopyright = cdfcopyright.replace('\x00', '')
 
         cdr_info = {}
@@ -946,7 +956,7 @@ class CDF:
         single_format = (flag_bits[30] == '1')
         md5 = (flag_bits[29] == '1' and flag_bits[28] == '1')
         increment = int.from_bytes(cdr[32:36], 'big')
-        cdfcopyright = cdr[44:].decode('utf-8')
+        cdfcopyright = cdr[44:].decode(self.string_encoding)
         cdfcopyright = cdfcopyright.replace('\x00', '')
 
         cdr_info = {}
@@ -1119,7 +1129,7 @@ class CDF:
         num_z_entry = int.from_bytes(adr[48:52], 'big', signed=True)
         MaxZEntry = int.from_bytes(adr[52:56], 'big', signed=True)
 
-        name = str(adr[60:315].decode('utf-8'))
+        name = str(adr[60:315].decode(self.string_encoding))
         name = name.replace('\x00', '')
 
         # Build the return dictionary
@@ -1153,7 +1163,7 @@ class CDF:
         num_z_entry = int.from_bytes(adr[36:40], 'big', signed=True)
         MaxZEntry = int.from_bytes(adr[40:44], 'big', signed=True)
 
-        name = str(adr[48:112].decode('utf-8'))
+        name = str(adr[48:112].decode(self.string_encoding))
         name = name.replace('\x00', '')
 
         # Build the return dictionary
@@ -1187,7 +1197,7 @@ class CDF:
             next_adr_loc = int.from_bytes(f.read(8), 'big', signed=True)
             # Name
             f.seek(byte_loc + 68, 0)
-            name = str(f.read(256).decode('utf-8'))
+            name = str(f.read(256).decode(self.string_encoding))
 
         name = name.replace('\x00', '')
 
@@ -1200,7 +1210,7 @@ class CDF:
             next_adr_loc = int.from_bytes(f.read(4), 'big', signed=True)
             # Name
             f.seek(byte_loc + 52, 0)
-            name = str(f.read(64).decode('utf-8'))
+            name = str(f.read(64).decode(self.string_encoding))
 
         name = name.replace('\x00', '')
 
@@ -1322,6 +1332,9 @@ class CDF:
         return return_dict
 
     def _read_vdr(self, byte_loc):
+        """
+        Read a variable descriptor record (VDR).
+        """
         if self.cdfversion == 3:
             return self._read_vdr3(byte_loc)
         else:
@@ -1352,7 +1365,7 @@ class CDF:
         var_num = int.from_bytes(vdr[60:64], 'big', signed=True)
         CPRorSPRoffset = int.from_bytes(vdr[64:72], 'big', signed=True)
         blocking_factor = int.from_bytes(vdr[72:76], 'big', signed=True)
-        name = str(vdr[76:332].decode('utf-8'))
+        name = str(vdr[76:332].decode(self.string_encoding))
         name = name.replace('\x00', '')
 
         zdim_sizes = []
@@ -1454,7 +1467,7 @@ class CDF:
                                         signed=True)
         blocking_factor = int.from_bytes(vdr[56+toadd:60+toadd], 'big',
                                          signed=True)
-        name = str(vdr[60+toadd:124+toadd].decode('utf-8'))
+        name = str(vdr[60+toadd:124+toadd].decode(self.string_encoding))
         name = name.replace('\x00', '')
         zdim_sizes = []
         dim_sizes = []
@@ -1545,7 +1558,7 @@ class CDF:
             f.seek(byte_loc+12, 0)
             next_vdr = int.from_bytes(f.read(8), 'big', signed=True)
             f.seek(byte_loc+84, 0)
-            name = str(f.read(256).decode('utf-8'))
+            name = str(f.read(256).decode(self.string_encoding))
 
         name = name.replace('\x00', '')
 
@@ -1561,7 +1574,7 @@ class CDF:
             f.seek(byte_loc+8, 0)
             next_vdr = int.from_bytes(f.read(4), 'big', signed=True)
             f.seek(byte_loc+toadd+64, 0)
-            name = str(f.read(64).decode('utf-8'))
+            name = str(f.read(64).decode(self.string_encoding))
 
         name = name.replace('\x00', '')
 
@@ -1866,16 +1879,16 @@ class CDF:
             dt_string += ')'
         if data_type == 52 or data_type == 51:
             # string
-            if dimensions == None:
+            if dimensions is None:
                 byte_data = bytearray(byte_stream[0:num_recs*num_elems])
                 # In each record, check for the first '\x00' (null character).
                 # If found, make all the characters after it null as well.
                 for x in range(0, num_recs):
                     y = x * num_elems
                     z = byte_data[y:y+num_elems].find(b'\x00')
-                    if (z > -1 and z < (num_elems-1)):
-                        byte_data[y+z+1:y+num_elems] = b'\x00' * (num_elems - z - 1)
-                ret = byte_data[0:num_recs*num_elems].decode('utf-8').replace('\x00', '')
+                    if (z > -1 and z < (num_elems - 1)):
+                        byte_data[y + z + 1:y + num_elems] = b'\x00' * (num_elems - z - 1)
+                ret = byte_data[0:num_recs*num_elems].decode(self.string_encoding).replace('\x00', '')
             else:
                 # Count total number of strings
                 count = 1
@@ -1884,7 +1897,7 @@ class CDF:
                 strings = []
                 if (len(dimensions) == 0):
                     for i in range(0, num_recs*count*num_elems, num_elems):
-                        string1 = byte_stream[i:i+num_elems].decode('utf-8').\
+                        string1 = byte_stream[i:i+num_elems].decode(self.string_encoding).\
                             replace('\x00', '')
                         strings.append(string1)
                 else:
@@ -1892,7 +1905,7 @@ class CDF:
                         onerec = []
                         for i in range(x*count*num_elems, (x+1)*count*num_elems,
                                        num_elems):
-                            string1 = byte_stream[i:i+num_elems].decode('utf-8')\
+                            string1 = byte_stream[i:i+num_elems].decode(self.string_encoding)\
                                 .replace('\x00', '')
                             onerec.append(string1)
                         strings.append(onerec)
@@ -2185,7 +2198,7 @@ class CDF:
             if (data == ''):
                 return ('\x00'*num_elems).encode()
             else:
-                return data.ljust(num_elems, '\x00').encode('utf-8')
+                return data.ljust(num_elems, '\x00').encode(self.string_encoding)
         elif (data_type == 32):
             data_stream = data.real.tobytes()
             data_stream += data.imag.tobytes()
@@ -2253,7 +2266,7 @@ class CDF:
         '''
 
         if (data_type == 51 or data_type == 52):
-            return [data[i:i+num_elems].decode('utf-8') for i in
+            return [data[i:i+num_elems].decode(self.string_encoding) for i in
                     range(0, num_recs*num_values*num_elems, num_elems)]
         else:
             tofrom = self._convert_option()
