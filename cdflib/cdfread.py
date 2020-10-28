@@ -53,13 +53,17 @@ class CDF:
     validate : bool, optional
         If True, validate the MD5 checksum of the CDF file.
     string_encoding : str, optional
-        The encoding used to read strings. Defaults to 'utf-8'.
+        The encoding used to read strings. Defaults to 'ascii', which is what
+        the CDF internal format description prescribes as the encoding for
+        character strings. Other encodings may have been used to create files
+        however, and this keyword argument gives users the flexibility to read
+        those files.
     """
     version = 3
     release = 7
     increment = 0
 
-    def __init__(self, path, validate=False, string_encoding='utf-8'):
+    def __init__(self, path, validate=False, string_encoding='ascii'):
 
         path = Path(path).expanduser()
         if not path.is_file():
