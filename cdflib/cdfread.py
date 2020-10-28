@@ -256,12 +256,6 @@ class CDF:
 
         return var
 
-    def _read_adr(self, position):
-        if (self.cdfversion == 3):
-            return self._read_adr3(position)
-        else:
-            return self._read_adr2(position)
-
     def attinq(self, attribute=None):
         """
         Get attribute information.
@@ -1097,15 +1091,24 @@ class CDF:
                 found = 1
                 break
             byte_loc = adr_info['next_adr_location']
-            if (found == 0 and expand != False):
+            if (found == 0 and expand is not False):
                 return_dict[adr_info['name']] = None
         return return_dict
+
+    def _read_adr(self, position):
+        """
+        Read an attribute descriptor record (ADR).
+        """
+        if (self.cdfversion == 3):
+            return self._read_adr3(position)
+        else:
+            return self._read_adr2(position)
 
     def _read_adr3(self, byte_loc):
         with self.file.open('rb') as f:
             f.seek(byte_loc, 0)
             block_size = int.from_bytes(f.read(8), 'big')  # Block Size
-            adr = f.read(block_size-8)
+            adr = f.read(block_size - 8)
         next_adr_loc = int.from_bytes(adr[4:12], 'big', signed=True)
         position_next_gr_entry = int.from_bytes(adr[12:20], 'big', signed=True)
         scope = int.from_bytes(adr[20:24], 'big', signed=True)
@@ -1138,7 +1141,7 @@ class CDF:
         with self.file.open('rb') as f:
             f.seek(byte_loc, 0)
             block_size = int.from_bytes(f.read(4), 'big')  # Block Size
-            adr = f.read(block_size-4)
+            adr = f.read(block_size - 4)
 
         next_adr_loc = int.from_bytes(adr[4:8], 'big', signed=True)
         position_next_gr_entry = int.from_bytes(adr[8:12], 'big', signed=True)
@@ -1169,6 +1172,9 @@ class CDF:
         return return_dict
 
     def _read_adr_fast(self, position):
+        """
+        Read an attribute descriptor record (ADR).
+        """
         if (self.cdfversion == 3):
             return self._read_adr_fast3(position)
         else:
@@ -1177,10 +1183,10 @@ class CDF:
     def _read_adr_fast3(self, byte_loc):
         with self.file.open('rb') as f:
             # Position of next ADR
-            f.seek(byte_loc+12, 0)
+            f.seek(byte_loc + 12, 0)
             next_adr_loc = int.from_bytes(f.read(8), 'big', signed=True)
             # Name
-            f.seek(byte_loc+68, 0)
+            f.seek(byte_loc + 68, 0)
             name = str(f.read(256).decode('utf-8'))
 
         name = name.replace('\x00', '')
@@ -1190,10 +1196,10 @@ class CDF:
     def _read_adr_fast2(self, byte_loc):
         with self.file.open('rb') as f:
             # Position of next ADR
-            f.seek(byte_loc+8, 0)
+            f.seek(byte_loc + 8, 0)
             next_adr_loc = int.from_bytes(f.read(4), 'big', signed=True)
             # Name
-            f.seek(byte_loc+52, 0)
+            f.seek(byte_loc + 52, 0)
             name = str(f.read(64).decode('utf-8'))
 
         name = name.replace('\x00', '')
