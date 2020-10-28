@@ -256,12 +256,6 @@ class CDF:
 
         return var
 
-    def _read_adr(self, position):
-        if (self.cdfversion == 3):
-            return self._read_adr3(position)
-        else:
-            return self._read_adr2(position)
-
     def attinq(self, attribute=None):
         """
         Get attribute information.
@@ -385,10 +379,7 @@ class CDF:
                 # a zVariable?
                 positionx = self._first_zvariable
                 for x in range(0, self._num_zvariable):
-                    if (self.cdfversion == 3):
-                        name, vdr_next = self._read_vdr_fast(positionx)
-                    else:
-                        name, vdr_next = self._read_vdr_fast2(positionx)
+                    name, vdr_next = self._read_vdr_fast(positionx)
                     if (name.strip().lower() == entry.strip().lower()):
                         var_num = x
                         zvar = True
@@ -398,10 +389,7 @@ class CDF:
                     # a rVariable?
                     positionx = self._first_rvariable
                     for x in range(0, self._num_rvariable):
-                        if (self.cdfversion == 3):
-                            name, vdr_next = self._read_vdr_fast(positionx)
-                        else:
-                            name, vdr_next = self._read_vdr_fast2(positionx)
+                        name, vdr_next = self._read_vdr_fast(positionx)
                         if (name.strip().lower() == entry.strip().lower()):
                             var_num = x
                             break
@@ -513,10 +501,7 @@ class CDF:
             vdr_info = None
             for zVar in [1, 0]:
                 for _ in range(0, num_variables):
-                    if (self.cdfversion == 3):
-                        name, vdr_next = self._read_vdr_fast(position)
-                    else:
-                        name, vdr_next = self._read_vdr_fast2(position)
+                    name, vdr_next = self._read_vdr_fast(position)
                     if name.strip().lower() == variable.strip().lower():
                         vdr_info = self._read_vdr(position)
                         break
@@ -538,10 +523,7 @@ class CDF:
                 raise ValueError(
                     f'No variable by this number: {variable}')
             for _ in range(0, variable):
-                if (self.cdfversion == 3):
-                    name, next_vdr = self._read_vdr_fast(position)
-                else:
-                    name, next_vdr = self._read_vdr_fast2(position)
+                name, next_vdr = self._read_vdr_fast(position)
                 position = next_vdr
             vdr_info = self._read_vdr(position)
         else:
@@ -613,10 +595,7 @@ class CDF:
                 entries = {}
             aedr_byte_loc = adr_info['first_gr_entry']
             for _ in range(adr_info['num_gr_entry']):
-                if (self.cdfversion == 3):
-                    aedr_info = self._read_aedr(aedr_byte_loc, to_np=to_np)
-                else:
-                    aedr_info = self._read_aedr2(aedr_byte_loc, to_np=to_np)
+                aedr_info = self._read_aedr(aedr_byte_loc, to_np=to_np)
                 entryData = aedr_info['entry']
                 if (expand is False):
                     entries.append(entryData)
@@ -688,10 +667,7 @@ class CDF:
             num_variables = self._num_zvariable
             for zVar in [1, 0]:
                 for _ in range(0, num_variables):
-                    if (self.cdfversion == 3):
-                        name, vdr_next = self._read_vdr_fast(position)
-                    else:
-                        name, vdr_next = self._read_vdr_fast2(position)
+                    name, vdr_next = self._read_vdr_fast(position)
                     if name.strip().lower() == variable.strip().lower():
                         vdr_info = self._read_vdr(position)
                         return self._read_varatts(vdr_info['variable_number'], zVar, expand, to_np=to_np)
@@ -764,6 +740,12 @@ class CDF:
         return data_start, data_size, cType, cParams
 
     def _read_cpr(self, byte_loc):
+        if self.cdfversion == 3:
+            return self._read_cpr3(byte_loc)
+        else:
+            return self._read_cpr2(byte_loc)
+
+    def _read_cpr3(self, byte_loc):
         with self.file.open('rb') as f:
             f.seek(byte_loc, 0)
             block_size = int.from_bytes(f.read(8), 'big')
@@ -877,20 +859,14 @@ class CDF:
             position = self._first_zvariable
             num_variable = self._num_zvariable
             for _ in range(0, num_variable):
-                if (self.cdfversion == 3):
-                    name, next_vdr = self._read_vdr_fast(position)
-                else:
-                    name, next_vdr = self._read_vdr_fast2(position)
+                name, next_vdr = self._read_vdr_fast(position)
                 zvars.append(name)
                 position = next_vdr
         if self._num_rvariable > 0:
             position = self._first_rvariable
             num_variable = self._num_rvariable
             for _ in range(0, num_variable):
-                if (self.cdfversion == 3):
-                    name, next_vdr = self._read_vdr_fast(position)
-                else:
-                    name, next_vdr = self._read_vdr_fast2(position)
+                name, next_vdr = self._read_vdr_fast(position)
                 rvars.append(name)
                 position = next_vdr
         return rvars, zvars
@@ -1078,19 +1054,13 @@ class CDF:
                 num_entry = adr_info['num_gr_entry']
             found = 0
             for _ in range(0, num_entry):
-                if (self.cdfversion == 3):
-                    entryNum, byte_next = self._read_aedr_fast(byte_loc)
-                else:
-                    entryNum, byte_next = self._read_aedr_fast2(byte_loc)
+                entryNum, byte_next = self._read_aedr_fast(byte_loc)
                 if (entryNum != var_num):
                     byte_loc = byte_next
                     continue
-                if (self.cdfversion == 3):
-                    aedr_info = self._read_aedr(byte_loc, to_np=to_np)
-                else:
-                    aedr_info = self._read_aedr2(byte_loc, to_np=to_np)
+                aedr_info = self._read_aedr(byte_loc, to_np=to_np)
                 entryData = aedr_info['entry']
-                if (expand == False):
+                if (expand is False):
                     return_dict[adr_info['name']] = entryData
                 else:
                     entryWithType = []
@@ -1121,15 +1091,24 @@ class CDF:
                 found = 1
                 break
             byte_loc = adr_info['next_adr_location']
-            if (found == 0 and expand != False):
+            if (found == 0 and expand is not False):
                 return_dict[adr_info['name']] = None
         return return_dict
+
+    def _read_adr(self, position):
+        """
+        Read an attribute descriptor record (ADR).
+        """
+        if (self.cdfversion == 3):
+            return self._read_adr3(position)
+        else:
+            return self._read_adr2(position)
 
     def _read_adr3(self, byte_loc):
         with self.file.open('rb') as f:
             f.seek(byte_loc, 0)
             block_size = int.from_bytes(f.read(8), 'big')  # Block Size
-            adr = f.read(block_size-8)
+            adr = f.read(block_size - 8)
         next_adr_loc = int.from_bytes(adr[4:12], 'big', signed=True)
         position_next_gr_entry = int.from_bytes(adr[12:20], 'big', signed=True)
         scope = int.from_bytes(adr[20:24], 'big', signed=True)
@@ -1162,7 +1141,7 @@ class CDF:
         with self.file.open('rb') as f:
             f.seek(byte_loc, 0)
             block_size = int.from_bytes(f.read(4), 'big')  # Block Size
-            adr = f.read(block_size-4)
+            adr = f.read(block_size - 4)
 
         next_adr_loc = int.from_bytes(adr[4:8], 'big', signed=True)
         position_next_gr_entry = int.from_bytes(adr[8:12], 'big', signed=True)
@@ -1193,6 +1172,9 @@ class CDF:
         return return_dict
 
     def _read_adr_fast(self, position):
+        """
+        Read an attribute descriptor record (ADR).
+        """
         if (self.cdfversion == 3):
             return self._read_adr_fast3(position)
         else:
@@ -1201,10 +1183,10 @@ class CDF:
     def _read_adr_fast3(self, byte_loc):
         with self.file.open('rb') as f:
             # Position of next ADR
-            f.seek(byte_loc+12, 0)
+            f.seek(byte_loc + 12, 0)
             next_adr_loc = int.from_bytes(f.read(8), 'big', signed=True)
             # Name
-            f.seek(byte_loc+68, 0)
+            f.seek(byte_loc + 68, 0)
             name = str(f.read(256).decode('utf-8'))
 
         name = name.replace('\x00', '')
@@ -1214,10 +1196,10 @@ class CDF:
     def _read_adr_fast2(self, byte_loc):
         with self.file.open('rb') as f:
             # Position of next ADR
-            f.seek(byte_loc+8, 0)
+            f.seek(byte_loc + 8, 0)
             next_adr_loc = int.from_bytes(f.read(4), 'big', signed=True)
             # Name
-            f.seek(byte_loc+52, 0)
+            f.seek(byte_loc + 52, 0)
             name = str(f.read(64).decode('utf-8'))
 
         name = name.replace('\x00', '')
@@ -1225,19 +1207,25 @@ class CDF:
         return name, next_adr_loc
 
     def _read_aedr_fast(self, byte_loc):
+        if self.cdfversion == 3:
+            return self._read_aedr_fast3(byte_loc)
+        else:
+            return self._read_aedr_fast2(byte_loc)
+
+    def _read_aedr_fast3(self, byte_loc):
         with self.file.open('rb') as f:
-            f.seek(byte_loc+12, 0)
+            f.seek(byte_loc + 12, 0)
             next_aedr = int.from_bytes(f.read(8), 'big', signed=True)
 
             # Variable number or global entry number
-            f.seek(byte_loc+28, 0)
+            f.seek(byte_loc + 28, 0)
             entry_num = int.from_bytes(f.read(4), 'big', signed=True)
 
         return entry_num, next_aedr
 
     def _read_aedr_fast2(self, byte_loc):
         with self.file.open('rb') as f:
-            f.seek(byte_loc+8, 0)
+            f.seek(byte_loc + 8, 0)
             next_aedr = int.from_bytes(f.read(4), 'big', signed=True)
 
             # Variable number or global entry number
@@ -1247,6 +1235,12 @@ class CDF:
         return entry_num, next_aedr
 
     def _read_aedr(self, byte_loc, to_np=True):
+        if self.cdfversion == 3:
+            return self._read_aedr3(byte_loc, to_np)
+        else:
+            return self._read_aedr2(byte_loc, to_np)
+
+    def _read_aedr3(self, byte_loc, to_np=True):
         '''
         Reads an Attribute Entry Descriptor Record at a specific byte location.
 
@@ -1419,10 +1413,7 @@ class CDF:
             return_dict['pad'] = pad
         return_dict['compression_bool'] = compression_bool
         if (compression_bool):
-            if (self.cdfversion == 3):
-                ctype, cparm = self._read_cpr(CPRorSPRoffset)
-            else:
-                ctype, cparm = self._read_cpr2(CPRorSPRoffset)
+            ctype, cparm = self._read_cpr(CPRorSPRoffset)
             return_dict['compression_level'] = cparm
         else:
             return_dict['compression_level'] = 0
@@ -1532,10 +1523,7 @@ class CDF:
             return_dict['pad'] = pad
         return_dict['compression_bool'] = compression_bool
         if (compression_bool):
-            if (self.cdfversion == 3):
-                ctype, cparm = self._read_cpr(CPRorSPRoffset)
-            else:
-                ctype, cparm = self._read_cpr2(CPRorSPRoffset)
+            ctype, cparm = self._read_cpr(CPRorSPRoffset)
             return_dict['compression_level'] = cparm
         else:
             return_dict['compression_level'] = 0
@@ -1547,6 +1535,12 @@ class CDF:
         return return_dict
 
     def _read_vdr_fast(self, byte_loc):
+        if self.cdfversion == 3:
+            return self._read_vdr_fast3(byte_loc)
+        else:
+            return self._read_vdr_fast2(byte_loc)
+
+    def _read_vdr_fast3(self, byte_loc):
         with self.file.open('rb') as f:
             f.seek(byte_loc+12, 0)
             next_vdr = int.from_bytes(f.read(8), 'big', signed=True)
@@ -1970,15 +1964,9 @@ class CDF:
     def _get_attdata(self, adr_info, entry_num, num_entry, first_entry, to_np=True):
         position = first_entry
         for _ in range(0, num_entry):
-            if (self.cdfversion == 3):
-                got_entry_num, next_aedr = self._read_aedr_fast(position)
-            else:
-                got_entry_num, next_aedr = self._read_aedr_fast2(position)
+            got_entry_num, next_aedr = self._read_aedr_fast(position)
             if entry_num == got_entry_num:
-                if (self.cdfversion == 3):
-                    aedr_info = self._read_aedr(position, to_np=to_np)
-                else:
-                    aedr_info = self._read_aedr2(position, to_np=to_np)
+                aedr_info = self._read_aedr(position, to_np=to_np)
                 return_dict = {}
                 return_dict['Item_Size'] = CDF._type_size(aedr_info['data_type'],
                                                           aedr_info['num_elements'])
