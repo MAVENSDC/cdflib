@@ -63,7 +63,6 @@ def test_encode_cdfepoch16():
 
     However, I believe this IDL routine is bugged.  This website:
     https://www.epochconverter.com/seconds-days-since-y0
-
     shows a correct answer.
     '''
     x = cdfepoch.encode(np.complex128(63300946758.000000 + 176214648000.00000j))
