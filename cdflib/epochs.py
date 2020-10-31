@@ -457,11 +457,11 @@ class CDFepoch:
                 t2 = t2s[x]
                 t3 = new_tt2000[x]
                 nansec = nansecs[x]
-                xdate = xdates[:, x].tolist()
 
-                xdate.append(0)
-                xdate.append(0)
-                xdate.append(nansec)
+                xdate = np.zeros(9)
+                xdate[:6] = xdates[:, x]
+                xdate[8] = nansec
+
                 tmpNanosecs = CDFepoch.compute_tt2000(xdate)
                 if (tmpNanosecs != t3):
                     dat0 = CDFepoch._LeapSecondsfromYMD(xdate[0],
@@ -473,32 +473,30 @@ class CDFepoch:
                     nansec = CDFepoch.SECinNanoSecs + nansec
                     tmpy = tmpy - 1
                     epoch = tmpy + CDFepoch.J2000Since0AD12hSec
-                    xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)[:, 0].tolist()
-                    xdate.append(0)
-                    xdate.append(0)
-                    xdate.append(nansec)
+                    xdate = np.zeros(9)
+                    xdate[:6] = CDFepoch._EPOCHbreakdownTT2000(epoch)[:, 0]
+                    xdate[8] = nansec
                     tmpNanosecs = CDFepoch.compute_tt2000(xdate)
                 if (tmpNanosecs != t3):
                     dat0 = CDFepoch._LeapSecondsfromYMD(xdate[0],
                                                         xdate[1], xdate[2])
                     tmpx = t2 - int(dat0 * CDFepoch.SECinNanoSecs)
-                    tmpy = int((1.0*tmpx)/CDFepoch.SECinNanoSecsD)
+                    tmpy = int((1.0 * tmpx) / CDFepoch.SECinNanoSecsD)
                     nansec = int(tmpx - tmpy * CDFepoch.SECinNanoSecs)
                     if (nansec < 0):
                         nansec = CDFepoch.SECinNanoSecs + nansec
                         tmpy = tmpy - 1
                     epoch = tmpy + CDFepoch.J2000Since0AD12hSec
-                    xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)[:, 0].tolist()
-                    xdate.append(0)
-                    xdate.append(0)
-                    xdate.append(nansec)
+                    xdate = np.zeros(9)
+                    xdate[:6] = CDFepoch._EPOCHbreakdownTT2000(epoch)[:, 0]
+                    xdate[8] = nansec
                     tmpNanosecs = CDFepoch.compute_tt2000(xdate)
                     if (tmpNanosecs != t3):
                         dat0 = CDFepoch._LeapSecondsfromYMD(xdate[0],
                                                             xdate[1],
                                                             xdate[2])
                         tmpx = t2 - int(dat0 * CDFepoch.SECinNanoSecs)
-                        tmpy = int((1.0*tmpx)/CDFepoch.SECinNanoSecsD)
+                        tmpy = int((1.0 * tmpx) / CDFepoch.SECinNanoSecsD)
                         nansec = int(tmpx - tmpy * CDFepoch.SECinNanoSecs)
                         if (nansec < 0):
                             nansec = CDFepoch.SECinNanoSecs + nansec
