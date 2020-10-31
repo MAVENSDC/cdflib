@@ -531,7 +531,7 @@ class CDFepoch:
     @staticmethod
     def compute_tt2000(datetimes, to_np: bool = False):
 
-        if not isinstance(datetimes, (list, tuple)):
+        if not isinstance(datetimes, (list, tuple, np.ndarray)):
             raise TypeError('datetime must be in list form')
 
         if isinstance(datetimes[0], numbers.Number):
