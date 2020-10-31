@@ -143,24 +143,19 @@ class CDFepoch:
 
     @staticmethod
     def breakdown(epochs, to_np: bool = False):
+        if isinstance(epochs, (list, tuple, np.ndarray)):
+            item = epochs[0]
+        else:
+            item = epochs
 
-        # Returns either a single array, or a array of arrays depending on the input
-
-        if isinstance(epochs, (int, np.int64)):
+        if isinstance(item, (int, np.int64)):
             return CDFepoch.breakdown_tt2000(epochs, to_np)
-        elif isinstance(epochs, (float, np.float64)):
+        elif isinstance(item, (float, np.float64)):
             return CDFepoch.breakdown_epoch(epochs, to_np)
-        elif isinstance(epochs, (complex, np.complex128)):
+        elif isinstance(item, (complex, np.complex128)):
             return CDFepoch.breakdown_epoch16(epochs, to_np)
-        elif isinstance(epochs, (list, tuple, np.ndarray)):
-            if isinstance(epochs[0], (int, np.int64)):
-                return CDFepoch.breakdown_tt2000(epochs, to_np)
-            elif isinstance(epochs[0], (float, np.float64)):
-                return CDFepoch.breakdown_epoch(epochs, to_np)
-            elif isinstance(epochs[0], (complex, np.complex128)):
-                return CDFepoch.breakdown_epoch16(epochs, to_np)
-
-        raise TypeError('Not sure how to handle type {}'.format(type(epochs)))
+        else:
+            raise TypeError('Not sure how to handle type {}'.format(type(epochs)))
 
     @classmethod
     def to_datetime(cls, cdf_time: Union[int, Sequence[int]],
