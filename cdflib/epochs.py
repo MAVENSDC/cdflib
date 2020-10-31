@@ -162,6 +162,24 @@ class CDFepoch:
 
         raise TypeError('Not sure how to handle type {}'.format(type(epochs)))
 
+    @staticmethod
+    def _compose_date(years, months, days,
+                      hours=None, minutes=None, seconds=None,
+                      milliseconds=None, microseconds=None, nanoseconds=None,
+                      *extras):
+        """
+        Take date components and return a numpy datetime array.
+        """
+        years = np.asarray(years) - 1970
+        months = np.asarray(months) - 1
+        days = np.asarray(days) - 1
+        types = ('<M8[Y]', '<m8[M]', '<m8[D]', '<m8[h]',
+                 '<m8[m]', '<m8[s]', '<m8[ms]', '<m8[us]', '<m8[ns]')
+        vals = (years, months, days, hours, minutes, seconds,
+                milliseconds, microseconds, nanoseconds)
+        return sum(np.asarray(v, dtype=t) for t, v in zip(types, vals)
+                   if v is not None)
+
     @classmethod
     def to_datetime(cls, cdf_time: Union[int, Sequence[int]],
                     to_np: bool = False) -> List[datetime.datetime]:
@@ -173,20 +191,10 @@ class CDFepoch:
 
         If to_np is True, then the values will be returned in a numpy array.
         """
-        time_list = cls.breakdown(cdf_time, to_np=False)
-        if isinstance(time_list[0], (float, int, complex)):  # single time
-            time_list = [time_list]
-
-        if len(time_list[0]) >= 8:
-            dt = [datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5], microsecond=t[6]*1000+t[7]) for t in time_list]
-        elif len(time_list[0]) == 7:
-            dt = [datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5], microsecond=t[6]*1000) for t in time_list]
-        elif len(time_list[0]) == 6:
-            dt = [datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5]) for t in time_list]
-        else:
-            raise ValueError('unknown cdf_time format')
-
-        return np.array(dt) if to_np else dt
+        times = cls.breakdown(cdf_time, to_np=True)
+        times = np.atleast_2d(times)
+        times = cls._compose_date(*times.T)
+        return times if to_np else times.astype('datetime64[us]').tolist()
 
     @staticmethod
     def unixtime(cdf_time, to_np: bool = False):  # @NoSelf
