@@ -540,7 +540,7 @@ class CDF:
             return vdr_info
         else:
             if (vdr_info['max_records'] < 0):
-                return
+                raise ValueError(f'No records found for variable {variable}')
 
             return self._read_vardata(vdr_info, epoch=epoch, starttime=starttime, endtime=endtime,
                                       startrec=startrec, endrec=endrec, record_range_only=record_range_only,
