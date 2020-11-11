@@ -1342,7 +1342,7 @@ class CDF:
         if self.cdfversion == 3:
             return self._read_vdr3(byte_loc)
         else:
-            return self._read_vdr2(byte_lco)
+            return self._read_vdr2(byte_loc)
 
     def _read_vdr3(self, byte_loc):
         with self.file.open('rb') as f:
