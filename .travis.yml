@@ -24,12 +24,12 @@ jobs:
     python: 3.8
     install: pip install .[tests]
     script: pytest --cov
-    after_success: coveralls
+    after_success: bash <(curl -s https://codecov.io/bash) 
   - name: "3.9 tests"
     python: 3.9-dev
     install: pip install .[tests]
     script: pytest --cov
-    after_success: coveralls
+    after_success: bash <(curl -s https://codecov.io/bash)
   - name: "Docs"
     python: 3.7
     install: pip install .[docs]
