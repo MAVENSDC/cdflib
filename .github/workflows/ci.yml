@@ -22,5 +22,4 @@ jobs:
         python-version: '3.8'
     - run: pip install .[tests]
     - run: pytest --cov
-      working-directory: tests
     - run: bash <(curl -s https://codecov.io/bash)
