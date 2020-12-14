@@ -12,10 +12,6 @@ os:
 
 jobs:
   include:
-  - name: "3.5 tests"
-    python: 3.6
-    install: pip install .[tests]
-    script: pytest
   - name: "3.6 tests"
     python: 3.6
     install: pip install .[tests]
@@ -27,13 +23,13 @@ jobs:
   - name: "3.8 tests"
     python: 3.8
     install: pip install .[tests]
-    script: pytest --cov
-    after_success: coveralls
+    script: pytest
+    after_success: bash <(curl -s https://codecov.io/bash)
   - name: "3.9 tests"
     python: 3.9-dev
     install: pip install .[tests]
-    script: pytest --cov
-    after_success: coveralls
+    script: pytest
+    after_success: bash <(curl -s https://codecov.io/bash)
   - name: "Docs"
     python: 3.7
     install: pip install .[docs]

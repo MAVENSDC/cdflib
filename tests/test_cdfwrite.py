@@ -10,13 +10,11 @@ fnbasic = 'testing.cdf'
 
 
 def cdf_create(fn: Path, spec: dict):
-    # str(fn) is a Python==3.5 workaround
-    return cdfwrite.CDF(str(fn), cdf_spec=spec)
+    return cdfwrite.CDF(fn, cdf_spec=spec)
 
 
 def cdf_read(fn: Path, validate: bool = False):
-    # str(fn) is a Python==3.5 workaround
-    return cdfread.CDF(str(fn), validate=validate)
+    return cdfread.CDF(fn, validate=validate)
 
 
 def test_cdf_creation(tmp_path):
