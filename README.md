@@ -53,9 +53,9 @@ This information includes
 * `Version` the version of the CDF
 * `Encoding` the endianness of the CDF
 * `Majority` the row/column majority
-* `zVariables` the dictionary for zVariable numbers and theircorresponding names
-* `rVariables` the dictionary for rVariable numbers and their corresponding names
-* `Attributes` the dictionary for attribute numbers and their corresponding names and scopes
+* `zVariables` a list of the names of the zVariables
+* `rVariables` a list of the names of the rVariables
+* `Attributes` a list of dictionary objects that contain attribute names and their scope, ex - {attribute_name : scope}
 * `Checksum` the checksum indicator
 * `Num_rdim` the number of dimensions, applicable only to rVariables
 * `rDim_sizes` the dimensional sizes, applicable only to rVariables
@@ -441,7 +441,7 @@ for x in range (0, len(zvars)):
            varrecs=[.,.,.,..]
            vardata=np.asarray([.,.,.,..])
            cdf_file.write_var(varinfo, var_attrs=varattrs,
-                      var_data=[vardata,vardata])
+                      var_data=[varrecs,vardata])
 cdf_master.close()
 cdf_file.close()
 ```

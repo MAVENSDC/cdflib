@@ -146,6 +146,12 @@ class CDF:
     def __getitem__(self, variable: str) -> np.ndarray:
         return self.varget(variable)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return
+
     def close(self):
         pass
 
@@ -164,11 +170,11 @@ class CDF:
                 +---------------+--------------------------------------------------------------------------------+
                 | ['Majority']  | the row/column majority                                                        |
                 +---------------+--------------------------------------------------------------------------------+
-                | ['zVariables']| the dictionary for zVariable numbers and their corresponding names             |
+                | ['zVariables']| a list of the names of the zVariables                                          |
                 +---------------+--------------------------------------------------------------------------------+
-                | ['rVariables']| the dictionary for rVariable numbers and their corresponding names             |
+                | ['rVariables']| a list of the names of the rVariables                                          |
                 +---------------+--------------------------------------------------------------------------------+
-                | ['Attributes']| the dictionary for attribute numbers and their corresponding names and scopes  |
+                | ['Attributes']| a list of dictionary objects that contain {attribute_name : scope}             |
                 +---------------+--------------------------------------------------------------------------------+
                 | ['Checksum']  | the checksum indicator                                                         |
                 +---------------+--------------------------------------------------------------------------------+
