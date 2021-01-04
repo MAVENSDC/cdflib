@@ -21,6 +21,15 @@ import pathlib
 import warnings
 
 
+def is_open(func):
+    def ensure_open(self, *args, **kwargs):
+        if self.is_closed:
+            raise OSError("This file is already closed, and can no longer be modified.")
+        else:
+            return func(self, *args, **kwargs)
+
+    return ensure_open
+
 class CDF:
     """
     Creates an empty CDF file.
@@ -253,6 +262,15 @@ class CDF:
             self.gdr_head = self._write_gdr(f)
             self.offset = f.tell()
 
+        self.is_closed = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+        return
+
     def close(self):
         '''
         Closes the CDF Class.
@@ -263,6 +281,8 @@ class CDF:
                of the file.
 
         '''
+        if self.is_closed:
+            return
 
         if self.compressed_file is None:
             with self.path.open('rb+') as f:
@@ -271,6 +291,7 @@ class CDF:
                 self._update_offset_value(f, self.gdr_head+36, 8, eof)
                 if self.checksum:
                     f.write(self._md5_compute(f))
+                self.is_closed = True
             return
 # %%
         with self.path.open('rb+') as f:
@@ -289,7 +310,9 @@ class CDF:
 
         self.path.unlink()  # NOTE: for Windows this is necessary
         self.compressed_file.rename(self.path)
+        self.is_closed = True
 
+    @is_open
     def write_globalattrs(self, globalAttrs):
         '''
         Writes the global attributes.
@@ -429,6 +452,7 @@ class CDF:
                 # ADR's MAXgrEntry
                 self._update_offset_value(f, offsetADR+40, 4, entryNumMaX)
 
+    @is_open
     def write_variableattrs(self, variableAttrs):
         """
         Writes a variable's attributes, provided the variable already exists.
@@ -597,6 +621,7 @@ class CDF:
                     # ADR's MAXgrEntry
                     self._update_offset_value(f, offsetA+40, 4, entryNumX)
 
+    @is_open
     def write_var(self, var_spec, var_attrs=None, var_data=None):
         '''
         Writes a variable, along with variable attributes and data.
