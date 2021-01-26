@@ -22,4 +22,9 @@ jobs:
         python-version: '3.8'
     - run: pip install .[tests]
     - run: pytest --cov
-    - run: bash <(curl -s https://codecov.io/bash)
+    - name: Upload Coverage (unix-like)
+      run: bash <(curl -s https://codecov.io/bash)
+      if: matrix.os != "windows-latest"
+    - name: Upload Coverage (Windows)
+      run: Invoke-WebRequest -Uri "https://codecov.io/bash" -OutFile codecov.sh
+      if: matrix.os == "windows-latest"
