@@ -1,6 +1,8 @@
+# TODO:
 # Handle the VAR_TYPE of 'metadata'
 # Try plotting, they look at attributes.  Perhaps some of the ISTP required attributes can be mapped to the plotting?
 # Try converting to netCDF and see what happens
+# Verify below code works with all sorts of CDF files: MAVEN, MMS, THEMIS, etc
 
 import cdflib
 import xarray as xr
