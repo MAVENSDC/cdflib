@@ -14,7 +14,10 @@ build
 *.ipynb
 /*.html
 /testing.py
-/.coverage
+tests/.coverage
+tests/.hypothesis
+tests/coverage.xml
+tests/codecov.sh
 doc/_build
 doc/api
 .eggs/*
