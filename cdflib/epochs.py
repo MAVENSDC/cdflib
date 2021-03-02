@@ -173,6 +173,7 @@ class CDFepoch(object):
                  '<m8[m]', '<m8[s]', '<m8[ms]', '<m8[us]', '<m8[ns]')
         vals = (years, months, days, hours, minutes, seconds,
                 milliseconds, microseconds, nanoseconds)
+
         return sum(np.asarray(v, dtype=t) for t, v in zip(types, vals)
                    if v is not None)
 
@@ -180,7 +181,7 @@ class CDFepoch(object):
     def to_datetime(cls, cdf_time: Union[int, Sequence[int]],
                     to_np: bool = False) -> List[datetime.datetime]:
         """
-        Encodes the epoch(s) into Python datetime.  Precision is only
+        Encodes the epoch(s) into Numpy datetime64.  Precision is only
         kept to the nearest microsecond.
 
         Possible len() from breakdown for each time are in range 6..9
@@ -189,8 +190,9 @@ class CDFepoch(object):
         """
         times = cls.breakdown(cdf_time, to_np=True)
         times = np.atleast_2d(times)
-        times = cls._compose_date(*times.T)
-        return times if to_np else times.astype('datetime64[us]').tolist()
+        times = cls._compose_date(*times.T).astype('datetime64[us]')
+
+        return times if to_np else times.tolist()
 
     @staticmethod
     def unixtime(cdf_time, to_np: bool = False):  # @NoSelf
