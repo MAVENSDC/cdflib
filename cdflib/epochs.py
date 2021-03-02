@@ -43,7 +43,7 @@ LEAPSEC_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                             'CDFLeapSeconds.txt')
 
 
-class CDFepoch:
+class CDFepoch(object):
     """
     Epoch class.
     """
@@ -69,6 +69,7 @@ class CDFepoch:
     HOURinNanoSecs = int(3600000000000)
     MINUTEinNanoSecs = int(60000000000)
     T12hinNanoSecs = int(43200000000000)
+
     # Julian days for 1707-09-22 and 2292-04-11, the valid TT2000 range
     JDY17070922 = 2344793
     JDY22920411 = 2558297
@@ -280,6 +281,7 @@ class CDFepoch:
         else:
             raise TypeError('Unknown input')
 
+    @staticmethod
     def findepochrange(epochs, starttime=None, endtime=None):  # @NoSelf
         """
         Finds the record range within the start and end time from values
@@ -313,6 +315,7 @@ class CDFepoch:
 
         raise TypeError('Bad input')
 
+    @staticmethod
     def encode_tt2000(tt2000, iso_8601: bool = True):  # @NoSelf
 
         if (isinstance(tt2000, int) or isinstance(tt2000, np.int64)):
@@ -644,14 +647,15 @@ class CDFepoch:
                 iy = 10000000 * month + 10000 * day + year
                 if (iy != CDFepoch.currentDay):
                     CDFepoch.currentDay = iy
-                    CDFepoch.currentLeapSeconds = CDFepoch._LeapSecondsfromYMD(year, month, day)
+                    CDFepoch.currentLeapSeconds = CDFepoch._LeapSecondsfromYMD(
+                        year, month, day)
                     CDFepoch.currentJDay = CDFepoch._JulianDay(year, month, day)
                 jd = CDFepoch.currentJDay
                 jd = jd - CDFepoch.JulianDateJ2000_12h
-                subDayinNanoSecs = int(hour*CDFepoch.HOURinNanoSecs +
-                                       minute*CDFepoch.MINUTEinNanoSecs +
-                                       second*CDFepoch.SECinNanoSecs+msec*1000000 +
-                                       usec*1000+nsec)
+                subDayinNanoSecs = int(hour * CDFepoch.HOURinNanoSecs +
+                                       minute * CDFepoch.MINUTEinNanoSecs +
+                                       second * CDFepoch.SECinNanoSecs +
+                                       msec * 1000000 + usec * 1000 + nsec)
                 nanoSecSinceJ2000 = int(jd * CDFepoch.DAYinNanoSecs +
                                         subDayinNanoSecs)
                 t2 = int(CDFepoch.currentLeapSeconds * CDFepoch.SECinNanoSecs)
@@ -679,6 +683,7 @@ class CDFepoch:
         else:
             return np.array(nanoSecSinceJ2000s)
 
+    @staticmethod
     def _LeapSecondsfromYMD(year, month, day):  # @NoSelf
 
         j = -1
@@ -697,6 +702,7 @@ class CDFepoch:
             da = da + ((jda - CDFepoch.MJDbase) - CDFepoch.LTS[j][4]) * CDFepoch.LTS[j][5]
         return da
 
+    @staticmethod
     def _LeapSecondsfromJ2000(nanosecs):  # @NoSelf
         nanosecs = np.atleast_1d(nanosecs)
         da = np.zeros((nanosecs.size, 2))
@@ -717,6 +723,7 @@ class CDFepoch:
         da[j > CDFepoch.NERA1, 0] = LTS[j, 3]
         return da
 
+    @staticmethod
     def _LoadLeapNanoSecondsTable():  # @NoSelf
 
         CDFepoch.NST = []
@@ -729,6 +736,7 @@ class CDFepoch:
                                                          0, 0, 0, 0, 0, 0]))
         CDFepoch.NST = np.array(CDFepoch.NST)
 
+    @staticmethod
     def _EPOCHbreakdownTT2000(epoch):  # @NoSelf
         epoch = np.atleast_1d(epoch)
 
@@ -757,6 +765,7 @@ class CDFepoch:
              second_AD])
         return date
 
+    @staticmethod
     def epochrange_tt2000(epochs, starttime=None, endtime=None):  # @NoSelf
 
         if (isinstance(epochs, int) or isinstance(epochs, np.int64)):
@@ -871,10 +880,10 @@ class CDFepoch:
     @staticmethod
     def _JulianDay(y: int, m: int, d: int) -> int:
 
-        a1 = int(7*(int(y+int((m+9)/12)))/4)
-        a2 = int(3*(int(int(y+int((m-9)/7))/100)+1)/4)
-        a3 = int(275*m/9)
-        return (367*y - a1 - a2 + a3 + d + 1721029)
+        a1 = int(7 * (int(y + int((m + 9) / 12))) / 4)
+        a2 = int(3 * (int(int(y + int((m - 9) / 7)) / 100) + 1) / 4)
+        a3 = int(275 * m / 9)
+        return (367 * y - a1 - a2 + a3 + d + 1721029)
 
     @staticmethod
     def compute_epoch16(datetimes, to_np: bool = False):
@@ -1029,12 +1038,15 @@ class CDFepoch:
                                                          minute, second, msec,
                                                          usec, nsec, psec)
                 if (month == 0):
-                    daysSince0AD = CDFepoch._JulianDay(year, 1, 1) + (day-1) - 1721060
+                    daysSince0AD = CDFepoch._JulianDay(
+                        year, 1, 1) + (day-1) - 1721060
                 else:
-                    daysSince0AD = CDFepoch._JulianDay(year, month, day) - 1721060
+                    daysSince0AD = CDFepoch._JulianDay(
+                        year, month, day) - 1721060
                 secInDay = (3600 * hour) + (60 * minute) + second
                 epoch16_0 = float(86400.0 * daysSince0AD) + float(secInDay)
-                epoch16_1 = float(psec) + float(1000.0 * nsec) + float(1000000.0 * usec) + float(1000000000.0 * msec)
+                epoch16_1 = float(psec) + float(1000.0 * nsec) + float(
+                    1000000.0 * usec) + float(1000000000.0 * msec)
                 epoch.append(epoch16_0)
                 epoch.append(epoch16_1)
             cepoch = complex(epoch[0], epoch[1])
@@ -1051,82 +1063,128 @@ class CDFepoch:
             return np.array(epochs)
 
     @staticmethod
-    def breakdown_epoch16(epochs, to_np: bool = False):  # @NoSelf
+    def _calc_from_julian(epoch0, epoch1):
+        """Calculate the date and time from epoch input
 
-        if isinstance(epochs, (complex, np.complex128)):
-            new_epochs = [epochs]
-        elif isinstance(epochs, (list, tuple, np.ndarray)):
-            new_epochs = epochs
+        Parameters
+        ----------
+        epoch0 : int, float, or array-like
+            First element of an epoch array (epoch time in seconds)
+        epoch1 : float or array-like
+            Second element of an epoch array (epoch time in picoseconds)
+
+        Returns
+        -------
+        out : array of int
+            Tuple of 10 integers (year, month, day, hour, minute, second,
+            millisecond, microsecond, nanosecond, picosecond) if a single value
+            is input. For array input, the shape is altered by adding another
+            axis of length 10 (holding the same values).
+
+        """
+        # Cast input as an array for consistent handling of scalars and lists
+        second_ce = np.asarray(epoch0)
+
+        # Determine epoch minutes, hours, and days
+        minute_ce = second_ce / 60.0
+        hour_ce = minute_ce / 60.0
+        day_ce = hour_ce / 24.0
+
+        # Calculate the juian day, using integer rounding
+        jd = (1721060 + day_ce).astype(int)
+        l = jd + 68569
+        n = (4 * l / 146097).astype(int)
+        l = l - ((146097 * n + 3) / 4).astype(int)
+        i = (4000 * (l + 1) / 1461001).astype(int)
+        l += 31 - (1461 * i / 4).astype(int)
+        j = (80 * l / 2447).astype(int)
+        dy = l - (2447 * j / 80).astype(int)
+
+        # Continue to get month and year
+        l = (j / 11).astype(int)
+        mo = j + 2 - 12 * l
+        yr = 100 * (n - 49) + i + l
+
+        # Finish calculating the epoch hours, minutes, and seconds
+        hr = (hour_ce % 24.0).astype(int)
+        mn = (minute_ce % 60.0).astype(int)
+        sc = (second_ce % 60.0).astype(int)
+
+        # Get the fractional seconds
+        msec = np.asarray(epoch1)
+        ps = (msec % 1000.0).astype(int)
+        msec = msec / 1000.0
+        ns = (msec % 1000.0).astype(int)
+        msec = msec / 1000.0
+        mus = (msec % 1000.0).astype(int)
+        msec = msec / 1000.0
+        ms = msec.astype(int)
+
+        # Recast the output as integers or lists
+        if second_ce.shape == ():
+            out = np.array([int(yr), int(mo), int(dy), int(hr), int(mn),
+                            int(sc), int(ms), int(mus), int(ns), int(ps)])
         else:
-            raise TypeError('Bad data')
+            out = np.array([yr, mo, dy, hr, mn, sc,
+                            ms, mus, ns, ps]).transpose()
+        return out
 
-        count = len(new_epochs)
-        components = []
-        for x in range(0, count):
-            component = []
-            epoch16 = []
-            # complex
-            epoch16.append(new_epochs[x].real)
-            epoch16.append(new_epochs[x].imag)
-            if ((epoch16[0] == -1.0E31) and (epoch16[1] == -1.0E31)):
-                component.append(9999)
-                component.append(12)
-                component.append(31)
-                component.append(23)
-                component.append(59)
-                component.append(59)
-                component.append(999)
-                component.append(999)
-                component.append(999)
-                component.append(999)
+    @staticmethod
+    def breakdown_epoch16(epochs, to_np: bool = False):
+        """ Calculate date and time from epochs
+
+        Parameters
+        ----------
+        epochs : np.complex128 or array-like
+            Single, list, tuple, or np.array of epoch values
+        to_np : bool
+            Flag for output type, if True will be an np.array, if False
+            will be a list (default=False)
+
+        Returns
+        -------
+        components : list-like of ints
+            List or array of date and time values.  The last axis contains
+            (in order): year, month, day, hour, minute, second, millisecond,
+            microsecond, nanosecond, and picosecond
+
+        Notes
+        -----
+        If a bad epoch (-1.0e31 for the real and imaginary components) is
+        supplied, a fill date of 9999-12-31 23:59:59 and 999 ms, 999 us,
+        999 ns, and 999 ps is returned
+
+        """
+
+        if (isinstance(epochs, (complex, np.complex128))
+            or isinstance(epochs, (list, tuple, np.ndarray))):
+            new_epochs = np.asarray(epochs)
+            if new_epochs.shape == ():
+                cshape = []
+                new_epochs = np.array([epochs])
             else:
-                if (epoch16[0] < 0.0):
-                    epoch16[0] = -epoch16[0]
-                if (epoch16[1] < 0.0):
-                    epoch16[1] = -epoch16[1]
-                second_AD = epoch16[0]
-                minute_AD = second_AD / 60.0
-                hour_AD = minute_AD / 60.0
-                day_AD = hour_AD / 24.0
-                jd = int(1721060 + day_AD)
-                l = jd+68569
-                n = int(4*l/146097)
-                l = l-int((146097*n+3)/4)
-                i = int(4000*(l+1)/1461001)
-                l = l-int(1461*i/4)+31
-                j = int(80*l/2447)
-                k = l-int(2447*j/80)
-                l = int(j/11)
-                j = j+2-12*l
-                i = 100*(n-49)+i+l
-                component.append(i)
-                component.append(j)
-                component.append(k)
-                component.append(int(hour_AD % 24.0))
-                component.append(int(minute_AD % 60.0))
-                component.append(int(second_AD % 60.0))
-                msec = epoch16[1]
-                component_9 = int(msec % 1000.0)
-                msec = msec / 1000.0
-                component_8 = int(msec % 1000.0)
-                msec = msec / 1000.0
-                component_7 = int(msec % 1000.0)
-                msec = msec / 1000.0
-                component.append(int(msec))
-                component.append(component_7)
-                component.append(component_8)
-                component.append(component_9)
-            if (count == 1):
-                if not to_np:
-                    return component
+                cshape = list(new_epochs.shape)
+        else:
+            raise TypeError('Bad data for epochs: {:}'.format(type(epochs)))
+
+        cshape.append(10)
+        components = np.full(shape=cshape, fill_value=[9999, 12, 31, 23, 59,
+                                                       59, 999, 999, 999, 999])
+        for i, epoch16 in enumerate(new_epochs):
+            # Ignore fill values
+            if (epoch16.real != -1.0E31) or (epoch16.imag != -1.0E31):
+                esec = -epoch16.real if epoch16.real < 0.0 else epoch16.real
+                efra = -epoch16.imag if epoch16.imag < 0.0 else epoch16.imag
+
+                if len(components.shape) == 1:
+                    components = CDFepoch._calc_from_julian(esec, efra)
                 else:
-                    return np.array(component)
-            else:
-                components.append(component)
-        if not to_np:
+                    components[i] = CDFepoch._calc_from_julian(esec, efra)
+
+        if to_np:
             return components
         else:
-            return np.array(components)
+            return list(components)
 
     def _computeEpoch16(y, m, d, h, mn, s, ms, msu, msn, msp):  # @NoSelf
 
@@ -1445,67 +1503,64 @@ class CDFepoch:
             return msecFromEpoch
 
     @staticmethod
-    def breakdown_epoch(epochs, to_np: bool = False):  # @NoSelf
+    def breakdown_epoch(epochs, to_np: bool = False):
+        """ Calculate date and time from epochs
 
-        if (isinstance(epochs, float) or isinstance(epochs, np.float64)):
-            new_epochs = [epochs]
-        elif (isinstance(epochs, list) or isinstance(epochs, tuple) or
-              isinstance(epochs, np.ndarray)):
-            new_epochs = epochs
-        else:
-            raise ValueError('Bad data')
-        count = len(new_epochs)
-        components = []
-        for x in range(0, count):
-            component = []
-            epoch = new_epochs[x]
-            if (epoch == -1.0E31):
-                component.append(9999)
-                component.append(12)
-                component.append(31)
-                component.append(23)
-                component.append(59)
-                component.append(59)
-                component.append(999)
+        Parameters
+        ----------
+        epochs : int, float, or array-like
+            Single, list, tuple, or np.array of epoch values
+        to_np : bool
+            Flag for output type, if True will be an np.array, if False
+            will be a list (default=False)
+
+        Returns
+        -------
+        components : list-like of ints
+            List or array of date and time values.  The last axis contains
+            (in order): year, month, day, hour, minute, second, and millisecond
+
+        Notes
+        -----
+        If a bad epoch (-1.0e31) is supplied, a fill date of
+        9999-12-31 23:59:59 and 999 ms is returned.
+
+        """
+        # Test input and cast it as an array of floats
+        if (isinstance(epochs, float) or isinstance(epochs, np.float64)
+            or isinstance(epochs, list) or isinstance(epochs, tuple)
+            or isinstance(epochs, np.ndarray) or isinstance(epochs, int)):
+            new_epochs = np.asarray(epochs).astype(float)
+            if new_epochs.shape == ():
+                cshape = []
+                new_epochs = np.array([epochs], dtype=float)
             else:
-                if (epoch < 0.0):
-                    epoch = -epochs
-                if (isinstance(epochs, int)):
-                    epoch = float(epoch)
-                msec_AD = epoch
-                second_AD = msec_AD / 1000.0
-                minute_AD = second_AD / 60.0
-                hour_AD = minute_AD / 60.0
-                day_AD = hour_AD / 24.0
-                jd = int(1721060 + day_AD)
-                l = jd+68569
-                n = int(4*l/146097)
-                l = l-int((146097*n+3)/4)
-                i = int(4000*(l+1)/1461001)
-                l = l-int(1461*i/4)+31
-                j = int(80*l/2447)
-                k = l-int(2447*j/80)
-                l = int(j/11)
-                j = j+2-12*l
-                i = 100*(n-49)+i+l
-                component.append(i)
-                component.append(j)
-                component.append(k)
-                component.append(int(hour_AD % 24.0))
-                component.append(int(minute_AD % 60.0))
-                component.append(int(second_AD % 60.0))
-                component.append(int(msec_AD % 1000.0))
-            if (count == 1):
-                if to_np:
-                    return np.array(component)
+                cshape = list(new_epochs.shape)
+        else:
+            raise TypeError('Bad data for epochs: {:}'.format(type(epochs)))
+
+        # Initialize output to default values
+        cshape.append(7)
+        components = np.full(shape=cshape, fill_value=[9999, 12, 31, 23, 59,
+                                                       59, 999])
+        for i, epoch in enumerate(new_epochs):
+            # Ignore fill values
+            if epoch != -1.0E31:
+                esec = -epoch / 1000.0 if epoch < 0.0 else epoch / 1000.0
+                date_time = CDFepoch._calc_from_julian(esec, 0.0)
+
+                ms = (epoch % 1000.0).astype(int)
+                date_time[..., 6] = int(ms) if ms.shape == () else ms
+
+                if len(components.shape) == 1:
+                    components = date_time[..., :7]
                 else:
-                    return component
-            else:
-                components.append(component)
+                    components[i] = date_time[..., :7]
+
         if to_np:
-            return np.array(components)
-        else:
             return components
+        else:
+            return list(components)
 
     @staticmethod
     def epochrange_epoch(epochs, starttime=None, endtime=None):  # @NoSelf
