@@ -1,4 +1,4 @@
-'''
+"""
 CDF Class
 #########
 
@@ -27,7 +27,7 @@ Sample use::
     cdflib.cdfread.CDF.getVersion()
 
 @author: Bryan Harter, Michael Liu
-'''
+"""
 from pathlib import Path
 import tempfile
 import numpy as np
@@ -702,11 +702,11 @@ class CDF:
                              'the name or number of an variable')
 
     def _uncompress_file(self, path):
-        '''
+        """
         Writes the current file into a file in the temporary directory.
 
         If that doesn't work, create a new file in the CDFs directory.
-        '''
+        """
 
         with self.file.open('rb') as f:
             if (self.cdfversion == 3):
@@ -781,10 +781,10 @@ class CDF:
         return cType, cParams
 
     def _md5_validation(self) -> bool:
-        '''
+        """
         Verifies the MD5 checksum.
         Only used in the __init__() function
-        '''
+        """
         fn = self.file if self.compressed_file is None else self.compressed_file
 
         md5 = hashlib.md5()
@@ -1261,10 +1261,10 @@ class CDF:
             return self._read_aedr2(byte_loc, to_np)
 
     def _read_aedr3(self, byte_loc, to_np=True):
-        '''
+        """
         Reads an Attribute Entry Descriptor Record at a specific byte location.
 
-        '''
+        """
         with self.file.open('rb') as f:
             f.seek(byte_loc, 0)
             block_size = int.from_bytes(f.read(8), 'big')
@@ -1664,11 +1664,11 @@ class CDF:
         return vvr_offsets, vvr_start, vvr_end
 
     def _read_vvrs(self, vdr_dict, vvr_offs, vvr_start, vvr_end, startrec, endrec, to_np=True):
-        '''
+        """
         Reads in all VVRS that are pointed to in the VVR_OFFS array.
         Creates a large byte array of all values called "byte_stream".
         Decodes the byte_stream, then returns them.
-        '''
+        """
 
         numBytes = CDF._type_size(vdr_dict['data_type'],
                                   vdr_dict['num_elements'])
@@ -1771,10 +1771,10 @@ class CDF:
         return y
 
     def _convert_option(self):
-        '''
+        """
         Determines how to convert CDF byte ordering to the system
         byte ordering.
-        '''
+        """
 
         if sys.byteorder == 'little' and self._endian() == 'big-endian':
             # big->little
@@ -1788,10 +1788,10 @@ class CDF:
         return order
 
     def _endian(self) -> str:
-        '''
+        """
         Determines endianess of the CDF file
         Only used in __init__
-        '''
+        """
         if (self._encoding == 1 or self._encoding == 2 or self._encoding == 5 or
             self._encoding == 7 or self._encoding == 9 or self._encoding == 11 or
                 self._encoding == 12):
@@ -1861,12 +1861,12 @@ class CDF:
             raise TypeError('Unknown data type....')
 
     def _read_data(self, byte_stream, data_type, num_recs, num_elems, dimensions=None):
-        '''
+        """
         This is the primary routine that converts streams of bytes into usable data.
 
         To do so, we need the bytes, the type of data, the number of records,
         the number of elements in a record, and dimension information.
-        '''
+        """
 
         squeeze_needed = False
         # If the dimension is [n], it needs to be [n,1]
@@ -1973,11 +1973,11 @@ class CDF:
         return ret
 
     def _num_values(self, vdr_dict):
-        '''
+        """
         Returns the number of values in a record, using a given VDR
         dictionary. Multiplies the dimension sizes of each dimension,
         if it is varying.
-        '''
+        """
         values = 1
         for x in range(0, vdr_dict['num_dims']):
             if (vdr_dict['dim_vary'][x] != 0):
@@ -2125,9 +2125,9 @@ class CDF:
         return recs
 
     def _convert_type(self, data_type):
-        '''
+        """
         CDF data types to python struct data types
-        '''
+        """
         if (data_type == 1) or (data_type == 41):
             dt_string = 'b'
         elif data_type == 2:
@@ -2153,9 +2153,9 @@ class CDF:
         return dt_string
 
     def _default_pad(self, data_type, num_elms):
-        '''
+        """
         The default pad values by CDF data type
-        '''
+        """
         order = self._convert_option()
         if (data_type == 51 or data_type == 52):
             return str(' '*num_elms)
@@ -2201,9 +2201,9 @@ class CDF:
         return ret
 
     def _convert_np_data(self, data, data_type, num_elems):
-        '''
+        """
         Converts a single np data into byte stream.
-        '''
+        """
         if (data_type == 51 or data_type == 52):
             if (data == ''):
                 return ('\x00'*num_elems).encode()
@@ -2217,9 +2217,9 @@ class CDF:
             return data.tobytes()
 
     def _read_vvr_block(self, offset):
-        '''
+        """
         Returns a VVR or decompressed CVVR block
-        '''
+        """
         with self.file.open('rb') as f:
             f.seek(offset, 0)
             block_size = int.from_bytes(f.read(8), 'big')
@@ -2235,9 +2235,9 @@ class CDF:
             return block[4:]
 
     def _read_vvr_block2(self, offset):
-        '''
+        """
         Returns a VVR or decompressed CVVR block
-        '''
+        """
         with self.file.open('rb') as f:
             f.seek(offset, 0)
             block_size = int.from_bytes(f.read(4), 'big')
@@ -2253,12 +2253,12 @@ class CDF:
             return block[4:]
 
     def _find_block(starts, ends, cur_block, rec_num):   # @NoSelf
-        '''
+        """
         Finds the block that rec_num is in if it is found. Otherwise it returns -1.
         It also returns the block that has the physical data either at or
         preceeding the rec_num.
         It could be -1 if the preceeding block does not exists.
-        '''
+        """
         total = len(starts)
         if (cur_block == -1):
             cur_block = 0
@@ -2270,10 +2270,10 @@ class CDF:
         return -1, x-1
 
     def _convert_data(self, data, data_type, num_recs, num_values, num_elems):
-        '''
+        """
         Converts data to the appropriate type using the struct.unpack method,
         rather than using numpy.
-        '''
+        """
 
         if (data_type == 51 or data_type == 52):
             return [data[i:i+num_elems].decode(self.string_encoding) for i in
