@@ -1078,7 +1078,7 @@ class CDFepoch(object):
         Returns
         -------
         out : array of int
-            Tuple of 10 integers (year, month, day, hour, minute, second,
+            Array of 10 integers (year, month, day, hour, minute, second,
             millisecond, microsecond, nanosecond, picosecond) if a single value
             is input. For array input, the shape is altered by adding another
             axis of length 10 (holding the same values).
