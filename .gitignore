@@ -14,10 +14,10 @@ build
 *.ipynb
 /*.html
 /testing.py
-tests/.coverage
-tests/.hypothesis
-tests/coverage.xml
-tests/codecov.sh
+**/.coverage
+**/.hypothesis
+**/coverage.xml
+**/codecov.sh
 doc/_build
 doc/api
 .eggs/*
