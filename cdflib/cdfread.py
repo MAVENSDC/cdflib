@@ -1,4 +1,4 @@
-'''
+"""
 CDF Class
 #########
 
@@ -27,7 +27,7 @@ Sample use::
     cdflib.cdfread.CDF.getVersion()
 
 @author: Bryan Harter, Michael Liu
-'''
+"""
 from pathlib import Path
 import tempfile
 import numpy as np
@@ -111,14 +111,14 @@ class CDF:
 
         if cdr_info['encoding'] in (3, 14, 15):
             raise OSError('This package does not support CDFs with this ' +
-                          CDF._encoding_token(cdr_info['encoding']) +
+                          self._encoding_token(cdr_info['encoding']) +
                           ' encoding')
 
         # SET GLOBAL VARIABLES
         self._post25 = cdr_info['post25']
         self._version = cdr_info['version']
         self._encoding = cdr_info['encoding']
-        self._majority = CDF._major_token(cdr_info['majority'])
+        self._majority = self._major_token(cdr_info['majority'])
         self._copyright = cdr_info['copyright']
         self._md5 = cdr_info['md5']
         self._first_zvariable = gdr_info['first_zvariable']
@@ -250,13 +250,13 @@ class CDF:
         var = {}
         var['Variable'] = vdr_info['name']
         var['Num'] = vdr_info['variable_number']
-        var['Var_Type'] = CDF._variable_token(vdr_info['section_type'])
+        var['Var_Type'] = self._variable_token(vdr_info['section_type'])
         var['Data_Type'] = vdr_info['data_type']
-        var['Data_Type_Description'] = CDF._datatype_token(vdr_info['data_type'])
+        var['Data_Type_Description'] = self._datatype_token(vdr_info['data_type'])
         var['Num_Elements'] = vdr_info['num_elements']
         var['Num_Dims'] = vdr_info['num_dims']
         var['Dim_Sizes'] = vdr_info['dim_sizes']
-        var['Sparse'] = CDF._sparse_token(vdr_info['sparse'])
+        var['Sparse'] = self._sparse_token(vdr_info['sparse'])
         var['Last_Rec'] = vdr_info['max_records']
         var['Rec_Vary'] = vdr_info['record_vary']
         var['Dim_Vary'] = vdr_info['dim_vary']
@@ -635,7 +635,7 @@ class CDF:
                                                                                iso_8601=False))
                                 else:
                                     entryWithType.append(epoch.CDFepoch.encode(entryData.tolist()))
-                    entryWithType.append(CDF._datatype_token(aedr_info['data_type']))
+                    entryWithType.append(self._datatype_token(aedr_info['data_type']))
                     entries[aedr_info['entry_num']] = entryWithType
                 aedr_byte_loc = aedr_info['next_aedr']
 
@@ -702,11 +702,11 @@ class CDF:
                              'the name or number of an variable')
 
     def _uncompress_file(self, path):
-        '''
+        """
         Writes the current file into a file in the temporary directory.
 
         If that doesn't work, create a new file in the CDFs directory.
-        '''
+        """
 
         with self.file.open('rb') as f:
             if (self.cdfversion == 3):
@@ -781,10 +781,10 @@ class CDF:
         return cType, cParams
 
     def _md5_validation(self) -> bool:
-        '''
+        """
         Verifies the MD5 checksum.
         Only used in the __init__() function
-        '''
+        """
         fn = self.file if self.compressed_file is None else self.compressed_file
 
         md5 = hashlib.md5()
@@ -806,7 +806,8 @@ class CDF:
 
         return md5.hexdigest() == existing_md5
 
-    def _encoding_token(encoding):   # @NoSelf
+    @staticmethod
+    def _encoding_token(encoding):
         encodings = {1: 'NETWORK',
                      2: 'SUN',
                      3: 'VAX',
@@ -823,22 +824,26 @@ class CDF:
                      16: 'ALPHAVMSi'}
         return encodings[encoding]
 
-    def _major_token(major):   # @NoSelf
+    @staticmethod
+    def _major_token(major):
         majors = {1: 'Row_major',
                   2: 'Column_major'}
         return majors[major]
 
-    def _scope_token(scope):   # @NoSelf
+    @staticmethod
+    def _scope_token(scope):
         scopes = {1: 'Global',
                   2: 'Variable'}
         return scopes[scope]
 
-    def _variable_token(variable):   # @NoSelf
+    @staticmethod
+    def _variable_token(variable):
         variables = {3: 'rVariable',
                      8: 'zVariable'}
         return variables[variable]
 
-    def _datatype_token(datatype):   # @NoSelf
+    @staticmethod
+    def _datatype_token(datatype):
         datatypes = {1: 'CDF_INT1',
                      2: 'CDF_INT2',
                      4: 'CDF_INT4',
@@ -858,7 +863,8 @@ class CDF:
                      52: 'CDF_UCHAR'}
         return datatypes[datatype]
 
-    def _sparse_token(sparse):   # @NoSelf
+    @staticmethod
+    def _sparse_token(sparse):
         sparses = {0: 'No_sparse',
                    1: 'Pad_sparse',
                    2: 'Prev_sparse'}
@@ -889,7 +895,7 @@ class CDF:
         for _ in range(0, self._num_att):
             attr = {}
             adr_info = self._read_adr(position)
-            attr[adr_info['name']] = CDF._scope_token(int(adr_info['scope']))
+            attr[adr_info['name']] = self._scope_token(int(adr_info['scope']))
             attrs.append(attr)
             position = adr_info['next_adr_location']
         return attrs
@@ -1106,7 +1112,7 @@ class CDF:
                                                                                iso_8601=False))
                                 else:
                                     entryWithType.append(epoch.CDFepoch.encode(entryData.tolist()))
-                    entryWithType.append(CDF._datatype_token(aedr_info['data_type']))
+                    entryWithType.append(self._datatype_token(aedr_info['data_type']))
                     return_dict[adr_info['name']] = entryWithType
                 found = 1
                 break
@@ -1261,10 +1267,10 @@ class CDF:
             return self._read_aedr2(byte_loc, to_np)
 
     def _read_aedr3(self, byte_loc, to_np=True):
-        '''
+        """
         Reads an Attribute Entry Descriptor Record at a specific byte location.
 
-        '''
+        """
         with self.file.open('rb') as f:
             f.seek(byte_loc, 0)
             block_size = int.from_bytes(f.read(8), 'big')
@@ -1664,14 +1670,14 @@ class CDF:
         return vvr_offsets, vvr_start, vvr_end
 
     def _read_vvrs(self, vdr_dict, vvr_offs, vvr_start, vvr_end, startrec, endrec, to_np=True):
-        '''
+        """
         Reads in all VVRS that are pointed to in the VVR_OFFS array.
         Creates a large byte array of all values called "byte_stream".
         Decodes the byte_stream, then returns them.
-        '''
+        """
 
-        numBytes = CDF._type_size(vdr_dict['data_type'],
-                                  vdr_dict['num_elements'])
+        numBytes = self._type_size(vdr_dict['data_type'],
+                                   vdr_dict['num_elements'])
         numValues = self._num_values(vdr_dict)
         totalRecs = endrec - startrec + 1
         firstBlock = -1
@@ -1701,11 +1707,11 @@ class CDF:
             # with sparse records
             if ('pad' in vdr_dict):
                 # use default pad value
-                filled_data = CDF._convert_np_data(vdr_dict['pad'],
-                                                   vdr_dict['data_type'],
-                                                   vdr_dict['num_elements'])
+                filled_data = self._convert_np_data(vdr_dict['pad'],
+                                                    vdr_dict['data_type'],
+                                                    vdr_dict['num_elements'])
             else:
-                filled_data = CDF._convert_np_data(
+                filled_data = self._convert_np_data(
                     self._default_pad(vdr_dict['data_type'],
                                       vdr_dict['num_elements']),
                     vdr_dict['data_type'],
@@ -1713,8 +1719,8 @@ class CDF:
             cur_block = -1
             rec_size = numBytes * numValues
             for rec_num in range(startrec, (endrec+1)):
-                block, prev_block = CDF._find_block(vvr_start, vvr_end,
-                                                    cur_block, rec_num)
+                block, prev_block = self._find_block(vvr_start, vvr_end,
+                                                     cur_block, rec_num)
                 if (block > -1):
                     record_off = rec_num - vvr_start[block]
                     if (cur_block != block):
@@ -1771,10 +1777,10 @@ class CDF:
         return y
 
     def _convert_option(self):
-        '''
+        """
         Determines how to convert CDF byte ordering to the system
         byte ordering.
-        '''
+        """
 
         if sys.byteorder == 'little' and self._endian() == 'big-endian':
             # big->little
@@ -1788,10 +1794,10 @@ class CDF:
         return order
 
     def _endian(self) -> str:
-        '''
+        """
         Determines endianess of the CDF file
         Only used in __init__
-        '''
+        """
         if (self._encoding == 1 or self._encoding == 2 or self._encoding == 5 or
             self._encoding == 7 or self._encoding == 9 or self._encoding == 11 or
                 self._encoding == 12):
@@ -1799,7 +1805,8 @@ class CDF:
         else:
             return 'little-endian'
 
-    def _type_size(data_type, num_elms):  # @NoSelf
+    @staticmethod
+    def _type_size(data_type, num_elms):
         # DATA TYPES
         #
         # 1 - 1 byte signed int
@@ -1861,12 +1868,12 @@ class CDF:
             raise TypeError('Unknown data type....')
 
     def _read_data(self, byte_stream, data_type, num_recs, num_elems, dimensions=None):
-        '''
+        """
         This is the primary routine that converts streams of bytes into usable data.
 
         To do so, we need the bytes, the type of data, the number of records,
         the number of elements in a record, and dimension information.
-        '''
+        """
 
         squeeze_needed = False
         # If the dimension is [n], it needs to be [n,1]
@@ -1973,11 +1980,11 @@ class CDF:
         return ret
 
     def _num_values(self, vdr_dict):
-        '''
+        """
         Returns the number of values in a record, using a given VDR
         dictionary. Multiplies the dimension sizes of each dimension,
         if it is varying.
-        '''
+        """
         values = 1
         for x in range(0, vdr_dict['num_dims']):
             if (vdr_dict['dim_vary'][x] != 0):
@@ -1991,9 +1998,9 @@ class CDF:
             if entry_num == got_entry_num:
                 aedr_info = self._read_aedr(position, to_np=to_np)
                 return_dict = {}
-                return_dict['Item_Size'] = CDF._type_size(aedr_info['data_type'],
-                                                          aedr_info['num_elements'])
-                return_dict['Data_Type'] = CDF._datatype_token(aedr_info['data_type'])
+                return_dict['Item_Size'] = self._type_size(aedr_info['data_type'],
+                                                           aedr_info['num_elements'])
+                return_dict['Data_Type'] = self._datatype_token(aedr_info['data_type'])
 
                 return_dict['Num_Items'] = aedr_info['num_elements']
                 return_dict['Data'] = aedr_info['entry']
@@ -2061,16 +2068,16 @@ class CDF:
             new_dict['Rec_Ndim'] = vdr_info['num_dims']
             new_dict['Rec_Shape'] = vdr_info['dim_sizes']
             new_dict['Num_Records'] = vdr_info['max_records'] + 1
-            new_dict['Records_Returned'] = endrec-startrec
-            new_dict['Item_Size'] = CDF._type_size(vdr_info['data_type'],
-                                                   vdr_info['num_elements'])
-            new_dict['Data_Type'] = CDF._datatype_token(vdr_info['data_type'])
+            new_dict['Records_Returned'] = endrec - startrec
+            new_dict['Item_Size'] = self._type_size(vdr_info['data_type'],
+                                                    vdr_info['num_elements'])
+            new_dict['Data_Type'] = self._datatype_token(vdr_info['data_type'])
             new_dict['Data'] = data
             if (vdr_info['sparse']):
                 blocks = len(vvr_start)
                 physical_recs = []
                 for x in range(0, blocks):
-                    for y in range(vvr_start[x], vvr_end[x]+1):
+                    for y in range(vvr_start[x], vvr_end[x] + 1):
                         physical_recs.append(y)
                 new_dict['Real_Records'] = physical_recs
             return new_dict
@@ -2125,9 +2132,9 @@ class CDF:
         return recs
 
     def _convert_type(self, data_type):
-        '''
+        """
         CDF data types to python struct data types
-        '''
+        """
         if (data_type == 1) or (data_type == 41):
             dt_string = 'b'
         elif data_type == 2:
@@ -2152,10 +2159,10 @@ class CDF:
             dt_string = 's'
         return dt_string
 
-    def _default_pad(self, data_type, num_elms):   # @NoSelf
-        '''
+    def _default_pad(self, data_type, num_elms):
+        """
         The default pad values by CDF data type
-        '''
+        """
         order = self._convert_option()
         if (data_type == 51 or data_type == 52):
             return str(' '*num_elms)
@@ -2200,10 +2207,10 @@ class CDF:
             pass
         return ret
 
-    def _convert_np_data(data, data_type, num_elems):   # @NoSelf
-        '''
+    def _convert_np_data(self, data, data_type, num_elems):
+        """
         Converts a single np data into byte stream.
-        '''
+        """
         if (data_type == 51 or data_type == 52):
             if (data == ''):
                 return ('\x00'*num_elems).encode()
@@ -2217,9 +2224,9 @@ class CDF:
             return data.tobytes()
 
     def _read_vvr_block(self, offset):
-        '''
+        """
         Returns a VVR or decompressed CVVR block
-        '''
+        """
         with self.file.open('rb') as f:
             f.seek(offset, 0)
             block_size = int.from_bytes(f.read(8), 'big')
@@ -2235,9 +2242,9 @@ class CDF:
             return block[4:]
 
     def _read_vvr_block2(self, offset):
-        '''
+        """
         Returns a VVR or decompressed CVVR block
-        '''
+        """
         with self.file.open('rb') as f:
             f.seek(offset, 0)
             block_size = int.from_bytes(f.read(4), 'big')
@@ -2252,13 +2259,14 @@ class CDF:
             # a VVR
             return block[4:]
 
-    def _find_block(starts, ends, cur_block, rec_num):   # @NoSelf
-        '''
+    @staticmethod
+    def _find_block(starts, ends, cur_block, rec_num):
+        """
         Finds the block that rec_num is in if it is found. Otherwise it returns -1.
         It also returns the block that has the physical data either at or
         preceeding the rec_num.
         It could be -1 if the preceeding block does not exists.
-        '''
+        """
         total = len(starts)
         if (cur_block == -1):
             cur_block = 0
@@ -2270,10 +2278,10 @@ class CDF:
         return -1, x-1
 
     def _convert_data(self, data, data_type, num_recs, num_values, num_elems):
-        '''
+        """
         Converts data to the appropriate type using the struct.unpack method,
         rather than using numpy.
-        '''
+        """
 
         if (data_type == 51 or data_type == 52):
             return [data[i:i+num_elems].decode(self.string_encoding) for i in
@@ -2281,15 +2289,16 @@ class CDF:
         else:
             tofrom = self._convert_option()
             dt_string = self._convert_type(data_type)
-            form = tofrom + str(num_recs*num_values*num_elems) + dt_string
-            value_len = CDF._type_size(data_type, num_elems)
+            form = tofrom + str(num_recs * num_values * num_elems) + dt_string
+            value_len = self._type_size(data_type, num_elems)
             return list(struct.unpack_from(form,
                                            data[0:num_recs*num_values*value_len]))
 
-    def getVersion():   # @NoSelf
+    @staticmethod
+    def getVersion():
         """
         Prints the code version and last modified date.
         """
-        print('CDFread version:', str(CDF.version) + '.' + str(CDF.release) +
-              '.' + str(CDF.increment))
+        print('CDFread version:', str(self.version) + '.' + str(self.release) +
+              '.' + str(self.increment))
         print('Date: 2018/01/11')
