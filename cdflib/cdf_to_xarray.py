@@ -481,3 +481,6 @@ def cdf_to_xarray(filename, to_datetime=False, to_unixtime=False, fillval_to_nan
 
     # Create the XArray DataSet Object!
     return xr.Dataset(data_vars=created_data_vars, coords=created_coord_vars, attrs=global_attributes)
+
+
+#ds = cdf_to_xarray("C:/Work/cdf_test_files/wi_k0_spha_20210121_v01.cdf", to_unixtime=True, fillval_to_nan=True)
