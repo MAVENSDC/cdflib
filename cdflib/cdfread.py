@@ -353,14 +353,20 @@ class CDF:
         if isinstance(attribute, str):
             for _ in range(0, self._num_att):
                 name, next_adr = self._read_adr_fast(position)
-                if (name.strip().lower() == attribute.strip().lower()):
+                if name.strip().lower() == attribute.strip().lower():
                     adr_info = self._read_adr(position)
+                    if isinstance(entry, str) and adr_info['scope'] == 1:
+                        # If the user has specified a string entry, they are obviously looking for a variable attribute.
+                        # Filter out any global attributes that may have the same name.
+                        adr_info = None
+                        position = next_adr
+                        continue
                     break
                 else:
                     position = next_adr
 
             if adr_info is None:
-                raise KeyError(f'No attribute {attribute}')
+                raise KeyError(f'No attribute {attribute} for entry {entry}')
 
         elif isinstance(attribute, int):
             if (attribute < 0) or (attribute > self._num_att):
@@ -2005,9 +2011,10 @@ class CDF:
                 return_dict['Num_Items'] = aedr_info['num_elements']
                 return_dict['Data'] = aedr_info['entry']
                 if (aedr_info['data_type'] == 51 or aedr_info['data_type'] == 52):
-                    return_dict['Num_Items'] = aedr_info['num_strings']
-                    if (aedr_info['num_strings'] > 1):
-                        return_dict['Data'] = aedr_info['entry'].split('\\N ')
+                    if 'num_strings' in aedr_info:
+                        return_dict['Num_Items'] = aedr_info['num_strings']
+                        if (aedr_info['num_strings'] > 1):
+                            return_dict['Data'] = aedr_info['entry'].split('\\N ')
                 if not to_np and (aedr_info['data_type'] == 32):
                     return_dict['Data'] = complex(aedr_info['entry'][0],
                                                   aedr_info['entry'][1])

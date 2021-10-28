@@ -446,13 +446,19 @@ class CDFepoch(object):
         t2s = secsSinceJ2000 * CDFepoch.SECinNanoSecs + nansecs
 
         post72 = datxs[:, 0] > 0
-        secsSinceJ2000[post72] -= datxs[:, 0].astype(int)
+        secsSinceJ2000[post72] -= datxs[post72, 0].astype(int)
         epochs = CDFepoch.J2000Since0AD12hSec + secsSinceJ2000
 
         datxzero = datxs[:, 1] == 0.0
         epochs[post72 & ~datxzero] -= 1
         xdates = CDFepoch._EPOCHbreakdownTT2000(epochs)
+
+        # If 1 second was subtracted, add 1 second back in
+        # Be careful not to go 60 or above
         xdates[5, post72 & ~datxzero] += 1
+        xdates[4, post72 & ~datxzero] = np.rint(xdates[5, post72 & ~datxzero] / 60.0)
+        xdates[5, post72 & ~datxzero] = xdates[5, post72 & ~datxzero] % 60
+
 
         # Set toutcs, then loop through and correct for pre-1972
         toutcs[:6, :] = xdates[:6, :]
@@ -722,7 +728,8 @@ class CDFepoch(object):
                 break
 
         LTS = np.array(CDFepoch.LTS)
-        da[j > CDFepoch.NERA1, 0] = LTS[j, 3]
+        da[:, 0] = LTS[j, 3]
+        da[j <= CDFepoch.NERA1, 0] = 0
         return da
 
     @staticmethod
@@ -1186,7 +1193,10 @@ class CDFepoch(object):
         if to_np:
             return components
         else:
-            return list(components)
+            comp = components.tolist()
+            if len(comp) == 1:
+                return comp[0]
+            return comp
 
     def _computeEpoch16(y, m, d, h, mn, s, ms, msu, msn, msp):  # @NoSelf
 
@@ -1562,7 +1572,10 @@ class CDFepoch(object):
         if to_np:
             return components
         else:
-            return list(components)
+            comp = components.tolist()
+            if len(comp) == 1:
+                return comp[0]
+            return comp
 
     @staticmethod
     def epochrange_epoch(epochs, starttime=None, endtime=None):  # @NoSelf
