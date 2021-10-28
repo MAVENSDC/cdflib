@@ -1,6 +1,6 @@
 from . import cdfread
 from . import cdfwrite
-from cdf_to_xarray import cdf_to_xarray
+from .cdf_to_xarray import cdf_to_xarray
 
 from .epochs import CDFepoch as cdfepoch  # noqa: F401
 try:
