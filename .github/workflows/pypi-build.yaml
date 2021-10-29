@@ -14,7 +14,7 @@ jobs:
         chmod +x miniconda.sh
         bash miniconda.sh -b -p $HOME/miniconda
         export PATH="$HOME/miniconda/bin:$PATH"
-        $HOME/miniconda/bin/conda install numpy scipy astropy pip keyring --yes
+        $HOME/miniconda/bin/conda install numpy scipy astropy xarray pip keyring --yes
         cd $GITHUB_WORKSPACE
         $HOME/miniconda/bin/python setup.py sdist
     - name: Publish to PyPI
