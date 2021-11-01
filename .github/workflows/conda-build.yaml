@@ -73,3 +73,18 @@ jobs:
         rm -r osx-64
         rm -r win-64
         rm -r win-32
+        $HOME/miniconda/bin/conda-build --python 3.9 --output-folder . .
+        $HOME/miniconda/bin/conda convert -p linux-32 linux-64/*.tar.bz2
+        $HOME/miniconda/bin/conda convert -p win-32 linux-64/*.tar.bz2
+        $HOME/miniconda/bin/conda convert -p osx-64 linux-64/*.tar.bz2
+        $HOME/miniconda/bin/conda convert -p win-64 linux-64/*.tar.bz2
+        $HOME/miniconda/bin/anaconda upload --label main linux-64/*.tar.bz2
+        $HOME/miniconda/bin/anaconda upload --label main osx-64/*.tar.bz2
+        $HOME/miniconda/bin/anaconda upload --label main win-64/*.tar.bz2
+        $HOME/miniconda/bin/anaconda upload --label main win-32/*.tar.bz2
+        $HOME/miniconda/bin/anaconda upload --label main linux-32/*.tar.bz2
+        rm -r linux-64
+        rm -r linux-32
+        rm -r osx-64
+        rm -r win-64
+        rm -r win-32
