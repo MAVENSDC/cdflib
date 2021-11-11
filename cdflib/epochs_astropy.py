@@ -5,13 +5,13 @@ CDF Astropy Epochs
 
 @author: Bryan Harter
 """
-import numpy as np
-from typing import List
 import datetime
 from datetime import timezone
-from astropy.time import Time
-from astropy.time.formats import erfa, TimeFromEpoch
+from typing import List
 
+import numpy as np
+from astropy.time import Time
+from astropy.time.formats import TimeFromEpoch, erfa
 
 __all__ = ['CDFAstropy']
 

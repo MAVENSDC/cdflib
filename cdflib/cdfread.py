@@ -28,16 +28,17 @@ Sample use::
 
 @author: Bryan Harter, Michael Liu
 """
-from pathlib import Path
-import tempfile
-import numpy as np
-import os
-import sys
-import struct
 import gzip
 import hashlib
-import cdflib.epochs as epoch
+import os
+import struct
+import sys
+import tempfile
+from pathlib import Path
 
+import numpy as np
+
+import cdflib.epochs as epoch
 
 __all__ = ['CDF']
 
