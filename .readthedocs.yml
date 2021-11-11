@@ -3,6 +3,8 @@ build:
 
 python:
   version: 3.8
-  setup_py_install: true
-
-requirements_file: requirements/docs.txt
+  install:
+    - method: pip
+        path: .
+        extra_requirements:
+          - docs
