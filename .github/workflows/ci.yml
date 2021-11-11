@@ -1,12 +1,6 @@
 name: ci
 
-on:
-  push:
-    paths:
-      - "**.py"
-  pull_request:
-    paths:
-      - "**.py"
+on: [push, pull_request]
 
 jobs:
 
@@ -22,9 +16,4 @@ jobs:
         python-version: '3.8'
     - run: pip install .[tests]
     - run: pytest --cov
-    - name: Upload Coverage (unix-like)
-      run: bash <(curl -s https://codecov.io/bash)
-      if: matrix.os != 'windows-latest'
-    - name: Upload Coverage (Windows)
-      run: Invoke-WebRequest -Uri "https://codecov.io/bash" -OutFile codecov.sh
-      if: matrix.os == 'windows-latest'
+    - uses: codecov/codecov-action@v2
