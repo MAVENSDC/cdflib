@@ -1,6 +1,7 @@
-import cdflib
-import xarray as xr
 import numpy as np
+import xarray as xr
+
+import cdflib
 from cdflib.epochs import CDFepoch as cdfepoch
 
 ISTP_TO_XARRAY_ATTRS = {'FIELDNAM': 'standard_name',
@@ -481,4 +482,3 @@ def cdf_to_xarray(filename, to_datetime=False, to_unixtime=False, fillval_to_nan
 
     # Create the XArray DataSet Object!
     return xr.Dataset(data_vars=created_data_vars, coords=created_coord_vars, attrs=global_attributes)
-

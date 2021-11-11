@@ -1,8 +1,6 @@
-from . import cdfread
-from . import cdfwrite
-
-
+from . import cdfread, cdfwrite
 from .epochs import CDFepoch as cdfepoch  # noqa: F401
+
 try:
     from .epochs_astropy import CDFAstropy as cdfastropy
 except Exception:
@@ -13,6 +11,7 @@ except Exception:
     pass
 
 from pathlib import Path
+
 # This function determines if we are reading or writing a file
 
 

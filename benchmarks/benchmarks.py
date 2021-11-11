@@ -1,5 +1,6 @@
-from cdflib.epochs import CDFepoch as cdfepoch
 import numpy as np
+
+from cdflib.epochs import CDFepoch as cdfepoch
 
 
 class TimeSuite:
