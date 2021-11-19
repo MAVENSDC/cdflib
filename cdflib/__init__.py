@@ -7,8 +7,10 @@ try:
     from .epochs_astropy import CDFAstropy as cdfastropy
 except Exception:
     pass
+
 try:
     from .cdf_to_xarray import cdf_to_xarray
+    from .xarray_to_cdf import xarray_to_cdf
 except Exception:
     pass
 
