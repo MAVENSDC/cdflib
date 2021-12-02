@@ -378,9 +378,11 @@ class CDF:
                 entryNumMaX = -1
                 poffset = -1
                 for entryNum, value in entry.items():
+                    if value=='LINK_TEXT':
+                        print('asdf')
                     if (entryNumMaX < entryNum):
                         entryNumMaX = entryNum
-                    if (isinstance(value, list) or isinstance(value, tuple)):
+                    if hasattr(value, '__len__') and not isinstance(value, str):
                         if (len(value) == 2):
                             # Check if the second value is a valid data type
                             value2 = value[1]
@@ -543,7 +545,7 @@ class CDF:
                                 zVar = False
                     if (entryNum > entryNumX):
                         entryNumX = entryNum
-                    if (isinstance(value, list) or isinstance(value, tuple)):
+                    if hasattr(data, '__len__') and not isinstance(data, str):
                         if (len(value) == 2):
                             value2 = value[1]
                             dataType = self._datatype_token(value2)
@@ -775,7 +777,7 @@ class CDF:
 
         # Get pad value
         pad = var_spec.get('Pad', None)
-        if (isinstance(pad, list) or isinstance(pad, tuple)):
+        if hasattr(pad, '__len__'):
             pad = pad[0]
 
         if (name in self.zvars or name in self.rvars):
@@ -876,7 +878,7 @@ class CDF:
 
             # Check if dataType was provided
             dataType = 0
-            if (isinstance(entry, list) or isinstance(entry, tuple)):
+            if hasattr(entry, '__len__') and not isinstance(entry, str):
                 items = len(entry)
                 if (items == 2):
                     dataType = self._datatype_token(entry[1])
@@ -886,14 +888,14 @@ class CDF:
                 data = entry[0]
                 if (self._checklistofNums(data)):
                     # All are numbers
-                    if (isinstance(data, list) or isinstance(data, tuple)):
+                    if hasattr(data, '__len__') and not isinstance(data, str):
                         numElems = len(data)
                     else:
                         numElems = 1
                 else:
                     # Then string(s) -- either in CDF_type or epoch in string(s)
                     if (dataType == self.CDF_CHAR or dataType == self.CDF_UCHAR):
-                        if isinstance(data, (list, tuple)):
+                        if hasattr(data, '__len__') and not isinstance(data, str):
                             items = len(data)
                             odata = data
                             data = ''
@@ -907,7 +909,7 @@ class CDF:
                     elif (dataType == self.CDF_EPOCH or dataType == self.CDF_EPOCH16
                           or dataType == self.CDF_TIME_TT2000):
                         cvalue = []
-                        if isinstance(data, (list, tuple)):
+                        if hasattr(data, '__len__') and not isinstance(data, str):
                             numElems = len(data)
                             for x in range(0, numElems):
                                 cvalue.append(cdfepoch.CDFepoch.parse(data[x]))
@@ -918,7 +920,7 @@ class CDF:
             else:
                 # No data type defined...
                 data = entry
-                if isinstance(entry, (list, tuple)):
+                if hasattr(data, '__len__') and not isinstance(data, str):
                     numElems, dataType = self._datatype_define(entry[0])
                     if (dataType == self.CDF_CHAR or dataType == self.CDF_UCHAR):
                         data = ''
@@ -977,7 +979,7 @@ class CDF:
         # Deal with EPOCH16 data types
         if (dataType == self.CDF_EPOCH16):
             epoch16 = []
-            if isinstance(indata, (list, tuple, np.ndarray)):
+            if hasattr(indata, '__len__') and not isinstance(indata, str):
                 adata = indata[0]
                 if (isinstance(adata, complex)):
                     recs = len(indata)
@@ -1402,6 +1404,21 @@ class CDF:
                 return numElems, self.CDF_DOUBLE
             elif (isinstance(value, complex)):
                 return numElems, self.CDF_EPOCH16
+            elif (hasattr(value, 'dtype')):
+                # We are likely dealing with a numpy number at this point
+                if value.dtype.type in (np.int8, np.int16, np.int32, np.int64):
+                    return numElems, self.CDF_INT8
+                elif value.dtype.type == np.complex128:
+                    return numElems, self.CDF_EPOCH16
+                elif value.dtype.type in (np.uint8, np.uint16, np.uint32, np.uint64):
+                    return numElems, self.CDF_UINT4
+                elif value.dtype.type in (np.float16, np.float32, np.float64):
+                    return numElems, self.CDF_DOUBLE
+                elif value.dtype.type == np.str_:
+                    return numElems, self.CDF_CHAR
+                else:
+                    warnings.warn('Invalid data type for data.... Skip')
+                    return None, None
             else:
                 warnings.warn('Invalid data type for data.... Skip')
                 return None, None
@@ -1443,25 +1460,25 @@ class CDF:
                 if (datatype == 51 or datatype == 52):
                     return numElms
                 else:
-                    return sizes[datatype]
+                    return sizes[datatype] * numElms
             else:
                 datatype = datatype.upper()
                 if (datatype == 'CDF_INT1' or datatype == 'CDF_UINT1' or
                         datatype == 'CDF_BYTE'):
-                    return 1
+                    return 1 * numElms
                 elif (datatype == 'CDF_INT2' or datatype == 'CDF_UINT2'):
-                    return 2
+                    return 2 * numElms
                 elif (datatype == 'CDF_INT4' or datatype == 'CDF_UINT4'):
-                    return 4
+                    return 4 * numElms
                 elif (datatype == 'CDF_INT8' or datatype == 'CDF_TIME_TT2000'):
-                    return 8
+                    return 8 * numElms
                 elif (datatype == 'CDF_REAL4' or datatype == 'CDF_FLOAT'):
-                    return 4
+                    return 4 * numElms
                 elif (datatype == 'CDF_REAL8' or datatype == 'CDF_DOUBLE' or
                       datatype == 'CDF_EPOCH'):
-                    return 8
+                    return 8 * numElms
                 elif (datatype == 'CDF_EPOCH16'):
-                    return 16
+                    return 16 * numElms
                 elif (datatype == 'CDF_CHAR' or datatype == 'CDF_UCHAR'):
                     return numElms
                 else:
@@ -1688,7 +1705,7 @@ class CDF:
 
         if pdataType is None:
             # Figure out Data Type if not supplied
-            if isinstance(value, (list, tuple)):
+            if hasattr(value, '__len__')  and not isinstance(value, str):
                 avalue = value[0]
             else:
                 avalue = value
@@ -1708,7 +1725,7 @@ class CDF:
                 pdataType = self.CDF_CHAR
                 pnumElems = len(value)
             else:
-                if isinstance(value, (list, tuple)):
+                if hasattr(value, '__len__') and not isinstance(value, str):
                     pnumElems = len(value)
                 else:
                     pnumElems = 1
@@ -2254,20 +2271,35 @@ class CDF:
             form2 = tofrom + form
             datau = struct.unpack(form, indata)
             return recs, struct.pack(form2, *datau)
-        elif (isinstance(indata, np.ndarray)):
-            tofrom = self._convert_option()
-            npdata = self._convert_nptype(data_type, indata)
-            if indata.size == num_values:  # Check if only one record is being read in
-                recs = 1
+        elif isinstance(indata, np.ndarray):
+            if (data_type == self.CDF_CHAR or data_type == self.CDF_UCHAR):
+                size = len(indata)
+                odata = ''
+                for x in range(0, size):
+                    adata = indata[x]
+                    if (isinstance(adata, list) or isinstance(adata, tuple)):
+                        size2 = len(adata)
+                        for y in range(0, size2):
+                            odata += str(adata[y]).ljust(num_elems, '\x00')
+                    else:
+                        size2 = 1
+                        odata += str(adata).ljust(num_elems, '\x00')
+                recs = int((size*size2)/num_values)
+                return recs, odata.encode()
             else:
-                recs = len(indata)
-            dt_string = self._convert_type(data_type)
-            if (data_type == self.CDF_EPOCH16):
-                num_elems = 2 * num_elems
-            form = str(recs*num_values*num_elems) + dt_string
-            form2 = tofrom + str(recs*num_values*num_elems) + dt_string
-            datau = struct.unpack(form, npdata)
-            return recs, struct.pack(form2, *datau)
+                tofrom = self._convert_option()
+                npdata = self._convert_nptype(data_type, indata)
+                if indata.size == num_values*num_elems:  # Check if only one record is being read in
+                    recs = 1
+                else:
+                    recs = len(indata)
+                dt_string = self._convert_type(data_type)
+                if (data_type == self.CDF_EPOCH16):
+                    num_elems = 2 * num_elems
+                form = str(recs*num_values*num_elems) + dt_string
+                form2 = tofrom + str(recs*num_values*num_elems) + dt_string
+                datau = struct.unpack(form, npdata)
+                return recs, struct.pack(form2, *datau)
         elif (isinstance(indata, str)):
             return 1, indata.ljust(num_elems, '\x00').encode()
         else:
@@ -2449,7 +2481,7 @@ class CDF:
 
     @staticmethod
     def _checklistofNums(obj):
-        if (isinstance(obj, list) or isinstance(obj, tuple)):
+        if hasattr(obj, '__len__'):
             return bool(obj) and all(isinstance(elem, numbers.Number)
                                      for elem in obj)
         else:
