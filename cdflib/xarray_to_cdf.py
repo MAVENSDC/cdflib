@@ -3,25 +3,38 @@ import xarray as xr
 import numpy as np
 from datetime import datetime
 from cdflib.epochs import CDFepoch as cdfepoch
+import re
 
+def _dtype_to_cdf_type(var):
 
-def _dtype_to_cdf_type(var, dtype):
-
-    if var.lower().startswith('epoch'):
+    epoch_regex_1 = re.compile('epoch$')
+    epoch_regex_2 = re.compile('epoch_[0-9]+$')
+    if epoch_regex_1.match(var.name.lower()) or epoch_regex_2.match(var.name.lower()):
         return 33, 1 # CDF_EPOCH_TT2000
 
-    if dtype == np.int8 or dtype == np.int16 or dtype == np.int32 or dtype == np.int64:
+    if var.dtype == np.int8 or var.dtype == np.int16 or var.dtype == np.int32 or var.dtype == np.int64:
         return 8, 1 #'CDF_INT8'
-    elif dtype == np.float64 or dtype == np.float32 or dtype == np.float16:
+    elif var.dtype == np.float64 or var.dtype == np.float32 or var.dtype == np.float16:
         return 45, 1 #'CDF_DOUBLE'
-    elif dtype == np.uint8 or dtype == np.uint16 or dtype == np.uint32 or dtype == np.uint64:
+    elif var.dtype == np.uint8 or var.dtype == np.uint16 or var.dtype == np.uint32 or var.dtype == np.uint64:
         return 14, 1 #'CDF_UNIT4'
-    elif dtype == np.str_:
-        return 51, int(dtype.str[2:]) # CDF_CHAR, and the length of the longest string in the numpy array
+    elif var.dtype.type == np.str_:
+        return 51, int(var.dtype.str[2:]) # CDF_CHAR, and the length of the longest string in the numpy array
+    elif var.dtype.type == np.bytes_: # Bytes are usually strings
+        return 51, int(var.dtype.str[2:]) # CDF_CHAR, and the length of the longest string in the numpy array
+    elif var.dtype == np.object: # This commonly means we have multidimensional arrays of strings
+        try:
+            longest_string = 0
+            for x in np.nditer(var.data, flags=['refs_ok']):
+                if len(str(x)) > longest_string:
+                    longest_string = len(str(x))
+            return 51, longest_string
+        except Exception as e:
+            print(f'NOT SUPPORTED: Data in variable {var.name} has data type {var.dtype}.  Attempting to convert it to strings ran into the error: {str(e)}')
+            return 51, 1
     else:
-        print(f'Data type of {dtype} not supported')
-
-    return
+        print(f'NOT SUPPORTED: Data in variable {var.name} has data type of {var.dtype}.')
+        return 51, 1
 
 def _dtype_to_fillval(dtype):
 
@@ -31,6 +44,8 @@ def _dtype_to_fillval(dtype):
         return -1e30 #Default FILLVAL of 'CDF_DOUBLE'
     elif dtype == np.uint8 or dtype == np.uint16 or dtype == np.uint32 or dtype == np.uint64:
         return 4294967294 #Default FILLVAL of 'CDF_UNIT4'
+    elif dtype.type == np.str_:
+        return " " # Default FILLVAL of 'CDF_CHAR'
     else:
         print(f'Data type of {dtype} not supported')
 
@@ -48,7 +63,6 @@ def _dimension_checker(dataset):
 
     # Loop through the data
     for var in dataset:
-
         # Determine the variable type (data, support_data, metadata, ignore_data)
         if 'VAR_TYPE' not in dataset[var].attrs:
             print(f'ISTP Compliance Warning: Variable {var} does not have an attribute VAR_TYPE to describe the variable.  Attributes must be either data, support_data, metadata, or ignore_data.')
@@ -71,13 +85,25 @@ def _dimension_checker(dataset):
         potential_depend_dims = dataset[var].dims[1:]
         i = 1
         for d in potential_depend_dims:
-            if d in dataset.coords:
-                depend_dimension_list.append(d)
+            depend_dimension_list.append(d)
+            if d in dataset.coords: # Check if the dimension is in the coordinates themselves
                 if not f'DEPEND_{i}' in dataset[var].attrs:
                     dataset[var].attrs[f'DEPEND_{i}'] = d
             else:
-                if var_type.lower() == 'data':
-                    print(f'ISTP Compliance Warning: variable {var} contains a dimension {d} that is not defined in xarray.')
+                # If the dimension is not labeled in the coordinate, look for a time-varying coordinate with those dimensions.
+                # That one is likely to be the 'DEPEND_i' we are looking for
+                if var_type is None or var_type != 'metadata':
+                    for c in dataset.coords:
+                        if len(dataset.coords[c].dims) == 2:
+                            if d == dataset.coords[c].dims[1]:
+                                # We have found a coordinate variable that depends on this dimension
+                                if not f'DEPEND_{i}' in dataset[var].attrs:
+                                    #dataset[var].attrs[f'DEPEND_{i}'] = c
+                                    pass
+                                break
+                    else:
+                        if var_type.lower() == 'data':
+                            print(f'ISTP Compliance Warning: variable {var} contains a dimension {d} that is not defined in xarray.')
             i += 1
 
     depend_dimension_list = list(set(depend_dimension_list))
@@ -94,6 +120,10 @@ def _epoch_checker(dataset, dim_vars):
 
     # Loop through the non-coordinate data
     for var in dataset:
+
+        # Continue if there are no dimensions
+        if len(dataset[var].dims) == 0:
+            continue
 
         # Look at the first dimension of each data
         potential_depend_0 = dataset[var].dims[0]
@@ -209,15 +239,17 @@ def _variable_attribute_checker(dataset, epoch_list):
                 if var_type == 'data':
                     print(f'ISTP Compliance Warning: VALIDMIN required for variable {var}')
                 elif var_type == 'support_data':
-                    if dataset[var].dims[0] in epoch_list:
-                        print(f'ISTP Compliance Warning: VALIDMIN required for variable {var}')
+                    if len(dataset[var].dims) > 0:
+                        if dataset[var].dims[0] in epoch_list:
+                            print(f'ISTP Compliance Warning: VALIDMIN required for variable {var}')
 
             if 'VALIDMAX' not in d[var].attrs:
                 if var_type == 'data':
                     print(f'ISTP Compliance Warning: VALIDMAX required for variable {var}')
                 elif var_type == 'support_data':
-                    if d[var].dims[0] in epoch_list:
-                        print(f'ISTP Compliance Warning: VALIDMAX required for variable {var}')
+                    if len(dataset[var].dims) > 0:
+                        if d[var].dims[0] in epoch_list:
+                            print(f'ISTP Compliance Warning: VALIDMAX required for variable {var}')
 
             if 'FILLVAL' not in d[var].attrs:
                 if var_type == 'data':
@@ -226,14 +258,48 @@ def _variable_attribute_checker(dataset, epoch_list):
                     d[var].attrs['FILLVAL'] = fillval
                     print(f'ISTP Compliance Action: Automatically set FILLVAL to {fillval} for variable {var}')
                 elif var_type == 'support_data':
-                    if d[var].dims[0] in epoch_list:
-                        print(f'ISTP Compliance Warning: FILLVAL required for variable {var}')
-                        fillval = _dtype_to_fillval(d[var].dtype)
-                        d[var].attrs['FILLVAL'] = fillval
-                        print(f'ISTP Compliance Action: Automatically set FILLVAL to {fillval} for variable {var}')
+                    if len(dataset[var].dims) > 0:
+                        if d[var].dims[0] in epoch_list:
+                            print(f'ISTP Compliance Warning: FILLVAL required for variable {var}')
+                            fillval = _dtype_to_fillval(d[var].dtype)
+                            d[var].attrs['FILLVAL'] = fillval
+                            print(f'ISTP Compliance Action: Automatically set FILLVAL to {fillval} for variable {var}')
+
+def _label_checker(dataset):
+    # NOTE: This may add attributes to the dataset object!
+
+    # This variable will capture all ISTP compliant variables
+    istp_label_list = []
+
+    # Loop through the data
+    for var in dataset:
+        # Determine ISTP compliant variables
+        for att in dataset[var].attrs:
+            if att.startswith('LABL_PTR'):
+                if (dataset[var].attrs[att] in dataset) or (dataset[var].attrs[att] in dataset.coords):
+                    istp_label_list.append(dataset[var].attrs[att])
+                else:
+                    print(
+                        f'ISTP Compliance Warning: variable {var} listed {dataset[var].attrs[att]} as its {att}.  However, it was not found in the dataset.')
+
+    istp_label_list = list(set(istp_label_list))
+
+    for l in istp_label_list:
+        if 'VAR_TYPE' not in dataset[l].attrs:
+            dataset[l].attrs['VAR_TYPE'] = 'metadata'
+
+    return istp_label_list
 
 def _unixtime_to_tt2000(unixtime_data):
     tt2000_data = np.array([])
+
+    # Make sure the object is iterable.  Sometimes numpy arrays claim to be iterable when they aren't.
+    if not hasattr(unixtime_data, '__len__'):
+        unixtime_data = [unixtime_data]
+    elif isinstance(unixtime_data, np.ndarray):
+        if unixtime_data.size <= 1:
+            unixtime_data = [unixtime_data]
+
     for ud in unixtime_data:
         dt = datetime.utcfromtimestamp(ud)
         dt_to_convert = [dt.year,
@@ -267,6 +333,8 @@ def xarray_to_cdf(dataset, file_name, from_unixtime=False, from_datetime=False):
 
     x = cdflib.CDF(file_name)
 
+    label_vars = _label_checker(dataset)
+
     dim_vars = _dimension_checker(dataset)
 
     depend_0_vars = _epoch_checker(dataset, dim_vars)
@@ -279,34 +347,57 @@ def xarray_to_cdf(dataset, file_name, from_unixtime=False, from_datetime=False):
     # Gather the global attributes, write them into the file
     glob_att_dict = {}
     for ga in dataset.attrs:
-        glob_att_dict[ga] = {0: dataset.attrs[ga]}
+        if hasattr(dataset.attrs[ga], '__len__') and not isinstance(dataset.attrs[ga], str):
+            i = 0
+            glob_att_dict[ga] = {}
+            for _ in dataset.attrs[ga]:
+                glob_att_dict[ga][i] = dataset.attrs[ga][i]
+                i += 1
+        else:
+            glob_att_dict[ga] = {0: dataset.attrs[ga]}
     x.write_globalattrs(glob_att_dict)
 
     # Gather the variables, write them into the file
-    var_att_dict = {}
     datasets = (dataset, dataset.coords)
     for d in datasets:
         for var in d:
+            if var == 'mms1_des_bulkv_spintone_dbcs_label_brst':
+                print('asdf')
+
+            var_att_dict = {}
             for att in d[var].attrs:
                 var_att_dict[att] = d[var].attrs[att]
 
+            cdf_data_type, cdf_num_elements = _dtype_to_cdf_type(d[var])
+            if cdf_data_type is None or cdf_num_elements is None:
+                continue
 
-            cdf_data_type, cdf_num_elements = _dtype_to_cdf_type(var, d[var].dtype)
+            if len(d[var].dims) > 0:
+                if d[var].dims[0] in dim_vars:
+                    dim_sizes = d[var].shape
+                else:
+                    dim_sizes = d[var].shape[1:]
+            else:
+                dim_sizes = []
 
             var_spec = {'Variable': var,
                         'Data_Type': cdf_data_type,
                         'Num_Elements': cdf_num_elements,
                         'Rec_Vary': True,
-                        'Dim_Sizes': list(d[var].shape[1:]),
+                        'Dim_Sizes': list(dim_sizes),
                         'Compress': 0}
 
             var_data = d[var].data
-            if var.lower().startswith('epoch'):
+
+            epoch_regex_1 = re.compile('epoch$')
+            epoch_regex_2 = re.compile('epoch_[0-9]+$')
+            if epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
                 if from_unixtime:
                     var_data = _unixtime_to_tt2000(d[var].data)
                 elif from_datetime:
                     var_data = _datetime_to_tt2000(d[var].data)
             print(f'writing variable {var}')
+
             x.write_var(var_spec, var_attrs=var_att_dict, var_data=var_data)
 
     return

@@ -378,8 +378,6 @@ class CDF:
                 entryNumMaX = -1
                 poffset = -1
                 for entryNum, value in entry.items():
-                    if value=='LINK_TEXT':
-                        print('asdf')
                     if (entryNumMaX < entryNum):
                         entryNumMaX = entryNum
                     if hasattr(value, '__len__') and not isinstance(value, str):
