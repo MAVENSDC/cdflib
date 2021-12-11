@@ -31,7 +31,14 @@ def _convert_cdf_time_types(data, atts, properties, to_datetime=False, to_unixti
     # If nothing, ALL CDF_EPOCH16 types are converted to CDF_EPOCH, because xarray can't handle int64s
     '''
 
+    data = np.squeeze(data)
+
     if not hasattr(data, '__len__'):
+        data = [data]
+
+    try:
+        len(data)
+    except Exception as e:
         data = [data]
 
     if to_datetime and to_unixtime:
@@ -169,8 +176,8 @@ def _discover_label_variables(varatts, all_variable_properties, all_variable_dat
             depend_var_name = varatts[v][label_dependency]
 
             if all_variable_properties[depend_var_name]["Dim_Sizes"] and \
-                    (all_variable_properties[depend_var_name]["Dim_Sizes"][0] == all_variable_properties[v]
-                    ["Dim_Sizes"][int(lab[-1])-1]):
+                    len(all_variable_properties[v]["Dim_Sizes"]) > 0 and \
+                    (all_variable_properties[depend_var_name]["Dim_Sizes"][0] == all_variable_properties[v]["Dim_Sizes"][int(lab[-1])-1]):
                 if all_variable_data[depend_var_name].size == 0:
                     continue
             else:
@@ -382,7 +389,6 @@ def _generate_xarray_data_variables(all_variable_data, all_variable_attributes,
     created_vars = {}
 
     for var_name in all_variable_data:
-
         var_dims = []
         var_atts = all_variable_attributes[var_name]
         var_data = np.array(all_variable_data[var_name])
@@ -452,6 +458,7 @@ def cdf_to_xarray(filename, to_datetime=False, to_unixtime=False, fillval_to_nan
     created_coord_vars = {}
     created_data_vars = {}
     for var_name in created_vars:
+
         if var_name in label_variables:
             # If these are label variables, we'll deal with these later when the DEPEND variables come up
             continue

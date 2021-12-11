@@ -145,6 +145,8 @@ class CDFepoch(object):
     @staticmethod
     def breakdown(epochs, to_np: bool = False):
         if isinstance(epochs, (list, tuple, np.ndarray)):
+            if isinstance(epochs, np.ndarray) and len(epochs.shape) > 1:
+                epochs = np.squeeze(epochs)
             item = epochs[0]
         else:
             item = epochs

@@ -994,7 +994,7 @@ class CDF:
         # Convert to byte stream
         recs, data = self._convert_data(dataType, numElems, numValues, indata)
 
-        if not recVary:
+        if not recVary and len(data) != 0:
             recs = 1
         if zVar:
             vdr_offset = self.zvarsinfo[var][1]
@@ -2287,7 +2287,9 @@ class CDF:
             else:
                 tofrom = self._convert_option()
                 npdata = self._convert_nptype(data_type, indata)
-                if indata.size == num_values*num_elems:  # Check if only one record is being read in
+                if indata.size == 0:  # Check if the data being read in is zero size
+                    recs = 0
+                elif indata.size == num_values*num_elems:  # Check if only one record is being read in
                     recs = 1
                 else:
                     recs = len(indata)
