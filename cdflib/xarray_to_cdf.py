@@ -53,6 +53,8 @@ def _dtype_to_fillval(dtype):
 
 def _dimension_checker(dataset):
 
+    depend_regex = re.compile('depend_[0-9]+$')
+
     # NOTE: This may add attributes to the dataset object!
 
     # This variable will capture all ISTP compliant variables
@@ -61,50 +63,54 @@ def _dimension_checker(dataset):
     # This variable will capture all other non-epoch dimension variables
     depend_dimension_list = []
 
-    # Loop through the data
-    for var in dataset:
-        # Determine the variable type (data, support_data, metadata, ignore_data)
-        if 'VAR_TYPE' not in dataset[var].attrs:
-            print(f'ISTP Compliance Warning: Variable {var} does not have an attribute VAR_TYPE to describe the variable.  Attributes must be either data, support_data, metadata, or ignore_data.')
-            var_type = None
-        else:
-            var_type = dataset[var].attrs['VAR_TYPE']
-            if var_type.lower() not in ('data', 'support_data', 'metadata', 'ignore_data'):
-                print(f'ISTP Compliance Warning: Variable {var} attribute VAR_TYPE is not set to either data, support_data, metadata, or ignore_data.')
+    data = (dataset, dataset.coords)
+
+    for d in data:
+
+        # Loop through the data
+        for var in d:
+            # Determine the variable type (data, support_data, metadata, ignore_data)
+            if 'VAR_TYPE' not in dataset[var].attrs:
+                print(f'ISTP Compliance Warning: Variable {var} does not have an attribute VAR_TYPE to describe the variable.  Attributes must be either data, support_data, metadata, or ignore_data.')
                 var_type = None
-
-        # Determine ISTP compliant variables
-        for att in dataset[var].attrs:
-            if att.startswith('DEPEND') and att != 'DEPEND_0':
-                if (dataset[var].attrs[att] in dataset) or (dataset[var].attrs[att] in dataset.coords):
-                    istp_depend_dimension_list.append(dataset[var].attrs[att])
-                else:
-                    print(f'ISTP Compliance Warning: variable {var} listed {dataset[var].attrs[att]} as its {att}.  However, it was not found in the dataset.')
-
-        # Determine potential dimension (non-epoch) variables
-        potential_depend_dims = dataset[var].dims[1:]
-        i = 1
-        for d in potential_depend_dims:
-            depend_dimension_list.append(d)
-            if d in dataset.coords: # Check if the dimension is in the coordinates themselves
-                if not f'DEPEND_{i}' in dataset[var].attrs:
-                    dataset[var].attrs[f'DEPEND_{i}'] = d
             else:
-                # If the dimension is not labeled in the coordinate, look for a time-varying coordinate with those dimensions.
-                # That one is likely to be the 'DEPEND_i' we are looking for
-                if var_type is None or var_type != 'metadata':
-                    for c in dataset.coords:
-                        if len(dataset.coords[c].dims) == 2:
-                            if d == dataset.coords[c].dims[1]:
-                                # We have found a coordinate variable that depends on this dimension
-                                if not f'DEPEND_{i}' in dataset[var].attrs:
-                                    dataset[var].attrs[f'DEPEND_{i}'] = c
-                                    #pass
-                                break
+                var_type = dataset[var].attrs['VAR_TYPE']
+                if var_type.lower() not in ('data', 'support_data', 'metadata', 'ignore_data'):
+                    print(f'ISTP Compliance Warning: Variable {var} attribute VAR_TYPE is not set to either data, support_data, metadata, or ignore_data.')
+                    var_type = None
+
+            # Determine ISTP compliant variables
+            for att in dataset[var].attrs:
+                if depend_regex.match(att.lower()) and att != 'DEPEND_0':
+                    if (dataset[var].attrs[att] in dataset) or (dataset[var].attrs[att] in dataset.coords):
+                        istp_depend_dimension_list.append(dataset[var].attrs[att])
                     else:
-                        if var_type.lower() == 'data':
-                            print(f'ISTP Compliance Warning: variable {var} contains a dimension {d} that is not defined in xarray.')
-            i += 1
+                        print(f'ISTP Compliance Warning: variable {var} listed {dataset[var].attrs[att]} as its {att}.  However, it was not found in the dataset.')
+
+            # Determine potential dimension (non-epoch) variables
+            potential_depend_dims = dataset[var].dims[1:]
+            i = 1
+            for d in potential_depend_dims:
+                depend_dimension_list.append(d)
+                if d in dataset.coords: # Check if the dimension is in the coordinates themselves
+                    if not f'DEPEND_{i}' in dataset[var].attrs:
+                        dataset[var].attrs[f'DEPEND_{i}'] = d
+                else:
+                    # If the dimension is not labeled in the coordinate, look for a time-varying coordinate with those dimensions.
+                    # That one is likely to be the 'DEPEND_i' we are looking for
+                    if var_type is None or var_type != 'metadata':
+                        for c in dataset.coords:
+                            if len(dataset.coords[c].dims) == 2:
+                                if d == dataset.coords[c].dims[1]:
+                                    # We have found a coordinate variable that depends on this dimension
+                                    if not f'DEPEND_{i}' in dataset[var].attrs:
+                                        dataset[var].attrs[f'DEPEND_{i}'] = c
+                                        #pass
+                                    break
+                        else:
+                            if var_type.lower() == 'data':
+                                print(f'ISTP Compliance Warning: variable {var} contains a dimension {d} that is not defined in xarray.')
+                i += 1
 
     depend_dimension_list = list(set(depend_dimension_list))
     istp_depend_dimension_list = list(set(istp_depend_dimension_list))
@@ -117,53 +123,62 @@ def _epoch_checker(dataset, dim_vars):
 
     # This holds the list of epoch variables
     depend_0_list = []
+    time_varying_dimensions = []
 
-    # Loop through the non-coordinate data
-    for var in dataset:
+    data = (dataset, dataset.coords)
 
-        # Continue if there are no dimensions
-        if len(dataset[var].dims) == 0:
-            continue
+    for d in data:
 
-        epoch_regex_1 = re.compile('epoch$')
-        epoch_regex_2 = re.compile('epoch_[0-9]+$')
-        first_dim_name = dataset[var].dims[0]
+        # Loop through the non-coordinate data
+        for var in d:
 
-        # Look at the first dimension of each data
-        if 'VAR_TYPE' in dataset[var].attrs and dataset[var].attrs['VAR_TYPE'] == 'data':
-            potential_depend_0 = first_dim_name
-        elif 'DEPEND_0' in dataset[var].attrs:
-            potential_depend_0 = dataset[var].attrs['DEPEND_0']
-        elif epoch_regex_1.match(first_dim_name.lower()) or epoch_regex_2.match(first_dim_name.lower()):
-            potential_depend_0 = first_dim_name
-        elif epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
-            potential_depend_0 = first_dim_name
-        else:
-            potential_depend_0 = ''
+            # Continue if there are no dimensions
+            if len(dataset[var].dims) == 0:
+                continue
 
-        # We want to ignore any dimensions that were already gathered in the _dimension_checker function
-        if potential_depend_0 in dim_vars or potential_depend_0 == '':
-            continue
+            epoch_regex_1 = re.compile('epoch$')
+            epoch_regex_2 = re.compile('epoch_[0-9]+$')
+            first_dim_name = dataset[var].dims[0]
 
-        # Ensure that the dimension is listed somewhere else in the dataset
-        if potential_depend_0 in dataset or potential_depend_0 in dataset.coords:
-            depend_0_list.append(potential_depend_0)
-        elif epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
-            depend_0_list.append(potential_depend_0)
-        else:
-            print(f'ISTP Compliance Warning: variable {var} contained an EPOCH dimension {potential_depend_0}, but it was not found in the data set.')
+            # Look at the first dimension of each data
+            if 'VAR_TYPE' in dataset[var].attrs and dataset[var].attrs['VAR_TYPE'] == 'data':
+                potential_depend_0 = first_dim_name
+                time_varying_dimensions.append(var)
+            elif 'DEPEND_0' in dataset[var].attrs:
+                potential_depend_0 = dataset[var].attrs['DEPEND_0']
+                time_varying_dimensions.append(var)
+            elif epoch_regex_1.match(first_dim_name.lower()) or epoch_regex_2.match(first_dim_name.lower()):
+                potential_depend_0 = first_dim_name
+                time_varying_dimensions.append(var)
+            elif epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
+                potential_depend_0 = first_dim_name
+                time_varying_dimensions.append(var)
+            else:
+                potential_depend_0 = ''
 
-        # Add the depend_0 as an attribute if it doesn't exist yet
-        if 'DEPEND_0' not in dataset[var].attrs:
-            dataset[var].attrs['DEPEND_0'] = potential_depend_0
-            print(f'ISTP Compliance Action: Adding attribute DEPEND_0={potential_depend_0} to {var}')
+            # We want to ignore any dimensions that were already gathered in the _dimension_checker function
+            if potential_depend_0 in dim_vars or potential_depend_0 == '':
+                continue
+
+            # Ensure that the dimension is listed somewhere else in the dataset
+            if potential_depend_0 in dataset or potential_depend_0 in dataset.coords:
+                depend_0_list.append(potential_depend_0)
+            elif epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
+                depend_0_list.append(potential_depend_0)
+            else:
+                print(f'ISTP Compliance Warning: variable {var} contained an EPOCH dimension {potential_depend_0}, but it was not found in the data set.')
+
+            # Add the depend_0 as an attribute if it doesn't exist yet
+            if 'DEPEND_0' not in dataset[var].attrs:
+                dataset[var].attrs['DEPEND_0'] = potential_depend_0
+                print(f'ISTP Compliance Action: Adding attribute DEPEND_0={potential_depend_0} to {var}')
 
     depend_0_list = list(set(depend_0_list))
 
     if not depend_0_list:
         print(f'ISTP Compliance Warning: No variable for the time dimension could be found.')
 
-    epoch_found = True
+    epoch_found = False
     for d in depend_0_list:
         if d.lower().startswith('epoch'):
             epoch_found=True
@@ -171,7 +186,7 @@ def _epoch_checker(dataset, dim_vars):
     if not epoch_found:
         print(f'ISTP Compliance Warning: There is no variable named Epoch.  Epoch is the required name of a DEPEND_0 attribute.')
 
-    return depend_0_list
+    return depend_0_list, time_varying_dimensions
 
 
 def _global_attribute_checker(dataset):
@@ -353,7 +368,7 @@ def xarray_to_cdf(dataset, file_name, from_unixtime=False, from_datetime=False):
 
     dim_vars = _dimension_checker(dataset)
 
-    depend_0_vars = _epoch_checker(dataset, dim_vars)
+    depend_0_vars, time_varying_dimensions = _epoch_checker(dataset, dim_vars)
 
     _global_attribute_checker(dataset)
 
@@ -385,7 +400,7 @@ def xarray_to_cdf(dataset, file_name, from_unixtime=False, from_datetime=False):
                 continue
 
             if len(d[var].dims) > 0:
-                if d[var].dims[0] in depend_0_vars:
+                if var in time_varying_dimensions:
                     dim_sizes = d[var].shape[1:]
                     record_vary = True
                 else:
