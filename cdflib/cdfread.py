@@ -1912,7 +1912,7 @@ class CDF:
                     z = byte_data[y:y+num_elems].find(b'\x00')
                     if (z > -1 and z < (num_elems - 1)):
                         byte_data[y + z + 1:y + num_elems] = b'\x00' * (num_elems - z - 1)
-                ret = byte_data[0:num_recs*num_elems].decode(self.string_encoding).replace('\x00', '')
+                ret = byte_data[0:num_recs*num_elems].decode(self.string_encoding, errors='ignore').replace('\x00', '')
             else:
                 # Count total number of strings
                 count = 1
@@ -1921,7 +1921,7 @@ class CDF:
                 strings = []
                 if (len(dimensions) == 0):
                     for i in range(0, num_recs*count*num_elems, num_elems):
-                        string1 = byte_stream[i:i+num_elems].decode(self.string_encoding).\
+                        string1 = byte_stream[i:i+num_elems].decode(self.string_encoding, errors='ignore').\
                             replace('\x00', '')
                         strings.append(string1)
                 else:
@@ -1929,7 +1929,7 @@ class CDF:
                         onerec = []
                         for i in range(x*count*num_elems, (x+1)*count*num_elems,
                                        num_elems):
-                            string1 = byte_stream[i:i+num_elems].decode(self.string_encoding)\
+                            string1 = byte_stream[i:i+num_elems].decode(self.string_encoding, errors='ignore')\
                                 .replace('\x00', '')
                             onerec.append(string1)
                         strings.append(onerec)
