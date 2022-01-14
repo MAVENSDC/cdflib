@@ -371,27 +371,30 @@ def _determine_dimension_names(var_name, var_atts, var_data, var_props, depend_v
                 skip_first_dim = False
                 continue
 
-            #if not var_props["Dim_Vary"][i]:
-            #    continue
-
             i += 1
 
             # Check if the dimension is already defined within the attribute section
             if 'DEPEND_' + str(i) in var_atts:
                 depend_i_variable_name = var_atts['DEPEND_' + str(i)]
+                depend_i_variable_data = np.array(all_variable_data[depend_i_variable_name])
                 if depend_i_variable_name not in all_variable_properties:
                     print(f"Warning: Variable {var_name} listed DEPEND_{str(i)} as {depend_i_variable_name}, but no"
                           f" variable by that name was found.")
                 else:
-                    if all_variable_data[depend_i_variable_name].size != 0 and \
-                            (all_variable_data[depend_i_variable_name].shape[0] == var_data.shape[i]):
+                    if not record_name_found:
+                        dimension_number = i-1
+                    else:
+                        dimension_number = i
+
+                    if depend_i_variable_data.size != 0 and \
+                            (depend_i_variable_data.shape[0] == var_data.shape[dimension_number]):
                         return_list.append((depend_i_variable_name, dim_size, True, False))
                         continue
-                    elif all_variable_data[depend_i_variable_name].size != 0 and \
-                            (all_variable_data[depend_i_variable_name].shape[1] == var_data.shape[i]):
+                    elif len(depend_i_variable_data.shape) > 1 and \
+                            depend_i_variable_data.size != 0 and \
+                            (depend_i_variable_data.shape[1] == var_data.shape[dimension_number]):
                         return_list.append((depend_i_variable_name+"_dim", dim_size, True, False))
                         continue
-
                     else:
                         print(f"Warning: Variable {var_name} listed DEPEND_{str(i)} as {depend_i_variable_name}"
                               f", but that variable's dimensions do not match {var_name}'s dimensions.")
@@ -462,8 +465,7 @@ def _generate_xarray_data_variables(all_variable_data, all_variable_attributes,
     created_vars = {}
 
     for var_name in all_variable_data:
-        if var_name == 'thc_psif_en_eflux_yaxis':
-            print('asdf')
+
         var_dims = []
         var_atts = all_variable_attributes[var_name]
         var_data = np.array(all_variable_data[var_name])
@@ -499,8 +501,7 @@ def _generate_xarray_data_variables(all_variable_data, all_variable_attributes,
 
         # There might be a few tweaks needed to the data or the dimension labels
         var_dims, var_data = _reformat_variable_dims_and_data(var_dims, var_data)
-        if 'thc_psif_epoch' in var_dims:
-            print('asdf')
+
         # Looks for attributes to convert over to the things XArray uses to plot
         additional_variable_attrs = _find_xarray_plotting_values(var_atts)
         var_atts.update(additional_variable_attrs)
@@ -513,7 +514,8 @@ def _generate_xarray_data_variables(all_variable_data, all_variable_attributes,
         try:
             created_vars[var_name] = xr.Variable(var_dims, var_data, attrs=var_atts)
         except Exception as e:
-            print('asdf')
+            print(f'ERROR: Creating Variable {var_name} ran into exception: {e}')
+
     return created_vars, depend_dimensions
 
 
