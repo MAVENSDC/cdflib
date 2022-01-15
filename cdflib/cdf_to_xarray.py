@@ -131,7 +131,7 @@ def _convert_cdf_to_dicts(filename, to_datetime=False, to_unixtime=False):
 
     return gatt, variable_attributes, variable_data, variable_properties
 
-def _verify_depend_dimensions(dataset, dimension_number, primary_variable_name, coordinate_variable_name):
+def _verify_depend_dimensions(dataset, dimension_number, primary_variable_name, coordinate_variable_name, primary_variable_properties):
 
     primary_data = np.array(dataset[primary_variable_name])
     coordinate_data = np.array(dataset[coordinate_variable_name])
@@ -153,17 +153,31 @@ def _verify_depend_dimensions(dataset, dimension_number, primary_variable_name, 
             print(f'ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the Epoch dimensions do not match.')
             return False
 
-    if len(primary_data.shape) <= dimension_number:
-        print(f'ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but {primary_variable_name} does not have that many dimensions')
-        return False
+    if primary_variable_properties["Rec_Vary"] and primary_variable_properties["Last_Rec"] > 0:
+        if len(primary_data.shape) <= dimension_number:
+            print(f'ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but {primary_variable_name} does not have that many dimensions')
+            return False
 
-    if primary_data.shape[dimension_number] != coordinate_data.shape[-1]:
-        print(f'ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match.')
-        return False
+        if primary_data.shape[dimension_number] != coordinate_data.shape[-1]:
+            print(f'ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match.')
+            return False
+    else:
+        if len(primary_data.shape) <= dimension_number-1:
+            print(f'ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but {primary_variable_name} does not have that many dimensions')
+            return False
+
+        if primary_data.shape[dimension_number-1] != coordinate_data.shape[-1]:
+            # This is kind of a hack for now.
+            # DEPEND_1 can sometimes refer to the first dimension in a variable, and sometimes the second.
+            # So we require both the first and second dimensions don't match the coordinate size before we definitely
+            # reject it.
+            if len(primary_data.shape) > dimension_number and primary_data.shape[dimension_number] != coordinate_data.shape[-1]:
+                print(f'ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match.')
+                return False
 
     return True
 
-def _discover_depend_variables(vardata, varatts):
+def _discover_depend_variables(vardata, varatts, varprops):
     # This loops through the variable attributes to discover which variables are the coordinates of other variables,
     # Unfortunately, there is no easy way to tell this by looking at the variable ITSELF,
     # you need to look at all variables and see if one points to it.
@@ -175,8 +189,9 @@ def _discover_depend_variables(vardata, varatts):
     for v in varatts:
         depend_keys = [x for x in list(varatts[v].keys()) if depend_regex.match(x.lower())]
         for d in depend_keys:
-            if _verify_depend_dimensions(vardata, int(d[-1]), v, varatts[v][d]):
-                list_of_depend_vars.append(varatts[v][d])
+            if varatts[v][d] in vardata:
+                if _verify_depend_dimensions(vardata, int(d[-1]), v, varatts[v][d], varprops[v]):
+                    list_of_depend_vars.append(varatts[v][d])
 
     return list(set(list_of_depend_vars))
 
@@ -334,14 +349,16 @@ def _determine_record_dimensions(var_name, var_atts, var_data, var_props, depend
                 print(
                     f"Warning: Variable {var_name} listed DEPEND_0 as {depend_0_variable_name}, but they have different dimension lengths.")
 
+        return None, False, False
+
         # If none of the above, check if the length of this variable dimension matches a non-specific one that has already been created
-        for udim in created_unlimited_dims:
-            if len(var_data) == created_unlimited_dims[udim]:
-                return udim, False, False
+        #for udim in created_unlimited_dims:
+        #    if len(var_data) == created_unlimited_dims[udim]:
+        #        return udim, False, False
 
         # If none of the above, create a new dimension variable
-        new_udim_name = 'record' + str(len(created_unlimited_dims))
-        return new_udim_name, False, True
+        #new_udim_name = 'record' + str(len(created_unlimited_dims))
+        #return new_udim_name, False, True
 
     else:
 
@@ -376,22 +393,25 @@ def _determine_dimension_names(var_name, var_atts, var_data, var_props, depend_v
             # Check if the dimension is already defined within the attribute section
             if 'DEPEND_' + str(i) in var_atts:
                 depend_i_variable_name = var_atts['DEPEND_' + str(i)]
-                depend_i_variable_data = np.array(all_variable_data[depend_i_variable_name])
                 if depend_i_variable_name not in all_variable_properties:
                     print(f"Warning: Variable {var_name} listed DEPEND_{str(i)} as {depend_i_variable_name}, but no"
                           f" variable by that name was found.")
                 else:
+                    depend_i_variable_data = np.array(all_variable_data[depend_i_variable_name])
+
                     if not record_name_found:
                         dimension_number = i-1
                     else:
                         dimension_number = i
 
-                    if depend_i_variable_data.size != 0 and \
+                    if depend_i_variable_data.size != 0 and len(depend_i_variable_data.shape) == 1 and \
+                            len(var_data.shape) > dimension_number and \
                             (depend_i_variable_data.shape[0] == var_data.shape[dimension_number]):
                         return_list.append((depend_i_variable_name, dim_size, True, False))
                         continue
                     elif len(depend_i_variable_data.shape) > 1 and \
                             depend_i_variable_data.size != 0 and \
+                            len(var_data.shape) > dimension_number and \
                             (depend_i_variable_data.shape[1] == var_data.shape[dimension_number]):
                         return_list.append((depend_i_variable_name+"_dim", dim_size, True, False))
                         continue
@@ -399,19 +419,41 @@ def _determine_dimension_names(var_name, var_atts, var_data, var_props, depend_v
                         print(f"Warning: Variable {var_name} listed DEPEND_{str(i)} as {depend_i_variable_name}"
                               f", but that variable's dimensions do not match {var_name}'s dimensions.")
 
+            # There may be occasions where there was no time-varying reccord identified, but the users intended for it
+            # to exist.  Thus, all the DEPEND_X's are off by 1.  We should still try to incorporate those.
+            if 'DEPEND_' + str(i-1) in var_atts and not record_name_found:
+                depend_i_variable_name = var_atts['DEPEND_' + str(i-1)]
+                if depend_i_variable_name in all_variable_properties:
+                    depend_i_variable_data = np.array(all_variable_data[depend_i_variable_name])
+                    if depend_i_variable_data.size != 0 and len(depend_i_variable_data.shape) == 1 and \
+                            len(var_data.shape) > i-1 and \
+                            (depend_i_variable_data.shape[0] == var_data.shape[i-1]):
+                        print(f"Warning: Variable {var_name} has no determined time-varying component, but  "
+                              f"{depend_i_variable_name} was determined to match closely with one of the dimensions."
+                              f"  It will be set automatically for convenience.")
+                        return_list.append((depend_i_variable_name, dim_size, True, False))
+                        continue
+                    elif len(depend_i_variable_data.shape) > 1 and \
+                            depend_i_variable_data.size != 0 and \
+                            len(var_data.shape) > i-1 and \
+                            (depend_i_variable_data.shape[1] == var_data.shape[i-1]):
+                        print(f"Warning: Variable {var_name} has no determined time-varying component, but  "
+                              f"{depend_i_variable_name} was determined to match closely with one of the dimensions."
+                              f"  It will be set automatically for convenience.")
+                        return_list.append((depend_i_variable_name + "_dim", dim_size, True, False))
+                        continue
+
+
             # Check if the variable is itself a dimension
             if var_name in depend_variables:
                 if len(var_data.shape) == 2 and var_props["Last_Rec"] == 0:
-                    #if i == 1:
-                        # This solves a problem where a depend variable is given 2 dimensions without actually having records
-                        # We assume that the first dimension is actually the "record" dimension in this case.
-                    #    continue
-                    #else:
-                    basic_dimension_name = var_name + "_dim"
-                    return_list.append((basic_dimension_name, dim_size, True, False))
-                    continue
-
-                if var_props["Rec_Vary"] and var_props["Last_Rec"] != 0:
+                    if i == 1 and not record_name_found:
+                        pass
+                    else:
+                        basic_dimension_name = var_name + "_dim"
+                        return_list.append((basic_dimension_name, dim_size, True, False))
+                        continue
+                elif var_props["Rec_Vary"] and var_props["Last_Rec"] != 0:
                     basic_dimension_name = var_name + "_dim"
                     for x in return_list:
                         vn = x[0]
@@ -458,14 +500,15 @@ def _generate_xarray_data_variables(all_variable_data, all_variable_attributes,
 
     # Make a list of all of the special variables in the file.  These are variables that are pointed to by
     # other variables.
-    depend_variables = _discover_depend_variables(all_variable_data, all_variable_attributes)
+    depend_variables = _discover_depend_variables(all_variable_data, all_variable_attributes, all_variable_properties)
     created_unlimited_dims = {}  # These hold the records of the names/lengths of the created "unlimited" dimensions
     created_regular_dims = {}  # These hold the records of the names/lengths of the standard dimensions of the variable
     depend_dimensions = {}  # This will be used after the creation of DataArrays, to determine which are "data" and which are "coordinates"
     created_vars = {}
 
     for var_name in all_variable_data:
-
+        if var_name == 'thc_psif_en_eflux_yaxis':
+            print('asdf')
         var_dims = []
         var_atts = all_variable_attributes[var_name]
         var_data = np.array(all_variable_data[var_name])

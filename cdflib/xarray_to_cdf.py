@@ -153,7 +153,8 @@ def _recheck_dimensions_after_epoch_checker(dataset, time_varying_dimensions, di
     for d in data:
         for var in d:
             if var not in time_varying_dimensions:
-                depend_dimension_list.append(dataset[var].dims[0])
+                if len(dataset[var].dims) >= 1:
+                    depend_dimension_list.append(dataset[var].dims[0])
 
     depend_dimension_list = set(depend_dimension_list + dim_vars)
 
@@ -186,9 +187,9 @@ def _epoch_checker(dataset, dim_vars):
                 potential_depend_0 = first_dim_name
             elif epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
                 potential_depend_0 = var
-            elif 'VAR_TYPE' in dataset[var].attrs and dataset[var].attrs['VAR_TYPE'] == 'data':
+            elif 'VAR_TYPE' in dataset[var].attrs and dataset[var].attrs['VAR_TYPE'].lower() == 'data':
                 potential_depend_0 = first_dim_name
-            elif 'VAR_TYPE' in dataset[var].attrs and dataset[var].attrs['VAR_TYPE'] == 'support_data' and len(dataset[var].dims) > 1:
+            elif 'VAR_TYPE' in dataset[var].attrs and dataset[var].attrs['VAR_TYPE'].lower() == 'support_data' and len(dataset[var].dims) > 1:
                 potential_depend_0 = first_dim_name
             else:
                 potential_depend_0 = ''
@@ -238,9 +239,9 @@ def _add_depend_variables_to_dataset(dataset, dim_vars, depend_0_vars, time_vary
             if var in time_varying_dimensions:
                 if 'DEPEND_0' not in dataset[var].attrs:
                     first_dim_name = dataset[var].dims[0]
-                    if 'VAR_TYPE' in dataset[var].attrs and dataset[var].attrs['VAR_TYPE'] == 'data':
+                    if 'VAR_TYPE' in dataset[var].attrs and dataset[var].attrs['VAR_TYPE'].lower() == 'data':
                         depend_0 = first_dim_name
-                    elif 'VAR_TYPE' in dataset[var].attrs and dataset[var].attrs['VAR_TYPE'] == 'support_data' and len(
+                    elif 'VAR_TYPE' in dataset[var].attrs and dataset[var].attrs['VAR_TYPE'].lower() == 'support_data' and len(
                             dataset[var].dims) > 1:
                         depend_0 = first_dim_name
                     else:
@@ -248,7 +249,7 @@ def _add_depend_variables_to_dataset(dataset, dim_vars, depend_0_vars, time_vary
 
                     if depend_0 is not None and depend_0 in depend_0_vars:
                         dataset[var].attrs['DEPEND_0'] = depend_0
-                        print(f'ISTP Compliance Action: Adding attribute DEPEND_0={potential_depend_0} to {var}')
+                        print(f'ISTP Compliance Action: Adding attribute DEPEND_0={depend_0} to {var}')
 
                 potential_depend_dims = dataset[var].dims[1:]
 
@@ -299,19 +300,19 @@ def _variable_attribute_checker(dataset, epoch_list):
             # Check for VAR_TYPE
             if 'VAR_TYPE' not in d[var].attrs:
                 print(f'ISTP Compliance Warning: VAR_TYPE is not defined for variable {var}.')
-                var_type = None
+                var_type = ''
             else:
                 var_type = d[var].attrs['VAR_TYPE']
-                if var_type not in ('data', 'support_data', 'metadata', 'ignore_data'):
+                if var_type.lower() not in ('data', 'support_data', 'metadata', 'ignore_data'):
                     print(f'ISTP Complaince Warning: VAR_TYPE for variable {var} is given a non-compliant value of {var_type}')
-                    var_type = None
+                    var_type = ''
 
             # Check for CATDESC
             if 'CATDESC' not in d[var].attrs:
                 print(f'ISTP Compliance Warning: CATDESC attribute is required for variable {var}')
 
             if 'DISPLAY_TYPE' not in d[var].attrs:
-                if var_type == 'data':
+                if var_type.lower() == 'data':
                     print(f'ISTP Compliance Warning: DISPLAY_TYPE not set for variable {var}')
 
             if 'FIELDNAM' not in d[var].attrs:
@@ -329,7 +330,7 @@ def _variable_attribute_checker(dataset, epoch_list):
                 print(f'ISTP Compliance Warning: FORMAT or FORM_PTR attribute is required for variable {var}')
 
             if 'LABLAXIS' not in d[var].attrs:
-                if var_type == 'data':
+                if var_type.lower() == 'data':
                     if 'LABL_PTR_1' in d[var].attrs:
                         if d[var].attrs['LABL_PTR_1'] in dataset or d[var].attrs['LABL_PTR_1'] in dataset.coords:
                             pass
@@ -339,7 +340,7 @@ def _variable_attribute_checker(dataset, epoch_list):
                         print(f'ISTP Compliance Warning: LABLAXIS or LABL_PTR_1 attribute is required for variable {var}')
 
             if 'UNITS' not in d[var].attrs:
-                if var_type == 'data' or var_type == 'support_data':
+                if var_type.lower() == 'data' or var_type.lower() == 'support_data':
                     if 'UNIT_PTR' not in d[var].attrs:
                         print(f'ISTP Compliance Warning: UNITS or UNIT_PTR attribute is required for variable {var}')
                     else:
@@ -347,28 +348,28 @@ def _variable_attribute_checker(dataset, epoch_list):
                             print(f'ISTP Compliance Warning: UNIT_PTR attribute for variable {var} does not point to an existing variable.')
 
             if 'VALIDMIN' not in d[var].attrs:
-                if var_type == 'data':
+                if var_type.lower() == 'data':
                     print(f'ISTP Compliance Warning: VALIDMIN required for variable {var}')
-                elif var_type == 'support_data':
+                elif var_type.lower() == 'support_data':
                     if len(dataset[var].dims) > 0:
                         if dataset[var].dims[0] in epoch_list:
                             print(f'ISTP Compliance Warning: VALIDMIN required for variable {var}')
 
             if 'VALIDMAX' not in d[var].attrs:
-                if var_type == 'data':
+                if var_type.lower() == 'data':
                     print(f'ISTP Compliance Warning: VALIDMAX required for variable {var}')
-                elif var_type == 'support_data':
+                elif var_type.lower() == 'support_data':
                     if len(dataset[var].dims) > 0:
                         if d[var].dims[0] in epoch_list:
                             print(f'ISTP Compliance Warning: VALIDMAX required for variable {var}')
 
             if 'FILLVAL' not in d[var].attrs:
-                if var_type == 'data':
+                if var_type.lower() == 'data':
                     print(f'ISTP Compliance Warning: FILLVAL required for variable {var}')
                     fillval = _dtype_to_fillval(d[var].dtype)
                     d[var].attrs['FILLVAL'] = fillval
                     print(f'ISTP Compliance Action: Automatically set FILLVAL to {fillval} for variable {var}')
-                elif var_type == 'support_data':
+                elif var_type.lower() == 'support_data':
                     if len(dataset[var].dims) > 0:
                         if d[var].dims[0] in epoch_list:
                             print(f'ISTP Compliance Warning: FILLVAL required for variable {var}')
@@ -415,17 +416,20 @@ def _unixtime_to_tt2000(unixtime_data):
     tt2000_data = np.zeros(len(unixtime_data))
     i = 0
     for ud in unixtime_data:
-        dt = datetime.utcfromtimestamp(ud)
-        dt_to_convert = [dt.year,
-                         dt.month,
-                         dt.day,
-                         dt.hour,
-                         dt.minute,
-                         dt.second,
-                         int(dt.microsecond/1000),
-                         int(dt.microsecond % 1000),
-                         0]
-        converted_data = cdfepoch.compute(dt_to_convert)
+        if not np.isnan(ud):
+            dt = datetime.utcfromtimestamp(ud)
+            dt_to_convert = [dt.year,
+                             dt.month,
+                             dt.day,
+                             dt.hour,
+                             dt.minute,
+                             dt.second,
+                             int(dt.microsecond/1000),
+                             int(dt.microsecond % 1000),
+                             0]
+            converted_data = cdfepoch.compute(dt_to_convert)
+        else:
+            converted_data = np.nan
 
         tt2000_data[i] = converted_data
         i += 1
@@ -493,7 +497,8 @@ def xarray_to_cdf(dataset, file_name, from_unixtime=False, from_datetime=False):
     datasets = (dataset, dataset.coords)
     for d in datasets:
         for var in d:
-
+            if var == 'LINE.NAME':
+                print('asdf')
             var_att_dict = {}
             for att in d[var].attrs:
                 var_att_dict[att] = d[var].attrs[att]
