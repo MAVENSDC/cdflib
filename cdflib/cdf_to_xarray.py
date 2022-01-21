@@ -110,8 +110,6 @@ def _convert_cdf_to_dicts(filename, to_datetime=False, to_unixtime=False):
     variable_properties = {}
 
     for var_name in all_cdf_variables:
-        if var_name == 'thc_psif_en_eflux_yaxis':
-            print('asdf')
         var_attribute_list = cdf_file.varattsget(var_name)
         var_data_temp = {}
         var_atts_temp = {}
@@ -507,8 +505,6 @@ def _generate_xarray_data_variables(all_variable_data, all_variable_attributes,
     created_vars = {}
 
     for var_name in all_variable_data:
-        if var_name == 'thc_psif_en_eflux_yaxis':
-            print('asdf')
         var_dims = []
         var_atts = all_variable_attributes[var_name]
         var_data = np.array(all_variable_data[var_name])
@@ -562,6 +558,42 @@ def _generate_xarray_data_variables(all_variable_data, all_variable_attributes,
     return created_vars, depend_dimensions
 
 
+def _verify_dimension_sizes(created_data_vars, created_coord_vars):
+
+    for var in created_data_vars:
+        for d in created_data_vars[var].dims:
+            if d in created_data_vars:
+                if created_data_vars[d].dims != (d,):
+                    raise Exception(f'ERROR: Variable \"{var}\" contains the dimensions {created_data_vars[var].dims}. '
+                                    f'Dimension \"{d}\" is a data variable, but '
+                                    f'its dimensions must be equal to itself. '
+                                    f'Instead, its dimensions are {created_data_vars[d].dims}. '
+                                    f'This is likely due to issues with \"DEPEND_X\" attributes in either {var} or {d}')
+            if d in created_coord_vars:
+                if created_coord_vars[d].dims != (d,):
+                    raise Exception(f'ERROR: Variable \"{var}\" contains the dimensions {created_data_vars[var].dims}. '
+                                    f'Dimension \"{d}\" is a data variable, but '
+                                    f'its dimensions must be equal to itself.  '
+                                    f'Instead, its dimensions are {created_coord_vars[d].dims}.  '
+                                    f'This is likely due to issues with \"DEPEND_X\" attributes in either {var} or {d}')
+    for var in created_coord_vars:
+        for d in created_coord_vars[var].dims:
+            if d in created_data_vars:
+                if created_data_vars[d].dims != (d,):
+                    raise Exception(f'ERROR: Variable \"{var}\" contains the dimensions {created_coord_vars[var].dims}. '
+                                    f'Dimension \"{d}\" is a data variable, but '
+                                    f'its dimensions must be equal to itself.  '
+                                    f'Instead, its dimensions are {created_data_vars[d].dims}.  '
+                                    f'This is likely due to issues with \"DEPEND_X\" attributes in either {var} or {d}')
+            if d in created_coord_vars:
+                if created_coord_vars[d].dims != (d,):
+                    raise Exception(f'ERROR: Variable \"{var}\" contains the dimensions {created_coord_vars[var].dims}. '
+                                    f'Dimension \"{d}\" is a data variable, but '
+                                    f'its dimensions must be equal to itself.  '
+                                    f'Instead, its dimensions are {created_coord_vars[d].dims}.  '
+                                    f'This is likely due to issues with \"DEPEND_X\" attributes in either {var} or {d}')
+
+
 def cdf_to_xarray(filename, to_datetime=False, to_unixtime=False, fillval_to_nan=False):
 
     # Convert the CDF file into a series of dicts, so we don't need to keep reading the file
@@ -609,6 +641,9 @@ def cdf_to_xarray(filename, to_datetime=False, to_unixtime=False, fillval_to_nan
                 created_data_vars[var_name] = created_vars[var_name]
         else:
             created_data_vars[var_name] = created_vars[var_name]
+
+    # Check that the datasets are valid
+    _verify_dimension_sizes(created_data_vars, created_coord_vars)
 
     # Create the XArray DataSet Object!
     return xr.Dataset(data_vars=created_data_vars, coords=created_coord_vars, attrs=global_attributes)

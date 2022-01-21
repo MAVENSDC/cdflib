@@ -2271,15 +2271,26 @@ class CDF:
             return recs, struct.pack(form2, *datau)
         elif isinstance(indata, np.ndarray):
             if (data_type == self.CDF_CHAR or data_type == self.CDF_UCHAR):
-                size = len(indata)
+                size = indata.size
                 odata = ''
                 if size >= 1:
                     for x in range(0, size):
-                        adata = indata[x]
-                        if (isinstance(adata, list) or isinstance(adata, tuple) or isinstance(adata, np.ndarray)):
+                        if hasattr(indata, 'len'):
+                            adata = indata[x]
+                        else:
+                            adata = indata
+                        if isinstance(adata, list) or isinstance(adata, tuple):
                             size2 = len(adata)
                             for y in range(0, size2):
                                 odata += str(adata[y]).ljust(num_elems, '\x00')
+                        elif isinstance(adata, np.ndarray):
+                            size2 = adata.size
+                            for y in range(0, size2):
+                                if hasattr(adata, 'len'):
+                                    bdata = adata[y]
+                                else:
+                                    bdata = adata
+                                odata += str(bdata).ljust(num_elems, '\x00')
                         else:
                             size2 = 1
                             odata += str(adata).ljust(num_elems, '\x00')

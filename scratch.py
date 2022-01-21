@@ -1,4 +1,3 @@
-
 #
 import cdflib
 import xarray as xr
@@ -427,9 +426,9 @@ cdflib.xarray_to_cdf(a, 'wi_elsp_3dp_20210115_v01-created-from-cdf-input.cdf', f
 b = cdflib.cdf_to_xarray('wi_elsp_3dp_20210115_v01-created-from-cdf-input.cdf', to_unixtime=True, fillval_to_nan=True)
 os.remove('wi_elsp_3dp_20210115_v01-created-from-cdf-input.cdf')
 
-c = xr.load_dataset("C:/Work/cdf_test_files/wi_elsp_3dp_20210115_v01.cdf")
+c = xr.load_dataset("C:/Work/cdf_test_files/wi_elsp_3dp_20210115_v01.nc")
 cdflib.xarray_to_cdf(c, 'wi_elsp_3dp_20210115_v01-created-from-netcdf-input.cdf')
-d = cdflib.cdf_to_xarray('twi_elsp_3dp_20210115_v01-created-from-netcdf-input.cdf', to_unixtime=True, fillval_to_nan=True)
+d = cdflib.cdf_to_xarray('wi_elsp_3dp_20210115_v01-created-from-netcdf-input.cdf', to_unixtime=True, fillval_to_nan=True)
 os.remove('wi_elsp_3dp_20210115_v01-created-from-netcdf-input.cdf')
 #
 
@@ -450,3 +449,44 @@ cdflib.xarray_to_cdf(c, 'wi_k0_spha_20210121_v01-created-from-netcdf-input.cdf')
 d = cdflib.cdf_to_xarray('wi_k0_spha_20210121_v01-created-from-netcdf-input.cdf', to_unixtime=True, fillval_to_nan=True)
 os.remove('wi_k0_spha_20210121_v01-created-from-netcdf-input.cdf')
 #
+
+
+
+
+import cdflib
+import xarray as xr
+import os
+var_data = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
+var_dims = ['epoch', 'direction']
+data = xr.Variable(var_dims, var_data)
+epoch_data = [1, 2, 3]
+epoch_dims = ['epoch']
+epoch = xr.Variable(epoch_dims, epoch_data)
+ds = xr.Dataset(data_vars={'data': data, 'epoch': epoch})
+cdflib.xarray_to_cdf(ds, 'hello.cdf')
+os.remove('hello.cdf')
+global_attributes = {'Project': 'Hail Mary',
+                     'Source_name': 'Thin Air',
+                     'Discipline': 'None',
+                     'Data_type': 'counts',
+                     'Descriptor': 'Midichlorians in unicorn blood',
+                     'Data_version': '3.14',
+                     'Logical_file_id': 'SEVENTEEN',
+                     'PI_name': 'Darth Vader',
+                     'PI_affiliation': 'Dark Side',
+                     'TEXT': 'AHHHHH',
+                     'Instrument_type': 'Banjo',
+                     'Mission_group': 'Impossible',
+                     'Logical_source': ':)',
+                     'Logical_source_description': ':('}
+data = xr.Variable(var_dims, var_data)
+epoch = xr.Variable(epoch_dims, epoch_data)
+ds = xr.Dataset(data_vars={'data': data, 'epoch': epoch}, attrs=global_attributes)
+cdflib.xarray_to_cdf(ds, 'hello.cdf')
+os.remove('hello.cdf')
+dir_data = [1, 2, 3]
+dir_dims = ['direction']
+direction = xr.Variable(dir_dims, dir_data)
+ds = xr.Dataset(data_vars={'data': data, 'epoch': epoch, 'direction':direction}, attrs=global_attributes)
+cdflib.xarray_to_cdf(ds, 'hello.cdf')
+os.remove('hello.cdf')

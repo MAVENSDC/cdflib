@@ -1,5 +1,5 @@
 import cdflib
-import xarray as xr
+import os
 import numpy as np
 from datetime import datetime
 from cdflib.epochs import CDFepoch as cdfepoch
@@ -204,12 +204,12 @@ def _epoch_checker(dataset, dim_vars):
                     depend_0_list.append(potential_depend_0)
                     time_varying_dimensions.append(var)
                 else:
-                    print(f'ISTP Compliance Warning: variable {var} contained an EPOCH dimension {potential_depend_0}, but they have different dimensions.')
+                    print(f'ISTP Compliance Warning: variable {var} contained a "record" dimension {potential_depend_0}, but they have different dimensions.')
             elif epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
                 depend_0_list.append(potential_depend_0)
                 time_varying_dimensions.append(var)
             else:
-                print(f'ISTP Compliance Warning: variable {var} contained an EPOCH dimension {potential_depend_0}, but it was not found in the data set.')
+                print(f'ISTP Compliance Warning: variable {var} contained an "record" dimension {potential_depend_0}, but it was not found in the data set.')
 
     depend_0_list = list(set(depend_0_list))
 
@@ -238,16 +238,16 @@ def _add_depend_variables_to_dataset(dataset, dim_vars, depend_0_vars, time_vary
             # Check if we should set DEPEND_0
             if var in time_varying_dimensions:
                 if 'DEPEND_0' not in dataset[var].attrs:
-                    first_dim_name = dataset[var].dims[0]
-                    if 'VAR_TYPE' in dataset[var].attrs and dataset[var].attrs['VAR_TYPE'].lower() == 'data':
-                        depend_0 = first_dim_name
-                    elif 'VAR_TYPE' in dataset[var].attrs and dataset[var].attrs['VAR_TYPE'].lower() == 'support_data' and len(
-                            dataset[var].dims) > 1:
-                        depend_0 = first_dim_name
-                    else:
-                        depend_0 = None
+                    depend_0 = dataset[var].dims[0]
+                    #if 'VAR_TYPE' in dataset[var].attrs and dataset[var].attrs['VAR_TYPE'].lower() == 'data':
+                    #    depend_0 = first_dim_name
+                    #elif 'VAR_TYPE' in dataset[var].attrs and dataset[var].attrs['VAR_TYPE'].lower() == 'support_data' and len(
+                    #        dataset[var].dims) > 1:
+                    #    depend_0 = first_dim_name
+                    #else:
+                    #    depend_0 = None
 
-                    if depend_0 is not None and depend_0 in depend_0_vars:
+                    if depend_0 is not None and depend_0 in depend_0_vars and var != depend_0:
                         dataset[var].attrs['DEPEND_0'] = depend_0
                         print(f'ISTP Compliance Action: Adding attribute DEPEND_0={depend_0} to {var}')
 
@@ -261,8 +261,8 @@ def _add_depend_variables_to_dataset(dataset, dim_vars, depend_0_vars, time_vary
             i = 1
             for d in potential_depend_dims:
                 if d in dataset and d in dim_vars:
-                    if not f'DEPEND_{i}' in dataset[var].attrs:
-                        print(f'ISTP Compliance Action: Setting attribute DEPEND_{i} for variable {var} to {d}')
+                    if not f'DEPEND_{i}' in dataset[var].attrs and var != d:
+                        print(f'ISTP Compliance Action: Adding attribute DEPEND_{i}={d} to {var}')
                         dataset[var].attrs[f'DEPEND_{i}'] = d
                 i += 1
 
@@ -453,31 +453,43 @@ def _datetime_to_tt2000(datetime_data):
     return tt2000_data
 
 
-def xarray_to_cdf(dataset, file_name, from_unixtime=False, from_datetime=False):
+def xarray_to_cdf(xarray_dataset, file_name, from_unixtime=False, from_datetime=False, istp=True, record_dimensions=[], compression=0):
+
+    if os.path.isfile(file_name):
+        print(f"{file_name} already exists, cannot create CDF file.  Returning...")
+        return
 
     x = cdflib.CDF(file_name)
 
-    # This creates a list of suspected or confirmed label variables
-    label_vars = _label_checker(dataset)
+    # Make a deep copy of the data before continuing
+    dataset = xarray_dataset.copy()
 
-    # This creates a list of suspected or confirmed dimension variables
-    dim_vars = _dimension_checker(dataset)
+    if istp:
+        # This creates a list of suspected or confirmed label variables
+        label_vars = _label_checker(dataset)
 
-    # This creates a list of suspected or confirmed record variables
-    depend_0_vars, time_varying_dimensions = _epoch_checker(dataset, dim_vars)
+        # This creates a list of suspected or confirmed dimension variables
+        dim_vars = _dimension_checker(dataset)
 
-    # After we do the first pass of checking for dimensions and record variables, lets do a second pass to make sure
-    # we've got everything
-    dim_vars = _recheck_dimensions_after_epoch_checker(dataset, time_varying_dimensions, dim_vars)
+        # This creates a list of suspected or confirmed record variables
+        depend_0_vars, time_varying_dimensions = _epoch_checker(dataset, dim_vars)
 
-    # This function will alter the attributes of the data variables if needed
-    dataset = _add_depend_variables_to_dataset(dataset, dim_vars, depend_0_vars, time_varying_dimensions)
+        depend_0_vars = record_dimensions + depend_0_vars
+        time_varying_dimensions = record_dimensions + time_varying_dimensions
 
+        # After we do the first pass of checking for dimensions and record variables, lets do a second pass to make sure
+        # we've got everything
+        dim_vars = _recheck_dimensions_after_epoch_checker(dataset, time_varying_dimensions, dim_vars)
 
+        # This function will alter the attributes of the data variables if needed
+        dataset = _add_depend_variables_to_dataset(dataset, dim_vars, depend_0_vars, time_varying_dimensions)
 
-    _global_attribute_checker(dataset)
+        _global_attribute_checker(dataset)
 
-    _variable_attribute_checker(dataset, depend_0_vars)
+        _variable_attribute_checker(dataset, depend_0_vars)
+    else:
+        depend_0_vars = record_dimensions
+        time_varying_dimensions = record_dimensions
 
     # Gather the global attributes, write them into the file
     glob_att_dict = {}
@@ -497,8 +509,6 @@ def xarray_to_cdf(dataset, file_name, from_unixtime=False, from_datetime=False):
     datasets = (dataset, dataset.coords)
     for d in datasets:
         for var in d:
-            if var == 'LINE.NAME':
-                print('asdf')
             var_att_dict = {}
             for att in d[var].attrs:
                 var_att_dict[att] = d[var].attrs[att]
@@ -508,7 +518,7 @@ def xarray_to_cdf(dataset, file_name, from_unixtime=False, from_datetime=False):
                 continue
 
             if len(d[var].dims) > 0:
-                if var in time_varying_dimensions:
+                if var in time_varying_dimensions or var in depend_0_vars:
                     dim_sizes = d[var].shape[1:]
                     record_vary = True
                 else:
@@ -523,20 +533,21 @@ def xarray_to_cdf(dataset, file_name, from_unixtime=False, from_datetime=False):
                         'Num_Elements': cdf_num_elements,
                         'Rec_Vary': record_vary,
                         'Dim_Sizes': list(dim_sizes),
-                        'Compress': 0}
+                        'Compress': compression}
 
             var_data = d[var].data
 
-            epoch_regex_1 = re.compile('epoch$')
-            epoch_regex_2 = re.compile('epoch_[0-9]+$')
-            if epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
-                if from_unixtime:
-                    var_data = _unixtime_to_tt2000(d[var].data)
-                elif from_datetime:
-                    var_data = _datetime_to_tt2000(d[var].data)
-            elif cdf_data_type == 33:
-                unixtime_from_datetime64 = d[var].data.astype('int64')/1000000000.0
-                var_data = _unixtime_to_tt2000(unixtime_from_datetime64)
+            if istp:
+                epoch_regex_1 = re.compile('epoch$')
+                epoch_regex_2 = re.compile('epoch_[0-9]+$')
+                if epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
+                    if from_unixtime:
+                        var_data = _unixtime_to_tt2000(d[var].data)
+                    elif from_datetime:
+                        var_data = _datetime_to_tt2000(d[var].data)
+                elif cdf_data_type == 33:
+                    unixtime_from_datetime64 = d[var].data.astype('int64')/1000000000.0
+                    var_data = _unixtime_to_tt2000(unixtime_from_datetime64)
 
             x.write_var(var_spec, var_attrs=var_att_dict, var_data=var_data)
 
