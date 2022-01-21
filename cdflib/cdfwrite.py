@@ -543,7 +543,7 @@ class CDF:
                                 zVar = False
                     if (entryNum > entryNumX):
                         entryNumX = entryNum
-                    if hasattr(data, '__len__') and not isinstance(data, str):
+                    if hasattr(value, '__len__') and not isinstance(value, str):
                         if (len(value) == 2):
                             value2 = value[1]
                             dataType = self._datatype_token(value2)
