@@ -11,7 +11,8 @@ import os
 # The files are hosted on the MAVEN SDC website.  If that website becomes defunct in the future, a new location for
 # these files will have to be chosen.
 
-#
+# Some of the netCDF files present in this script were created from CDF files using the NASA SPDF converting tools.
+# The primary motivation for doing so was to read the data into xarray using different methods (cdf_to_xarray vs load_dataset)
 
 
 def test_mms_fpi():
@@ -249,7 +250,7 @@ def test_lpw_mrgscpot():
     d = cdflib.cdf_to_xarray('mvn_lpw_l2_mrgscpot_20180717_v02_r01-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_lpw_l2_mrgscpot_20180717_v02_r01-created-from-netcdf-input.cdf')
-'''
+
 def test_sep_anc():
 
     fname = 'mvn_sep_l2_anc_20210501_v06_r00.cdf'
@@ -280,6 +281,8 @@ def test_sep_svy():
     b = cdflib.cdf_to_xarray('mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05-created-from-cdf-input.cdf')
+
+'''
 
 def test_sta():
 
