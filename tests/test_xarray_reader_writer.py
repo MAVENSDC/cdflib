@@ -282,7 +282,7 @@ def test_sep_svy():
                              fillval_to_nan=True)
     os.remove('mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05-created-from-cdf-input.cdf')
 
-'''
+
 
 def test_sta():
 
@@ -447,7 +447,7 @@ def test_raids():
     d = cdflib.cdf_to_xarray('raids_nirs_20100823_v1.1-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('raids_nirs_20100823_v1.1-created-from-netcdf-input.cdf')
-
+'''
 def test_rbsp():
 
     fname = 'rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2.cdf'
