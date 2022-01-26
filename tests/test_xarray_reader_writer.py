@@ -5,6 +5,15 @@ from cdflib.epochs import CDFepoch as cdfepoch
 import urllib.request
 import os
 
+# These unit tests read in data to xarray, typically in the form of a CDF or netCDF file, and then spit it back out
+# again into a CDF file.  The created CDF files are then read back into xarray with the cdf_to_xarray function.
+
+# The files are hosted on the MAVEN SDC website.  If that website becomes defunct in the future, a new location for
+# these files will have to be chosen.
+
+#
+
+
 def test_mms_fpi():
     fname = 'mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf'
     url = ("https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf")
@@ -240,7 +249,7 @@ def test_lpw_mrgscpot():
     d = cdflib.cdf_to_xarray('mvn_lpw_l2_mrgscpot_20180717_v02_r01-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_lpw_l2_mrgscpot_20180717_v02_r01-created-from-netcdf-input.cdf')
-
+'''
 def test_sep_anc():
 
     fname = 'mvn_sep_l2_anc_20210501_v06_r00.cdf'
@@ -598,6 +607,8 @@ def test_wi_k0():
     d = cdflib.cdf_to_xarray('wi_k0_spha_20210121_v01-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('wi_k0_spha_20210121_v01-created-from-netcdf-input.cdf')
+
+'''
 
 def test_build_from_scratch():
     var_data = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
