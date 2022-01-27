@@ -21,7 +21,7 @@ jobs:
       with:
         python-version: '3.9'
     - run: pip install .[tests]
-    - run: pytest --cov
+    - run: pytest --cov --tb=long
     - name: Upload Coverage (unix-like)
       run: bash <(curl -s https://codecov.io/bash)
       if: matrix.os != 'windows-latest'
