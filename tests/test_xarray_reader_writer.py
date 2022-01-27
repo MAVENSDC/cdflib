@@ -321,7 +321,7 @@ def test_sta():
                              fillval_to_nan=True)
     os.remove('mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04-created-from-cdf-input.cdf')
     os.remove('mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04.cdf')
-'''
+
 
 
 def test_swe_arc3d():
@@ -384,6 +384,8 @@ def test_swe_svyspec():
                              fillval_to_nan=True)
     os.remove('mvn_swe_l2_svyspec_20180718_v04_r04-created-from-netcdf-input.cdf')
     os.remove('mvn_swe_l2_svyspec_20180718_v04_r04.nc')
+
+'''
 
 def test_swi_finearc3d():
 
