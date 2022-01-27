@@ -385,7 +385,7 @@ def test_swe_svyspec():
     os.remove('mvn_swe_l2_svyspec_20180718_v04_r04-created-from-netcdf-input.cdf')
     os.remove('mvn_swe_l2_svyspec_20180718_v04_r04.nc')
 
-'''
+
 
 def test_swi_finearc3d():
 
@@ -445,9 +445,8 @@ def test_swi_onboardsvyspec():
     os.remove('mvn_swi_l2_onboardsvyspec_20180720_v01_r01-created-from-netcdf-input.cdf')
     os.remove('mvn_swi_l2_onboardsvyspec_20180720_v01_r01.nc')
 
+'''
 
-'''
-'''
 def test_omni():
 
     fname = 'omni_hro2_1min_20151001_v01.cdf'
