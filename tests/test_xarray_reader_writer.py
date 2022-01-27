@@ -353,7 +353,6 @@ def test_swe_arc3d():
     os.remove('mvn_swe_l2_arc3d_20180717_v04_r02-created-from-netcdf-input.cdf')
     os.remove('mvn_swe_l2_arc3d_20180717_v04_r02.nc')
 
-'''
 
 def test_swe_svyspec():
 
@@ -441,6 +440,9 @@ def test_swi_onboardsvyspec():
                              to_unixtime=True, fillval_to_nan=True)
     os.remove('mvn_swi_l2_onboardsvyspec_20180720_v01_r01-created-from-netcdf-input.cdf')
     os.remove('mvn_swi_l2_onboardsvyspec_20180720_v01_r01.nc')
+
+'''
+
 
 def test_omni():
 
