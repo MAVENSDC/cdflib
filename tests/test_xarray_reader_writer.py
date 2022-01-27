@@ -37,7 +37,7 @@ def test_mms_fpi():
         "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc")
     if not os.path.exists(fname):
         urllib.request.urlretrieve(url, fname)
-    print('*******************************************************************************************************')
+
     c = xr.load_dataset("mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc")
 
     cdflib.xarray_to_cdf(c, 'mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-netcdf-input.cdf')
@@ -47,7 +47,7 @@ def test_mms_fpi():
     os.remove('mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc')
 
 
-'''
+
 def test_mms_epd():
     fname = 'mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4.cdf'
     url = (
@@ -61,6 +61,7 @@ def test_mms_epd():
     b = cdflib.cdf_to_xarray('mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4-created-from-cdf-input.cdf')
+    os.remove('mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4.cdf')
 
     fname = 'mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4.nc'
     url = (
@@ -73,6 +74,7 @@ def test_mms_epd():
     d = cdflib.cdf_to_xarray('mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4-created-from-netcdf-input.cdf',
                              to_unixtime=True, fillval_to_nan=True)
     os.remove('mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4-created-from-netcdf-input.cdf')
+    os.remove('mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4.nc')
 
 def test_mms_fgm():
 
@@ -88,6 +90,7 @@ def test_mms_fgm():
     b = cdflib.cdf_to_xarray('mms2_fgm_srvy_l2_20160809_v4.47.0-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mms2_fgm_srvy_l2_20160809_v4.47.0-created-from-cdf-input.cdf')
+    os.remove('mms2_fgm_srvy_l2_20160809_v4.47.0.cdf')
 
     fname = 'mms2_fgm_srvy_l2_20160809_v4.47.0.nc'
     url = (
@@ -100,6 +103,7 @@ def test_mms_fgm():
     d = cdflib.cdf_to_xarray('mms2_fgm_srvy_l2_20160809_v4.47.0-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mms2_fgm_srvy_l2_20160809_v4.47.0-created-from-netcdf-input.cdf')
+    os.remove('mms2_fgm_srvy_l2_20160809_v4.47.0.nc')
 
 def test_MGITM_model():
 
@@ -121,6 +125,7 @@ def test_MGITM_model():
     d = cdflib.cdf_to_xarray('MGITM_LS180_F130_150615-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('MGITM_LS180_F130_150615-created-from-netcdf-input.cdf')
+    os.remove('MGITM_LS180_F130_150615.nc')
 
 def test_goes_mag():
 
@@ -140,6 +145,7 @@ def test_goes_mag():
     d = cdflib.cdf_to_xarray('dn_magn-l2-hires_g17_d20211219_v1-0-1-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('dn_magn-l2-hires_g17_d20211219_v1-0-1-created-from-netcdf-input.cdf')
+    os.remove('dn_magn-l2-hires_g17_d20211219_v1-0-1.nc')
 
 def test_saber():
 
@@ -160,6 +166,7 @@ def test_saber():
     d = cdflib.cdf_to_xarray('SABER_L2B_2021020_103692_02.07-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('SABER_L2B_2021020_103692_02.07-created-from-netcdf-input.cdf')
+    os.remove('SABER_L2B_2021020_103692_02.07.nc')
 
 def test_euv():
 
@@ -175,6 +182,7 @@ def test_euv():
     b = cdflib.cdf_to_xarray('mvn_euv_l3_minute_20201130_v14_r02-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_euv_l3_minute_20201130_v14_r02-created-from-cdf-input.cdf')
+    os.remove('mvn_euv_l3_minute_20201130_v14_r02.cdf')
 
 def test_lpw_lpiv():
 
@@ -190,6 +198,7 @@ def test_lpw_lpiv():
     b = cdflib.cdf_to_xarray('mvn_lpw_l2_lpiv_20180717_v02_r02-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_lpw_l2_lpiv_20180717_v02_r02-created-from-cdf-input.cdf')
+    os.remove('mvn_lpw_l2_lpiv_20180717_v02_r02.cdf')
 
     fname = 'mvn_lpw_l2_lpiv_20180717_v02_r02.nc'
     url = (
@@ -202,6 +211,7 @@ def test_lpw_lpiv():
     d = cdflib.cdf_to_xarray('mvn_lpw_l2_lpiv_20180717_v02_r02-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_lpw_l2_lpiv_20180717_v02_r02-created-from-netcdf-input.cdf')
+    os.remove('mvn_lpw_l2_lpiv_20180717_v02_r02.nc')
 
 def test_lpw_lpnt():
 
@@ -217,6 +227,7 @@ def test_lpw_lpnt():
     b = cdflib.cdf_to_xarray('mvn_lpw_l2_lpnt_20180717_v03_r01-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_lpw_l2_lpnt_20180717_v03_r01-created-from-cdf-input.cdf')
+    os.remove('mvn_lpw_l2_lpnt_20180717_v03_r01.cdf')
 
     fname = 'mvn_lpw_l2_lpnt_20180717_v03_r01.nc'
     url = (
@@ -229,6 +240,7 @@ def test_lpw_lpnt():
     d = cdflib.cdf_to_xarray('mvn_lpw_l2_lpnt_20180717_v03_r01-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_lpw_l2_lpnt_20180717_v03_r01-created-from-netcdf-input.cdf')
+    os.remove('mvn_lpw_l2_lpnt_20180717_v03_r01.nc')
 
 def test_lpw_mrgscpot():
 
@@ -244,6 +256,7 @@ def test_lpw_mrgscpot():
     b = cdflib.cdf_to_xarray('mvn_lpw_l2_mrgscpot_20180717_v02_r01-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_lpw_l2_mrgscpot_20180717_v02_r01-created-from-cdf-input.cdf')
+    os.remove('mvn_lpw_l2_mrgscpot_20180717_v02_r01.cdf')
 
     fname = 'mvn_lpw_l2_mrgscpot_20180717_v02_r01.nc'
     url = (
@@ -256,7 +269,8 @@ def test_lpw_mrgscpot():
     d = cdflib.cdf_to_xarray('mvn_lpw_l2_mrgscpot_20180717_v02_r01-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_lpw_l2_mrgscpot_20180717_v02_r01-created-from-netcdf-input.cdf')
-
+    os.remove('mvn_lpw_l2_mrgscpot_20180717_v02_r01.nc')
+'''
 def test_sep_anc():
 
     fname = 'mvn_sep_l2_anc_20210501_v06_r00.cdf'
