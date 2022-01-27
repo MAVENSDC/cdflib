@@ -504,7 +504,7 @@ def test_rbsp():
     b = cdflib.cdf_to_xarray('rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2-created-from-cdf-input.cdf',
                              to_unixtime=True, fillval_to_nan=True)
     os.remove('rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2-created-from-cdf-input.cdf')
-    os.remove('rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2.nc')
+    os.remove('rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2.cdf')
 
 def test_see_l3():
 
@@ -518,7 +518,7 @@ def test_see_l3():
     cdflib.xarray_to_cdf(c, 'see__L3_2021009_012_01.ncdfhello2.cdf')
     d = cdflib.cdf_to_xarray('see__L3_2021009_012_01.ncdfhello2.cdf', to_unixtime=True, fillval_to_nan=True)
     os.remove('see__L3_2021009_012_01.ncdfhello2.cdf')
-    os.remove('see__L3_2021009_012_01.ncdf.ncdf')
+    os.remove('see__L3_2021009_012_01.ncdf')
 
 def test_see_l2a():
 
