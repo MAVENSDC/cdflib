@@ -271,7 +271,7 @@ def test_lpw_mrgscpot():
     os.remove('mvn_lpw_l2_mrgscpot_20180717_v02_r01-created-from-netcdf-input.cdf')
     os.remove('mvn_lpw_l2_mrgscpot_20180717_v02_r01.nc')
 '''
-'''
+
 def test_sep_anc():
 
     fname = 'mvn_sep_l2_anc_20210501_v06_r00.cdf'
@@ -287,7 +287,7 @@ def test_sep_anc():
                              fillval_to_nan=True)
     os.remove('mvn_sep_l2_anc_20210501_v06_r00-created-from-cdf-input.cdf')
     os.remove('mvn_sep_l2_anc_20210501_v06_r00.cdf')
-'''
+
 def test_sep_svy():
 
     fname = 'mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05.cdf'
