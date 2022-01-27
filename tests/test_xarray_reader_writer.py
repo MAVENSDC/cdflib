@@ -14,7 +14,7 @@ import os
 # Some of the netCDF files present in this script were created from CDF files using the NASA SPDF converting tools.
 # The primary motivation for doing so was to read the data into xarray using different methods (cdf_to_xarray vs load_dataset)
 
-'''
+
 def test_mms_fpi():
     fname = 'mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf'
     url = ("https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf")
@@ -104,7 +104,7 @@ def test_mms_fgm():
                              fillval_to_nan=True)
     os.remove('mms2_fgm_srvy_l2_20160809_v4.47.0-created-from-netcdf-input.cdf')
     os.remove('mms2_fgm_srvy_l2_20160809_v4.47.0.nc')
-
+'''
 def test_MGITM_model():
 
     fname = 'MGITM_LS180_F130_150615.nc'
@@ -582,7 +582,7 @@ def test_themis_sst():
                              fillval_to_nan=True)
     os.remove('thc_l2_sst_20210709_v01-created-from-netcdf-input.cdf')
     os.remove('thc_l2_sst_20210709_v01.nc')
-'''
+
 def test_themis_mag():
 
     fname = 'thg_l2_mag_amd_20070323_v01.cdf'
@@ -611,7 +611,7 @@ def test_themis_mag():
                              fillval_to_nan=True)
     os.remove('thg_l2_mag_amd_20070323_v01-created-from-netcdf-input.cdf')
     os.remove('thg_l2_mag_amd_20070323_v01.nc')
-'''
+
 
 def test_wi_elsp():
 
@@ -670,7 +670,7 @@ def test_wi_k0():
                              fillval_to_nan=True)
     os.remove('wi_k0_spha_20210121_v01-created-from-netcdf-input.cdf')
     os.remove('wi_k0_spha_20210121_v01.nc')
-'''
+
 
 
 def test_build_from_scratch():
@@ -708,3 +708,4 @@ def test_build_from_scratch():
     ds = xr.Dataset(data_vars={'data': data, 'epoch': epoch, 'direction': direction}, attrs=global_attributes)
     cdflib.xarray_to_cdf(ds, 'hello.cdf')
     os.remove('hello.cdf')
+'''
