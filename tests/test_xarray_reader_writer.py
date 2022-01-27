@@ -21,6 +21,7 @@ def test_mms_fpi():
     if not os.path.exists(fname):
         urllib.request.urlretrieve(url, fname)
 
+    '''
     a = cdflib.cdf_to_xarray("mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf",
                              to_unixtime=True, fillval_to_nan=True)
     cdflib.xarray_to_cdf(a, 'mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-cdf-input.cdf',
@@ -40,6 +41,7 @@ def test_mms_fpi():
     d = cdflib.cdf_to_xarray('mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-netcdf-input.cdf',
                              to_unixtime=True, fillval_to_nan=True)
     os.remove('mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-netcdf-input.cdf')
+    '''
 
 '''
 def test_mms_epd():
