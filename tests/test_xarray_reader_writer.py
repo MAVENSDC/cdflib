@@ -540,7 +540,7 @@ def test_something():
     d = cdflib.cdf_to_xarray('sgpsondewnpnC1-created-from-netcdf-input.cdf', to_unixtime=True, fillval_to_nan=True)
     os.remove('sgpsondewnpnC1-created-from-netcdf-input.cdf')
     os.remove('sgpsondewnpnC1.nc')
-
+'''
 def test_themis_sst():
 
     fname = 'thc_l2_sst_20210709_v01.cdf'
@@ -656,7 +656,7 @@ def test_wi_k0():
                              fillval_to_nan=True)
     os.remove('wi_k0_spha_20210121_v01-created-from-netcdf-input.cdf')
     os.remove('wi_k0_spha_20210121_v01.nc')
-
+'''
 
 
 def test_build_from_scratch():
