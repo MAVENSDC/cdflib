@@ -382,7 +382,7 @@ def test_swe_svyspec():
                              fillval_to_nan=True)
     os.remove('mvn_swe_l2_svyspec_20180718_v04_r04-created-from-netcdf-input.cdf')
     os.remove('mvn_swe_l2_svyspec_20180718_v04_r04.nc')
-
+'''
 def test_swi_finearc3d():
 
     fname = 'mvn_swi_l2_finearc3d_20180720_v01_r01.cdf'
@@ -442,7 +442,7 @@ def test_swi_onboardsvyspec():
     os.remove('mvn_swi_l2_onboardsvyspec_20180720_v01_r01.nc')
 
 
-
+'''
 
 def test_omni():
 
@@ -546,7 +546,7 @@ def test_something():
     d = cdflib.cdf_to_xarray('sgpsondewnpnC1-created-from-netcdf-input.cdf', to_unixtime=True, fillval_to_nan=True)
     os.remove('sgpsondewnpnC1-created-from-netcdf-input.cdf')
     os.remove('sgpsondewnpnC1.nc')
-
+'''
 def test_themis_sst():
 
     fname = 'thc_l2_sst_20210709_v01.cdf'
@@ -575,7 +575,7 @@ def test_themis_sst():
                              fillval_to_nan=True)
     os.remove('thc_l2_sst_20210709_v01-created-from-netcdf-input.cdf')
     os.remove('thc_l2_sst_20210709_v01.nc')
-'''
+
 def test_themis_mag():
 
     fname = 'thg_l2_mag_amd_20070323_v01.cdf'
