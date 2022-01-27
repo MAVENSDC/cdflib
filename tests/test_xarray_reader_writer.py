@@ -14,7 +14,7 @@ import os
 # Some of the netCDF files present in this script were created from CDF files using the NASA SPDF converting tools.
 # The primary motivation for doing so was to read the data into xarray using different methods (cdf_to_xarray vs load_dataset)
 
-
+'''
 def test_mms_fpi():
     fname = 'mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf'
     url = ("https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf")
@@ -270,7 +270,7 @@ def test_lpw_mrgscpot():
                              fillval_to_nan=True)
     os.remove('mvn_lpw_l2_mrgscpot_20180717_v02_r01-created-from-netcdf-input.cdf')
     os.remove('mvn_lpw_l2_mrgscpot_20180717_v02_r01.nc')
-
+'''
 def test_sep_anc():
 
     fname = 'mvn_sep_l2_anc_20210501_v06_r00.cdf'
@@ -286,7 +286,7 @@ def test_sep_anc():
                              fillval_to_nan=True)
     os.remove('mvn_sep_l2_anc_20210501_v06_r00-created-from-cdf-input.cdf')
     os.remove('mvn_sep_l2_anc_20210501_v06_r00.cdf')
-
+'''
 def test_sep_svy():
 
     fname = 'mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05.cdf'
@@ -305,7 +305,7 @@ def test_sep_svy():
     os.remove('mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05.cdf')
 
 
-'''
+
 def test_sta():
 
     fname = 'mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04.cdf'
