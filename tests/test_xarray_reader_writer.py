@@ -444,7 +444,7 @@ def test_swi_onboardsvyspec():
 
 
 '''
-
+'''
 def test_omni():
 
     fname = 'omni_hro2_1min_20151001_v01.cdf'
@@ -547,6 +547,9 @@ def test_something():
     d = cdflib.cdf_to_xarray('sgpsondewnpnC1-created-from-netcdf-input.cdf', to_unixtime=True, fillval_to_nan=True)
     os.remove('sgpsondewnpnC1-created-from-netcdf-input.cdf')
     os.remove('sgpsondewnpnC1.nc')
+    
+'''
+
 '''
 def test_themis_sst():
 
