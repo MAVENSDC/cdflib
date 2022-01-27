@@ -282,7 +282,7 @@ def test_sep_anc():
     a = cdflib.cdf_to_xarray("mvn_sep_l2_anc_20210501_v06_r00.cdf", to_unixtime=True,
                              fillval_to_nan=True)
     cdflib.xarray_to_cdf(a, 'mvn_sep_l2_anc_20210501_v06_r00-created-from-cdf-input.cdf', from_unixtime=True)
-    b = cdflib.cdf_to_xarray('mvn_sep_l2_anc_20210501_v06_r00-created-from-cdf-input.cdf', to_unixtime=True,
+    a = cdflib.cdf_to_xarray('mvn_sep_l2_anc_20210501_v06_r00-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_sep_l2_anc_20210501_v06_r00-created-from-cdf-input.cdf')
     os.remove('mvn_sep_l2_anc_20210501_v06_r00.cdf')
