@@ -286,7 +286,7 @@ def test_sep_anc():
                              fillval_to_nan=True)
     os.remove('mvn_sep_l2_anc_20210501_v06_r00-created-from-cdf-input.cdf')
     os.remove('mvn_sep_l2_anc_20210501_v06_r00.cdf')
-'''
+
 def test_sep_svy():
 
     fname = 'mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05.cdf'
@@ -321,7 +321,7 @@ def test_sta():
                              fillval_to_nan=True)
     os.remove('mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04-created-from-cdf-input.cdf')
     os.remove('mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04.cdf')
-
+'''
 
 
 def test_swe_arc3d():
