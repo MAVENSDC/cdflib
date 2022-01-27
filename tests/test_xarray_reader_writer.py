@@ -441,7 +441,7 @@ def test_swi_onboardsvyspec():
     os.remove('mvn_swi_l2_onboardsvyspec_20180720_v01_r01-created-from-netcdf-input.cdf')
     os.remove('mvn_swi_l2_onboardsvyspec_20180720_v01_r01.nc')
 
-'''
+
 
 
 def test_omni():
@@ -487,7 +487,7 @@ def test_raids():
                              fillval_to_nan=True)
     os.remove('raids_nirs_20100823_v1.1-created-from-netcdf-input.cdf')
     os.remove('raids_nirs_20100823_v1.1.nc')
-
+'''
 def test_rbsp():
 
     fname = 'rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2.cdf'
