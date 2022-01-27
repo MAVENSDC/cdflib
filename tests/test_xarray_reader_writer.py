@@ -305,7 +305,7 @@ def test_sep_svy():
     os.remove('mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05-created-from-cdf-input.cdf')
     os.remove('mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05.cdf')
 
-
+'''
 
 def test_sta():
 
@@ -323,7 +323,7 @@ def test_sta():
     os.remove('mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04-created-from-cdf-input.cdf')
     os.remove('mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04.cdf')
 
-'''
+
 
 def test_swe_arc3d():
 
