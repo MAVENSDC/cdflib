@@ -680,7 +680,7 @@ def test_wi_k0():
     if not os.path.exists(fname):
         urllib.request.urlretrieve(url, fname)
 
-    c = xr.load_dataset("wi_elsp_3dp_20210115_v01.nc")
+    c = xr.load_dataset('wi_k0_spha_20210121_v01.nc')
     cdflib.xarray_to_cdf(c, 'wi_k0_spha_20210121_v01-created-from-netcdf-input.cdf')
     d = cdflib.cdf_to_xarray('wi_k0_spha_20210121_v01-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
