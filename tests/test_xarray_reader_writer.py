@@ -504,7 +504,7 @@ def test_rbsp():
                              to_unixtime=True, fillval_to_nan=True)
     os.remove('rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2-created-from-cdf-input.cdf')
     os.remove('rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2.nc')
-'''
+
 def test_see_l3():
 
     fname = 'see__L3_2021009_012_01.ncdf'
@@ -546,7 +546,7 @@ def test_something():
     d = cdflib.cdf_to_xarray('sgpsondewnpnC1-created-from-netcdf-input.cdf', to_unixtime=True, fillval_to_nan=True)
     os.remove('sgpsondewnpnC1-created-from-netcdf-input.cdf')
     os.remove('sgpsondewnpnC1.nc')
-
+'''
 def test_themis_sst():
 
     fname = 'thc_l2_sst_20210709_v01.cdf'
