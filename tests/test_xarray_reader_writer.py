@@ -321,7 +321,7 @@ def test_sta():
                              fillval_to_nan=True)
     os.remove('mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04-created-from-cdf-input.cdf')
     os.remove('mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04.cdf')
-
+'''
 def test_swe_arc3d():
 
     fname = 'mvn_swe_l2_arc3d_20180717_v04_r02.cdf'
@@ -481,7 +481,7 @@ def test_raids():
                              fillval_to_nan=True)
     os.remove('raids_nirs_20100823_v1.1-created-from-netcdf-input.cdf')
     os.remove('raids_nirs_20100823_v1.1.nc')
-'''
+
 def test_rbsp():
 
     fname = 'rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2.cdf'
