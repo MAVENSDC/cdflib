@@ -415,7 +415,7 @@ def test_swi_finearc3d():
                              fillval_to_nan=True)
     os.remove('mvn_swi_l2_finearc3d_20180720_v01_r01-created-from-netcdf-input.cdf')
     os.remove('mvn_swi_l2_finearc3d_20180720_v01_r01.nc')
-'''
+
 def test_swi_onboardsvyspec():
 
     fname = 'mvn_swi_l2_onboardsvyspec_20180720_v01_r01.cdf'
@@ -475,6 +475,8 @@ def test_omni():
                              fillval_to_nan=True)
     os.remove('omni_hro2_1min_20151001_v01-created-from-netcdf-input.cdf')
     os.remove('omni_hro2_1min_20151001_v01.nc')
+
+'''
 
 def test_raids():
 
