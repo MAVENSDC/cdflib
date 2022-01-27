@@ -41,7 +41,7 @@ def test_mms_fpi():
                              to_unixtime=True, fillval_to_nan=True)
     os.remove('mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-netcdf-input.cdf')
 
-
+'''
 def test_mms_epd():
     fname = 'mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4.cdf'
     url = (
@@ -447,7 +447,7 @@ def test_raids():
     d = cdflib.cdf_to_xarray('raids_nirs_20100823_v1.1-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('raids_nirs_20100823_v1.1-created-from-netcdf-input.cdf')
-'''
+
 def test_rbsp():
 
     fname = 'rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2.cdf'
