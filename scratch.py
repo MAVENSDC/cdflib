@@ -4,7 +4,38 @@ import xarray as xr
 import numpy as np
 from cdflib.epochs import CDFepoch as cdfepoch
 import os
+import urllib.request
+fname = 'mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf'
+url = ("https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf")
+if not os.path.exists(fname):
+    urllib.request.urlretrieve(url, fname)
 
+
+a = cdflib.cdf_to_xarray("mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf",
+                         to_unixtime=True, fillval_to_nan=True)
+
+cdflib.xarray_to_cdf(a, 'mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-cdf-input.cdf',
+                     from_unixtime=True)
+b = cdflib.cdf_to_xarray('mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-cdf-input.cdf',
+                         to_unixtime=True, fillval_to_nan=True)
+os.remove('mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-cdf-input.cdf')
+os.remove('mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf')
+
+fname = 'mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc'
+url = (
+    "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc")
+if not os.path.exists(fname):
+    urllib.request.urlretrieve(url, fname)
+
+c = xr.load_dataset("mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc")
+
+cdflib.xarray_to_cdf(c, 'mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-netcdf-input.cdf')
+d = cdflib.cdf_to_xarray('mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-netcdf-input.cdf',
+                         to_unixtime=True, fillval_to_nan=True)
+os.remove('mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-netcdf-input.cdf')
+os.remove('mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc')
+
+'''
 a =  cdflib.cdf_to_xarray("C:/Work/cdf_test_files/mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf", to_unixtime=True, fillval_to_nan=True)
 cdflib.xarray_to_cdf(a, 'mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-cdf-input.cdf', from_unixtime=True)
 b = cdflib.cdf_to_xarray('mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-cdf-input.cdf', to_unixtime=True, fillval_to_nan=True)
@@ -490,3 +521,4 @@ direction = xr.Variable(dir_dims, dir_data)
 ds = xr.Dataset(data_vars={'data': data, 'epoch': epoch, 'direction':direction}, attrs=global_attributes)
 cdflib.xarray_to_cdf(ds, 'hello.cdf')
 os.remove('hello.cdf')
+'''

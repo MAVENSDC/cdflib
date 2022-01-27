@@ -270,7 +270,7 @@ def test_lpw_mrgscpot():
                              fillval_to_nan=True)
     os.remove('mvn_lpw_l2_mrgscpot_20180717_v02_r01-created-from-netcdf-input.cdf')
     os.remove('mvn_lpw_l2_mrgscpot_20180717_v02_r01.nc')
-'''
+
 def test_sep_anc():
 
     fname = 'mvn_sep_l2_anc_20210501_v06_r00.cdf'
@@ -285,6 +285,7 @@ def test_sep_anc():
     b = cdflib.cdf_to_xarray('mvn_sep_l2_anc_20210501_v06_r00-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_sep_l2_anc_20210501_v06_r00-created-from-cdf-input.cdf')
+    os.remove('mvn_sep_l2_anc_20210501_v06_r00.cdf')
 
 def test_sep_svy():
 
@@ -301,6 +302,7 @@ def test_sep_svy():
     b = cdflib.cdf_to_xarray('mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05-created-from-cdf-input.cdf')
+    os.remove('mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05.cdf')
 
 
 
@@ -318,6 +320,7 @@ def test_sta():
     b = cdflib.cdf_to_xarray('mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04-created-from-cdf-input.cdf')
+    os.remove('mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04.cdf')
 
 def test_swe_arc3d():
 
@@ -333,6 +336,7 @@ def test_swe_arc3d():
     b = cdflib.cdf_to_xarray('mvn_swe_l2_arc3d_20180717_v04_r02-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_swe_l2_arc3d_20180717_v04_r02-created-from-cdf-input.cdf')
+    os.remove('mvn_swe_l2_arc3d_20180717_v04_r02.cdf')
 
     fname = 'mvn_swe_l2_arc3d_20180717_v04_r02.nc'
     url = (
@@ -345,6 +349,7 @@ def test_swe_arc3d():
     d = cdflib.cdf_to_xarray('mvn_swe_l2_arc3d_20180717_v04_r02-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_swe_l2_arc3d_20180717_v04_r02-created-from-netcdf-input.cdf')
+    os.remove('mvn_swe_l2_arc3d_20180717_v04_r02.nc')
 
 def test_swe_svyspec():
 
@@ -360,6 +365,7 @@ def test_swe_svyspec():
     b = cdflib.cdf_to_xarray('mvn_swe_l2_svyspec_20180718_v04_r04-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_swe_l2_svyspec_20180718_v04_r04-created-from-cdf-input.cdf')
+    os.remove('mvn_swe_l2_svyspec_20180718_v04_r04.cdf')
 
     fname = 'mvn_swe_l2_svyspec_20180718_v04_r04.nc'
     url = (
@@ -372,6 +378,7 @@ def test_swe_svyspec():
     d = cdflib.cdf_to_xarray('mvn_swe_l2_svyspec_20180718_v04_r04-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_swe_l2_svyspec_20180718_v04_r04-created-from-netcdf-input.cdf')
+    os.remove('mvn_swe_l2_svyspec_20180718_v04_r04.nc')
 
 def test_swi_finearc3d():
 
@@ -387,6 +394,7 @@ def test_swi_finearc3d():
     b = cdflib.cdf_to_xarray('mvn_swi_l2_finearc3d_20180720_v01_r01-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_swi_l2_finearc3d_20180720_v01_r01-created-from-cdf-input.cdf')
+    os.remove('mvn_swi_l2_finearc3d_20180720_v01_r01.cdf')
 
     fname = 'mvn_swi_l2_finearc3d_20180720_v01_r01.nc'
     url = (
@@ -399,6 +407,7 @@ def test_swi_finearc3d():
     d = cdflib.cdf_to_xarray('mvn_swi_l2_finearc3d_20180720_v01_r01-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_swi_l2_finearc3d_20180720_v01_r01-created-from-netcdf-input.cdf')
+    os.remove('mvn_swi_l2_finearc3d_20180720_v01_r01.nc')
 
 def test_swi_onboardsvyspec():
 
@@ -414,6 +423,7 @@ def test_swi_onboardsvyspec():
     b = cdflib.cdf_to_xarray('mvn_swi_l2_onboardsvyspec_20180720_v01_r01-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_swi_l2_onboardsvyspec_20180720_v01_r01-created-from-cdf-input.cdf')
+    os.remove('mvn_swi_l2_onboardsvyspec_20180720_v01_r01.cdf')
 
     fname = 'mvn_swi_l2_onboardsvyspec_20180720_v01_r01.nc'
     url = (
@@ -426,6 +436,7 @@ def test_swi_onboardsvyspec():
     d = cdflib.cdf_to_xarray('mvn_swi_l2_onboardsvyspec_20180720_v01_r01-created-from-netcdf-input.cdf',
                              to_unixtime=True, fillval_to_nan=True)
     os.remove('mvn_swi_l2_onboardsvyspec_20180720_v01_r01-created-from-netcdf-input.cdf')
+    os.remove('mvn_swi_l2_onboardsvyspec_20180720_v01_r01.nc')
 
 def test_omni():
 
@@ -441,6 +452,7 @@ def test_omni():
     b = cdflib.cdf_to_xarray('omni_hro2_1min_20151001_v01-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('omni_hro2_1min_20151001_v01-created-from-cdf-input.cdf')
+    os.remove('omni_hro2_1min_20151001_v01.cdf')
 
     fname = 'omni_hro2_1min_20151001_v01.nc'
     url = (
@@ -453,6 +465,7 @@ def test_omni():
     d = cdflib.cdf_to_xarray('omni_hro2_1min_20151001_v01-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('omni_hro2_1min_20151001_v01-created-from-netcdf-input.cdf')
+    os.remove('omni_hro2_1min_20151001_v01.nc')
 
 def test_raids():
 
@@ -467,6 +480,7 @@ def test_raids():
     d = cdflib.cdf_to_xarray('raids_nirs_20100823_v1.1-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('raids_nirs_20100823_v1.1-created-from-netcdf-input.cdf')
+    os.remove('raids_nirs_20100823_v1.1.nc')
 
 def test_rbsp():
 
@@ -483,6 +497,7 @@ def test_rbsp():
     b = cdflib.cdf_to_xarray('rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2-created-from-cdf-input.cdf',
                              to_unixtime=True, fillval_to_nan=True)
     os.remove('rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2-created-from-cdf-input.cdf')
+    os.remove('rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2.nc')
 
 def test_see_l3():
 
@@ -496,6 +511,7 @@ def test_see_l3():
     cdflib.xarray_to_cdf(c, 'see__L3_2021009_012_01.ncdfhello2.cdf')
     d = cdflib.cdf_to_xarray('see__L3_2021009_012_01.ncdfhello2.cdf', to_unixtime=True, fillval_to_nan=True)
     os.remove('see__L3_2021009_012_01.ncdfhello2.cdf')
+    os.remove('see__L3_2021009_012_01.ncdf.ncdf')
 
 def test_see_l2a():
 
@@ -509,6 +525,7 @@ def test_see_l2a():
     cdflib.xarray_to_cdf(c, 'see__xps_L2A_2021006_012_02.ncdfhello2.cdf')
     d = cdflib.cdf_to_xarray('see__xps_L2A_2021006_012_02.ncdfhello2.cdf', to_unixtime=True, fillval_to_nan=True)
     os.remove('see__xps_L2A_2021006_012_02.ncdfhello2.cdf')
+    os.remove('see__xps_L2A_2021006_012_02.ncdf')
 
 def test_something():
 
@@ -522,6 +539,7 @@ def test_something():
     cdflib.xarray_to_cdf(c, 'sgpsondewnpnC1-created-from-netcdf-input.cdf')
     d = cdflib.cdf_to_xarray('sgpsondewnpnC1-created-from-netcdf-input.cdf', to_unixtime=True, fillval_to_nan=True)
     os.remove('sgpsondewnpnC1-created-from-netcdf-input.cdf')
+    os.remove('sgpsondewnpnC1.nc')
 
 def test_themis_sst():
 
@@ -537,6 +555,7 @@ def test_themis_sst():
     b = cdflib.cdf_to_xarray('thc_l2_sst_20210709_v01-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('thc_l2_sst_20210709_v01-created-from-cdf-input.cdf')
+    os.remove('thc_l2_sst_20210709_v01.cdf')
 
     fname = 'thc_l2_sst_20210709_v01.nc'
     url = (
@@ -549,6 +568,7 @@ def test_themis_sst():
     d = cdflib.cdf_to_xarray('thc_l2_sst_20210709_v01-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('thc_l2_sst_20210709_v01-created-from-netcdf-input.cdf')
+    os.remove('thc_l2_sst_20210709_v01.nc')
 
 def test_themis_mag():
 
@@ -564,6 +584,7 @@ def test_themis_mag():
     b = cdflib.cdf_to_xarray('thg_l2_mag_amd_20070323_v01-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('thg_l2_mag_amd_20070323_v01-created-from-cdf-input.cdf')
+    os.remove('thg_l2_mag_amd_20070323_v01.cdf')
 
     fname = 'thg_l2_mag_amd_20070323_v01.nc'
     url = (
@@ -576,6 +597,7 @@ def test_themis_mag():
     d = cdflib.cdf_to_xarray('thg_l2_mag_amd_20070323_v01-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('thg_l2_mag_amd_20070323_v01-created-from-netcdf-input.cdf')
+    os.remove('thg_l2_mag_amd_20070323_v01.nc')
 
 def test_wi_elsp():
 
@@ -591,6 +613,7 @@ def test_wi_elsp():
     b = cdflib.cdf_to_xarray('wi_elsp_3dp_20210115_v01-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('wi_elsp_3dp_20210115_v01-created-from-cdf-input.cdf')
+    os.remove('wi_elsp_3dp_20210115_v01.cdf')
 
     fname = 'wi_elsp_3dp_20210115_v01.nc'
     url = (
@@ -603,6 +626,7 @@ def test_wi_elsp():
     d = cdflib.cdf_to_xarray('wi_elsp_3dp_20210115_v01-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('wi_elsp_3dp_20210115_v01-created-from-netcdf-input.cdf')
+    os.remove('wi_elsp_3dp_20210115_v01.nc')
 
 def test_wi_k0():
 
@@ -618,6 +642,7 @@ def test_wi_k0():
     b = cdflib.cdf_to_xarray('wi_k0_spha_20210121_v01-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('wi_k0_spha_20210121_v01-created-from-cdf-input.cdf')
+    os.remove('wi_k0_spha_20210121_v01.cdf')
 
     fname = 'wi_k0_spha_20210121_v01.nc'
     url = (
@@ -630,8 +655,9 @@ def test_wi_k0():
     d = cdflib.cdf_to_xarray('wi_k0_spha_20210121_v01-created-from-netcdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('wi_k0_spha_20210121_v01-created-from-netcdf-input.cdf')
+    os.remove('wi_k0_spha_20210121_v01.nc')
 
-'''
+
 
 def test_build_from_scratch():
     var_data = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
