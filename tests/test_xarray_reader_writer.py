@@ -476,7 +476,7 @@ def test_omni():
     os.remove('omni_hro2_1min_20151001_v01-created-from-netcdf-input.cdf')
     os.remove('omni_hro2_1min_20151001_v01.nc')
 
-'''
+
 
 def test_raids():
 
@@ -555,7 +555,6 @@ def test_something():
     
 '''
 
-'''
 def test_themis_sst():
 
     fname = 'thc_l2_sst_20210709_v01.cdf'
