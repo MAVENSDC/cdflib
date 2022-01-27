@@ -270,7 +270,6 @@ def test_lpw_mrgscpot():
                              fillval_to_nan=True)
     os.remove('mvn_lpw_l2_mrgscpot_20180717_v02_r01-created-from-netcdf-input.cdf')
     os.remove('mvn_lpw_l2_mrgscpot_20180717_v02_r01.nc')
-'''
 
 def test_sep_anc():
 
@@ -287,7 +286,7 @@ def test_sep_anc():
                              fillval_to_nan=True)
     os.remove('mvn_sep_l2_anc_20210501_v06_r00-created-from-cdf-input.cdf')
     os.remove('mvn_sep_l2_anc_20210501_v06_r00.cdf')
-
+'''
 def test_sep_svy():
 
     fname = 'mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05.cdf'
@@ -353,7 +352,9 @@ def test_swe_arc3d():
                              fillval_to_nan=True)
     os.remove('mvn_swe_l2_arc3d_20180717_v04_r02-created-from-netcdf-input.cdf')
     os.remove('mvn_swe_l2_arc3d_20180717_v04_r02.nc')
-'''
+
+
+
 
 def test_swe_svyspec():
 
@@ -383,7 +384,7 @@ def test_swe_svyspec():
                              fillval_to_nan=True)
     os.remove('mvn_swe_l2_svyspec_20180718_v04_r04-created-from-netcdf-input.cdf')
     os.remove('mvn_swe_l2_svyspec_20180718_v04_r04.nc')
-'''
+
 def test_swi_finearc3d():
 
     fname = 'mvn_swi_l2_finearc3d_20180720_v01_r01.cdf'
