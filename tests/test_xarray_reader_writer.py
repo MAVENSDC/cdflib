@@ -553,7 +553,6 @@ def test_something():
     os.remove('sgpsondewnpnC1-created-from-netcdf-input.cdf')
     os.remove('sgpsondewnpnC1.nc')
     
-'''
 
 def test_themis_sst():
 
@@ -612,6 +611,7 @@ def test_themis_mag():
                              fillval_to_nan=True)
     os.remove('thg_l2_mag_amd_20070323_v01-created-from-netcdf-input.cdf')
     os.remove('thg_l2_mag_amd_20070323_v01.nc')
+'''
 
 def test_wi_elsp():
 
