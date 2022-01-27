@@ -30,21 +30,22 @@ def test_mms_fpi():
     b = cdflib.cdf_to_xarray('mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-cdf-input.cdf',
                              to_unixtime=True, fillval_to_nan=True)
     os.remove('mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-cdf-input.cdf')
-
+    os.remove('mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf')
 
     fname = 'mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc'
     url = (
-        "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf")
+        "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc")
     if not os.path.exists(fname):
         urllib.request.urlretrieve(url, fname)
 
     c = xr.load_dataset("mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc")
-    '''
+
     cdflib.xarray_to_cdf(c, 'mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-netcdf-input.cdf')
     d = cdflib.cdf_to_xarray('mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-netcdf-input.cdf',
                              to_unixtime=True, fillval_to_nan=True)
     os.remove('mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-netcdf-input.cdf')
-    '''
+    os.remove('mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc')
+
 
 '''
 def test_mms_epd():
