@@ -509,7 +509,7 @@ def test_rbsp():
                              to_unixtime=True, fillval_to_nan=True)
     os.remove('rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2-created-from-cdf-input.cdf')
     os.remove('rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2.cdf')
-'''
+
 
 def test_see_l3():
 
@@ -583,7 +583,7 @@ def test_themis_sst():
                              fillval_to_nan=True)
     os.remove('thc_l2_sst_20210709_v01-created-from-netcdf-input.cdf')
     os.remove('thc_l2_sst_20210709_v01.nc')
-
+'''
 def test_themis_mag():
 
     fname = 'thg_l2_mag_amd_20070323_v01.cdf'
