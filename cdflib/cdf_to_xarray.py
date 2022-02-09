@@ -612,33 +612,22 @@ def cdf_to_xarray(filename, to_datetime=False, to_unixtime=False, fillval_to_nan
     Returns:
         An XArray Dataset Object
 
-    Examples:
-        >>> #Plot a single line in bokeh
-        >>> import pytplot
-        >>> x_data = [2,3,4,5,6]
-        >>> y_data = [1,2,3,4,5]
-        >>> pytplot.store_data("Variable1", data={'x':x_data, 'y':y_data})
-        >>> pytplot.tplot("Variable1",bokeh=True)
+    Example:
+        >>> #Import necessary libraries
+        >>> import cdflib
+        >>> import xarray as xr
+        >>> import os
+        >>> import urllib.request
 
-        >>> #Display two plots
-        >>> x_data = [1,2,3,4,5]
-        >>> y_data = [[1,5],[2,4],[3,3],[4,2],[5,1]]
-        >>> pytplot.store_data("Variable2", data={'x':x_data, 'y':y_data})
-        >>> pytplot.tplot(["Variable1", "Variable2"])
+        >>> #Download a CDF file
+        >>> fname = 'mms2_fgm_srvy_l2_20160809_v4.47.0.cdf'
+        >>> url = ("https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mms2_fgm_srvy_l2_20160809_v4.47.0.cdf")
+        >>> if not os.path.exists(fname):
+        >>>     urllib.request.urlretrieve(url, fname)
 
-        >>> #Display 2 plots, using Variable1 as another x axis
-        >>> x_data = [1,2,3]
-        >>> y_data = [ [1,2,3] , [4,5,6], [7,8,9] ]
-        >>> v_data = [1,2,3]
-        >>> pytplot.store_data("Variable3", data={'x':x_data, 'y':y_data, 'v':v_data})
-        >>> pytplot.options("Variable3", 'spec', 1)
-        >>> pytplot.tplot(["Variable2", "Variable3"], var_label='Variable1')
-
-        >>> #Plot all 3 tplot variables, sending the output to an HTML file
-        >>> pytplot.tplot(["Variable1", "Variable2", "Variable3"], save_file='C:/temp/pytplot_example.html')
-
-        >>> #Plot all 3 tplot variables, sending the HTML output to a pair of strings
-        >>> div, component = pytplot.tplot(["Variable1", "Variable2", "Variable3"], gui=True)
+        >>> #Load in and display the CDF file
+        >>> mms_data = cdflib.cdf_to_xarray("mms2_fgm_srvy_l2_20160809_v4.47.0.cdf", to_unixtime=True, fillval_to_nan=True)
+        >>> print(mms_data)
     """
 
 
