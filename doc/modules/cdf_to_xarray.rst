@@ -8,4 +8,4 @@ This module is comprised of a single function which takes a CDF file and convert
 
 This will attempt to determine any `ISTP Complaince <https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html>`_ within the file, and incorporate that into the Dataset object.   
 
-.. autofunction:: pytplot.cdf_to_xarray
+.. autofunction:: cdflib.cdf_to_xarray

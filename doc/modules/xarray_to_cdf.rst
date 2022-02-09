@@ -8,4 +8,4 @@ This module is comprised of a single function which takes XArray Dataset files a
 
 This will attempt to conform to `ISTP Complaince <https://spdf.gsfc.nasa.gov/istp_guide/istp_guide.html>`_, and optionally provide warnings if it is not compliant.  
 
-.. autofunction:: pytplot.xarray_to_cdf
+.. autofunction:: cdflib.xarray_to_cdf
