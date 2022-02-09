@@ -146,6 +146,8 @@ class CDFepoch(object):
     @staticmethod
     def breakdown(epochs, to_np: bool = False):
         if isinstance(epochs, (list, tuple, np.ndarray)):
+            if isinstance(epochs, np.ndarray) and len(epochs.shape) > 1:
+                epochs = np.squeeze(epochs)
             item = epochs[0]
         else:
             item = epochs
@@ -156,6 +158,13 @@ class CDFepoch(object):
             return CDFepoch.breakdown_epoch(epochs, to_np)
         elif isinstance(item, (complex, np.complex128)):
             return CDFepoch.breakdown_epoch16(epochs, to_np)
+        elif isinstance(item, np.ndarray):
+            if item.dtype.type == np.int64:
+                return CDFepoch.breakdown_tt2000(epochs, to_np)
+            elif item.dtype.type == np.float64:
+                return CDFepoch.breakdown_epoch(epochs, to_np)
+            elif item.dtype.type == np.complex128:
+                return CDFepoch.breakdown_epoch16(epochs, to_np)
         else:
             raise TypeError('Not sure how to handle type {}'.format(type(epochs)))
 

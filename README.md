@@ -1,4 +1,3 @@
-[![image](https://travis-ci.com/MAVENSDC/cdflib.svg?branch=master)](https://travis-ci.com/MAVENSDC/cdflib)
 [![image](https://coveralls.io/repos/github/MAVENSDC/cdflib/badge.svg?branch=master)](https://coveralls.io/github/MAVENSDC/cdflib?branch=master)
 [![Actions Status](https://github.com/MAVENSDC/cdflib/workflows/ci/badge.svg)](https://github.com/MAVENSDC/cdflib/actions)
 [![DOI](https://zenodo.org/badge/102912691.svg)](https://zenodo.org/badge/latestdoi/102912691)

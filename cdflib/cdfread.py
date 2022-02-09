@@ -599,7 +599,6 @@ class CDF:
         return_dict = {}
         for _ in range(self._num_att):
             adr_info = self._read_adr(byte_loc)
-
             if (adr_info['scope'] != 1):
                 byte_loc = adr_info['next_adr_location']
                 continue
@@ -617,6 +616,12 @@ class CDF:
                 aedr_info = self._read_aedr(aedr_byte_loc, to_np=to_np)
                 entryData = aedr_info['entry']
                 if (expand is False):
+
+                    # This exists to get rid of extraneous numpy arrays
+                    if type(entryData) == np.ndarray:
+                        if len(entryData) == 1:
+                            entryData = entryData[0]
+
                     entries.append(entryData)
                 else:
                     entryWithType = []
@@ -1094,6 +1099,10 @@ class CDF:
                 aedr_info = self._read_aedr(byte_loc, to_np=to_np)
                 entryData = aedr_info['entry']
                 if (expand is False):
+                    # This exists to get rid of extraneous numpy arrays
+                    if type(entryData) == np.array:
+                        if len(entryData) == 1:
+                            entryData = entryData[0]
                     return_dict[adr_info['name']] = entryData
                 else:
                     entryWithType = []
