@@ -41,7 +41,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.viewcode',
     'sphinx_automodapi.automodapi',
-    'numpydoc',
+    'sphinx.ext.napoleon',
 ]
 
 numpydoc_class_members_toctree = False
