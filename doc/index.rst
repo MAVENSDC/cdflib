@@ -18,10 +18,13 @@ cdflib requires python 3 and numpy. To install run
    :maxdepth: 2
    :caption: Contents:
 
+   introduction
    modules/cdfread
    modules/cdfwrite
    modules/epochs
    modules/epochs_astropy
+   modules/cdf_to_xarray
+   modules/xarray_to_cdf
 
 
 
