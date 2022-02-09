@@ -5,13 +5,13 @@ CDF Astropy Epochs
 
 @author: Bryan Harter
 """
-import numpy as np
-from typing import List
 import datetime
 from datetime import timezone
-from astropy.time import Time
-from astropy.time.formats import erfa, TimeFromEpoch
+from typing import List
 
+import numpy as np
+from astropy.time import Time
+from astropy.time.formats import TimeFromEpoch, erfa
 
 __all__ = ['CDFAstropy']
 
@@ -36,7 +36,7 @@ class CDFEpoch16(TimeFromEpoch):
 
 class CDFTT2000(TimeFromEpoch):
     name = 'cdf_tt2000'
-    unit = 1.0 / (erfa.DAYSEC * 1000 * 1000 * 1000)  # Nanoseconds
+    unit = 1.0 / (erfa.DAYSEC * 1e9)  # Nanoseconds
     epoch_val = '2000-01-01 12:00:00'
     epoch_val2 = None
     epoch_scale = 'tt'
@@ -53,7 +53,14 @@ class CDFAstropy:
     increment = 0
 
     @staticmethod
-    def convert_to_astropy(epochs, format=None):  # @NoSelf
+    def convert_to_astropy(epochs, format=None):
+        """
+        Convert CDF epochs to astropy time objects.
+
+        Returns
+        -------
+        astropy.time.Time
+        """
         # If already in Astropy time Units, do nothing
         if isinstance(epochs, Time):
             return epochs
@@ -62,20 +69,18 @@ class CDFAstropy:
         if format is not None:
             return Time(epochs, format=format, precision=9)
 
+        if isinstance(epochs, (list, np.ndarray)):
+            t = type(epochs[0])
+        else:
+            t = type(epochs)
+
         # Determine best format for the input type
-        if isinstance(epochs, (int, np.int64)):
+        if t in (int, np.int64):
             return Time(epochs, format='cdf_tt2000', precision=9)
-        elif isinstance(epochs, (float, np.float64)):
-            return Time(epochs, format='cdf_epoch', precision=9)
-        elif isinstance(epochs, (complex, np.complex128)):
+        elif t in (complex, np.complex128):
             return Time(epochs.real, epochs.imag/1000000000000.0, format='cdf_epoch16', precision=9)
-        elif isinstance(epochs, (list, np.ndarray)):
-            if isinstance(epochs[0], (int, np.int64)):
-                return Time(epochs, format='cdf_tt2000', precision=9)
-            elif isinstance(epochs[0], (float, np.float64)):
-                return Time(epochs, format='cdf_epoch', precision=9)
-            elif isinstance(epochs[0], (complex, np.complex128)):
-                return Time(epochs.real, epochs.imag/1000000000000.0, format='cdf_epoch16', precision=9)
+        elif t in (float, np.float64):
+            return Time(epochs, format='cdf_epoch', precision=9)
         else:
             raise TypeError('Not sure how to handle type {}'.format(type(epochs)))
 
@@ -100,7 +105,7 @@ class CDFAstropy:
         raise TypeError('Not sure how to handle type {}'.format(type(epochs)))
 
     @staticmethod
-    def to_datetime(cdf_time) -> List[datetime.datetime]:  # @NoSelf
+    def to_datetime(cdf_time) -> List[datetime.datetime]:
         cdf_time = CDFAstropy.convert_to_astropy(cdf_time)
         return cdf_time.datetime
 

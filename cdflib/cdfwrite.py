@@ -5,20 +5,22 @@ This Python code only creates V3 CDFs.
 
 @author: Mike Liu
 """
-from typing import Tuple
-import logging
-import numpy as np
-import sys
-import struct
+import binascii
 import gzip
 import hashlib
-import platform as pf
-import binascii
-import cdflib.epochs as cdfepoch
-import numbers
+import logging
 import math
+import numbers
 import pathlib
+import platform as pf
+import struct
+import sys
 import warnings
+from typing import Tuple
+
+import numpy as np
+
+import cdflib.epochs as cdfepoch
 
 
 def is_open(func):
@@ -1002,7 +1004,6 @@ class CDF:
             vdr_offset = self.rvarsinfo[var][1]
 
         usedEntries = 0
-        editedVDR = False
         numVXRs = 0
         if compression > 0:
             default_blockingfactor = math.ceil(self.BLOCKING_BYTES/(numValues * dataTypeSize))

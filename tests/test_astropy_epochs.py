@@ -1,10 +1,10 @@
 #!/usr/bin/env python
+from datetime import datetime
 from random import randint
 
+import numpy as np
 import pytest
 from pytest import approx
-import numpy as np
-from datetime import datetime
 
 from cdflib.epochs_astropy import CDFAstropy as cdfepoch
 

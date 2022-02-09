@@ -31,13 +31,14 @@ All these epoch values can come from from CDF.varget function.
 @author: Michael Liu
 """
 import csv
-import numpy as np
+import datetime
 import math
-import re
 import numbers
 import os
-from typing import Sequence, List, Union
-import datetime
+import re
+from typing import List, Sequence, Union
+
+import numpy as np
 
 LEAPSEC_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                             'CDFLeapSeconds.txt')
@@ -475,7 +476,6 @@ class CDFepoch(object):
         for x in np.nonzero(~post72)[0]:
             if datxs[x, 0] <= 0.0:
                 # pre-1972...
-                secSinceJ2000 = secsSinceJ2000[x]
                 epoch = epochs[x]
                 t2 = t2s[x]
                 t3 = new_tt2000[x]
@@ -787,12 +787,12 @@ class CDFepoch(object):
     def epochrange_tt2000(epochs, starttime=None, endtime=None):  # @NoSelf
 
         if (isinstance(epochs, int) or isinstance(epochs, np.int64)):
-            new2_epochs = [epochs]
+            pass
         elif (isinstance(epochs, list) or isinstance(epochs, tuple) or
               isinstance(epochs, np.ndarray)):
             if (isinstance(epochs[0], int) or
                     isinstance(epochs[0], np.int64)):
-                new2_epochs = epochs
+                pass
             else:
                 raise ValueError('Bad data')
         else:
@@ -1590,10 +1590,10 @@ class CDFepoch(object):
     def epochrange_epoch(epochs, starttime=None, endtime=None):  # @NoSelf
 
         if isinstance(epochs, (float, np.float64)):
-            new2_epochs = [epochs]
+            pass
         elif isinstance(epochs, (list, tuple, np.ndarray)):
             if isinstance(epochs[0], (float, np.float64)):
-                new2_epochs = epochs
+                pass
             else:
                 raise TypeError('Bad data')
         else:

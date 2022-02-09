@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-import numpy as np
-from cdflib import cdfwrite
-from cdflib import cdfread
-import pytest
 from pathlib import Path
+
+import numpy as np
+import pytest
+
+from cdflib import cdfread, cdfwrite
 
 R = Path(__file__).parent
 fnbasic = 'testing.cdf'

@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 import filecmp
-import urllib.request
-from random import randint
 import os
-from pathlib import Path
-
-from hypothesis import given, strategies, settings, example
-
-import pytest
-from pytest import approx
-import numpy as np
+import urllib.request
 from datetime import datetime, timedelta
+from pathlib import Path
+from random import randint
+
+import numpy as np
+import pytest
+from hypothesis import example, given, settings, strategies
+from pytest import approx
 
 from cdflib import epochs
 from cdflib.epochs import CDFepoch as cdfepoch
