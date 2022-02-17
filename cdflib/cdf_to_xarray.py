@@ -93,7 +93,7 @@ def _convert_cdf_to_dicts(filename, to_datetime=False, to_unixtime=False):
     # Open the CDF file
     # Converts the entire CDF file into python dictionary objects
 
-    cdf_file = cdflib.CDF(filename, string_encoding='latin-1')
+    cdf_file = CDF(filename, string_encoding='latin-1')
     cdf_info = cdf_file.cdf_info()
     all_cdf_variables = cdf_info['rVariables'] + cdf_info['zVariables']
 

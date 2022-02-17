@@ -459,7 +459,7 @@ def xarray_to_cdf(xarray_dataset, file_name, from_unixtime=False, from_datetime=
         print(f"{file_name} already exists, cannot create CDF file.  Returning...")
         return
 
-    x = cdflib.CDF(file_name)
+    x = CDF(file_name)
 
     # Make a deep copy of the data before continuing
     dataset = xarray_dataset.copy()
