@@ -1,7 +1,6 @@
 import numpy as np
 import xarray as xr
-
-import cdflib
+from cdflib import CDF
 from cdflib.epochs import CDFepoch as cdfepoch
 import re
 

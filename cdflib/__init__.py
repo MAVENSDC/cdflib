@@ -3,18 +3,10 @@ from .epochs import CDFepoch as cdfepoch  # noqa: F401
 
 try:
     from .epochs_astropy import CDFAstropy as cdfastropy
-except Exception:
-    pass
-'''
-try:
     from .cdf_to_xarray import cdf_to_xarray
     from .xarray_to_cdf import xarray_to_cdf
 except Exception:
     pass
-'''
-
-from .cdf_to_xarray import cdf_to_xarray
-from .xarray_to_cdf import xarray_to_cdf
 
 from pathlib import Path
 

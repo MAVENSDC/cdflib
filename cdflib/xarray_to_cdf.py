@@ -1,8 +1,8 @@
-import cdflib
 import os
 import numpy as np
 from datetime import datetime
 from cdflib.epochs import CDFepoch as cdfepoch
+from cdflib import CDF
 import re
 
 def _dtype_to_cdf_type(var):
