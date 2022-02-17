@@ -3,11 +3,12 @@ from .epochs import CDFepoch as cdfepoch  # noqa: F401
 
 try:
     from .epochs_astropy import CDFAstropy as cdfastropy
-    from .cdf_to_xarray import cdf_to_xarray
-    from .xarray_to_cdf import xarray_to_cdf
+
 except Exception:
     pass
 
+from .cdf_to_xarray import cdf_to_xarray
+from .xarray_to_cdf import xarray_to_cdf
 from pathlib import Path
 
 # This function determines if we are reading or writing a file
