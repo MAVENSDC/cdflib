@@ -454,7 +454,113 @@ def _datetime_to_tt2000(datetime_data):
 
 
 def xarray_to_cdf(xarray_dataset, file_name, from_unixtime=False, from_datetime=False, istp=True, record_dimensions=[], compression=0):
+    """
+    This function converts XArray Dataset objects into CDF files.
 
+    Parameters:
+        xarray_dataset (xarray.Dataset):
+        file_name (str):  The path to the place the newly created CDF file
+        to_datetime (bool, optional): Whether or not to convert variables named "epoch" or "epoch_X" to CDF_TT2000 from datetime objects
+        to_unixtime (bool, optional): Whether or not to convert variables named "epoch" or "epoch_X" to CDF_TT2000 from unixtime
+        istp (bool, optional): Whether or not to do checks on the Dataset object to attempt to enforce CDF compliance
+        record_dimensions (list of str, optional): If the code cannot determine which dimensions should be made into CDF records, you may provide a list of them here
+        compression (int, optional): The level of compression to gzip the data in the variables.  Default is no compression, standard is 6.
+
+    Returns:
+        None, but generates a CDF file
+
+    Example:
+        >>># Import the needed libraries
+        >>>import cdflib
+        >>>import xarray as xr
+        >>>import os
+        >>>import urllib.request
+
+        >>># Create some fake data
+        >>>var_data = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
+        >>>var_dims = ['epoch', 'direction']
+        >>>data = xr.Variable(var_dims, var_data)
+
+        >>># Create fake epoch data
+        >>>epoch_data = [1, 2, 3]
+        >>>epoch_dims = ['epoch']
+        >>>epoch = xr.Variable(epoch_dims, epoch_data)
+
+        >>># Combine the two into an xarray Dataset and export as CDF (this will print out many ISTP warnings)
+        >>>ds = xr.Dataset(data_vars={'data': data, 'epoch': epoch})
+        >>>cdflib.xarray_to_cdf(ds, 'hello.cdf')
+
+        >>># Add some global attributes
+        >>>global_attributes = {'Project': 'Hail Mary',
+        >>>                     'Source_name': 'Thin Air',
+        >>>                     'Discipline': 'None',
+        >>>                     'Data_type': 'counts',
+        >>>                     'Descriptor': 'Midichlorians in unicorn blood',
+        >>>                     'Data_version': '3.14',
+        >>>                     'Logical_file_id': 'SEVENTEEN',
+        >>>                     'PI_name': 'Darth Vader',
+        >>>                     'PI_affiliation': 'Dark Side',
+        >>>                     'TEXT': 'AHHHHH',
+        >>>                     'Instrument_type': 'Banjo',
+        >>>                     'Mission_group': 'Impossible',
+        >>>                     'Logical_source': ':)',
+        >>>                     'Logical_source_description': ':('}
+
+        >>># Lets add a new coordinate variable for the "direction"
+        >>> dir_data = [1, 2, 3]
+        >>> dir_dims = ['direction']
+        >>> direction = xr.Variable(dir_dims, dir_data)
+
+        >>># Recreate the Dataset with this new objects, and recreate the CDF
+        >>>ds = xr.Dataset(data_vars={'data': data, 'epoch': epoch, 'direction':direction}, attrs=global_attributes)
+        >>>os.remove('hello.cdf')
+        >>>cdflib.xarray_to_cdf(ds, 'hello.cdf')
+
+    Example netCDF -> CDF conversion:
+        >>> # Download a netCDF file (if needed)
+        >>>fname = 'dn_magn-l2-hires_g17_d20211219_v1-0-1.nc'
+        >>>url = ("https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/dn_magn-l2-hires_g17_d20211219_v1-0-1.nc")
+        >>>if not os.path.exists(fname):
+        >>>    urllib.request.urlretrieve(url, fname)
+
+        >>># Load in the dataset, and set VAR_TYPES attributes (the most important attribute as far as this code is concerned)
+        >>>goes_r_mag = xr.load_dataset("C:/Work/cdf_test_files/dn_magn-l2-hires_g17_d20211219_v1-0-1.nc")
+        >>>for var in goes_r_mag:
+        >>>    goes_r_mag[var].attrs['VAR_TYPE'] = 'data'
+        >>>goes_r_mag['coordinate'].attrs['VAR_TYPE'] = 'support_data'
+        >>>goes_r_mag['time'].attrs['VAR_TYPE'] = 'support_data'
+        >>>goes_r_mag['time_orbit'].attrs['VAR_TYPE'] = 'support_data'
+
+        >>># Create the CDF file
+        >>>cdflib.xarray_to_cdf(goes_r_mag, 'hello.cdf')
+
+    Processing Steps:
+        1. Determines the list of dimensions that represent time-varying dimensions.  These ultimatly become the "records" of the CDF file
+           1. If it is named "epoch" or "epoch_N", it is considered time-varying
+           2. If a variable points to another variable with a DEPEND_0 attribute, it is considered time-varying
+           3. If a variable has an attribute of VAR_TYPE equal to "data", it is time-varying
+           4. If a variable has an attribute of VAR_TYPE equal to "support_data" and it is 2 dimensional, it is time-varying
+        2. Determine a list of "dimension" variables within the Dataset object
+           1. These are all coordinates in the dataset that are not time-varying
+           2. Additionally, variables that a DEPEND_N attribute points to are also considered dimensions
+        3. Optionally, if ISTP=true, automatically add in DEPEND_0/1/2/etc attributes as necessary
+        4. Optionally, if ISTP=true, check all variable attributes and global attributes are present
+        5. Convert all data into either CDF_INT8, CDF_DOUBLE, CDF_UINT4, or CDF_CHAR
+        6. Optionally, convert variables with the name "epoch" or "epoch_N" to CDF_TT2000
+        7. Write all variables and global attributes to the CDF file!
+
+    ISTP Warnings:
+        If ISTP=true, these are some of the common things it will check:
+
+        - Missing or invalid VAR_TYPE variable attributes
+        - DEPEND_N missing from variables
+        - DEPEND_N/LABL_PTR/UNIT_PTR/FORM_PTR are pointing to missing variables
+        - Missing required global attributes
+        - Missing an "epoch" dimension
+        - DEPEND_N attribute pointing to a variable with oncompatible dimensions 
+
+
+    """
     if os.path.isfile(file_name):
         print(f"{file_name} already exists, cannot create CDF file.  Returning...")
         return

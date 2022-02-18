@@ -653,12 +653,27 @@ def cdf_to_xarray(filename, to_datetime=False, to_unixtime=False, fillval_to_nan
         >>> print(thg_data)
 
     Processing Steps:
-        1. asdf
-        2. asdfasdf
-        3. asdfasdfasdf
+        1. For each variable in the CDF file:
+            1. Determine the name of the dimension that spans the data "records".  This can be done in a few ways:
+                1. Check if the variable itself might be a dimension
+                2. The DEPEND_0 likely points to the approrpiate dimensions
+                3. If neither of the above, we create a new dimensions named "recordX"
+            2. Determine the name of the other dimensions of the variable, if they exist.  This is done by:
+                1. Checking if the variable name itself might be a dimension
+                2. The DEPEND_X probably points to the appropriate dimensions for that variable, so we check those
+                3. If either of the above are time varying, the code appends "_dim" to the end of the name
+                4. If neither 1 or 2 are true, create a dumension named "dimX".
+            3. Gather all attributes that belong to the variable
+            4. Add a few attributes that enable better plotting with built-in xarray functions (name, units, etc)
+            5. Optionally, convert FILLVALs to NaNs in the data
+            6. Optionally, convert CDF_EPOCH/EPOCH16/TT2000 variables to unixtime or datetime
+            7. Create an XArray Variable object using the dimensions determined in steps 1 and 2, the attributes from
+               steps 3 and 4, and then the variable data
+        2. Gather all the Variable objects created in the first step, and separate them into data variables or coordinate
+           variables
+        3. Gather all global scope attributes in the CDF file
+        4. Create an XArray Dataset objects with the data variables, coordinate variables, and global attributes.
     """
-
-
 
     # Convert the CDF file into a series of dicts, so we don't need to keep reading the file
     global_attributes, all_variable_attributes, all_variable_data, all_variable_properties = _convert_cdf_to_dicts(filename,
