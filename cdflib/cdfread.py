@@ -66,7 +66,7 @@ class CDF:
 
     def __init__(self, path, validate=False, string_encoding='ascii'):
 
-        path = Path(path).expanduser()
+        path = Path(path).resolve().expanduser()
         if not path.is_file():
             path = path.with_suffix('.cdf')
             if not path.is_file():

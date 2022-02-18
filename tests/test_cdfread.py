@@ -1,14 +1,9 @@
-import os
-import urllib.request
+import pathlib
 
 import cdflib
 
 
 def test_read():
-    fname = 'helios.cdf'
-    url = ("http://helios-data.ssl.berkeley.edu/data/"
-           "E1_experiment/New_proton_corefit_data_2017/"
-           "cdf/helios1/1974/h1_1974_346_corefit.cdf")
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
+    fname = (pathlib.Path(__file__) / '..' / 'testfiles' /
+             'psp_fld_l2_mag_rtn_1min_20200104_v02.cdf')
     cdflib.CDF(fname)
