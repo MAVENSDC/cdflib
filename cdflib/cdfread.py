@@ -59,6 +59,11 @@ class CDF:
         character strings. Other encodings may have been used to create files
         however, and this keyword argument gives users the flexibility to read
         those files.
+
+    Notes
+    -----
+    An open file handle to the CDF file remains whilst a CDF object is live.
+    It is automatically cleaned up with the CDF instance is deleted.
     """
     version = 3
     release = 7
@@ -75,9 +80,9 @@ class CDF:
         self.file = path
         self.string_encoding = string_encoding
 
-        with self.file.open('rb') as f:
-            magic_number = f.read(4).hex()
-            compressed_bool = f.read(4).hex()
+        self._f = self.file.open('rb')
+        magic_number = self._f.read(4).hex()
+        compressed_bool = self._f.read(4).hex()
 
         if magic_number not in ('cdf30001', 'cdf26002', '0000ffff'):
             raise OSError(f'{path} is not a CDF file or a non-supported CDF!')
@@ -95,6 +100,9 @@ class CDF:
 
             self.compressed_file = self.file
             self.file = self.temp_file
+            self._f.close()
+            self._f = self.file.open('rb')
+
 
         if (self.cdfversion == 3):
             cdr_info, foffs = self._read_cdr(8)
@@ -143,6 +151,7 @@ class CDF:
         # created it earlier.
         if self.temp_file is not None:
             os.remove(self.temp_file)
+        self._f.close()
 
     def __getitem__(self, variable: str) -> np.ndarray:
         return self.varget(variable)
@@ -719,17 +728,15 @@ class CDF:
 
         If that doesn't work, create a new file in the CDFs directory.
         """
+        if (self.cdfversion == 3):
+            data_start, data_size, cType, _ = self._read_ccr(8)
+        else:
+            data_start, data_size, cType, _ = self._read_ccr2(8)
 
-        with self.file.open('rb') as f:
-            if (self.cdfversion == 3):
-                data_start, data_size, cType, _ = self._read_ccr(8)
-            else:
-                data_start, data_size, cType, _ = self._read_ccr2(8)
-
-            if cType != 5:
-                return
-            f.seek(data_start)
-            decompressed_data = gzip.decompress(f.read(data_size))
+        if cType != 5:
+            return
+        self._f.seek(data_start)
+        decompressed_data = gzip.decompress(self._f.read(data_size))
 
         self.temp_file = Path(tempfile.NamedTemporaryFile(suffix='.cdf').name)
         with self.temp_file.open('wb') as g:
@@ -738,11 +745,10 @@ class CDF:
             g.write(decompressed_data)
 
     def _read_ccr(self, byte_loc):
-        with self.file.open('rb') as f:
-            f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(8), 'big')
-            f.seek(byte_loc+12)
-            cproffset = int.from_bytes(f.read(8), 'big')
+        self._f.seek(byte_loc, 0)
+        block_size = int.from_bytes(self._f.read(8), 'big')
+        self._f.seek(byte_loc+12)
+        cproffset = int.from_bytes(self._f.read(8), 'big')
 
         data_start = byte_loc + 32
         data_size = block_size - 32
@@ -751,11 +757,10 @@ class CDF:
         return data_start, data_size, cType, cParams
 
     def _read_ccr2(self, byte_loc):
-        with self.file.open('rb') as f:
-            f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(4), 'big')
-            f.seek(byte_loc+8)
-            cproffset = int.from_bytes(f.read(4), 'big')
+        self._f.seek(byte_loc, 0)
+        block_size = int.from_bytes(self._f.read(4), 'big')
+        self._f.seek(byte_loc+8)
+        cproffset = int.from_bytes(self._f.read(4), 'big')
 
         data_start = byte_loc + 20
         data_size = block_size - 20
@@ -770,10 +775,9 @@ class CDF:
             return self._read_cpr2(byte_loc)
 
     def _read_cpr3(self, byte_loc):
-        with self.file.open('rb') as f:
-            f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(8), 'big')
-            cpr = f.read(block_size-8)
+        self._f.seek(byte_loc, 0)
+        block_size = int.from_bytes(self._f.read(8), 'big')
+        cpr = self._f.read(block_size-8)
 
         cType = int.from_bytes(cpr[4:8], 'big')
         cParams = int.from_bytes(cpr[16:20], 'big')
@@ -781,11 +785,9 @@ class CDF:
         return cType, cParams
 
     def _read_cpr2(self, byte_loc):
-
-        with self.file.open('rb') as f:
-            f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(4), 'big')
-            cpr = f.read(block_size-4)
+        self._f.seek(byte_loc, 0)
+        block_size = int.from_bytes(self._f.read(4), 'big')
+        cpr = self._f.read(block_size-4)
 
         cType = int.from_bytes(cpr[4:8], 'big')
         cParams = int.from_bytes(cpr[16:20], 'big')
@@ -797,24 +799,29 @@ class CDF:
         Verifies the MD5 checksum.
         Only used in the __init__() function
         """
-        fn = self.file if self.compressed_file is None else self.compressed_file
+        if self.compressed_file is not None:
+            fh = self.compressed_file.open('rb')
+        else:
+            fh = self._f
 
         md5 = hashlib.md5()
         block_size = 16384
-        with fn.open('rb') as f:
-            f.seek(-16, 2)
-            remaining = f.tell()  # File size minus checksum size
-            f.seek(0)
-            while (remaining > block_size):
-                data = f.read(block_size)
-                remaining = remaining - block_size
-                md5.update(data)
+        fh.seek(-16, 2)
+        remaining = fh.tell()  # File size minus checksum size
+        fh.seek(0)
+        while (remaining > block_size):
+            data = fh.read(block_size)
+            remaining = remaining - block_size
+            md5.update(data)
 
-            if (remaining > 0):
-                data = f.read(remaining)
-                md5.update(data)
+        if (remaining > 0):
+            data = fh.read(remaining)
+            md5.update(data)
 
-            existing_md5 = f.read(16).hex()
+        existing_md5 = fh.read(16).hex()
+
+        if self.compressed_file is not None:
+            fh.close()
 
         return md5.hexdigest() == existing_md5
 
@@ -916,11 +923,11 @@ class CDF:
         """
         Read a CDF descriptor record (CDR).
         """
-        with self.file.open('rb') as f:
-            f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(8), 'big')
-            cdr = f.read(block_size-8)
-            foffs = f.tell()
+        self._f.seek(0)
+        self._f.seek(byte_loc)
+        block_size = int.from_bytes(self._f.read(8), 'big')
+        cdr = self._f.read(block_size-8)
+        foffs = self._f.tell()
         # _ = int.from_bytes(cdr[0:4],'big') #Section Type
         # gdroff = int.from_bytes(cdr[4:12], 'big')  # GDR Location
         version = int.from_bytes(cdr[12:16], 'big')
@@ -968,11 +975,10 @@ class CDF:
         return cdr_info, foffs
 
     def _read_cdr2(self, byte_loc):
-        with self.file.open('rb') as f:
-            f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(4), 'big')
-            cdr = f.read(block_size-4)
-            foffs = f.tell()
+        self._f.seek(byte_loc, 0)
+        block_size = int.from_bytes(self._f.read(4), 'big')
+        cdr = self._f.read(block_size-4)
+        foffs = self._f.tell()
 
         # gdroff = int.from_bytes(cdr[4:8], 'big')  # GDR Location
         version = int.from_bytes(cdr[8:12], 'big')
@@ -1006,10 +1012,9 @@ class CDF:
         return cdr_info, foffs
 
     def _read_gdr(self, byte_loc):
-        with self.file.open('rb') as f:
-            f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(8), 'big')  # Block Size
-            gdr = f.read(block_size-8)
+        self._f.seek(byte_loc, 0)
+        block_size = int.from_bytes(self._f.read(8), 'big')  # Block Size
+        gdr = self._f.read(block_size-8)
 
         first_rvariable = int.from_bytes(gdr[4:12], 'big', signed=True)
         first_zvariable = int.from_bytes(gdr[12:20], 'big', signed=True)
@@ -1044,10 +1049,9 @@ class CDF:
         return gdr_info
 
     def _read_gdr2(self, byte_loc):
-        with self.file.open('rb') as f:
-            f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(4), 'big')  # Block Size
-            gdr = f.read(block_size-4)
+        self._f.seek(byte_loc, 0)
+        block_size = int.from_bytes(self._f.read(4), 'big')  # Block Size
+        gdr = self._f.read(block_size-4)
 
         first_rvariable = int.from_bytes(gdr[4:8], 'big', signed=True)
         first_zvariable = int.from_bytes(gdr[8:12], 'big', signed=True)
@@ -1147,10 +1151,10 @@ class CDF:
             return self._read_adr2(position)
 
     def _read_adr3(self, byte_loc):
-        with self.file.open('rb') as f:
-            f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(8), 'big')  # Block Size
-            adr = f.read(block_size - 8)
+        self._f.seek(byte_loc, 0)
+        block_size = int.from_bytes(self._f.read(8), 'big')  # Block Size
+        adr = self._f.read(block_size - 8)
+
         next_adr_loc = int.from_bytes(adr[4:12], 'big', signed=True)
         position_next_gr_entry = int.from_bytes(adr[12:20], 'big', signed=True)
         scope = int.from_bytes(adr[20:24], 'big', signed=True)
@@ -1180,10 +1184,9 @@ class CDF:
         return return_dict
 
     def _read_adr2(self, byte_loc):
-        with self.file.open('rb') as f:
-            f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(4), 'big')  # Block Size
-            adr = f.read(block_size - 4)
+        self._f.seek(byte_loc, 0)
+        block_size = int.from_bytes(self._f.read(4), 'big')  # Block Size
+        adr = self._f.read(block_size - 4)
 
         next_adr_loc = int.from_bytes(adr[4:8], 'big', signed=True)
         position_next_gr_entry = int.from_bytes(adr[8:12], 'big', signed=True)
@@ -1223,26 +1226,24 @@ class CDF:
             return self._read_adr_fast2(position)
 
     def _read_adr_fast3(self, byte_loc):
-        with self.file.open('rb') as f:
-            # Position of next ADR
-            f.seek(byte_loc + 12, 0)
-            next_adr_loc = int.from_bytes(f.read(8), 'big', signed=True)
-            # Name
-            f.seek(byte_loc + 68, 0)
-            name = str(f.read(256).decode(self.string_encoding))
+        # Position of next ADR
+        self._f.seek(byte_loc + 12, 0)
+        next_adr_loc = int.from_bytes(self._f.read(8), 'big', signed=True)
+        # Name
+        self._f.seek(byte_loc + 68, 0)
+        name = str(self._f.read(256).decode(self.string_encoding))
 
         name = name.replace('\x00', '')
 
         return name, next_adr_loc
 
     def _read_adr_fast2(self, byte_loc):
-        with self.file.open('rb') as f:
-            # Position of next ADR
-            f.seek(byte_loc + 8, 0)
-            next_adr_loc = int.from_bytes(f.read(4), 'big', signed=True)
-            # Name
-            f.seek(byte_loc + 52, 0)
-            name = str(f.read(64).decode(self.string_encoding))
+        # Position of next ADR
+        self._f.seek(byte_loc + 8, 0)
+        next_adr_loc = int.from_bytes(self._f.read(4), 'big', signed=True)
+        # Name
+        self._f.seek(byte_loc + 52, 0)
+        name = str(self._f.read(64).decode(self.string_encoding))
 
         name = name.replace('\x00', '')
 
@@ -1255,24 +1256,22 @@ class CDF:
             return self._read_aedr_fast2(byte_loc)
 
     def _read_aedr_fast3(self, byte_loc):
-        with self.file.open('rb') as f:
-            f.seek(byte_loc + 12, 0)
-            next_aedr = int.from_bytes(f.read(8), 'big', signed=True)
+        self._f.seek(byte_loc + 12, 0)
+        next_aedr = int.from_bytes(self._f.read(8), 'big', signed=True)
 
-            # Variable number or global entry number
-            f.seek(byte_loc + 28, 0)
-            entry_num = int.from_bytes(f.read(4), 'big', signed=True)
+        # Variable number or global entry number
+        self._f.seek(byte_loc + 28, 0)
+        entry_num = int.from_bytes(self._f.read(4), 'big', signed=True)
 
         return entry_num, next_aedr
 
     def _read_aedr_fast2(self, byte_loc):
-        with self.file.open('rb') as f:
-            f.seek(byte_loc + 8, 0)
-            next_aedr = int.from_bytes(f.read(4), 'big', signed=True)
+        self._f.seek(byte_loc + 8, 0)
+        next_aedr = int.from_bytes(self._f.read(4), 'big', signed=True)
 
-            # Variable number or global entry number
-            f.seek(byte_loc+20, 0)
-            entry_num = int.from_bytes(f.read(4), 'big', signed=True)
+        # Variable number or global entry number
+        self._f.seek(byte_loc+20, 0)
+        entry_num = int.from_bytes(self._f.read(4), 'big', signed=True)
 
         return entry_num, next_aedr
 
@@ -1287,10 +1286,9 @@ class CDF:
         Reads an Attribute Entry Descriptor Record at a specific byte location.
 
         """
-        with self.file.open('rb') as f:
-            f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(8), 'big')
-            aedr = f.read(block_size-8)
+        self._f.seek(byte_loc, 0)
+        block_size = int.from_bytes(self._f.read(8), 'big')
+        aedr = self._f.read(block_size-8)
 
         next_aedr = int.from_bytes(aedr[4:12], 'big', signed=True)
         data_type = int.from_bytes(aedr[16:20], 'big', signed=True)
@@ -1333,10 +1331,9 @@ class CDF:
         return return_dict
 
     def _read_aedr2(self, byte_loc, to_np=True):
-        with self.file.open('rb') as f:
-            f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(4), 'big')
-            aedr = f.read(block_size - 4)
+        self._f.seek(byte_loc, 0)
+        block_size = int.from_bytes(self._f.read(4), 'big')
+        aedr = self._f.read(block_size - 4)
 
         next_aedr = int.from_bytes(aedr[4:8], 'big', signed=True)
         data_type = int.from_bytes(aedr[12:16], 'big', signed=True)
@@ -1373,10 +1370,10 @@ class CDF:
             return self._read_vdr2(byte_loc)
 
     def _read_vdr3(self, byte_loc):
-        with self.file.open('rb') as f:
-            f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(8), 'big')
-            vdr = f.read(block_size - 8)
+        self._f.seek(byte_loc, 0)
+        block_size = int.from_bytes(self._f.read(8), 'big')
+        vdr = self._f.read(block_size - 8)
+
         # Type of internal record
         section_type = int.from_bytes(vdr[0:4], 'big')
         next_vdr = int.from_bytes(vdr[4:12], 'big', signed=True)
@@ -1475,10 +1472,10 @@ class CDF:
             toadd = 0
         else:
             toadd = 128
-        with self.file.open('rb') as f:
-            f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(4), 'big')
-            vdr = f.read(block_size-4)
+        self._f.seek(byte_loc, 0)
+        block_size = int.from_bytes(self._f.read(4), 'big')
+        vdr = self._f.read(block_size-4)
+
         # Type of internal record
         section_type = int.from_bytes(vdr[0:4], 'big')
         next_vdr = int.from_bytes(vdr[4:8], 'big', signed=True)
@@ -1586,11 +1583,10 @@ class CDF:
             return self._read_vdr_fast2(byte_loc)
 
     def _read_vdr_fast3(self, byte_loc):
-        with self.file.open('rb') as f:
-            f.seek(byte_loc+12, 0)
-            next_vdr = int.from_bytes(f.read(8), 'big', signed=True)
-            f.seek(byte_loc+84, 0)
-            name = str(f.read(256).decode(self.string_encoding))
+        self._f.seek(byte_loc+12, 0)
+        next_vdr = int.from_bytes(self._f.read(8), 'big', signed=True)
+        self._f.seek(byte_loc+84, 0)
+        name = str(self._f.read(256).decode(self.string_encoding))
 
         name = name.replace('\x00', '')
 
@@ -1602,46 +1598,43 @@ class CDF:
         else:
             toadd = 128
 
-        with self.file.open('rb') as f:
-            f.seek(byte_loc+8, 0)
-            next_vdr = int.from_bytes(f.read(4), 'big', signed=True)
-            f.seek(byte_loc+toadd+64, 0)
-            name = str(f.read(64).decode(self.string_encoding))
+        self._f.seek(byte_loc+8, 0)
+        next_vdr = int.from_bytes(self._f.read(4), 'big', signed=True)
+        self._f.seek(byte_loc+toadd+64, 0)
+        name = str(self._f.read(64).decode(self.string_encoding))
 
         name = name.replace('\x00', '')
 
         return name, next_vdr
 
     def _read_vxrs(self, byte_loc, vvr_offsets=[], vvr_start=[], vvr_end=[]):
+        self._f.seek(byte_loc, 0)
+        block_size = int.from_bytes(self._f.read(8), 'big', signed=True)  # Block Size
+        vxrs = self._f.read(block_size-8)
 
-        with self.file.open('rb') as f:
-            f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(8), 'big', signed=True)  # Block Size
-            vxrs = f.read(block_size-8)
-
-            next_vxr_pos = int.from_bytes(vxrs[4:12], 'big', signed=True)
-            num_ent = int.from_bytes(vxrs[12:16], 'big', signed=True)
-            num_ent_used = int.from_bytes(vxrs[16:20], 'big', signed=True)
-            # coff = 20
-            for ix in range(0, num_ent_used):
-                soffset = 20 + 4 * ix
-                num_start = int.from_bytes(vxrs[soffset:soffset+4], 'big',
-                                           signed=True)
-                eoffset = 20 + 4 * num_ent + 4 * ix
-                num_end = int.from_bytes(vxrs[eoffset:eoffset+4], 'big', signed=True)
-                ooffset = 20 + 2 * 4 * num_ent + 8 * ix
-                rec_offset = int.from_bytes(vxrs[ooffset:ooffset+8], 'big',
-                                            signed=True)
-                type_offset = 8 + rec_offset
-                f.seek(type_offset, 0)
-                next_type = int.from_bytes(f.read(4), 'big', signed=True)
-                if next_type == 6:
-                    vvr_offsets, vvr_start, vvr_end = self._read_vxrs(rec_offset,
-                                                                      vvr_offsets=vvr_offsets, vvr_start=vvr_start, vvr_end=vvr_end)
-                else:
-                    vvr_offsets.extend([rec_offset])
-                    vvr_start.extend([num_start])
-                    vvr_end.extend([num_end])
+        next_vxr_pos = int.from_bytes(vxrs[4:12], 'big', signed=True)
+        num_ent = int.from_bytes(vxrs[12:16], 'big', signed=True)
+        num_ent_used = int.from_bytes(vxrs[16:20], 'big', signed=True)
+        # coff = 20
+        for ix in range(0, num_ent_used):
+            soffset = 20 + 4 * ix
+            num_start = int.from_bytes(vxrs[soffset:soffset+4], 'big',
+                                       signed=True)
+            eoffset = 20 + 4 * num_ent + 4 * ix
+            num_end = int.from_bytes(vxrs[eoffset:eoffset+4], 'big', signed=True)
+            ooffset = 20 + 2 * 4 * num_ent + 8 * ix
+            rec_offset = int.from_bytes(vxrs[ooffset:ooffset+8], 'big',
+                                        signed=True)
+            type_offset = 8 + rec_offset
+            self._f.seek(type_offset, 0)
+            next_type = int.from_bytes(self._f.read(4), 'big', signed=True)
+            if next_type == 6:
+                vvr_offsets, vvr_start, vvr_end = self._read_vxrs(rec_offset,
+                                                                  vvr_offsets=vvr_offsets, vvr_start=vvr_start, vvr_end=vvr_end)
+            else:
+                vvr_offsets.extend([rec_offset])
+                vvr_start.extend([num_start])
+                vvr_end.extend([num_end])
 
         if next_vxr_pos != 0:
             vvr_offsets, vvr_start, vvr_end = self._read_vxrs(next_vxr_pos,
@@ -1651,34 +1644,33 @@ class CDF:
 
     def _read_vxrs2(self, byte_loc, vvr_offsets=[], vvr_start=[], vvr_end=[]):
 
-        with self.file.open('rb') as f:
-            f.seek(byte_loc, 0)
-            block_size = int.from_bytes(f.read(4), 'big', signed=True)
-            vxrs = f.read(block_size-4)
+        self._f.seek(byte_loc, 0)
+        block_size = int.from_bytes(self._f.read(4), 'big', signed=True)
+        vxrs = self._f.read(block_size-4)
 
-            next_vxr_pos = int.from_bytes(vxrs[4:8], 'big', signed=True)
-            num_ent = int.from_bytes(vxrs[8:12], 'big', signed=True)
-            num_ent_used = int.from_bytes(vxrs[12:16], 'big', signed=True)
-            # coff = 16
-            for ix in range(0, num_ent_used):
-                soffset = 16 + 4 * ix
-                num_start = int.from_bytes(vxrs[soffset:soffset+4], 'big',
-                                           signed=True)
-                eoffset = 16 + 4 * num_ent + 4 * ix
-                num_end = int.from_bytes(vxrs[eoffset:eoffset+4], 'big', signed=True)
-                ooffset = 16 + 2 * 4 * num_ent + 4 * ix
-                rec_offset = int.from_bytes(vxrs[ooffset:ooffset+4], 'big',
-                                            signed=True)
-                type_offset = 4 + rec_offset
-                f.seek(type_offset, 0)
-                next_type = int.from_bytes(f.read(4), 'big', signed=True)
-                if next_type == 6:
-                    vvr_offsets, vvr_start, vvr_end = self._read_vxrs2(rec_offset,
-                                                                       vvr_offsets=vvr_offsets, vvr_start=vvr_start, vvr_end=vvr_end)
-                else:
-                    vvr_offsets.extend([rec_offset])
-                    vvr_start.extend([num_start])
-                    vvr_end.extend([num_end])
+        next_vxr_pos = int.from_bytes(vxrs[4:8], 'big', signed=True)
+        num_ent = int.from_bytes(vxrs[8:12], 'big', signed=True)
+        num_ent_used = int.from_bytes(vxrs[12:16], 'big', signed=True)
+        # coff = 16
+        for ix in range(0, num_ent_used):
+            soffset = 16 + 4 * ix
+            num_start = int.from_bytes(vxrs[soffset:soffset+4], 'big',
+                                       signed=True)
+            eoffset = 16 + 4 * num_ent + 4 * ix
+            num_end = int.from_bytes(vxrs[eoffset:eoffset+4], 'big', signed=True)
+            ooffset = 16 + 2 * 4 * num_ent + 4 * ix
+            rec_offset = int.from_bytes(vxrs[ooffset:ooffset+4], 'big',
+                                        signed=True)
+            type_offset = 4 + rec_offset
+            self._f.seek(type_offset, 0)
+            next_type = int.from_bytes(self._f.read(4), 'big', signed=True)
+            if next_type == 6:
+                vvr_offsets, vvr_start, vvr_end = self._read_vxrs2(rec_offset,
+                                                                   vvr_offsets=vvr_offsets, vvr_start=vvr_start, vvr_end=vvr_end)
+            else:
+                vvr_offsets.extend([rec_offset])
+                vvr_start.extend([num_start])
+                vvr_end.extend([num_end])
 
         if next_vxr_pos != 0:
             vvr_offsets, vvr_start, vvr_end = self._read_vxrs2(next_vxr_pos,
@@ -2244,10 +2236,9 @@ class CDF:
         """
         Returns a VVR or decompressed CVVR block
         """
-        with self.file.open('rb') as f:
-            f.seek(offset, 0)
-            block_size = int.from_bytes(f.read(8), 'big')
-            block = f.read(block_size-8)
+        self._f.seek(offset, 0)
+        block_size = int.from_bytes(self._f.read(8), 'big')
+        block = self._f.read(block_size-8)
 
         section_type = int.from_bytes(block[0:4], 'big')
         if section_type == 13:
@@ -2262,10 +2253,9 @@ class CDF:
         """
         Returns a VVR or decompressed CVVR block
         """
-        with self.file.open('rb') as f:
-            f.seek(offset, 0)
-            block_size = int.from_bytes(f.read(4), 'big')
-            block = f.read(block_size-4)
+        self._f.seek(offset, 0)
+        block_size = int.from_bytes(self._f.read(4), 'big')
+        block = self._f.read(block_size-4)
 
         section_type = int.from_bytes(block[0:4], 'big')
         if section_type == 13:
