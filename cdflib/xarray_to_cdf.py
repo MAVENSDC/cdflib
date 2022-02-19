@@ -523,7 +523,7 @@ def xarray_to_cdf(xarray_dataset, file_name, from_unixtime=False, from_datetime=
         >>> os.remove('hello.cdf')
         >>> cdflib.xarray_to_cdf(ds, 'hello.cdf')
 
-    Example netCDF -> CDF conversion:
+    Example:
         >>> # Import the needed libraries
         >>> import cdflib
         >>> import xarray as xr
@@ -577,7 +577,7 @@ def xarray_to_cdf(xarray_dataset, file_name, from_unixtime=False, from_datetime=
         >>> if not os.path.exists(fname):
         >>>     urllib.request.urlretrieve(url, fname)
 
-        >>># Load in the dataset, and set VAR_TYPES attributes (the most important attribute as far as this code is concerned)
+        >>> # Load in the dataset, and set VAR_TYPES attributes (the most important attribute as far as this code is concerned)
         >>> goes_r_mag = xr.load_dataset("C:/Work/cdf_test_files/dn_magn-l2-hires_g17_d20211219_v1-0-1.nc")
         >>> for var in goes_r_mag:
         >>>     goes_r_mag[var].attrs['VAR_TYPE'] = 'data'
