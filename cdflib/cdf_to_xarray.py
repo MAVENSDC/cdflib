@@ -1,9 +1,10 @@
-import numpy as np
-import xarray as xr
-from cdflib import CDF
-from cdflib.epochs import CDFepoch as cdfepoch
 import re
 
+import numpy as np
+import xarray as xr
+
+from cdflib.epochs import CDFepoch as cdfepoch
+from .cdf_factory import CDF
 
 ISTP_TO_XARRAY_ATTRS = {'FIELDNAM': 'standard_name',
                         'LABLAXIS': 'long_name',
@@ -21,7 +22,7 @@ def _find_xarray_plotting_values(var_att_dict):
     xarray_att_dict = {}
     if not var_att_dict:
         return xarray_att_dict
-    for key,value in var_att_dict.items():
+    for key, value in var_att_dict.items():
         if key in ISTP_TO_XARRAY_ATTRS:
             xarray_att_dict[ISTP_TO_XARRAY_ATTRS[key]] = value
     return xarray_att_dict
@@ -40,7 +41,7 @@ def _convert_cdf_time_types(data, atts, properties, to_datetime=False, to_unixti
 
     try:
         len(data)
-    except Exception as e:
+    except Exception:
         data = [data]
 
     if to_datetime and to_unixtime:
@@ -653,7 +654,7 @@ def cdf_to_xarray(filename, to_datetime=False, to_unixtime=False, fillval_to_nan
         >>> print(thg_data)
 
     Processing Steps:
-        1. For each variable in the CDF file - 
+        1. For each variable in the CDF file -
             1. Determine the name of the dimension that spans the data "records".  This can be done in a few ways -
                 1. Check if the variable itself might be a dimension
                 2. The DEPEND_0 likely points to the approrpiate dimensions

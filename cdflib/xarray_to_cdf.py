@@ -1,9 +1,12 @@
 import os
-import numpy as np
-from datetime import datetime
-from cdflib.epochs import CDFepoch as cdfepoch
-from cdflib import CDF
 import re
+from datetime import datetime
+
+import numpy as np
+
+from cdflib.epochs import CDFepoch as cdfepoch
+from .cdf_factory import CDF
+
 
 def _dtype_to_cdf_type(var):
 
@@ -626,7 +629,7 @@ def xarray_to_cdf(xarray_dataset, file_name, from_unixtime=False, from_datetime=
 
     if istp:
         # This creates a list of suspected or confirmed label variables
-        label_vars = _label_checker(dataset)
+        _label_checker(dataset)
 
         # This creates a list of suspected or confirmed dimension variables
         dim_vars = _dimension_checker(dataset)
