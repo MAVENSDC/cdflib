@@ -26,6 +26,7 @@ cdflib requires python 3 and numpy. To install run
    modules/epochs_astropy
    modules/cdf_to_xarray
    modules/xarray_to_cdf
+   development
 
 
 
