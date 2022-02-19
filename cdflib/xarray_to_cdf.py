@@ -458,7 +458,7 @@ def xarray_to_cdf(xarray_dataset, file_name, from_unixtime=False, from_datetime=
     This function converts XArray Dataset objects into CDF files.
 
     Parameters:
-        xarray_dataset (xarray.Dataset):
+        xarray_dataset (xarray.Dataset): The XArray Dataset object that you'd like to convert into a CDF file
         file_name (str):  The path to the place the newly created CDF file
         to_datetime (bool, optional): Whether or not to convert variables named "epoch" or "epoch_X" to CDF_TT2000 from datetime objects
         to_unixtime (bool, optional): Whether or not to convert variables named "epoch" or "epoch_X" to CDF_TT2000 from unixtime
