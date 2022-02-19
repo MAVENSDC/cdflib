@@ -475,6 +475,13 @@ def xarray_to_cdf(xarray_dataset, file_name, from_unixtime=False, from_datetime=
         >>> import xarray as xr
         >>> import os
         >>> import urllib.request
+        
+    Example:
+        >>> # Import the needed libraries
+        >>> import cdflib
+        >>> import xarray as xr
+        >>> import os
+        >>> import urllib.request
 
         >>> # Create some fake data
         >>> var_data = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
