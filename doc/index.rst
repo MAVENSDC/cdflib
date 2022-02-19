@@ -15,10 +15,11 @@ cdflib requires python 3 and numpy. To install run
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
    introduction
+   modules/CDF function
    modules/cdfread
    modules/cdfwrite
    modules/epochs
