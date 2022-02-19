@@ -523,7 +523,7 @@ def xarray_to_cdf(xarray_dataset, file_name, from_unixtime=False, from_datetime=
         >>> os.remove('hello.cdf')
         >>> cdflib.xarray_to_cdf(ds, 'hello.cdf')
 
-    Example:
+    Examples:
         >>> # Import the needed libraries
         >>> import cdflib
         >>> import xarray as xr
