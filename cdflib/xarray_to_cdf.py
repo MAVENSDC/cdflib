@@ -472,61 +472,7 @@ def xarray_to_cdf(xarray_dataset, file_name, from_unixtime=False, from_datetime=
     Returns:
         None, but generates a CDF file
 
-    Example:
-        >>> # Import the needed libraries
-        >>> import cdflib
-        >>> import xarray as xr
-        >>> import os
-        >>> import urllib.request
-
-    Example:
-        >>> # Import the needed libraries
-        >>> import cdflib
-        >>> import xarray as xr
-        >>> import os
-        >>> import urllib.request
-
-        >>> # Create some fake data
-        >>> var_data = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
-        >>> var_dims = ['epoch', 'direction']
-        >>> data = xr.Variable(var_dims, var_data)
-
-        >>> # Create fake epoch data
-        >>> epoch_data = [1, 2, 3]
-        >>> epoch_dims = ['epoch']
-        >>> epoch = xr.Variable(epoch_dims, epoch_data)
-
-        >>> # Combine the two into an xarray Dataset and export as CDF (this will print out many ISTP warnings)
-        >>> ds = xr.Dataset(data_vars={'data': data, 'epoch': epoch})
-        >>> cdflib.xarray_to_cdf(ds, 'hello.cdf')
-
-        >>> # Add some global attributes
-        >>> global_attributes = {'Project': 'Hail Mary',
-        >>>                      'Source_name': 'Thin Air',
-        >>>                      'Discipline': 'None',
-        >>>                      'Data_type': 'counts',
-        >>>                      'Descriptor': 'Midichlorians in unicorn blood',
-        >>>                      'Data_version': '3.14',
-        >>>                      'Logical_file_id': 'SEVENTEEN',
-        >>>                      'PI_name': 'Darth Vader',
-        >>>                      'PI_affiliation': 'Dark Side',
-        >>>                      'TEXT': 'AHHHHH',
-        >>>                      'Instrument_type': 'Banjo',
-        >>>                      'Mission_group': 'Impossible',
-        >>>                      'Logical_source': ':)',
-        >>>                      'Logical_source_description': ':('}
-
-        >>> # Lets add a new coordinate variable for the "direction"
-        >>> dir_data = [1, 2, 3]
-        >>> dir_dims = ['direction']
-        >>> direction = xr.Variable(dir_dims, dir_data)
-
-        >>> # Recreate the Dataset with this new objects, and recreate the CDF
-        >>> ds = xr.Dataset(data_vars={'data': data, 'epoch': epoch, 'direction':direction}, attrs=global_attributes)
-        >>> os.remove('hello.cdf')
-        >>> cdflib.xarray_to_cdf(ds, 'hello.cdf')
-
-    Examples:
+    Example CDF file from scratch:
         >>> # Import the needed libraries
         >>> import cdflib
         >>> import xarray as xr

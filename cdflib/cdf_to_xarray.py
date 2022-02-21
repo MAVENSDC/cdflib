@@ -654,12 +654,12 @@ def cdf_to_xarray(filename, to_datetime=False, to_unixtime=False, fillval_to_nan
         >>> print(thg_data)
 
     Processing Steps:
-        1. For each variable in the CDF file -
-            1. Determine the name of the dimension that spans the data "records".  This can be done in a few ways -
+        1. For each variable in the CDF file
+            1. Determine the name of the dimension that spans the data "records".  This can be done in a few ways
                 1. Check if the variable itself might be a dimension
                 2. The DEPEND_0 likely points to the approrpiate dimensions
                 3. If neither of the above, we create a new dimensions named "recordX"
-            2. Determine the name of the other dimensions of the variable, if they exist.  This is done by -
+            2. Determine the name of the other dimensions of the variable, if they exist.  This is done by
                 1. Checking if the variable name itself might be a dimension
                 2. The DEPEND_X probably points to the appropriate dimensions for that variable, so we check those
                 3. If either of the above are time varying, the code appends "_dim" to the end of the name
