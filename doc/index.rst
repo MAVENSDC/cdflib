@@ -21,7 +21,7 @@ cdflib requires python 3 and numpy. To install run
    introduction
    modules/cdflib
    modules/xarray
-   modules/api
+   modules/apis
    development
 
 
