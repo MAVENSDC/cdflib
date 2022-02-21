@@ -3,6 +3,6 @@ CDF
 
 .. autofunction:: cdflib.CDF
 
-.. autoclass:: cdflib.cdfread.CDF
+.. automodapi:: cdflib.cdfread
 
-.. autoclass:: cdflib.cdfwrite.CDF
+.. automodapi:: cdflib.cdfwrite
