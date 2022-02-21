@@ -5,4 +5,4 @@ CDF
 
 .. autoclass:: cdflib.cdfread.CDF
 
-.. autoclass:: cdf.cdfwrite.CDF
+.. autoclass:: cdflib.cdfwrite.CDF
