@@ -30,8 +30,7 @@ def CDF(path, cdf_spec=None, delete=False, validate=None,
 
     Returns
     -------
-    A CDF object that can be used for reading a file (if it exists) or writing
-    to a file (if it does not exist)
+    A CDF object that can be used for reading a file (if it exists) or writing to a file (if it does not exist)
 
     Notes
     -----

@@ -539,13 +539,13 @@ def xarray_to_cdf(xarray_dataset, file_name, from_unixtime=False, from_datetime=
 
     Processing Steps:
         1. Determines the list of dimensions that represent time-varying dimensions.  These ultimately become the "records" of the CDF file
-           1. If it is named "epoch" or "epoch_N", it is considered time-varying
-           2. If a variable points to another variable with a DEPEND_0 attribute, it is considered time-varying
-           3. If a variable has an attribute of VAR_TYPE equal to "data", it is time-varying
-           4. If a variable has an attribute of VAR_TYPE equal to "support_data" and it is 2 dimensional, it is time-varying
+            - If it is named "epoch" or "epoch_N", it is considered time-varying
+            - If a variable points to another variable with a DEPEND_0 attribute, it is considered time-varying
+            - If a variable has an attribute of VAR_TYPE equal to "data", it is time-varying
+            - If a variable has an attribute of VAR_TYPE equal to "support_data" and it is 2 dimensional, it is time-varying
         2. Determine a list of "dimension" variables within the Dataset object
-           1. These are all coordinates in the dataset that are not time-varying
-           2. Additionally, variables that a DEPEND_N attribute points to are also considered dimensions
+            - These are all coordinates in the dataset that are not time-varying
+            - Additionally, variables that a DEPEND_N attribute points to are also considered dimensions
         3. Optionally, if ISTP=true, automatically add in DEPEND_0/1/2/etc attributes as necessary
         4. Optionally, if ISTP=true, check all variable attributes and global attributes are present
         5. Convert all data into either CDF_INT8, CDF_DOUBLE, CDF_UINT4, or CDF_CHAR
