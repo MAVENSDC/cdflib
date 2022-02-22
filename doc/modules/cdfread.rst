@@ -100,14 +100,45 @@ varget()
 
 >>> varget( variable = None, [epoch=None], [[starttime=None, endtime=None] | [startrec=0, endrec = None]], [,expand=True])
 
+Returns the variable data.  Variable can be entered either a name or a variable number.
 
+By default, it returns a ``numpy.ndarray`` or ``list()`` class object, depending on the data type, with the variable data and its specification.
 
+If ``expand=True``, a dictionary is returned with the following defined keys for the output
+
+- ``Rec_Ndim`` the dimension number of each variable record
+- ``Rec_Shape`` the shape of the variable record dimensions
+- ``Num_Records`` the total number of records
+- ``Records_Returned`` the number of records retrieved
+- ``Data_Type`` the CDF data type
+- ``Data retrieved`` variable data
+- ``Real_Records`` Record numbers for real data for sparse record variable in list
+
+By default, the full variable data is returned.
+
+To acquire only a portion of the data for a record-varying variable, either the time or record (0-based) range can be specified. ``epoch`` can be used to specify which time variable this variable depends on and is to be searched for the time range.
+For the ISTP-compliant CDFs, the time variable will come from the attribute 'DEPEND_0' from this variable.  The function will automatically search for it thus no need to specify ``epoch``.
+
+If either the start or end time is not specified, the possible minimum or maximum value for the specific epoch data type is assumed.  If either the start or end record is not specified, the range starts at 0 or/and ends at the last of the written data.
+
+The start (and end) time should be presented in a list as:
+
+- ``[year month day hour minute second millisec]`` for CDF_EPOCH
+- ``[year month day hour minute second millisec microsec nanosec picosec]`` for CDF_EPOCH16
+- ``[year month day hour minute second millisec microsec nanosec]`` for CDF_TIME_TT2000
+
+If not enough time components are presented, only the last item can have the floating portion for the sub-time components.
+
+.. note::
+    CDF's CDF_EPOCH16 data type uses 2 8-byte doubles for each data value. In Python, each value is presented as a complex or numpy.complex128.
 
 epochrange()
 -------------
 
 >>> epochrange( epoch, [starttime=None, endtime=None])
 
+Get epoch range. Returns ``list()`` of the record numbers, representing the corresponding starting and ending records within the time range from the epoch data.
+``None`` is returned if there is no data either written or found in the time range.
 
 getVersion()
 -------------
