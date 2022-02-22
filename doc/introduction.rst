@@ -11,11 +11,14 @@ The only module you need to install is numpy, but there are a few things you can
 While this origally started as a way to read PDS-archive compliant CDF files, thanks to many contributors, it has grown to be able to handle every type of CDF file.  
 
 
-What does it do?
+What can cdflib do?
 -------------------
 
-* Ability to read variables and attributes from CDF files
+* Ability to read variables and attributes from CDF files (see `modules\cdfread`_)
 * Writes CDF version 3 files
 * Can convert between CDF time types (EPOCH/EPOCH16/TT2000) to other common time formats
 * Can convert CDF files into XArray Dataset objects
-* Can convert XArray Dataset objects into CDF files, attempting to maintain ISTP compliance 
+* Can convert XArray Dataset objects into CDF files, attempting to maintain ISTP compliance
+
+
+
