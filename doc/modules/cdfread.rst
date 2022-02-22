@@ -23,18 +23,18 @@ cdf_info()
 
 Returns a dictionary that shows the basic CDF information. This information includes
 
-- ``CDF`` the name of the CDF
-- ``Version`` the version of the CDF
-- ``Encoding`` the endianness of the CDF
-- ``Majority`` the row/column majority
-- ``zVariables`` a list of the names of the zVariables
-- ``rVariables`` a list of the names of the rVariables
-- ``Attributes`` a list of dictionary objects that contain attribute names and their scope, ex - {attribute_name : scope}
-- ``Checksum`` the checksum indicator
-- ``Num_rdim`` the number of dimensions, applicable only to rVariables
-- ``rDim_sizes`` the dimensional sizes, applicable only to rVariables
-- ``Compressed`` CDF is compressed at the file-level
-- ``LeapSecondUpdated`` The last updated for the leap second table, if applicable
+    - ``CDF`` the name of the CDF
+    - ``Version`` the version of the CDF
+    - ``Encoding`` the endianness of the CDF
+    - ``Majority`` the row/column majority
+    - ``zVariables`` a list of the names of the zVariables
+    - ``rVariables`` a list of the names of the rVariables
+    - ``Attributes`` a list of dictionary objects that contain attribute names and their scope, ex - {attribute_name : scope}
+    - ``Checksum`` the checksum indicator
+    - ``Num_rdim`` the number of dimensions, applicable only to rVariables
+    - ``rDim_sizes`` the dimensional sizes, applicable only to rVariables
+    - ``Compressed`` CDF is compressed at the file-level
+    - ``LeapSecondUpdated`` The last updated for the leap second table, if applicable
 
 
 varinq(variable)
