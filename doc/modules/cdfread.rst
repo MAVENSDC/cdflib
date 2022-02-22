@@ -38,7 +38,7 @@ Returns a dictionary that shows the basic CDF information. This information incl
 
 
 varinq(variable)
---------
+-----------------
 
 Returns a dictionary that shows the basic variable information. This information includes
 
