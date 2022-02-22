@@ -65,22 +65,51 @@ Returns a python dictionary of attribute information. If no attribute is provide
 attget(attribute=None, entry=None)
 --------------------------------------
 
+Returns the value of the attribute at the entry number provided. A variable name can be used instead of its corresponding entry number. A dictionary is returned with the following defined keys.
+
+- ``Item_Size`` the number of bytes for each entry value
+- ``Num_items`` total number of values extracted
+- ``Data_Type`` the CDF data type
+- ``Data`` retrieved attribute data as a scalar value, a numpy array or a string
+
 
 varattsget(variable = None, expand = None)
 --------------------------------------------
+
+Gets all variable attributes. Unlike attget, which returns a single attribute entry value, this function returns all of the variable attribute entries, in a ``dict()``.
+
+If there is no entry found, ``None`` is returned. If no variable name is provided, a list of variables are printed.
+
+If expand is entered with non-False, then each entry's data type is also returned in a list form as ``[entry, 'CDF_xxxx']``.
+
+For attributes without any entries, they will also return with None value.
 
 
 globalattsget(expand = False)
 -----------------------------
 
+Gets all global attributes. This function returns all of the global attribute entries, in a dictionary (in the form of 'attribute': {entry: value} pair) from a CDF.
+
+If there is no entry found, None is returned. If expand is entered with non-False, then each entry's data type is also returned in a list form as ``[entry, 'CDF_xxxx']``.
+
+For attributes without any entries, they will also return with None value.
+
 
 varget()
 -------------
+
+>>> varget( variable = None, [epoch=None], [[starttime=None, endtime=None] | [startrec=0, endrec = None]], [,expand=True])
+
+
 
 
 epochrange()
 -------------
 
+>>> epochrange( epoch, [starttime=None, endtime=None])
+
 
 getVersion()
 -------------
+
+Shows the code version
