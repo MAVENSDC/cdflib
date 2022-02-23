@@ -1,7 +1,6 @@
 import re
 
 import numpy as np
-import xarray as xr
 
 from cdflib.epochs import CDFepoch as cdfepoch
 from .cdf_factory import CDF
@@ -497,6 +496,9 @@ def _reformat_variable_dims_and_data(var_dims, var_data):
 def _generate_xarray_data_variables(all_variable_data, all_variable_attributes,
                                     all_variable_properties, fillval_to_nan):
 
+    # Import here to avoid xarray as a dependency of all of cdflib
+    import xarray as xr
+
     # Make a list of all of the special variables in the file.  These are variables that are pointed to by
     # other variables.
     depend_variables = _discover_depend_variables(all_variable_data, all_variable_attributes, all_variable_properties)
@@ -673,6 +675,8 @@ def cdf_to_xarray(filename, to_datetime=False, to_unixtime=False, fillval_to_nan
         3. Gather all global scope attributes in the CDF file
         4. Create an XArray Dataset objects with the data variables, coordinate variables, and global attributes.
     """
+    # Import here to avoid xarray as a dependency of all of cdflib
+    import xarray as xr
 
     # Convert the CDF file into a series of dicts, so we don't need to keep reading the file
     global_attributes, all_variable_attributes, all_variable_data, all_variable_properties = _convert_cdf_to_dicts(filename,
