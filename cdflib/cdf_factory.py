@@ -45,9 +45,14 @@ def CDF(path, cdf_spec=None, delete=False, validate=None,
     >>> x = cdf_file.varget("NameOfVariable", startrec = 0, endrec = 150)
 
     """
-    path = Path(path).resolve().expanduser()
+    import re
 
-    if path.is_file():
+    path_orig = path # S3 mod
+    path = Path(path).resolve().expanduser()
+    # re.search needed for S3-awareness, cannot path-ize S3 or urls
+    if re.search("^http://|^https://|^s3://",path_orig):
+        return cdfread.CDF(path_orig, validate=validate, string_encoding=string_encoding)
+    elif path.is_file():
         if delete:
             path.unlink()
             return

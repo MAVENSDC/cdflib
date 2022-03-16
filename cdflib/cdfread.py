@@ -26,7 +26,7 @@ Sample use::
     swea_cdf_file.close()
     cdflib.cdfread.CDF.getVersion()
 
-@author: Bryan Harter, Michael Liu
+@author: Bryan Harter, Michael Liu, Sandy Antunes (S3 only)
 """
 import gzip
 import hashlib
@@ -40,8 +40,36 @@ import numpy as np
 
 import cdflib.epochs as epoch
 
+import urllib.request    # S3 mod
+import io                # S3 mod
+
+# note 'import boto3' is specifically in the S3-aware code below, so that
+# users do not need to install boto3 if not on an S3 system
+
 __all__ = ['CDF']
 
+def FileOrUrlOrS3Handler(fname,ftype):
+    if ftype == 'url':
+        req = urllib.request.Request(fname)
+        response = urllib.request.urlopen(req)
+        bdata = io.BytesIO(response.read())
+    elif ftype == 's3':
+        try:
+            import boto3
+        except:
+            raise ImportError('boto3 package not installed')
+        s3c = boto3.client('s3')
+        s3parts = fname.split('/') # 0-1=s3://, 2=bucket, 3+=key
+        mybucket=s3parts[2]
+        mykey='/'.join(s3parts[3:])
+        obj = s3c.get_object(Bucket=mybucket,Key=mykey)
+        rawdata=obj['Body'].read()
+        bdata=io.BytesIO(rawdata)
+    elif ftype == 'file':
+        #print("debug, opening ",fname)
+        bdata=open(fname,"rb")
+
+    return(bdata)
 
 class CDF:
     """
@@ -71,16 +99,37 @@ class CDF:
 
     def __init__(self, path, validate=False, string_encoding='ascii'):
 
-        path = Path(path).resolve().expanduser()
-        if not path.is_file():
-            path = path.with_suffix('.cdf')
+        # S3 mod
+        #path = Path(path).resolve().expanduser()
+        #if not path.is_file():
+        #    path = path.with_suffix('.cdf')
+        #    if not path.is_file():
+        #        raise FileNotFoundError(f'{path} not found')
+        try:
+            fname=path.absolute().as_posix()
+        except:
+            fname=path
+        if fname.startswith("s3://"):
+           # later put in s3 'does it exist' checker
+           self.ftype = 's3'
+           self.file = fname # path for files, fname for urls and S3
+        elif fname.startswith("http://") or fname.startswith("https://"):
+            # later put in url 404 'does it exist' checker
+            self.ftype = 'url'
+            self.file = fname # path for files, fname for urls and S3
+        else:
+            self.ftype = 'file'
+            path = Path(path).expanduser()
             if not path.is_file():
-                raise FileNotFoundError(f'{path} not found')
-
-        self.file = path
+                path = path.with_suffix('.cdf')
+                if not path.is_file():
+                    raise FileNotFoundError(f'{path} not found')
+            self.file = path # path for files, fname for urls and S3
+        #print("debug, got type: ",self.ftype)
         self.string_encoding = string_encoding
 
-        self._f = self.file.open('rb')
+        #self._f = self.file.open('rb')
+        self._f = FileOrUrlOrS3Handler(self.file,self.ftype) # S3
         magic_number = self._f.read(4).hex()
         compressed_bool = self._f.read(4).hex()
 
@@ -93,6 +142,14 @@ class CDF:
         self.compressed_file = None
         self.temp_file = None
 
+        # S3
+        # right now both urls and S3 make a temp copy
+        # better S3 will use 'read in place'
+        if self.ftype == 'url' or self.ftype == 's3':
+            self._unstream_file(path)
+            path=self.file
+            #print("debug: new temp file is: ",path)
+            
         if self._compressed:
             self._uncompress_file(path)
             if self.temp_file is None:
@@ -744,6 +801,24 @@ class CDF:
             g.write(bytearray.fromhex('0000ffff'))
             g.write(decompressed_data)
 
+
+    def _unstream_file(self, path):
+        """
+        Typically for S3 or URL, writes the current file stream
+        into a file in the temporary directory.
+        If that doesn't work, create a new file in the CDFs directory.
+        """
+        f=FileOrUrlOrS3Handler(self.file,self.ftype)
+        raw_data = f.read(-1)
+        self.temp_file = Path(tempfile.NamedTemporaryFile(suffix='.cdf').name)
+        #print("debug, using temp file: ",self.temp_file)
+        with self.temp_file.open('wb') as g:
+            g.write(raw_data)
+        self.original_stream = self.file
+        self.file = self.temp_file
+        self.file = Path(self.file).expanduser()
+        self.ftype = 'file'
+            
     def _read_ccr(self, byte_loc):
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(8), 'big')
