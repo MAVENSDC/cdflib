@@ -48,6 +48,12 @@ import io                # S3 mod
 
 __all__ = ['CDF']
 
+# This library has two variants for S3 usage.
+# MemSave = False is the default, it keeps all loaded S3 in memory
+# MemSave = True instead dumps S3 files to a local temp file
+#     True has about a 2x slower access but reduces ram usage if lots of files
+MemSave = False
+
 def FileOrUrlOrS3Handler(fname,ftype):
     if ftype == 'url':
         req = urllib.request.Request(fname)
@@ -142,15 +148,21 @@ class CDF:
         self.compressed_file = None
         self.temp_file = None
 
-        # S3
-        # right now both urls and S3 make a temp copy
-        # better S3 will use 'read in place'
-        if self.ftype == 'url' or self.ftype == 's3':
-            self._unstream_file(path)
+        # new alt code, uses local file for S3 uncompressed instead of in-mem
+        if (self.ftype == 's3' and not self._compressed and MemSave):
+            self._unstream_file(path,self._f)
             path=self.file
-            #print("debug: new temp file is: ",path)
+            self.ftype = 'file'
+            self._f = self.file.open('rb')
             
+        # S3, right now both urls and S3 make a temp copy if compressed
+            # file will be picked up at next compress stage
+            #print("debug: new temp file is: ",path)
+
         if self._compressed:
+            if (self.ftype == 'url' or self.ftype == 's3'):
+                self._unstream_file(path,self._f)
+                path=self.file
             self._uncompress_file(path)
             if self.temp_file is None:
                 raise OSError("Decompression was unsuccessful.  Only GZIP compression is currently supported.")
@@ -159,6 +171,7 @@ class CDF:
             self.file = self.temp_file
             self._f.close()
             self._f = self.file.open('rb')
+            self.ftype = 'file'
 
 
         if (self.cdfversion == 3):
@@ -802,7 +815,7 @@ class CDF:
             g.write(decompressed_data)
 
 
-    def _unstream_file(self, path):
+    def _unstream_file(self, path, f):
         """
         Typically for S3 or URL, writes the current file stream
         into a file in the temporary directory.
