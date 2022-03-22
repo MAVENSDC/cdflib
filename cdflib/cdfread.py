@@ -49,10 +49,9 @@ import io                # S3 mod
 __all__ = ['CDF']
 
 # This library has two variants for S3 usage.
-# MemSave = False is the default, it keeps all loaded S3 in memory
-# MemSave = True instead dumps S3 files to a local temp file
+# s3_memlow = False is the default, it keeps all loaded S3 in memory
+# s3_memlow = True instead dumps S3 files to a local temp file
 #     True has about a 2x slower access but reduces ram usage if lots of files
-MemSave = False
 
 def FileOrUrlOrS3Handler(fname,ftype):
     if ftype == 'url':
@@ -103,7 +102,7 @@ class CDF:
     release = 7
     increment = 0
 
-    def __init__(self, path, validate=False, string_encoding='ascii'):
+    def __init__(self, path, validate=False, string_encoding='ascii', s3_memlow=False):
 
         # S3 mod
         #path = Path(path).resolve().expanduser()
@@ -149,7 +148,7 @@ class CDF:
         self.temp_file = None
 
         # new alt code, uses local file for S3 uncompressed instead of in-mem
-        if (self.ftype == 's3' and not self._compressed and MemSave):
+        if (self.ftype == 's3' and not self._compressed and s3_memlow):
             self._unstream_file(path,self._f)
             path=self.file
             self.ftype = 'file'
