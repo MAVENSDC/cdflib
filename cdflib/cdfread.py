@@ -747,7 +747,7 @@ class CDF:
         else:
             data_start, data_size, cType, _ = self._read_ccr2(8)
 
-	self._f.seek(data_start)
+        self._f.seek(data_start)
         if cType == 5:
             decompressed_data = gzip.decompress(self._f.read(data_size))
         elif cType == 1:
