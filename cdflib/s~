@@ -48,16 +48,8 @@ import io                # S3 mod
 
 __all__ = ['CDF']
 
-# This library has three variants for S3 usage.
-# s3_flag = 1 is the default, it keeps all loaded S3 in memory
-# s3_flag = 2 instead dumps S3 files to a local temp file
-# s3_flag = 3 reads directly from S3 in byte chunks as needed
-#     2 has about a 2x slower access but reduces ram usage if lots of files
-#     3 has about a 10x slower access but has no extra file or ram usage
-
-def FileOrUrlOrS3Handler(fname,ftype,s3_flag):
+def FileOrUrlOrS3Handler(fname,ftype):
     if ftype == 'url':
-        #print("debug, opening url")
         req = urllib.request.Request(fname)
         response = urllib.request.urlopen(req)
         bdata = io.BytesIO(response.read())
@@ -69,28 +61,15 @@ def FileOrUrlOrS3Handler(fname,ftype,s3_flag):
         s3parts = fname.split('/') # 0-1=s3://, 2=bucket, 3+=key
         mybucket=s3parts[2]
         mykey='/'.join(s3parts[3:])
-        if s3_flag == 3:
-            # read in-place
-            s3c = boto3.resource('s3')
-            obj = s3c.Object(bucket_name=mybucket,key=mykey)
-            bdata = S3object(obj)
-            #print("Debug, using S3 read-in-place, flag ",s3_flag)
-        else:
-            # for store in memory or as temp copy
-            s3c = boto3.client('s3')
-            obj = s3c.get_object(Bucket=mybucket,Key=mykey)
-            bdata = s3_fetchall(obj)
-            #print("Debug, using S3 copy, flag ",s3_flag)
-        return(bdata)
-    else:
+        bdata = boto3.resource('s3').Object(mybucket,mykey)
+        #s3c = boto3.client('s3')
+        #obj = s3c.get_object(Bucket=mybucket,Key=mykey)
+        #rawdata=obj['Body'].read()
+        #bdata=io.BytesIO(rawdata)
+    elif ftype == 'file':
         #print("debug, opening ",fname)
         bdata=open(fname,"rb")
 
-    return(bdata)
-
-def s3_fetchall(obj):
-    rawdata=obj['Body'].read()
-    bdata=io.BytesIO(rawdata)
     return(bdata)
 
 class S3object:
@@ -103,12 +82,9 @@ class S3object:
         self.pos = 0 # used to track where in S3 we are
         self.content_length = fhandle.content_length # size in bytes
         self.fhandle = fhandle
-        self.temp_file = None
         
     def read(self,isize):
-        if isize == -1:
-            isize=self.content_length
-        myrange = "bytes=%d-%d" % (self.pos,(self.pos+isize-1))
+        myrange = 'bytes='+str(self.pos)+'-'+str(self.pos+isize-1)
         #print("debug: byte range ",myrange)
         self.pos += isize # advance the pointer
         stream=self.fhandle.get(Range=myrange)['Body']
@@ -136,7 +112,7 @@ class S3object:
         bdata=io.BytesIO(rawdata)
         return(bdata)
 
-
+            
 class CDF:
     """
     Main CDF class.
@@ -163,8 +139,8 @@ class CDF:
     release = 7
     increment = 0
 
-    def __init__(self, path, validate=False, string_encoding='ascii', s3_flag=1):
-        print("got flags ",path,validate,string_encoding,s3_flag)
+    def __init__(self, path, validate=False, string_encoding='ascii'):
+
         # S3 mod
         #path = Path(path).resolve().expanduser()
         #if not path.is_file():
@@ -191,19 +167,16 @@ class CDF:
                 if not path.is_file():
                     raise FileNotFoundError(f'{path} not found')
             self.file = path # path for files, fname for urls and S3
-            
         #print("debug, got type: ",self.ftype)
         self.string_encoding = string_encoding
 
         #self._f = self.file.open('rb')
-        self._f = FileOrUrlOrS3Handler(self.file,self.ftype,s3_flag) # S3-aware
-        # So at this point self._f is either:
-        # (file) ptr to a file
-        # (url) entire byte set of a url
-        # (s3 and s3_flag = 1 or 2) entire byte set of an S3
-        # (s3 and s3_flag = 3) ptr to S3
-
+        self._f = FileOrUrlOrS3Handler(self.file,self.ftype) # S3-aware
+        if self.ftype == 's3':
+            self._f = S3object(self._f)
+            
         magic_number = self._f.read(4).hex()
+        #print("debug: magic number ",magic_number)
         compressed_bool = self._f.read(4).hex()
 
         if magic_number not in ('cdf30001', 'cdf26002', '0000ffff'):
@@ -215,27 +188,20 @@ class CDF:
         self.compressed_file = None
         self.temp_file = None
 
-        # new alt code, uses local file for S3 uncompressed instead of in-mem
-        if self.ftype == 's3' and self._compressed == False and s3_flag == 2:
-            # not compressed, and flag=1 means copy file
-            self._f.seek(0) # rewind to start
-            self._unstream_file(path,self._f)
+        # S3
+        # right now both urls and compressed S3 make a temp copy
+        # non-compressed S3 use more efficient 'read in place'
+        if self.ftype == 'url':
+            raw_data = self._f.read(-1)
+            self._unstream_file(raw_data)
             path=self.file
-            self.ftype = 'file'
-            self._f = self.file.open('rb')
+            #print("debug: new temp file is: ",path)
+        elif self.ftype == 's3' and self._compressed:
+            raw_data = self._f.fetchS3entire()
+            self._unstream_file(raw_data)
+            path=self.file
             
-            
-        # S3, right now both urls and S3 make a temp copy if compressed
-        # file will be picked up at next compress stage
-
         if self._compressed:
-            if self.ftype == 'url' or self.ftype == 's3':
-                if s3_flag == 3:
-                    # extra step, read entire file
-                    self._f.seek(0)
-                    self._f = s3_fetchall(self._f.fhandle)
-                self._unstream_file(path,self._f)
-                path=self.file
             self._uncompress_file(path)
             if self.temp_file is None:
                 raise OSError("Decompression was unsuccessful.  Only GZIP compression is currently supported.")
@@ -244,10 +210,8 @@ class CDF:
             self.file = self.temp_file
             self._f.close()
             self._f = self.file.open('rb')
-            self.ftype = 'file'
 
-        #print("Debug, operating off file ",self.file, "compression=",self._compressed)
-        
+
         if (self.cdfversion == 3):
             cdr_info, foffs = self._read_cdr(8)
             gdr_info = self._read_gdr(foffs)
@@ -295,7 +259,10 @@ class CDF:
         # created it earlier.
         if self.temp_file is not None:
             os.remove(self.temp_file)
-        self._f.close()
+        try:
+            self._f.close()
+        except:
+            pass # s3 objects do not like close
 
     def __getitem__(self, variable: str) -> np.ndarray:
         return self.varget(variable)
@@ -889,13 +856,14 @@ class CDF:
             g.write(decompressed_data)
 
 
-    def _unstream_file(self, path, f):
+    def _unstream_file(self, raw_data):
         """
         Typically for S3 or URL, writes the current file stream
         into a file in the temporary directory.
         If that doesn't work, create a new file in the CDFs directory.
         """
-        raw_data = f.read(-1)
+        #f=FileOrUrlOrS3Handler(self.file,self.ftype)
+        #raw_data = fdata.read(-1)
         self.temp_file = Path(tempfile.NamedTemporaryFile(suffix='.cdf').name)
         #print("debug, using temp file: ",self.temp_file)
         with self.temp_file.open('wb') as g:
@@ -904,8 +872,7 @@ class CDF:
         self.file = self.temp_file
         self.file = Path(self.file).expanduser()
         self.ftype = 'file'
-        #print("debug, using temp file ",self.temp_file)
-            
+        
     def _read_ccr(self, byte_loc):
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(8), 'big')
