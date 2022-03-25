@@ -78,7 +78,7 @@ class CDFAstropy:
         if t in (int, np.int64):
             return Time(epochs, format='cdf_tt2000', precision=9)
         elif t in (complex, np.complex128):
-            return Time(epochs.real, epochs.imag/1000000000000.0, format='cdf_epoch16', precision=9)
+            return Time(epochs.real, epochs.imag / 1000000000000.0, format='cdf_epoch16', precision=9)
         elif t in (float, np.float64):
             return Time(epochs, format='cdf_epoch', precision=9)
         else:
@@ -131,15 +131,15 @@ class CDFAstropy:
         for d in datetimes:
             unix_seconds = datetime.datetime(d[0], d[1], d[2], d[3], d[4], d[5]).replace(tzinfo=timezone.utc).timestamp()
             if len(d) == 7:
-                remainder_seconds = (d[6]/1000.0)
+                remainder_seconds = (d[6] / 1000.0)
                 astrotime = Time(unix_seconds, remainder_seconds, format='unix', precision=9)
                 cdf_time.append(astrotime.cdf_epoch)
             if len(d) == 9:
-                remainder_seconds = (d[6]/1000.0) + (d[7]/1000000.0) + (d[8]/1000000000.0)
+                remainder_seconds = (d[6] / 1000.0) + (d[7] / 1000000.0) + (d[8] / 1000000000.0)
                 astrotime = Time(unix_seconds, remainder_seconds, format='unix', precision=9)
                 cdf_time.append(astrotime.cdf_tt2000)
             if len(d) == 10:
-                remainder_seconds = (d[6]/1000.0) + (d[7]/1000000.0) + (d[8]/1000000000.0) + (d[9]/1000000000000.0)
+                remainder_seconds = (d[6] / 1000.0) + (d[7] / 1000000.0) + (d[8] / 1000000000.0) + (d[9] / 1000000000000.0)
                 astrotime = Time(unix_seconds, remainder_seconds, format='unix', precision=9)
                 cdf_time.append(astrotime.cdf_epoch16)
         if to_np:
@@ -170,7 +170,7 @@ class CDFAstropy:
             date, time = t.split(" ")
             yyyy, mon, dd = date.split("-")
             hhmmss, decimal_seconds = time.split(".")
-            decimal_seconds = "."+decimal_seconds
+            decimal_seconds = "." + decimal_seconds
             hh, mm, ss = hhmmss.split(":")
             time_as_list = []
             time_as_list.append(int(yyyy))  # year
@@ -180,7 +180,7 @@ class CDFAstropy:
             time_as_list.append(int(mm))  # minute
             time_as_list.append(int(ss))  # second
             decimal_seconds = float(decimal_seconds)
-            milliseconds = decimal_seconds*1000
+            milliseconds = decimal_seconds * 1000
             time_as_list.append(int(milliseconds))  # milliseconds
             microseconds = (milliseconds % 1) * 1000
             time_as_list.append(int(microseconds))  # microseconds
@@ -211,7 +211,7 @@ class CDFAstropy:
             time_as_list.append(int(mm))  # minute
             time_as_list.append(int(ss))  # second
             decimal_seconds = float(decimal_seconds)
-            milliseconds = decimal_seconds*1000
+            milliseconds = decimal_seconds * 1000
             time_as_list.append(int(milliseconds))  # milliseconds
             microseconds = (milliseconds % 1) * 1000
             time_as_list.append(int(microseconds))  # microseconds
@@ -243,7 +243,7 @@ class CDFAstropy:
             time_as_list.append(int(mm))  # minute
             time_as_list.append(int(ss))  # second
             decimal_seconds = float(decimal_seconds)
-            milliseconds = decimal_seconds*1000
+            milliseconds = decimal_seconds * 1000
             time_as_list.append(int(milliseconds))  # milliseconds
             times.append(time_as_list)
         return times
@@ -294,4 +294,4 @@ class CDFAstropy:
         Prints the code version.
         """
         print('epochs version:', str(CDFAstropy.version) + '.' +
-              str(CDFAstropy.release) + '.'+str(CDFAstropy.increment))
+              str(CDFAstropy.release) + '.' + str(CDFAstropy.increment))

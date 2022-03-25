@@ -103,7 +103,6 @@ class CDF:
             self._f.close()
             self._f = self.file.open('rb')
 
-
         if (self.cdfversion == 3):
             cdr_info, foffs = self._read_cdr(8)
             gdr_info = self._read_gdr(foffs)
@@ -627,7 +626,7 @@ class CDF:
                 if (expand is False):
 
                     # This exists to get rid of extraneous numpy arrays
-                    if type(entryData) == np.ndarray:
+                    if isinstance(entryData, np.ndarray):
                         if len(entryData) == 1:
                             entryData = entryData[0]
 
@@ -747,7 +746,7 @@ class CDF:
     def _read_ccr(self, byte_loc):
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(8), 'big')
-        self._f.seek(byte_loc+12)
+        self._f.seek(byte_loc + 12)
         cproffset = int.from_bytes(self._f.read(8), 'big')
 
         data_start = byte_loc + 32
@@ -759,7 +758,7 @@ class CDF:
     def _read_ccr2(self, byte_loc):
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(4), 'big')
-        self._f.seek(byte_loc+8)
+        self._f.seek(byte_loc + 8)
         cproffset = int.from_bytes(self._f.read(4), 'big')
 
         data_start = byte_loc + 20
@@ -777,7 +776,7 @@ class CDF:
     def _read_cpr3(self, byte_loc):
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(8), 'big')
-        cpr = self._f.read(block_size-8)
+        cpr = self._f.read(block_size - 8)
 
         cType = int.from_bytes(cpr[4:8], 'big')
         cParams = int.from_bytes(cpr[16:20], 'big')
@@ -787,7 +786,7 @@ class CDF:
     def _read_cpr2(self, byte_loc):
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(4), 'big')
-        cpr = self._f.read(block_size-4)
+        cpr = self._f.read(block_size - 4)
 
         cType = int.from_bytes(cpr[4:8], 'big')
         cParams = int.from_bytes(cpr[16:20], 'big')
@@ -926,7 +925,7 @@ class CDF:
         self._f.seek(0)
         self._f.seek(byte_loc)
         block_size = int.from_bytes(self._f.read(8), 'big')
-        cdr = self._f.read(block_size-8)
+        cdr = self._f.read(block_size - 8)
         foffs = self._f.tell()
         # _ = int.from_bytes(cdr[0:4],'big') #Section Type
         # gdroff = int.from_bytes(cdr[4:12], 'big')  # GDR Location
@@ -977,7 +976,7 @@ class CDF:
     def _read_cdr2(self, byte_loc):
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(4), 'big')
-        cdr = self._f.read(block_size-4)
+        cdr = self._f.read(block_size - 4)
         foffs = self._f.tell()
 
         # gdroff = int.from_bytes(cdr[4:8], 'big')  # GDR Location
@@ -1014,7 +1013,7 @@ class CDF:
     def _read_gdr(self, byte_loc):
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(8), 'big')  # Block Size
-        gdr = self._f.read(block_size-8)
+        gdr = self._f.read(block_size - 8)
 
         first_rvariable = int.from_bytes(gdr[4:12], 'big', signed=True)
         first_zvariable = int.from_bytes(gdr[12:20], 'big', signed=True)
@@ -1031,7 +1030,7 @@ class CDF:
         rdim_sizes = []
         for x in range(0, num_rdim):
             ioff = 76 + x * 4
-            rdim_sizes.append(int.from_bytes(gdr[ioff:ioff+4], 'big',
+            rdim_sizes.append(int.from_bytes(gdr[ioff:ioff + 4], 'big',
                                              signed=True))
 
         gdr_info = {}
@@ -1051,7 +1050,7 @@ class CDF:
     def _read_gdr2(self, byte_loc):
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(4), 'big')  # Block Size
-        gdr = self._f.read(block_size-4)
+        gdr = self._f.read(block_size - 4)
 
         first_rvariable = int.from_bytes(gdr[4:8], 'big', signed=True)
         first_zvariable = int.from_bytes(gdr[8:12], 'big', signed=True)
@@ -1064,7 +1063,7 @@ class CDF:
         rdim_sizes = []
         for x in range(0, num_rdim):
             ioff = 56 + x * 4
-            rdim_sizes.append(int.from_bytes(gdr[ioff:ioff+4], 'big',
+            rdim_sizes.append(int.from_bytes(gdr[ioff:ioff + 4], 'big',
                                              signed=True))
 
         gdr_info = {}
@@ -1104,7 +1103,7 @@ class CDF:
                 entryData = aedr_info['entry']
                 if (expand is False):
                     # This exists to get rid of extraneous numpy arrays
-                    if type(entryData) == np.array:
+                    if isinstance(entryData, np.array):
                         if len(entryData) == 1:
                             entryData = entryData[0]
                     return_dict[adr_info['name']] = entryData
@@ -1270,7 +1269,7 @@ class CDF:
         next_aedr = int.from_bytes(self._f.read(4), 'big', signed=True)
 
         # Variable number or global entry number
-        self._f.seek(byte_loc+20, 0)
+        self._f.seek(byte_loc + 20, 0)
         entry_num = int.from_bytes(self._f.read(4), 'big', signed=True)
 
         return entry_num, next_aedr
@@ -1288,7 +1287,7 @@ class CDF:
         """
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(8), 'big')
-        aedr = self._f.read(block_size-8)
+        aedr = self._f.read(block_size - 8)
 
         next_aedr = int.from_bytes(aedr[4:12], 'big', signed=True)
         data_type = int.from_bytes(aedr[16:20], 'big', signed=True)
@@ -1405,11 +1404,11 @@ class CDF:
             num_dims = int.from_bytes(vdr[332:336], 'big', signed=True)
             for x in range(0, num_dims):
                 ioff = 336 + 4 * x
-                zdim_sizes.append(int.from_bytes(vdr[ioff:ioff+4], 'big',
+                zdim_sizes.append(int.from_bytes(vdr[ioff:ioff + 4], 'big',
                                                  signed=True))
             coff = 336 + 4 * num_dims
             for x in range(0, num_dims):
-                dim_varys.append(int.from_bytes(vdr[coff+4*x:coff+4*x+4],
+                dim_varys.append(int.from_bytes(vdr[coff + 4 * x:coff + 4 * x + 4],
                                                 'big', signed=True))
             adj = 0
             # Check for "False" dimensions, and delete them
@@ -1425,7 +1424,7 @@ class CDF:
             # rvariable
             for x in range(0, self._rvariables_num_dims):
                 ioff = 332 + 4 * x
-                dim_varys.append(int.from_bytes(vdr[ioff:ioff+4], 'big',
+                dim_varys.append(int.from_bytes(vdr[ioff:ioff + 4], 'big',
                                                 signed=True))
             for x in range(0, self._rvariables_num_dims):
                 if (dim_varys[x] != 0):
@@ -1474,7 +1473,7 @@ class CDF:
             toadd = 128
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(4), 'big')
-        vdr = self._f.read(block_size-4)
+        vdr = self._f.read(block_size - 4)
 
         # Type of internal record
         section_type = int.from_bytes(vdr[0:4], 'big')
@@ -1490,29 +1489,29 @@ class CDF:
         compression_bool = (flag_bits[29] == '1')
         sparse = int.from_bytes(vdr[28:32], 'big', signed=True)
 
-        num_elements = int.from_bytes(vdr[44+toadd:48+toadd], 'big', signed=True)
-        var_num = int.from_bytes(vdr[48+toadd:52+toadd], 'big', signed=True)
-        CPRorSPRoffset = int.from_bytes(vdr[52+toadd:56+toadd], 'big',
+        num_elements = int.from_bytes(vdr[44 + toadd:48 + toadd], 'big', signed=True)
+        var_num = int.from_bytes(vdr[48 + toadd:52 + toadd], 'big', signed=True)
+        CPRorSPRoffset = int.from_bytes(vdr[52 + toadd:56 + toadd], 'big',
                                         signed=True)
-        blocking_factor = int.from_bytes(vdr[56+toadd:60+toadd], 'big',
+        blocking_factor = int.from_bytes(vdr[56 + toadd:60 + toadd], 'big',
                                          signed=True)
-        name = str(vdr[60+toadd:124+toadd].decode(self.string_encoding))
+        name = str(vdr[60 + toadd:124 + toadd].decode(self.string_encoding))
         name = name.replace('\x00', '')
         zdim_sizes = []
         dim_sizes = []
         dim_varys = []
         if (section_type == 8):
             # zvariable
-            num_dims = int.from_bytes(vdr[124+toadd:128+toadd], 'big',
+            num_dims = int.from_bytes(vdr[124 + toadd:128 + toadd], 'big',
                                       signed=True)
             for x in range(0, num_dims):
-                xoff = 128 + toadd + 4*x
-                zdim_sizes.append(int.from_bytes(vdr[xoff:xoff+4], 'big',
+                xoff = 128 + toadd + 4 * x
+                zdim_sizes.append(int.from_bytes(vdr[xoff:xoff + 4], 'big',
                                                  signed=True))
             coff = 128 + toadd + 4 * num_dims
             for x in range(0, num_dims):
                 icoff = coff + 4 * x
-                if (int.from_bytes(vdr[icoff:icoff+4], 'big', signed=True) == 0):
+                if (int.from_bytes(vdr[icoff:icoff + 4], 'big', signed=True) == 0):
                     dim_varys.append(False)
                 else:
                     dim_varys.append(True)
@@ -1530,7 +1529,7 @@ class CDF:
             # rvariable
             for x in range(0, self._rvariables_num_dims):
                 ix = 124 + toadd + 4 * x
-                if (int.from_bytes(vdr[ix:ix+4], 'big', signed=True) == 0):
+                if (int.from_bytes(vdr[ix:ix + 4], 'big', signed=True) == 0):
                     dim_varys.append(False)
                 else:
                     dim_varys.append(True)
@@ -1583,9 +1582,9 @@ class CDF:
             return self._read_vdr_fast2(byte_loc)
 
     def _read_vdr_fast3(self, byte_loc):
-        self._f.seek(byte_loc+12, 0)
+        self._f.seek(byte_loc + 12, 0)
         next_vdr = int.from_bytes(self._f.read(8), 'big', signed=True)
-        self._f.seek(byte_loc+84, 0)
+        self._f.seek(byte_loc + 84, 0)
         name = str(self._f.read(256).decode(self.string_encoding))
 
         name = name.replace('\x00', '')
@@ -1598,9 +1597,9 @@ class CDF:
         else:
             toadd = 128
 
-        self._f.seek(byte_loc+8, 0)
+        self._f.seek(byte_loc + 8, 0)
         next_vdr = int.from_bytes(self._f.read(4), 'big', signed=True)
-        self._f.seek(byte_loc+toadd+64, 0)
+        self._f.seek(byte_loc + toadd + 64, 0)
         name = str(self._f.read(64).decode(self.string_encoding))
 
         name = name.replace('\x00', '')
@@ -1610,7 +1609,7 @@ class CDF:
     def _read_vxrs(self, byte_loc, vvr_offsets=[], vvr_start=[], vvr_end=[]):
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(8), 'big', signed=True)  # Block Size
-        vxrs = self._f.read(block_size-8)
+        vxrs = self._f.read(block_size - 8)
 
         next_vxr_pos = int.from_bytes(vxrs[4:12], 'big', signed=True)
         num_ent = int.from_bytes(vxrs[12:16], 'big', signed=True)
@@ -1618,12 +1617,12 @@ class CDF:
         # coff = 20
         for ix in range(0, num_ent_used):
             soffset = 20 + 4 * ix
-            num_start = int.from_bytes(vxrs[soffset:soffset+4], 'big',
+            num_start = int.from_bytes(vxrs[soffset:soffset + 4], 'big',
                                        signed=True)
             eoffset = 20 + 4 * num_ent + 4 * ix
-            num_end = int.from_bytes(vxrs[eoffset:eoffset+4], 'big', signed=True)
+            num_end = int.from_bytes(vxrs[eoffset:eoffset + 4], 'big', signed=True)
             ooffset = 20 + 2 * 4 * num_ent + 8 * ix
-            rec_offset = int.from_bytes(vxrs[ooffset:ooffset+8], 'big',
+            rec_offset = int.from_bytes(vxrs[ooffset:ooffset + 8], 'big',
                                         signed=True)
             type_offset = 8 + rec_offset
             self._f.seek(type_offset, 0)
@@ -1646,7 +1645,7 @@ class CDF:
 
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(4), 'big', signed=True)
-        vxrs = self._f.read(block_size-4)
+        vxrs = self._f.read(block_size - 4)
 
         next_vxr_pos = int.from_bytes(vxrs[4:8], 'big', signed=True)
         num_ent = int.from_bytes(vxrs[8:12], 'big', signed=True)
@@ -1654,12 +1653,12 @@ class CDF:
         # coff = 16
         for ix in range(0, num_ent_used):
             soffset = 16 + 4 * ix
-            num_start = int.from_bytes(vxrs[soffset:soffset+4], 'big',
+            num_start = int.from_bytes(vxrs[soffset:soffset + 4], 'big',
                                        signed=True)
             eoffset = 16 + 4 * num_ent + 4 * ix
-            num_end = int.from_bytes(vxrs[eoffset:eoffset+4], 'big', signed=True)
+            num_end = int.from_bytes(vxrs[eoffset:eoffset + 4], 'big', signed=True)
             ooffset = 16 + 2 * 4 * num_ent + 4 * ix
-            rec_offset = int.from_bytes(vxrs[ooffset:ooffset+4], 'big',
+            rec_offset = int.from_bytes(vxrs[ooffset:ooffset + 4], 'big',
                                         signed=True)
             type_offset = 4 + rec_offset
             self._f.seek(type_offset, 0)
@@ -1700,17 +1699,17 @@ class CDF:
                 if (vvr_end[vvr_num] >= endrec):
                     lastBlock = vvr_num
                     break
-            for vvr_num in range(firstBlock, (lastBlock+1)):
+            for vvr_num in range(firstBlock, (lastBlock + 1)):
                 if (self.cdfversion == 3):
                     var_block_data = self._read_vvr_block(vvr_offs[vvr_num])
                 else:
                     var_block_data = self._read_vvr_block2(vvr_offs[vvr_num])
                 asize = len(var_block_data)
-                byte_stream[pos:pos+asize] = var_block_data
+                byte_stream[pos:pos + asize] = var_block_data
                 pos = pos + asize
             startPos = (startrec - vvr_start[firstBlock]) * numBytes * numValues
             stopOff = (vvr_end[lastBlock] - endrec) * numBytes * numValues
-            byte_stream = byte_stream[startPos:len(byte_stream)-stopOff]
+            byte_stream = byte_stream[startPos:len(byte_stream) - stopOff]
         else:
             # with sparse records
             if ('pad' in vdr_dict):
@@ -1726,7 +1725,7 @@ class CDF:
                     vdr_dict['num_elements'])
             cur_block = -1
             rec_size = numBytes * numValues
-            for rec_num in range(startrec, (endrec+1)):
+            for rec_num in range(startrec, (endrec + 1)):
                 block, prev_block = self._find_block(vvr_start, vvr_end,
                                                      cur_block, rec_num)
                 if (block > -1):
@@ -1738,12 +1737,12 @@ class CDF:
                             var_block_data = self._read_vvr_block2(vvr_offs[block])
                         cur_block = block
                     xoff = record_off * rec_size
-                    byte_stream[pos:pos+rec_size] = var_block_data[xoff:
-                                                                   xoff+rec_size]
+                    byte_stream[pos:pos + rec_size] = var_block_data[xoff:
+                                                                     xoff + rec_size]
                 else:
                     if (vdr_dict['sparse'] == 1):
                         # use defined pad or default pad
-                        byte_stream[pos:pos+rec_size] = filled_data * numValues
+                        byte_stream[pos:pos + rec_size] = filled_data * numValues
                     else:
                         # use previous physical record
                         if (prev_block != -1):
@@ -1755,9 +1754,9 @@ class CDF:
                                     vvr_offs[prev_block])
                             lastRecOff = (vvr_end[prev_block] -
                                           vvr_start[prev_block]) * rec_size
-                            byte_stream[pos:pos+rec_size] = var_prev_block_data[lastRecOff:]
+                            byte_stream[pos:pos + rec_size] = var_prev_block_data[lastRecOff:]
                         else:
-                            byte_stream[pos:pos+rec_size] = filled_data * numValues
+                            byte_stream[pos:pos + rec_size] = filled_data * numValues
                 pos = pos + rec_size
                 if (block > -1):
                     cur_block = block
@@ -1775,7 +1774,7 @@ class CDF:
         else:
             if (vdr_dict['data_type'] == 32):
                 y = self._convert_data(byte_stream, vdr_dict['data_type'],
-                                       totalRecs, self._num_values(vdr_dict)*2,
+                                       totalRecs, self._num_values(vdr_dict) * 2,
                                        vdr_dict['num_elements'])
             else:
                 y = self._convert_data(byte_stream, vdr_dict['data_type'],
@@ -1888,7 +1887,7 @@ class CDF:
         # for the numpy dtype.  This requires us to squeeze
         # the matrix later, to get rid of this extra dimension.
         dt_string = self._convert_option()
-        if dimensions != None:
+        if dimensions is not None:
             if self._majority == 'Column_major':
                 dimensions = list(reversed(dimensions))
             if (len(dimensions) == 1):
@@ -1905,15 +1904,15 @@ class CDF:
         if data_type == 52 or data_type == 51:
             # string
             if dimensions is None:
-                byte_data = bytearray(byte_stream[0:num_recs*num_elems])
+                byte_data = bytearray(byte_stream[0:num_recs * num_elems])
                 # In each record, check for the first '\x00' (null character).
                 # If found, make all the characters after it null as well.
                 for x in range(0, num_recs):
                     y = x * num_elems
-                    z = byte_data[y:y+num_elems].find(b'\x00')
+                    z = byte_data[y:y + num_elems].find(b'\x00')
                     if (z > -1 and z < (num_elems - 1)):
                         byte_data[y + z + 1:y + num_elems] = b'\x00' * (num_elems - z - 1)
-                ret = byte_data[0:num_recs*num_elems].decode(self.string_encoding, errors='ignore').replace('\x00', '')
+                ret = byte_data[0:num_recs * num_elems].decode(self.string_encoding, errors='ignore').replace('\x00', '')
             else:
                 # Count total number of strings
                 count = 1
@@ -1921,16 +1920,16 @@ class CDF:
                     count = count * dimensions[x]
                 strings = []
                 if (len(dimensions) == 0):
-                    for i in range(0, num_recs*count*num_elems, num_elems):
-                        string1 = byte_stream[i:i+num_elems].decode(self.string_encoding, errors='ignore').\
+                    for i in range(0, num_recs * count * num_elems, num_elems):
+                        string1 = byte_stream[i:i + num_elems].decode(self.string_encoding, errors='ignore').\
                             replace('\x00', '')
                         strings.append(string1)
                 else:
                     for x in range(0, num_recs):
                         onerec = []
-                        for i in range(x*count*num_elems, (x+1)*count*num_elems,
+                        for i in range(x * count * num_elems, (x + 1) * count * num_elems,
                                        num_elems):
-                            string1 = byte_stream[i:i+num_elems].decode(self.string_encoding, errors='ignore')\
+                            string1 = byte_stream[i:i + num_elems].decode(self.string_encoding, errors='ignore')\
                                 .replace('\x00', '')
                             onerec.append(string1)
                         strings.append(onerec)
@@ -1962,7 +1961,7 @@ class CDF:
             elif (data_type == 32):
                 dt_string += 'c16'
             dt = np.dtype(dt_string)
-            ret = np.frombuffer(byte_stream, dtype=dt, count=num_recs*num_elems)
+            ret = np.frombuffer(byte_stream, dtype=dt, count=num_recs * num_elems)
             try:
                 ret.setflags('WRITEABLE')
             except ValueError:
@@ -1970,7 +1969,7 @@ class CDF:
                 pass
 
         if squeeze_needed:
-            ret = np.squeeze(ret, axis=(ret.ndim-1))
+            ret = np.squeeze(ret, axis=(ret.ndim - 1))
             if dimensions is not None:
                 dimensions.pop()
 
@@ -2054,7 +2053,7 @@ class CDF:
 
         if (vdr_info['record_vary']):
             # Record varying
-            if (starttime != None or endtime != None):
+            if (starttime is not None or endtime is not None):
                 recs = self._findtimerecords(vdr_info['name'], starttime,
                                              endtime, epoch=epoch)
                 if recs is None:
@@ -2098,9 +2097,9 @@ class CDF:
 
     def _findtimerecords(self, var_name, starttime, endtime, epoch=None):
 
-        if (epoch != None):
+        if (epoch is not None):
             vdr_info = self.varinq(epoch)
-            if (vdr_info == None):
+            if (vdr_info is None):
                 raise ValueError('Epoch not found')
             if (vdr_info['Data_Type'] == 31 or vdr_info['Data_Type'] == 32 or
                     vdr_info['Data_Type'] == 33):
@@ -2174,37 +2173,37 @@ class CDF:
         """
         order = self._convert_option()
         if (data_type == 51 or data_type == 52):
-            return str(' '*num_elms)
+            return str(' ' * num_elms)
         if (data_type == 1) or (data_type == 41):
-            pad_value = struct.pack(order+'b', -127)
+            pad_value = struct.pack(order + 'b', -127)
             dt_string = 'i1'
         elif data_type == 2:
-            pad_value = struct.pack(order+'h', -32767)
+            pad_value = struct.pack(order + 'h', -32767)
             dt_string = 'i2'
         elif data_type == 4:
-            pad_value = struct.pack(order+'i', -2147483647)
+            pad_value = struct.pack(order + 'i', -2147483647)
             dt_string = 'i4'
         elif (data_type == 8) or (data_type == 33):
-            pad_value = struct.pack(order+'q', -9223372036854775807)
+            pad_value = struct.pack(order + 'q', -9223372036854775807)
             dt_string = 'i8'
         elif data_type == 11:
-            pad_value = struct.pack(order+'B', 254)
+            pad_value = struct.pack(order + 'B', 254)
             dt_string = 'u1'
         elif data_type == 12:
-            pad_value = struct.pack(order+'H', 65534)
+            pad_value = struct.pack(order + 'H', 65534)
             dt_string = 'u2'
         elif data_type == 14:
-            pad_value = struct.pack(order+'I', 4294967294)
+            pad_value = struct.pack(order + 'I', 4294967294)
             dt_string = 'u4'
         elif (data_type == 21) or (data_type == 44):
-            pad_value = struct.pack(order+'f', -1.0E30)
+            pad_value = struct.pack(order + 'f', -1.0E30)
             dt_string = 'f'
         elif (data_type == 22) or (data_type == 45) or (data_type == 31):
-            pad_value = struct.pack(order+'d', -1.0E30)
+            pad_value = struct.pack(order + 'd', -1.0E30)
             dt_string = 'd'
         else:
             # (data_type == 32):
-            pad_value = struct.pack(order+'2d', *[-1.0E30, -1.0E30])
+            pad_value = struct.pack(order + '2d', *[-1.0E30, -1.0E30])
             dt_string = 'c16'
 
         dt = np.dtype(dt_string)
@@ -2212,7 +2211,7 @@ class CDF:
         try:
             ret.setflags('WRITEABLE')
         except Exception:
-            #TODO: Figure out why we need to array set to writeable
+            # TODO: Figure out why we need to array set to writeable
             pass
         return ret
 
@@ -2222,7 +2221,7 @@ class CDF:
         """
         if (data_type == 51 or data_type == 52):
             if (data == ''):
-                return ('\x00'*num_elems).encode()
+                return ('\x00' * num_elems).encode()
             else:
                 return data.ljust(num_elems, '\x00').encode(self.string_encoding)
         elif (data_type == 32):
@@ -2238,13 +2237,13 @@ class CDF:
         """
         self._f.seek(offset, 0)
         block_size = int.from_bytes(self._f.read(8), 'big')
-        block = self._f.read(block_size-8)
+        block = self._f.read(block_size - 8)
 
         section_type = int.from_bytes(block[0:4], 'big')
         if section_type == 13:
             # a CVVR
             compressed_size = int.from_bytes(block[8:16], 'big')
-            return gzip.decompress(block[16:16+compressed_size])
+            return gzip.decompress(block[16:16 + compressed_size])
         elif section_type == 7:
             # a VVR
             return block[4:]
@@ -2255,13 +2254,13 @@ class CDF:
         """
         self._f.seek(offset, 0)
         block_size = int.from_bytes(self._f.read(4), 'big')
-        block = self._f.read(block_size-4)
+        block = self._f.read(block_size - 4)
 
         section_type = int.from_bytes(block[0:4], 'big')
         if section_type == 13:
             # a CVVR
             compressed_size = int.from_bytes(block[8:12], 'big')
-            return gzip.decompress(block[12:12+compressed_size])
+            return gzip.decompress(block[12:12 + compressed_size])
         elif section_type == 7:
             # a VVR
             return block[4:]
@@ -2282,7 +2281,7 @@ class CDF:
                 return x, x
             if (starts[x] > rec_num):
                 break
-        return -1, x-1
+        return -1, x - 1
 
     def _convert_data(self, data, data_type, num_recs, num_values, num_elems):
         """
@@ -2291,15 +2290,15 @@ class CDF:
         """
 
         if (data_type == 51 or data_type == 52):
-            return [data[i:i+num_elems].decode(self.string_encoding) for i in
-                    range(0, num_recs*num_values*num_elems, num_elems)]
+            return [data[i:i + num_elems].decode(self.string_encoding) for i in
+                    range(0, num_recs * num_values * num_elems, num_elems)]
         else:
             tofrom = self._convert_option()
             dt_string = self._convert_type(data_type)
             form = tofrom + str(num_recs * num_values * num_elems) + dt_string
             value_len = self._type_size(data_type, num_elems)
             return list(struct.unpack_from(form,
-                                           data[0:num_recs*num_values*value_len]))
+                                           data[0:num_recs * num_values * value_len]))
 
     @staticmethod
     def getVersion():
