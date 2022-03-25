@@ -1103,7 +1103,7 @@ class CDF:
                 entryData = aedr_info['entry']
                 if (expand is False):
                     # This exists to get rid of extraneous numpy arrays
-                    if isinstance(entryData, np.array):
+                    if isinstance(entryData, np.ndarray):
                         if len(entryData) == 1:
                             entryData = entryData[0]
                     return_dict[adr_info['name']] = entryData
