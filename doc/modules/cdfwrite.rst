@@ -200,5 +200,3 @@ Sample Usage
 >>>                       var_data=[varrecs,vardata])
 >>> cdf_master.close()
 >>> cdf_file.close()
-
-

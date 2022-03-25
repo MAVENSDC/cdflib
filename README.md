@@ -1,5 +1,5 @@
-[![image](https://coveralls.io/repos/github/MAVENSDC/cdflib/badge.svg?branch=master)](https://coveralls.io/github/MAVENSDC/cdflib?branch=master)
 [![Actions Status](https://github.com/MAVENSDC/cdflib/workflows/ci/badge.svg)](https://github.com/MAVENSDC/cdflib/actions)
+[![codecov](https://codecov.io/gh/MAVENSDC/cdflib/branch/master/graph/badge.svg?token=IJ6moGc40e)](https://codecov.io/gh/MAVENSDC/cdflib)
 [![DOI](https://zenodo.org/badge/102912691.svg)](https://zenodo.org/badge/latestdoi/102912691)
 [![Documentation Status](https://readthedocs.org/projects/cdflib/badge/?version=latest)](https://cdflib.readthedocs.io/en/latest/?badge=latest)
 
