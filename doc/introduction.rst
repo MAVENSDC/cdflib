@@ -4,11 +4,11 @@ Introduction
 What is cdflib?
 ------------------
 
-cdflib is an effort to replicate the CDF libraries using a pure python implementation.  This means users do not need to install the `CDF NASA libraries <https://cdf.gsfc.nasa.gov/>`_.  
+cdflib is an effort to replicate the CDF libraries using a pure python implementation.  This means users do not need to install the `CDF NASA libraries <https://cdf.gsfc.nasa.gov/>`_.
 
 The only module you need to install is ``numpy``, but there are a few things you can do with ``astropy`` and ``xarray``.
 
-While this origally started as a way to read PDS-archive compliant CDF files, thanks to many contributors, it has grown to be able to handle every type of CDF file.  
+While this origally started as a way to read PDS-archive compliant CDF files, thanks to many contributors, it has grown to be able to handle every type of CDF file.
 
 
 What can cdflib do?

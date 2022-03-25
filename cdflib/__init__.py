@@ -2,7 +2,6 @@ from pathlib import Path
 
 from . import cdfread, cdfwrite
 from .cdf_factory import CDF
-
 from .epochs import CDFepoch as cdfepoch  # noqa: F401
 
 try:
@@ -13,8 +12,8 @@ except:
 
 try:
     # Another optional dependency for XArray <-> cdf conversions
-    from .xarray_to_cdf import xarray_to_cdf
     from .cdf_to_xarray import cdf_to_xarray
+    from .xarray_to_cdf import xarray_to_cdf
 except:
     pass
 
