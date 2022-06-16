@@ -1,6 +1,13 @@
 cdflib 1.0.0
 ============
 
+Python support
+--------------
+``cdflib`` is now only tested on Python 3.8, 3.9, and 3.10. It may work
+for older versions of Python, but this is not guarenteed. If you need to
+use ``cdflib`` on an older version of Python, please open an issue to
+discuss whether the ``cdflib`` maintainers can support this.
+
 Breaking changes
 ----------------
 - The CDF factory class (``cdflib.CDF``) has been removed, and `cdflib.CDF`
