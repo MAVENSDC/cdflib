@@ -24,3 +24,5 @@ doc/api
 dist/*
 .hypothesis/*
 *asv/*
+
+cdflib/_version.py
