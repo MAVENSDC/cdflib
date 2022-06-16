@@ -692,7 +692,10 @@ def test_wi_k0():
     os.remove('wi_k0_spha_20210121_v01-created-from-netcdf-input.cdf')
     os.remove('wi_k0_spha_20210121_v01.nc')
 
+
+
 def test_build_from_scratch():
+    pytest.importorskip('xarray')
     var_data = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
     var_dims = ['epoch', 'direction']
     data = xr.Variable(var_dims, var_data)

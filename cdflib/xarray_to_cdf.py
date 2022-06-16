@@ -4,8 +4,8 @@ from datetime import datetime
 
 import numpy as np
 
+from cdflib.cdfwrite import CDF
 from cdflib.epochs import CDFepoch as cdfepoch
-from .cdf_factory import CDF
 
 
 def _dtype_to_cdf_type(var):

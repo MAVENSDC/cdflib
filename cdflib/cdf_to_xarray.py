@@ -2,8 +2,8 @@ import re
 
 import numpy as np
 
+from cdflib import CDF
 from cdflib.epochs import CDFepoch as cdfepoch
-from .cdf_factory import CDF
 
 ISTP_TO_XARRAY_ATTRS = {'FIELDNAM': 'standard_name',
                         'LABLAXIS': 'long_name',
