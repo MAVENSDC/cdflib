@@ -1,4 +1,0 @@
-CDF
-===
-
-.. autofunction:: cdflib.CDF
