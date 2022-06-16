@@ -16,3 +16,5 @@ Breaking changes
   and ``cdflib`` would silently create a writer class instead. If you want
   to create a CDF writer class, explicitly import `cdflib.cdfwrite.CDF`
   instead.
+- `cdflib.cdfread.CDF.varget` no longer takes an ``inq`` argument. Instead
+  use the new method `cdflib.cdfread.CDF.vdr_info` to get the VDR info.
