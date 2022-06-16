@@ -33,7 +33,7 @@ import struct
 import sys
 import tempfile
 from pathlib import Path
-from typing import Union
+from typing import Dict, Union
 
 import numpy as np
 
@@ -960,11 +960,11 @@ class CDF:
         cdfcopyright = cdr[48:].decode(self.string_encoding)
         cdfcopyright = cdfcopyright.replace('\x00', '')
 
-        cdr_info = {}
+        cdr_info: Dict[str, Union[str, int]] = {}
         cdr_info['encoding'] = encoding
         cdr_info['copyright'] = cdfcopyright
-        cdr_info['version'] = str(version) + '.' + str(release) + '.' +  \
-            str(increment)
+        cdr_info['version'] = (str(version) + '.' + str(release) + '.' +
+                               str(increment))
         if row_majority:
             cdr_info['majority'] = 1
         else:
