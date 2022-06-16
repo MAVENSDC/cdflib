@@ -92,12 +92,6 @@ Finds the record range within the start and end time from values of a CDF epoch 
 The start/end times should be in either be in epoch units, or in the list format described in "compute_epoch/epoch16/tt2000" section.
 
 
-getVersion ()
--------------
-
-Shows the code version.
-
-
 getLeapSecondLastUpdated ()
 ----------------------------
 

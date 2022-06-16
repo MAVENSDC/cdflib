@@ -1810,13 +1810,6 @@ class CDFepoch(object):
         else:
             return -1
 
-    def getVersion():  # @NoSelf
-        """
-        Prints the code version.
-        """
-        print('epochs version:', str(CDFepoch.version) + '.' +
-              str(CDFepoch.release) + '.' + str(CDFepoch.increment))
-
     def getLeapSecondLastUpdated():  # @NoSelf
         """
         Prints the latest date a leap second was added to the leap second table.

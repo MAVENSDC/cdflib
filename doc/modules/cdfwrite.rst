@@ -110,10 +110,6 @@ Optional Keys:
     >>> CDF_EPOCH16: 'dd-mon-year hh:mm:ss.mmm.uuu.nnn.ppp'
     >>> CDF_TIME_TT2000: 'year-mm-ddThh:mm:ss.mmmuuunnn'
 
-getVersion()
-------------
-Shows the code version and modified date.
-
 
 Sample Usage
 ------------
