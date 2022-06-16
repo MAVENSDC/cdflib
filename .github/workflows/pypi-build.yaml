@@ -2,23 +2,25 @@ name: Build and publish
 
 on: [push]
 
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.x'
     - name: Install dependencies
       run: |
-        cd $HOME
-        wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-        chmod +x miniconda.sh
-        bash miniconda.sh -b -p $HOME/miniconda
-        export PATH="$HOME/miniconda/bin:$PATH"
-        $HOME/miniconda/bin/conda install numpy scipy astropy xarray pip keyring --yes
-        cd $GITHUB_WORKSPACE
-        $HOME/miniconda/bin/python setup.py sdist
-    - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@master
-      if: startsWith(github.event.ref, 'refs/tags')
-      with:
-        password: ${{ secrets.pypi_password }}
+        python -m pip install --upgrade pip
+        python -m pip install twine build
+    - name: Build
+      run: python -m build
+
+    - name: Publish
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.pypi_password }}
+      run: twine upload dist/*
