@@ -81,16 +81,16 @@ class CDFepoch(object):
     LTS = []
     with open(LEAPSEC_FILE) as lsfile:
         lsreader = csv.reader(lsfile, delimiter=' ')
-        for row in lsreader:
-            if row[0] == ";":
+        for csv_row in lsreader:
+            if csv_row[0] == ";":
                 continue
-            row = list(filter(('').__ne__, row))
-            row[0] = int(row[0])
-            row[1] = int(row[1])
-            row[2] = int(row[2])
-            row[3] = float(row[3])
-            row[4] = float(row[4])
-            row[5] = float(row[5])
+            csv_row = list(filter(('').__ne__, csv_row))
+
+            row: List[Union[int, float]] = []
+            for r in csv_row[:3]:
+                row.append(int(r))
+            for r in csv_row[3:6]:
+                row.append(float(r))
             LTS.append(row)
 
     NDAT = len(LTS)
@@ -226,7 +226,7 @@ class CDFepoch(object):
         unixtime = []
         utc = datetime.timezone(datetime.timedelta())
         for t in time_list:
-            date = ['year', 'month', 'day', 'hour', 'minute', 'second', 'microsecond']
+            date: List[int] = [0] * 7
             for i in range(0, len(t)):
                 if i > 7:
                     continue
@@ -236,7 +236,7 @@ class CDFepoch(object):
                     date[i - 1] += t[i]
                 else:
                     date[i] = t[i]
-            unixtime.append(datetime.datetime(*date, tzinfo=utc).timestamp())
+            unixtime.append(datetime.datetime(date[0], date[1], date[2], date[3], date[4], date[5], date[6], tzinfo=utc).timestamp())
         return np.array(unixtime) if to_np else unixtime
 
     @staticmethod
@@ -423,14 +423,7 @@ class CDFepoch(object):
 
         Specify to_np to True, if the result should be in numpy array.
         """
-        if isinstance(tt2000, (int, np.int64)):
-            new_tt2000 = [tt2000]
-        elif isinstance(tt2000, (list, tuple, np.ndarray)):
-            new_tt2000 = tt2000
-        else:
-            raise TypeError('unsure how to handle {}'.format(type(tt2000)))
-
-        new_tt2000 = np.atleast_1d(new_tt2000).astype(np.longlong)
+        new_tt2000: np.ndarray = np.atleast_1d(tt2000).astype(np.longlong)
         count = len(new_tt2000)
         toutcs = np.zeros((9, count), dtype=int)
         datxs = CDFepoch._LeapSecondsfromJ2000(new_tt2000)
@@ -903,13 +896,9 @@ class CDFepoch(object):
         return (367 * y - a1 - a2 + a3 + d + 1721029)
 
     @staticmethod
-    def compute_epoch16(datetimes, to_np: bool = False):
-
-        if not isinstance(datetimes, (list, tuple)):
-            raise TypeError('Bad input')
-
-        if not isinstance(datetimes[0], (list, tuple)):
-            new_dates = []
+    def compute_epoch16(datetimes: Union[List, List[List]], to_np: bool = False):
+        new_dates: List[list] = []
+        if not isinstance(datetimes[0], list):
             new_dates = [datetimes]
         else:
             new_dates = datetimes
@@ -923,6 +912,7 @@ class CDFepoch(object):
             items = len(date)
             year = date[0]
             month = date[1]
+            xxx: Union[float, int] = 0
             if (items > 9):
                 # y m d h m s ms us ns ps
                 day = int(date[2])
@@ -1401,15 +1391,11 @@ class CDFepoch(object):
         return encoded
 
     @staticmethod
-    def compute_epoch(dates, to_np: bool = False):  # @NoSelf
+    def compute_epoch(dates: Union[list, tuple], to_np: bool = False):
 
         if (not isinstance(dates, list) and not isinstance(dates, tuple)):
             raise ValueError('Bad input')
-        if (not isinstance(dates[0], list) and not isinstance(dates[0], tuple)):
-            new_dates = []
-            new_dates = [dates]
-        else:
-            new_dates = dates
+        new_dates = [dates]
         count = len(new_dates)
         if (count == 0):
             return
@@ -1627,7 +1613,7 @@ class CDFepoch(object):
         return np.where(np.logical_and(new_epochs >= stime, new_epochs <= etime))[0]
 
     @staticmethod
-    def parse(value, to_np: bool = False):  # @NoSelf
+    def parse(value, to_np: bool = False):
         """
         Parses the provided date/time string(s) into CDF epoch value(s).
 
@@ -1671,7 +1657,8 @@ class CDFepoch(object):
                 else:
                     return np.array(CDFepoch._parse_epoch(value))
 
-    def _parse_epoch(value):  # @NoSelf
+    @staticmethod
+    def _parse_epoch(value):
         if isinstance(value, (list, tuple)):
             epochs = []
             for x in range(0, len(value)):
