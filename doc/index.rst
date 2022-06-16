@@ -18,7 +18,6 @@ cdflib requires python 3 and numpy. To install run
    :caption: Contents:
 
    introduction
-   modules/cdflib
    modules/cdfread
    modules/cdfwrite
    modules/cdfepoch
