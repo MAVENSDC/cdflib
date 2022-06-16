@@ -35,6 +35,7 @@ import struct
 import sys
 import tempfile
 from pathlib import Path
+from typing import Union
 
 import numpy as np
 
@@ -252,9 +253,7 @@ class CDF:
         ----------
         variable :
         """
-        vdr_info = self.varget(variable=variable, inq=True)
-        if vdr_info is None:
-            raise KeyError(f"Variable {variable} not found.")
+        vdr_info = self.vdr_info(variable)
 
         var = {}
         var['Variable'] = vdr_info['name']
@@ -447,8 +446,7 @@ class CDF:
 
     def varget(self, variable=None, epoch=None, starttime=None,
                endtime=None, startrec=0, endrec=None,
-               record_range_only=False, inq=False, expand=False,
-               to_np=True):
+               record_range_only=False, expand=False, to_np=True):
         """
         Returns the variable data.
 
@@ -521,6 +519,20 @@ class CDF:
                 (startrec != 0 or endrec is not None)):
             raise ValueError('Can\'t specify both time and record range')
 
+        vdr_info = self.vdr_info(variable)
+        if (vdr_info['max_records'] < 0):
+            raise ValueError(f'No records found for variable {variable}')
+
+        return self._read_vardata(vdr_info, epoch=epoch, starttime=starttime, endtime=endtime,
+                                    startrec=startrec, endrec=endrec, record_range_only=record_range_only,
+                                    expand=expand, to_np=to_np)
+
+    def vdr_info(self, variable: Union[str, int]):
+        if (isinstance(variable, int) and self._num_zvariable > 0 and
+                self._num_rvariable > 0):
+            raise ValueError('This CDF has both r and z variables. '
+                             'Use variable name instead')
+
         if isinstance(variable, str):
             # Check z variables for the name, then r variables
             position = self._first_zvariable
@@ -557,15 +569,7 @@ class CDF:
             raise ValueError('Please set variable keyword equal to '
                              'the name or number of an variable')
 
-        if inq:
-            return vdr_info
-        else:
-            if (vdr_info['max_records'] < 0):
-                raise ValueError(f'No records found for variable {variable}')
-
-            return self._read_vardata(vdr_info, epoch=epoch, starttime=starttime, endtime=endtime,
-                                      startrec=startrec, endrec=endrec, record_range_only=record_range_only,
-                                      expand=expand, to_np=to_np)
+        return vdr_info
 
     def epochrange(self, epoch=None, starttime=None, endtime=None):
         """
