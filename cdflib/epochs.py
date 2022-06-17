@@ -1796,10 +1796,3 @@ class CDFepoch(object):
             return 12
         else:
             return -1
-
-    def getLeapSecondLastUpdated():  # @NoSelf
-        """
-        Prints the latest date a leap second was added to the leap second table.
-        """
-        print('Leap second last updated:', str(CDFepoch.LTS[-1][0]) + '-' +
-              str(CDFepoch.LTS[-1][1]) + '-' + str(CDFepoch.LTS[-1][2]))
