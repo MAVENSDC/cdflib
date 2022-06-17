@@ -24,9 +24,7 @@ Sample use::
     swea_cdf_file.cdf_info()
     x = swea_cdf_file.varget('NameOfVariable')
     swea_cdf_file.close()
-    cdflib.cdfread.CDF.getVersion()
 
-@author: Bryan Harter, Michael Liu
 """
 import gzip
 import hashlib
@@ -2303,12 +2301,3 @@ class CDF:
             value_len = self._type_size(data_type, num_elems)
             return list(struct.unpack_from(form,
                                            data[0:num_recs * num_values * value_len]))
-
-    @staticmethod
-    def getVersion():
-        """
-        Prints the code version and last modified date.
-        """
-        print('CDFread version:', str(self.version) + '.' + str(self.release) +
-              '.' + str(self.increment))
-        print('Date: 2018/01/11')

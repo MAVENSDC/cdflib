@@ -287,11 +287,3 @@ class CDFAstropy:
             return time_list
         else:
             return np.array(time_list)
-
-    @staticmethod
-    def getVersion():
-        """
-        Prints the code version.
-        """
-        print('epochs version:', str(CDFAstropy.version) + '.' +
-              str(CDFAstropy.release) + '.' + str(CDFAstropy.increment))

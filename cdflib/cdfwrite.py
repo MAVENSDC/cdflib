@@ -2782,27 +2782,3 @@ class CDF:
             recStart = recStart + totalRecs
 
         return sparse_data
-
-    @staticmethod
-    def getVersion():
-        """
-        Shows the code version and last modified date.
-
-        Notes
-        -----
-        The attribute entry value for the CDF epoch data type, CDF_EPOCH,
-        CDF_EPOCH16 or CDF_TIME_TT2000, can be presented in either a numeric
-        form, or an encoded string form. For numeric, the CDF_EPOCH data is
-        8-byte float, CDF_EPOCH16 16-byte complex and CDF_TIME_TT2000 8-byte
-        long. The default encoded string for the epoch data should have this
-        form:
-
-        - CDF_EPOCH: 'dd-mon-year hh:mm:ss.mmm'
-        - CDF_EPOCH16: 'dd-mon-year hh:mm:ss.mmm.uuu.nnn.ppp'
-        - CDF_TIME_TT2000: 'year-mm-ddThh:mm:ss.mmmuuunnn'
-
-        where mon is a 3-character month.
-        """
-        print('CDFwrite version:', str(self.version) + '.' + str(self.release) +
-              '.' + str(self.increment))
-        print('Date: 2018/01/11')

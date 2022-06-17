@@ -139,8 +139,3 @@ epochrange()
 
 Get epoch range. Returns ``list()`` of the record numbers, representing the corresponding starting and ending records within the time range from the epoch data.
 ``None`` is returned if there is no data either written or found in the time range.
-
-getVersion()
--------------
-
-Shows the code version

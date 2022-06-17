@@ -173,18 +173,6 @@ Get epoch range.
 Returns `list()` of the record numbers, representing the corresponding starting and ending records within the time range from the epoch data.
 `None` is returned if there is no data either written or found in the time range.
 
-### getVersion ()
-
-Shows the code version.
-
-```python
-import cdflib
-
-swea_cdf_file = cdflib.CDF('/path/to/swea_file.cdf') swea_cdf_file.cdf_info()
-
-x = swea_cdf_file.varget('NameOfVariable') swea_cdf_file.close()
-```
-
 ## CDF Writer Class
 
 ### CDF (path, cdf_spec=None, delete=False)
@@ -333,10 +321,6 @@ the form:
 [[[rec]()#1,rec_#2,rec_#3,...], [[data]()#1,data_#2,data_#3,...]]
 ```
 See the sample for its setup.
-
-### getVersion()
-
-Shows the code version and modified date.
 
 Note: The attribute entry value for the CDF epoch data type, CDF_EPOCH,
 CDF_EPOCH16 or CDF_TIME_TT2000, can be presented in either a numeric
@@ -574,10 +558,6 @@ components, corresponding to the epoch's data type.
 
 The start/end times should be in either be in epoch units, or in the
 list format described in "compute_epoch/epoch16/tt2000" section.
-
-### getVersion ()
-
-Shows the code version.
 
 ### getLeapSecondLastUpdated ()
 

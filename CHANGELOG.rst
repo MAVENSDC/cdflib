@@ -18,3 +18,5 @@ Breaking changes
   instead.
 - `cdflib.cdfread.CDF.varget` no longer takes an ``inq`` argument. Instead
   use the new method `cdflib.cdfread.CDF.vdr_info` to get the VDR info.
+- ``getVersion()`` methods have been removed throughout the package. Instead
+  the CDF version can be read from class attributes.
