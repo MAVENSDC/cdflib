@@ -197,7 +197,7 @@ class CDFAstropy:
             epoch16strings = [epoch16strings]
         times = []
         for t in epoch16strings:
-            time_as_list = []
+            time_as_list: List[int] = []
             date, time = t.split(" ")
             yyyy, mon, dd = date.split("-")
             hhmmss, decimal_seconds = time.split(".")

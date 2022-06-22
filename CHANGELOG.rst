@@ -20,3 +20,6 @@ Breaking changes
   use the new method `cdflib.cdfread.CDF.vdr_info` to get the VDR info.
 - ``getVersion()`` methods have been removed throughout the package. Instead
   the CDF version can be read from class attributes.
+- Removed ``cdflib.cdfepochs.CDFepoch.getLeapSecondLastUpdated``.
+  Directly inspect `CDFepoch.LTS` instead to get the last date at which a
+  leapsecond was added.
