@@ -101,7 +101,7 @@ def test_compute_cdfepoch():
     Using random numbers for the compute tests
     '''
     random_time = []
-    random_time.append(randint(0, 2018))  # Year
+    random_time.append(randint(1709, 2292))  # Year
     random_time.append(randint(1, 12))  # Month
     random_time.append(randint(1, 28))  # Date
     random_time.append(randint(0, 23))  # Hour
@@ -117,7 +117,7 @@ def test_compute_cdfepoch():
 
 def test_compute_cdfepoch16():
     random_time = []
-    random_time.append(randint(0, 2018))  # Year
+    random_time.append(randint(1709, 2292))  # Year
     random_time.append(randint(1, 12))  # Month
     random_time.append(randint(1, 28))  # Date
     random_time.append(randint(0, 23))  # Hour
