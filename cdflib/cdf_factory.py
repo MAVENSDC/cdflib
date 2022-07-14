@@ -6,7 +6,7 @@ from .epochs import CDFepoch as cdfepoch  # noqa: F401
 
 # This function determines if we are reading or writing a file
 def CDF(path, cdf_spec=None, delete=False, validate=None,
-        string_encoding='ascii', s3_flag=1):
+        string_encoding='ascii'):
     """
     A wrapper function for cdfread and cdfwrite modules.
 
@@ -51,7 +51,7 @@ def CDF(path, cdf_spec=None, delete=False, validate=None,
     path = Path(path).resolve().expanduser()
     # re.search needed for S3-awareness, cannot path-ize S3 or urls
     if re.search("^http://|^https://|^s3://",path_orig):
-        return cdfread.CDF(path_orig, validate=validate, string_encoding=string_encoding, s3_flag=s3_flag)
+        return cdfread.CDF(path_orig, validate=validate, string_encoding=string_encoding)
     elif path.is_file():
         if delete:
             path.unlink()
