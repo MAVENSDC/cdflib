@@ -39,6 +39,9 @@ import numpy as np
 
 import cdflib.epochs as epoch
 
+import urllib.request
+import io
+
 __all__ = ['CDF']
 
 
@@ -49,7 +52,7 @@ class CDF:
     Parameters
     ----------
     path : Path, str
-        Path to CDF file.
+        Path to CDF file.  This can be a link to a file in an S3 bucket as well.
     validate : bool, optional
         If True, validate the MD5 checksum of the CDF file.
     string_encoding : str, optional
@@ -58,6 +61,12 @@ class CDF:
         character strings. Other encodings may have been used to create files
         however, and this keyword argument gives users the flexibility to read
         those files.
+    s3_read_method: int, optional
+        If the user is specifying a file that lives within an AWS S3 bucket, this variable
+        defines how the file is read in.  The choices are:
+          - 1 will read the file into memory to load in memory)
+          - 2 will download the file to a tmp directory
+          - 3 reads the file in chunks directly from S3 over https
 
     Notes
     -----
@@ -68,18 +77,33 @@ class CDF:
     release = 7
     increment = 0
 
-    def __init__(self, path, validate=False, string_encoding='ascii'):
+    def __init__(self, path, validate=False, string_encoding='ascii', s3_read_method=1):
 
-        path = Path(path).resolve().expanduser()
-        if not path.is_file():
-            path = path.with_suffix('.cdf')
+        try:
+            fname = path.absolute().as_posix()
+        except:
+            fname = path
+        if fname.startswith("s3://"):
+            # later put in s3 'does it exist' checker
+            self.ftype = 's3'
+            self.file = fname  # path for files, fname for urls and S3
+        elif fname.startswith("http://") or fname.startswith("https://"):
+            # later put in url 404 'does it exist' checker
+            self.ftype = 'url'
+            self.file = fname  # path for files, fname for urls and S3
+        else:
+            self.ftype = 'file'
+            path = Path(path).expanduser()
             if not path.is_file():
-                raise FileNotFoundError(f'{path} not found')
+                path = path.with_suffix('.cdf')
+                if not path.is_file():
+                    raise FileNotFoundError(f'{path} not found')
+            self.file = path  # path for files, fname for urls and S3
+            self.file = path
 
-        self.file = path
         self.string_encoding = string_encoding
 
-        self._f = self.file.open('rb')
+        self._f = self._file_or_url_or_s3_handler(self.file, self.ftype, s3_read_method)
         magic_number = self._f.read(4).hex()
         compressed_bool = self._f.read(4).hex()
 
@@ -93,6 +117,13 @@ class CDF:
         self.temp_file = None
 
         if self._compressed:
+            if self.ftype == 'url' or self.ftype == 's3':
+                if s3_read_method == 3:
+                    # extra step, read entire file
+                    self._f.seek(0)
+                    self._f = s3_fetchall(self._f.fhandle)
+                self._unstream_file(path, self._f)
+                path = self.file
             self._uncompress_file(path)
             if self.temp_file is None:
                 raise OSError("Decompression was unsuccessful.  Only GZIP compression is currently supported.")
@@ -101,6 +132,7 @@ class CDF:
             self.file = self.temp_file
             self._f.close()
             self._f = self.file.open('rb')
+            self.ftype = 'file'
 
         if (self.cdfversion == 3):
             cdr_info, foffs = self._read_cdr(8)
@@ -2301,3 +2333,104 @@ class CDF:
             value_len = self._type_size(data_type, num_elems)
             return list(struct.unpack_from(form,
                                            data[0:num_recs * num_values * value_len]))
+
+    def _file_or_url_or_s3_handler(self, filename, filetype, s3_read_method):
+        if filetype == 'url':
+            # print("debug, opening url")
+            req = urllib.request.Request(filename)
+            response = urllib.request.urlopen(req)
+            bdata = io.BytesIO(response.read())
+        elif filetype == 's3':
+            try:
+                import boto3
+            except:
+                raise ImportError('boto3 package not installed')
+            s3parts = filename.split('/')  # 0-1=s3://, 2=bucket, 3+=key
+            mybucket = s3parts[2]
+            mykey = '/'.join(s3parts[3:])
+            if s3_read_method == 3:
+                # read in-place
+                s3c = boto3.resource('s3')
+                obj = s3c.Object(bucket_name=mybucket, key=mykey)
+                bdata = S3object(obj)
+                # print("Debug, using S3 read-in-place, flag ",s3_flag)
+            else:
+                # for store in memory or as temp copy
+                s3c = boto3.client('s3')
+                obj = s3c.get_object(Bucket=mybucket, Key=mykey)
+                bdata = s3_fetchall(obj)
+                # print("Debug, using S3 copy, flag ",s3_flag)
+            return (bdata)
+        else:
+            # print("debug, opening ",fname)
+            bdata = open(filename, "rb")
+
+        return (bdata)
+
+    def _unstream_file(self, path, f):
+        """
+        Typically for S3 or URL, writes the current file stream
+        into a file in the temporary directory.
+        If that doesn't work, create a new file in the CDFs directory.
+        """
+        raw_data = f.read(-1)
+        self.temp_file = Path(tempfile.NamedTemporaryFile(suffix='.cdf').name)
+        # print("debug, using temp file: ",self.temp_file)
+        with self.temp_file.open('wb') as g:
+            g.write(raw_data)
+        self.original_stream = self.file
+        self.file = self.temp_file
+        self.file = Path(self.file).expanduser()
+        self.ftype = 'file'
+        # print("debug, using temp file ",self.temp_file)
+
+
+def s3_fetchall(obj):
+    rawdata = obj['Body'].read()
+    bdata = io.BytesIO(rawdata)
+    return (bdata)
+
+
+class S3object:
+    """
+    Handler for S3 objects so they behave like files.
+    S3 'read' reads specified byte range
+    S3 'seek' sets byte range for subsequent readers
+    """
+
+    def __init__(self, fhandle):
+        self.pos = 0  # used to track where in S3 we are
+        self.content_length = fhandle.content_length  # size in bytes
+        self.fhandle = fhandle
+        self.temp_file = None
+
+    def read(self, isize):
+        if isize == -1:
+            isize = self.content_length
+        myrange = "bytes=%d-%d" % (self.pos, (self.pos + isize - 1))
+        # print("debug: byte range ",myrange)
+        self.pos += isize  # advance the pointer
+        stream = self.fhandle.get(Range=myrange)['Body']
+        rawdata = stream.read()
+        # bdata=io.BytesIO(rawdata)
+        return (rawdata)
+
+    def seek(self, offset, from_what=0):
+        if from_what == 2:
+            # offset is from end of file, ugh, used only for checksum
+            self.pos = self.content_length + offset
+        elif from_what == 1:
+            # from current position
+            self.pos = self.pos + offset
+        else:
+            # usual default is 0, from start of file
+            self.pos = offset
+
+    def tell(self):
+        return (self.pos)
+
+    def fetchS3entire(self):
+        obj = self.fhandle.get()['Body']
+        rawdata = obj['Body'].read()
+        bdata = io.BytesIO(rawdata)
+        return (bdata)
