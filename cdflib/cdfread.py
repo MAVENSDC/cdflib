@@ -28,19 +28,18 @@ Sample use::
 """
 import gzip
 import hashlib
+import io
 import os
 import struct
 import sys
 import tempfile
+import urllib.request
 from pathlib import Path
 from typing import Dict, Union
 
 import numpy as np
 
 import cdflib.epochs as epoch
-
-import urllib.request
-import io
 
 __all__ = ['CDF']
 
