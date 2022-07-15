@@ -93,7 +93,7 @@ class CDF:
             self.file = fname  # path for files, fname for urls and S3
         else:
             self.ftype = 'file'
-            path = Path(path).expanduser()
+            path = Path(path).resolve().expanduser()
             if not path.is_file():
                 path = path.with_suffix('.cdf')
                 if not path.is_file():
