@@ -1,5 +1,5 @@
 import pathlib
-import pytest
+
 import cdflib
 
 fname = (pathlib.Path(__file__) / '..' / 'testfiles' /
