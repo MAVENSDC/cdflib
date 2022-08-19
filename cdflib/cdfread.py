@@ -753,7 +753,19 @@ class CDF:
         else:
             raise ValueError('Please set variable keyword equal to '
                              'the name or number of an variable')
-
+    def _uncompress_rle(self, data):
+        result = bytearray()
+        index = 0
+        while index < len(data):
+            value = data[index]
+            if value == 0:
+                index += 1
+                count = data[index] + 1
+                result += b"\0" * count
+            else:
+                result.append(value)
+            index += 1
+        return result
     def _uncompress_file(self, path):
         """
         Writes the current file into a file in the temporary directory.
@@ -765,10 +777,14 @@ class CDF:
         else:
             data_start, data_size, cType, _ = self._read_ccr2(8)
 
-        if cType != 5:
+        if cType == 5:
+            self._f.seek(data_start)
+            decompressed_data = gzip.decompress(self._f.read(data_size))
+        elif cType == 1:
+            self._f.seek(data_start)
+            decompressed_data = self._uncompress_rle(self._f.read(data_size))
+        else:
             return
-        self._f.seek(data_start)
-        decompressed_data = gzip.decompress(self._f.read(data_size))
 
         self.temp_file = Path(tempfile.NamedTemporaryFile(suffix='.cdf').name)
         with self.temp_file.open('wb') as g:
