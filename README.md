@@ -21,3 +21,9 @@ There are two different CDF classes: a cdf reader, and a cdf writer.
 
 Currently, you cannot simultaneously read and write to the same file.
 Future implementations, however, will unify these two classes.
+
+## Documentation
+
+The full documentation can be found here:
+
+[https://cdflib.readthedocs.io/en/latest/](https://cdflib.readthedocs.io/en/latest/)
