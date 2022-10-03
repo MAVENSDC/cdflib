@@ -1723,7 +1723,7 @@ class CDF:
             # Figure out number of elements if not supplied
             if isinstance(value, str):
                 pdataType = self.CDF_CHAR
-                pnumElems = len(value)
+                pnumElems = 1 if len(value) == 0  else len(value)
             else:
                 if hasattr(value, '__len__') and not isinstance(value, str):
                     pnumElems = len(value)
@@ -1746,8 +1746,13 @@ class CDF:
                 numStrings = 0
         recs, cdata = self._convert_data(dataType, numElems, 1, value)
         if (dataType == 51):
-            numElems = len(cdata)
-        block_size = len(cdata) + 56
+            numElems = 1 if len(cdata) == 0 else len(cdata)
+        if (len(cdata) == 0):
+            value_size = 1
+            cdata = '\x00'.encode()
+        else:
+            value_size = len(cdata)
+        block_size = value_size + 56
         aedr = bytearray(block_size)
         aedr[0:8] = struct.pack('>q', block_size)
         aedr[8:12] = struct.pack('>i', section_type)
