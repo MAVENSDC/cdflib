@@ -179,7 +179,7 @@ class CDF:
     def __init__(self, path, cdf_spec=None, delete=False):
         path = pathlib.Path(path).expanduser()
 
-        major = 1
+        major = cdf_spec.get('Majority', 'column_major')
         if cdf_spec is not None:
             if (isinstance(major, str)):
                 major = self._majority_token(major)
