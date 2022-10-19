@@ -1,6 +1,6 @@
 """
 CDF Class
-#########
+##########
 
 To begin accessing the data within a CDF file, first create a new CDF class.
 This can be done with the following commands::
