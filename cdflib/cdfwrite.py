@@ -727,8 +727,8 @@ class CDF:
             numElems = int(var_spec['Num_Elements'])
             name = var_spec['Variable']
             recVary = var_spec['Rec_Vary']
-        except Exception:
-            raise ValueError('Missing/invalid required spec for creating variable.')
+        except Exception as e:
+            raise ValueError('Missing/invalid required spec for creating variable.') from e
         # Get whether or not it is a z variable
         var_type = var_spec.setdefault('Var_Type', 'zvariable')
         if (var_type.lower() == 'zvariable'):
