@@ -178,9 +178,9 @@ class CDF:
     def __del__(self):
         # This implicitly will delete a temporary uncompressed file if we
         # created it earlier.
+        self._f.close()
         if self.temp_file is not None:
             os.remove(self.temp_file)
-        self._f.close()
 
     def __getitem__(self, variable: str) -> np.ndarray:
         return self.varget(variable)
