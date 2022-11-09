@@ -16,6 +16,6 @@ from .xarray_to_cdf import xarray_to_cdf
 
 __all__ = ['CDF', 'xarray_to_cdf', 'cdf_to_xarray']
 try:
-    from .version import version as __version__
+    from ._version import version as __version__
 except Exception:
     __version__ = 'unknown'
