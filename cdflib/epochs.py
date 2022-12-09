@@ -97,19 +97,18 @@ class CDFepoch(object):
         ----------
         epochs: int, float, list, complex
             One or more ECD epochs in one of three formats:
-            1. CDF_EPOCH:
-                The input should be either a float or list of floats
-                (in numpy, a np.float64 or a np.ndarray of np.float64)
-            2. CDF_EPOCH16:
-                The input should be either a complex or list of
-                complex(in numpy, a np.complex128 or a np.ndarray of np.complex128)
-            3. TT2000:
-                The input should be either a int or list of ints
-                (in numpy, a np.int64 or a np.ndarray of np.int64)
+            1. CDF_EPOCH: The input should be either a float or list of floats
+            (in numpy, a np.float64 or a np.ndarray of np.float64)
+            2. CDF_EPOCH16: The input should be either a complex or list of
+            complex(in numpy, a np.complex128 or a np.ndarray of np.complex128)
+            3. TT2000: The input should be either a int or list of ints
+            (in numpy, a np.int64 or a np.ndarray of np.int64)
+
         iso_8601: bool
                 The return time format. If ISO 8601 is True, the format is, 
                 for example, 2008-02-02T06:08:10.10.012014016, otherwise 
                 the format is 02-Feb-2008 06:08:10.012.014.016.
+
         """
         if isinstance(epochs, (int, np.int64)):
             return CDFepoch.encode_tt2000(epochs, iso_8601)
