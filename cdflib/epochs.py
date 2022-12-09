@@ -1,35 +1,3 @@
-"""
-##########
-CDF Epochs
-##########
-
-Importing cdflib also imports the module CDFepoch, which handles
-CDF-based epochs.
-
-The following functions can be used to convert back and forth between
-different ways to display the date.
-
-You can call these functions like so::
-
-    import cdflib
-    cdf_file = cdflib.cdfepoch.compute_epoch([2017,1,1,1,1,1,111])
-
-There are three (3) epoch data types in CDF: CDF_EPOCH, CDF_EPOCH16 and
-CDF_TIME_TT2000.
-
-- CDF_EPOCH is milliseconds since Year 0.
-- CDF_EPOCH16 is picoseconds since Year 0.
-- CDF_TIME_TT2000 (TT2000 as short) is nanoseconds since J2000 with
-  leap seconds.
-
-CDF_EPOCH is a single double(as float in Python),
-CDF_EPOCH16 is 2-doubles (as complex in Python),
-and TT2000 is 8-byte integer (as int in Python).
-In Numpy, they are np.float64, np.complex128 and np.int64, respectively.
-All these epoch values can come from from CDF.varget function.
-
-@author: Michael Liu
-"""
 import csv
 import datetime
 import math
@@ -46,9 +14,28 @@ LEAPSEC_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
 
 class CDFepoch(object):
     """
-    Epoch class.
-    """
+    Convert between CDF-based epochs, np.datetime64, and Unix time.
 
+    There are three (3) epoch data types in CDF:
+        1. CDF_EPOCH is milliseconds since Year 0 represented as a 
+        single double (float in Python),
+        2. CDF_EPOCH16 is picoseconds since Year 0 represented as 
+        2-doubles (complex in Python), and
+        3. CDF_TIME_TT2000 (TT2000 as short) is nanoseconds since J2000 with
+        leap seconds, represented by an 8-byte integer (int in Python).
+
+    In Numpy, they are np.float64, np.complex128 and np.int64, respectively.
+    All these epoch values can come from from CDF.varget function.
+
+
+    Example
+    -------
+    >>> import cdflib
+    # Convert to an epoch
+    >>> epoch = cdflib.cdfepoch.compute_epoch([2017,1,1,1,1,1,111])
+    # Convert from an epoch
+    >>> time = cdflib.cdfepoch.to_datetime(epoch)  # Or pass epochs via CDF.varget.
+    """
     version = 3
     release = 7
     increment = 0
@@ -103,29 +90,26 @@ class CDFepoch(object):
     @staticmethod
     def encode(epochs, iso_8601: bool = True):  # @NoSelf
         """
-        Encodes the epoch(s) into UTC string(s).
+        Converts one or more epochs into UTC strings. The input epoch 
+        format is deduced from the argument type.
 
-        For CDF_EPOCH:
+        Parameters
+        ----------
+        epochs: int, float, list, complex
+            One or more ECD epochs in one of three formats:
+            1. CDF_EPOCH:
                 The input should be either a float or list of floats
                 (in numpy, a np.float64 or a np.ndarray of np.float64)
-                Each epoch is encoded, by default to a ISO 8601 form:
-                2004-05-13T15:08:11.022
-                Or, if iso_8601 is set to False,
-                13-May-2004 15:08:11.022
-        For CDF_EPOCH16:
+            2. CDF_EPOCH16:
                 The input should be either a complex or list of
                 complex(in numpy, a np.complex128 or a np.ndarray of np.complex128)
-                Each epoch is encoded, by default to a ISO 8601 form:
-                2004-05-13T15:08:11.022033044055
-                Or, if iso_8601 is set to False,
-                13-May-2004 15:08:11.022.033.044.055
-        For TT2000:
+            3. TT2000:
                 The input should be either a int or list of ints
                 (in numpy, a np.int64 or a np.ndarray of np.int64)
-                Each epoch is encoded, by default to a ISO 8601 form:
-                2008-02-02T06:08:10.10.012014016
-                Or, if iso_8601 is set to False,
-                02-Feb-2008 06:08:10.012.014.016
+        iso_8601: bool
+                The return time format. If ISO 8601 is True, the format is, 
+                for example, 2008-02-02T06:08:10.10.012014016, otherwise 
+                the format is 02-Feb-2008 06:08:10.012.014.016.
         """
         if isinstance(epochs, (int, np.int64)):
             return CDFepoch.encode_tt2000(epochs, iso_8601)
@@ -191,14 +175,13 @@ class CDFepoch(object):
     def to_datetime(cls, cdf_time: Union[int, Sequence[int]],
                     to_np: bool = False) -> List[datetime.datetime]:
         """
-        Encodes the epoch(s) into Numpy datetime64.  Precision is only
-        kept to the nearest microsecond.
-
-        Possible len() from breakdown for each time are in range 6..9
+        Converts CDF epoch argument to np.numpy.datetime64. This method 
+        converts a scalar, or array-like. Precision is only kept to the 
+        nearest microsecond.
 
         If to_np is True, then the values will be returned in a numpy array.
         """
-        times = cls.breakdown(cdf_time, to_np=True)
+        times = cls.breakdown(cdf_time, to_np=to_np)
         times = np.atleast_2d(times)
         times = cls._compose_date(*times.T).astype('datetime64[us]')
 
@@ -207,12 +190,12 @@ class CDFepoch(object):
     @staticmethod
     def unixtime(cdf_time, to_np: bool = False):  # @NoSelf
         """
-        Encodes the epoch(s) into seconds after 1970-01-01.  Precision is only
-        kept to the nearest microsecond.
+        Converts CDF epoch argument into seconds after 1970-01-01. This method 
+        converts a scalar, or array-like. Precision is only kept to the 
+        nearest microsecond.
 
         If to_np is True, then the values will be returned in a numpy array.
         """
-        import datetime
         time_list = CDFepoch.breakdown(cdf_time, to_np=False)
 
         # Check if only one time was input into unixtime.
@@ -1138,7 +1121,8 @@ class CDFepoch(object):
 
     @staticmethod
     def breakdown_epoch16(epochs, to_np: bool = False):
-        """ Calculate date and time from epochs
+        """ 
+        Calculate date and time from epochs
 
         Parameters
         ----------
@@ -1392,6 +1376,7 @@ class CDFepoch(object):
 
     @staticmethod
     def compute_epoch(dates: Union[list, tuple], to_np: bool = False):
+        # TODOL Add docstring. What is the output format?
 
         if (not isinstance(dates, list) and not isinstance(dates, tuple)):
             raise ValueError('Bad input')

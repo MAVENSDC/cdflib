@@ -23,5 +23,17 @@ Read
    :undoc-members:
    :show-inheritance:
 
+Write
+=====
+.. automodule:: cdflib.cdfwrite
+   :members: CDF
+   :undoc-members:
+   :show-inheritance:
 
-..    cdf_info, attinq, varinq, attget, print_attrs, varget, vdr_info
+
+Epoch
+=====
+.. automodule:: cdflib.epochs
+   :members: CDFepoch
+   :undoc-members:
+   :show-inheritance:
