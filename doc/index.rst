@@ -1,7 +1,12 @@
 cdflib
 ======
 
-This is a python package to read CDF files without needing to install the CDF NASA library.
+A python package to read CDF files without needing to install the CDF NASA library.
+
+**Last Built**: |today| | **Version**: |version| | **Source**: `github`_ | **Archive**: `zenodo`_.
+
+.. _github: https://github.com/MAVENSDC/cdflib
+.. _zenodo: https://zenodo.org/record/4746617#.Y5NfWXbMKF4
 
 Installing
 ----------
@@ -10,7 +15,7 @@ cdflib requires python 3 and numpy. To install run
 .. code::
    bash
 
-   pip install cdflib
+   python3 -m pip install cdflib
 
 
 .. toctree::
@@ -18,6 +23,7 @@ cdflib requires python 3 and numpy. To install run
    :caption: Contents:
 
    introduction
+   api
    modules/cdfread
    modules/cdfwrite
    modules/cdfepoch

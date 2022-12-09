@@ -1,31 +1,3 @@
-"""
-CDF Class
-##########
-
-To begin accessing the data within a CDF file, first create a new CDF class.
-This can be done with the following commands::
-
-    import cdflib
-
-    cdf_file = cdflib.CDF('/path/to/cdf_file.cdf')
-
-Then, you can call various functions on the variable.  For example::
-
-    x = cdf_file.varget("NameOfVariable", startrec=0, endrec=150)
-
-This command will return all data inside of the variable "Variable1", from
-records 0 to 150.
-
-Sample use::
-
-
-    import cdflib
-    swea_cdf_file = cdflib.CDF('/path/to/swea_file.cdf')
-    swea_cdf_file.cdf_info()
-    x = swea_cdf_file.varget('NameOfVariable')
-    swea_cdf_file.close()
-
-"""
 import gzip
 import hashlib
 import io
@@ -46,38 +18,47 @@ __all__ = ['CDF']
 
 class CDF:
     """
-    Main CDF class.
+    Read a CDF file into the CDF object. This object contains methods to load 
+    the cdf file information, variable names, and values.
+    
 
-    Parameters
-    ----------
-    path : Path, str
-        Path to CDF file.  This can be a link to a file in an S3 bucket as well.
-    validate : bool, optional
-        If True, validate the MD5 checksum of the CDF file.
-    string_encoding : str, optional
-        The encoding used to read strings. Defaults to 'ascii', which is what
-        the CDF internal format description prescribes as the encoding for
-        character strings. Other encodings may have been used to create files
-        however, and this keyword argument gives users the flexibility to read
-        those files.
-    s3_read_method: int, optional
-        If the user is specifying a file that lives within an AWS S3 bucket, this variable
-        defines how the file is read in.  The choices are:
-          - 1 will read the file into memory to load in memory)
-          - 2 will download the file to a tmp directory
-          - 3 reads the file in chunks directly from S3 over https
-
-    Notes
-    -----
-    An open file handle to the CDF file remains whilst a CDF object is live.
-    It is automatically cleaned up with the CDF instance is deleted.
+    Example
+    -------
+    >>> import cdflib
+    >>> cdf_file = cdflib.CDF('/path/to/cdf_file.cdf')
+    >>> cdf_file.cdf_info()
+    >>> x = cdf_file.varget("NameOfVariable", startrec=0, endrec=150)
     """
     version = 3
     release = 7
     increment = 0
 
     def __init__(self, path, validate=False, string_encoding='ascii', s3_read_method=1):
+        """
+        Parameters
+        ----------
+        path : Path, str
+            Path to CDF file.  This can be a link to a file in an S3 bucket as well.
+        validate : bool, optional
+            If True, validate the MD5 checksum of the CDF file.
+        string_encoding : str, optional
+            The encoding used to read strings. Defaults to 'ascii', which is what
+            the CDF internal format description prescribes as the encoding for
+            character strings. Other encodings may have been used to create files
+            however, and this keyword argument gives users the flexibility to read
+            those files.
+        s3_read_method: int, optional
+            If the user is specifying a file that lives within an AWS S3 bucket, this variable
+            defines how the file is read in.  The choices are:
+            - 1 will read the file into memory to load in memory)
+            - 2 will download the file to a tmp directory
+            - 3 reads the file in chunks directly from S3 over https
 
+        Notes
+        -----
+        An open file handle to the CDF file remains whilst a CDF object is live.
+        It is automatically cleaned up with the CDF instance is deleted.
+        """
         try:
             fname = path.absolute().as_posix()
         except:

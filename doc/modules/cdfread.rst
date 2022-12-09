@@ -15,5 +15,6 @@ For example:
 
 This command will return all data inside of the variable `Variable1`, from records 0 to 150.
 
-.. automodapi:: cdflib
-    :no-inheritance-diagram:
+.. automodule:: cdflib
+   :undoc-members:
+   :show-inheritance:

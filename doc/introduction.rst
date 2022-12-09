@@ -8,7 +8,7 @@ cdflib is an effort to replicate the CDF libraries using a pure python implement
 
 The only module you need to install is ``numpy``, but there are a few things you can do with ``astropy`` and ``xarray``.
 
-While this origally started as a way to read PDS-archive compliant CDF files, thanks to many contributors, it has grown to be able to handle every type of CDF file.
+While this originally started as a way to read PDS-archive compliant CDF files, thanks to many contributors, it has grown to be able to handle every type of CDF file.
 
 
 What can cdflib do?

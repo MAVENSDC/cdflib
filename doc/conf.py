@@ -18,13 +18,16 @@ sys.path.insert(0, os.path.abspath("."))
 sys.path.insert(0, os.path.abspath("../"))
 sys.path.insert(0, os.path.abspath('../..'))
 
+import cdflib._version
+
 # -- Project information -----------------------------------------------------
 
 project = 'cdflib'
 author = 'Bryan Harter, Michael Liu'
+version = str(cdflib.__version__)
 
 # The short X.Y version
-version = ''
+# version = ''
 # The full version, including alpha/beta/rc tags
 release = ''
 
@@ -41,7 +44,10 @@ release = ''
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.viewcode',
               'sphinx.ext.napoleon',
-              'sphinx_automodapi.automodapi']
+              'sphinx.ext.autosummary',
+              'sphinx_copybutton',
+              'sphinx.ext.linkcode'
+              ]
 
 numpydoc_class_members_toctree = False
 numpydoc_show_class_members = False
@@ -79,7 +85,7 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'furo'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -149,3 +155,11 @@ texinfo_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/3': None}
 #autodoc_mock_imports = ['xarray', 'astropy']
+
+def linkcode_resolve(domain, info):
+    if domain != 'py':
+        return None
+    if not info['module']:
+        return None
+    filename = info['module'].replace('.', '/')
+    return "https://github.com/MAVENSDC/cdflib/tree/master/%s.py" % filename
