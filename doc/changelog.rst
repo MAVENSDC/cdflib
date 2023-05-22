@@ -27,6 +27,10 @@ Breaking changes
 - Removed ``cdflib.cdfepochs.CDFepoch.getLeapSecondLastUpdated``.
   Directly inspect `CDFepoch.LTS` instead to get the last date at which a
   leapsecond was added.
+- All ``to_np`` keyword arguments have been removed in ``cdfread``, and the
+  code now behaves as if ``to_np=True`` throughout.
+  This change has been made to reduce code omplexity and make maintaining
+  the code easier.
 
 Bugfixes
 --------
