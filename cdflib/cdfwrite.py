@@ -181,7 +181,7 @@ class CDF:
 
         major = 1
         if cdf_spec is not None:
-            major = cdf_spec.get('Majority', 'column_major')
+            major = cdf_spec.get('Majority', major)
             if (isinstance(major, str)):
                 major = self._majority_token(major)
 
@@ -208,8 +208,8 @@ class CDF:
             num_rdim = 0
             rdim_sizes = None
 
-        if (major < 1 or major > 2):
-            raise OSError('Bad major.')
+        if major not in [1, 2]:
+            raise RuntimeError(f'Bad major: {major}')
 
         osSystem = pf.system()
         osMachine = pf.uname()[5]
