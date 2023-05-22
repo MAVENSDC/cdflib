@@ -7,7 +7,7 @@ import sys
 import tempfile
 import urllib.request
 from pathlib import Path
-from typing import Dict, Union
+from typing import Dict, List, Union
 
 import numpy as np
 
@@ -582,7 +582,7 @@ class CDF:
         returned.
         """
         byte_loc = self._first_adr
-        return_dict = {}
+        return_dict: Dict[str, List] = {}
         for _ in range(self._num_att):
             adr_info = self._read_adr(byte_loc)
             if adr_info["scope"] != 1:
@@ -941,7 +941,7 @@ class CDF:
         cdfcopyright = cdr[44:].decode(self.string_encoding)
         cdfcopyright = cdfcopyright.replace("\x00", "")
 
-        cdr_info = {}
+        cdr_info: Dict[str, Union[int, str]] = {}
         cdr_info["encoding"] = encoding
         cdr_info["copyright"] = cdfcopyright
         cdr_info["version"] = str(version) + "." + str(release) + "." + str(increment)
@@ -980,7 +980,7 @@ class CDF:
             ioff = 76 + x * 4
             rdim_sizes.append(int.from_bytes(gdr[ioff : ioff + 4], "big", signed=True))
 
-        gdr_info = {}
+        gdr_info: Dict[str, Union[int, List[int]]] = {}
         gdr_info["first_zvariable"] = first_zvariable
         gdr_info["first_rvariable"] = first_rvariable
         gdr_info["first_adr"] = first_adr
@@ -1012,7 +1012,7 @@ class CDF:
             ioff = 56 + x * 4
             rdim_sizes.append(int.from_bytes(gdr[ioff : ioff + 4], "big", signed=True))
 
-        gdr_info = {}
+        gdr_info: Dict[str, Union[int, List[int]]] = {}
         gdr_info["first_zvariable"] = first_zvariable
         gdr_info["first_rvariable"] = first_rvariable
         gdr_info["first_adr"] = first_adr
@@ -1087,7 +1087,7 @@ class CDF:
         name = name.replace("\x00", "")
 
         # Build the return dictionary
-        return_dict = {}
+        return_dict: Dict[str, Union[str, int]] = {}
         return_dict["scope"] = scope
         return_dict["next_adr_location"] = next_adr_loc
         return_dict["attribute_number"] = num
@@ -1120,7 +1120,7 @@ class CDF:
         name = name.replace("\x00", "")
 
         # Build the return dictionary
-        return_dict = {}
+        return_dict: Dict[str, Union[int, str]] = {}
         return_dict["scope"] = scope
         return_dict["next_adr_location"] = next_adr_loc
         return_dict["attribute_number"] = num
@@ -1341,7 +1341,7 @@ class CDF:
             byte_stream = vdr[coff:]
             pad = self._read_data(byte_stream, data_type, 1, num_elements)
 
-        return_dict = {}
+        return_dict: Dict[str, Union[str, int, List[int]]] = {}
         return_dict["data_type"] = data_type
         return_dict["section_type"] = section_type
         return_dict["next_vdr_location"] = next_vdr
@@ -1446,7 +1446,7 @@ class CDF:
                 if data_type == 51 or data_type == 52:
                     pad = " " * num_elements
 
-        return_dict = {}
+        return_dict: Dict[str, Union[str, int, List[int], List[bool]]] = {}
         return_dict["data_type"] = data_type
         return_dict["section_type"] = section_type
         return_dict["next_vdr_location"] = next_vdr
@@ -1782,6 +1782,8 @@ class CDF:
                 if count < len(dimensions):
                     dt_string += ","
             dt_string += ")"
+
+        ret: Union[str, np.ndarray]
         if data_type == 52 or data_type == 51:
             # string
             if dimensions is None:
@@ -1813,8 +1815,7 @@ class CDF:
                             )
                             onerec.append(string1)
                         strings.append(onerec)
-                ret = strings
-                ret = np.array(ret).reshape((num_recs,) + tuple(dimensions))
+                ret = np.array(strings).reshape((num_recs,) + tuple(dimensions))
                 if self._majority == "Column_major":
                     axes = [0] + list(range(len(dimensions), 0, -1))
                     ret = np.transpose(ret, axes=axes)
@@ -2145,6 +2146,7 @@ class CDF:
             return list(struct.unpack_from(form, data[0 : num_recs * num_values * value_len]))
 
     def _file_or_url_or_s3_handler(self, filename, filetype, s3_read_method):
+        bdata: Union[S3object, io.BufferedReader, io.BytesIO]
         if filetype == "url":
             # print("debug, opening url")
             req = urllib.request.Request(filename)

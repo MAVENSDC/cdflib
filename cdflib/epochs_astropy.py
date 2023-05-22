@@ -53,7 +53,7 @@ class CDFAstropy:
     increment = 0
 
     @staticmethod
-    def convert_to_astropy(epochs, format=None):
+    def convert_to_astropy(epochs, format=None) -> Time:
         """
         Convert CDF epochs to astropy time objects.
 
@@ -105,7 +105,7 @@ class CDFAstropy:
         raise TypeError("Not sure how to handle type {}".format(type(epochs)))
 
     @staticmethod
-    def to_datetime(cdf_time) -> List[datetime.datetime]:
+    def to_datetime(cdf_time) -> Time:
         cdf_time = CDFAstropy.convert_to_astropy(cdf_time)
         return cdf_time.datetime
 

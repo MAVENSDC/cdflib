@@ -1,4 +1,5 @@
 import re
+from typing import Dict
 
 import numpy as np
 
@@ -16,7 +17,7 @@ def _find_xarray_plotting_values(var_att_dict):
     :param var_att_dict: A dictionary of attributes that a variable has
     :return:a dictionary of attributes that should be added to the created XArray DataArray
     """
-    xarray_att_dict = {}
+    xarray_att_dict: Dict[str, str] = {}
     if not var_att_dict:
         return xarray_att_dict
     for key, value in var_att_dict.items():
@@ -548,8 +549,10 @@ def _generate_xarray_data_variables(all_variable_data, all_variable_attributes, 
     # Make a list of all of the special variables in the file.  These are variables that are pointed to by
     # other variables.
     depend_variables = _discover_depend_variables(all_variable_data, all_variable_attributes, all_variable_properties)
-    created_unlimited_dims = {}  # These hold the records of the names/lengths of the created "unlimited" dimensions
-    created_regular_dims = {}  # These hold the records of the names/lengths of the standard dimensions of the variable
+    created_unlimited_dims: Dict[str, int] = {}  # These hold the records of the names/lengths of the created "unlimited" dimensions
+    created_regular_dims: Dict[
+        str, int
+    ] = {}  # These hold the records of the names/lengths of the standard dimensions of the variable
     depend_dimensions = (
         {}
     )  # This will be used after the creation of DataArrays, to determine which are "data" and which are "coordinates"

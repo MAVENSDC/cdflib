@@ -1,6 +1,7 @@
 import os
 import re
 from datetime import datetime
+from typing import Any, Dict
 
 import numpy as np
 
@@ -629,7 +630,7 @@ def xarray_to_cdf(
         time_varying_dimensions = record_dimensions
 
     # Gather the global attributes, write them into the file
-    glob_att_dict = {}
+    glob_att_dict: Dict[str, Dict[int, Any]] = {}
     for ga in dataset.attrs:
         if hasattr(dataset.attrs[ga], "__len__") and not isinstance(dataset.attrs[ga], str):
             i = 0

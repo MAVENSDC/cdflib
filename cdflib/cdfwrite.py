@@ -848,7 +848,8 @@ class CDF:
                 attrNum, offset = self._write_adr(f, False, attr)
                 if len(self.attrs) == 0:
                     # GDR's ADRhead
-                    self._update_offset_value(self.grd_offset + 28, 8, offset)
+                    # TODO: fix this, grid_offset doesn't exsit
+                    self._update_offset_value(f, self.grid_offset + 28, 8, offset)  # type: ignore
             else:
                 attrNum = self.attrs.index(attr)
                 offset = self.attrsinfo[attrNum][2]
@@ -2589,7 +2590,7 @@ class CDF:
                 # There are some virtual data
                 return self._make_sparse_blocks_with_virtual(variable, records, data)
             else:
-                warnings.warn("Invalid sparse data... ", "Less data than the specified records... Skip")
+                warnings.warn("Invalid sparse data... " "Less data than the specified records... Skip")
         elif isinstance(data, bytes):
             record_length = len(records)
             for z in range(0, variable["Num_Dims"]):
@@ -2601,7 +2602,7 @@ class CDF:
                 # There are some virtual data
                 return self._make_sparse_blocks_with_virtual(variable, records, data)
             else:
-                warnings.warn("Invalid sparse data... ", "Less data than the specified records... Skip")
+                warnings.warn("Invalid sparse data... " "Less data than the specified records... Skip")
         elif isinstance(data, list):
             if isinstance(data[0], list):
                 if not (all(isinstance(el, str) for el in data[0])):
