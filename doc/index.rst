@@ -43,18 +43,5 @@ What can cdflib do?
    :maxdepth: 1
    :caption: Contents:
 
-   api
-   modules/cdfread
-   modules/cdfwrite
-   modules/cdfepoch
-   modules/xarray
+   modules/index
    development
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
