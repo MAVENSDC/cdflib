@@ -8,6 +8,7 @@ This Python code only creates V3 CDFs.
 import binascii
 import gzip
 import hashlib
+import io
 import logging
 import math
 import numbers
@@ -16,7 +17,7 @@ import platform as pf
 import struct
 import sys
 import warnings
-from typing import Tuple
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 
@@ -274,7 +275,7 @@ class CDF:
         self.close()
         return
 
-    def close(self):
+    def close(self) -> None:
         """
         Closes the CDF Class.
 
@@ -296,7 +297,7 @@ class CDF:
                     f.write(self._md5_compute(f))
                 self.is_closed = True
             return
-        # %%
+
         with self.path.open("rb+") as f:
             f.seek(0, 2)
             eof = f.tell()
@@ -819,7 +820,7 @@ class CDF:
                     if maxRec < varMaxRec:
                         self._update_offset_value(f, self.gdr_head + 52, 4, varMaxRec)
 
-    def _write_var_attrs(self, f, varNum, var_attrs, zVar):
+    def _write_var_attrs(self, f: io.BufferedRandom, varNum: int, var_attrs, zVar: bool) -> None:
         """
         Writes ADRs and AEDRs for variables
 
@@ -1144,7 +1145,7 @@ class CDF:
 
         return rec_end
 
-    def _create_vxr(self, f, recStart, recEnd, currentVDR, priorVXR, vvrOffset):
+    def _create_vxr(self, f, recStart: int, recEnd: int, currentVDR: int, priorVXR: int, vvrOffset) -> int:
         """
         Create a VXR AND use a VXR
 
@@ -1180,7 +1181,7 @@ class CDF:
         self._update_offset_value(f, currentVDR + 36, 8, vxroffset)
         return vxroffset
 
-    def _use_vxrentry(self, f, VXRoffset, recStart, recEnd, offset):
+    def _use_vxrentry(self, f, VXRoffset: int, recStart: int, recEnd: int, offset: int) -> int:
         """
         Adds a VVR pointer to a VXR
         """
@@ -1201,7 +1202,7 @@ class CDF:
         self._update_offset_value(f, VXRoffset + 24, 4, usedEntries)
         return usedEntries
 
-    def _add_vxr_levels_r(self, f, vxrhead, numVXRs):
+    def _add_vxr_levels_r(self, f, vxrhead, numVXRs: int) -> Tuple[int, int]:
         """
         Build a new level of VXRs... make VXRs more tree-like
 
@@ -1271,7 +1272,7 @@ class CDF:
         else:
             return newvxrhead, newvxroff
 
-    def _update_vdr_vxrheadtail(self, f, vdr_offset, VXRoffset):
+    def _update_vdr_vxrheadtail(self, f, vdr_offset: int, VXRoffset: int) -> None:
         """
         This sets a VXR to be the first and last VXR in the VDR
         """
@@ -1280,7 +1281,7 @@ class CDF:
         # VDR's VXRtail
         self._update_offset_value(f, vdr_offset + 36, 8, VXRoffset)
 
-    def _get_recrange(self, f, VXRoffset):
+    def _get_recrange(self, f, VXRoffset: int) -> Tuple[int, int]:
         """
         Finds the first and last record numbers pointed by the VXR
         Assumes the VXRs are in order
@@ -1310,7 +1311,7 @@ class CDF:
             return 0
 
     @staticmethod
-    def _encoding_token(encoding):
+    def _encoding_token(encoding: str) -> int:
         """
         Returns the numberical type for a CDF encoding type
         """
@@ -1340,7 +1341,7 @@ class CDF:
             return 0
 
     @staticmethod
-    def _datatype_token(datatype):
+    def _datatype_token(datatype: str) -> int:
         """
         Returns the numberical type for a CDF data type
         """
@@ -1368,7 +1369,7 @@ class CDF:
         except Exception:
             return 0
 
-    def _datatype_define(self, value):
+    def _datatype_define(self, value) -> Tuple[int, int]:
         if isinstance(value, str):
             return len(value), self.CDF_CHAR
         else:
@@ -1399,7 +1400,7 @@ class CDF:
                 return None, None
 
     @staticmethod
-    def _datatype_size(datatype, numElms):
+    def _datatype_size(datatype: int, numElms: int) -> int:
         """
         Gets datatype size
 
@@ -1444,7 +1445,7 @@ class CDF:
             return -1
 
     @staticmethod
-    def _sparse_token(sparse):
+    def _sparse_token(sparse: str) -> int:
         """
         Returns the numerical CDF value for sparseness.
         """
@@ -1624,7 +1625,7 @@ class CDF:
 
         return num, byte_loc
 
-    def _write_aedr(self, f, gORz, attrNum, entryNum, value, pdataType, pnumElems, zVar):
+    def _write_aedr(self, f, gORz, attrNum, entryNum, value, pdataType, pnumElems, zVar) -> int:
         """
         Writes an aedr into the end of the file.
 
@@ -1728,7 +1729,7 @@ class CDF:
 
     def _write_vdr(
         self, f, cdataType, numElems, numDims, dimSizes, name, dimVary, recVary, sparse, blockingfactor, compression, pad, zVar
-    ):
+    ) -> Tuple[int, int]:
         """
         Writes a VDR block to the end of the file.
 
@@ -1904,7 +1905,7 @@ class CDF:
 
         return num, byte_loc
 
-    def _write_vxr(self, f, numEntries=None):
+    def _write_vxr(self, f, numEntries: Optional[int] = None) -> int:
         """
         Creates a VXR at the end of the file.
         Returns byte location of the VXR
@@ -1939,7 +1940,7 @@ class CDF:
         f.write(vxr)
         return byte_loc
 
-    def _write_vvr(self, f, data):
+    def _write_vvr(self, f, data) -> int:
         """
         Writes a vvr to the end of file "f" with the byte stream "data".
         """
@@ -1978,7 +1979,7 @@ class CDF:
 
         return byte_loc
 
-    def _write_cvvr(self, f, data):
+    def _write_cvvr(self, f, data) -> int:
         """
         Write compressed "data" variable to the end of the file in a CVVR
         """
@@ -1999,7 +2000,7 @@ class CDF:
 
         return byte_loc
 
-    def _write_ccr(self, f, g, level: int):
+    def _write_ccr(self, f, g, level: int) -> None:
         """
         Write a CCR to file "g" from file "f" with level "level".
         Currently, only handles gzip compression.
@@ -2037,7 +2038,7 @@ class CDF:
         cprOffset = self._write_cpr(g, self.GZIP_COMPRESSION, level)
         self._update_offset_value(g, 20, 8, cprOffset)
 
-    def _convert_option(self):
+    def _convert_option(self) -> str:
         """
         Determines which symbol to use for numpy conversions
         > : a little endian system to big endian ordering
@@ -2069,7 +2070,7 @@ class CDF:
         return order
 
     @staticmethod
-    def _convert_type(data_type):
+    def _convert_type(data_type: int) -> str:
         """
         Converts CDF data types into python types
         """
@@ -2101,7 +2102,7 @@ class CDF:
         return dt_string
 
     @staticmethod
-    def _convert_nptype(data_type, data):
+    def _convert_nptype(data_type: int, data) -> bytes:
         """
         Converts "data" of CDF type "data_type" into a numpy array
         """
@@ -2131,7 +2132,7 @@ class CDF:
         else:
             return data
 
-    def _default_pad(self, data_type, numElems):
+    def _default_pad(self, data_type: int, numElems: int) -> bytes:
         """
         Determines the default pad data for a "data_type"
         """
@@ -2164,7 +2165,7 @@ class CDF:
             pad_value = struct.pack(form + "b", *tmpPad)
         return pad_value
 
-    def _convert_data(self, data_type, num_elems, num_values, indata):
+    def _convert_data(self, data_type: int, num_elems: int, num_values: int, indata) -> Tuple[int, bytes]:
         """
         Converts "indata" into a byte stream
 
@@ -2333,7 +2334,7 @@ class CDF:
                         values = values * dimSizes[x]
             return values
 
-    def _read_offset_value(self, f, offset, size):
+    def _read_offset_value(self, f, offset: int, size: int) -> int:
         """
         Reads an integer value from file "f" at location "offset".
         """
@@ -2343,7 +2344,7 @@ class CDF:
         else:
             return int.from_bytes(f.read(4), "big", signed=True)
 
-    def _update_offset_value(self, f, offset, size, value):
+    def _update_offset_value(self, f, offset: int, size: int, value) -> None:
         """
         Writes "value" into location "offset" in file "f".
         """
@@ -2353,7 +2354,7 @@ class CDF:
         else:
             f.write(struct.pack(">i", value))
 
-    def _update_aedr_link(self, f, attrNum, zVar, varNum, offset):
+    def _update_aedr_link(self, f, attrNum, zVar, varNum, offset) -> None:
         """
         Updates variable aedr links
 
@@ -2448,11 +2449,11 @@ class CDF:
                     self._update_offset_value(f, adr_offset + 40, 4, varNum)
 
     @staticmethod
-    def _set_bit(value, bit):
+    def _set_bit(value: int, bit: int):
         return value | (1 << bit)
 
     @staticmethod
-    def _clear_bit(value, bit):
+    def _clear_bit(value: int, bit: int):
         return value & ~(1 << bit)
 
     @staticmethod
@@ -2460,13 +2461,13 @@ class CDF:
         return bool(obj) and all(isinstance(elem, str) for elem in obj)
 
     @staticmethod
-    def _checklistofNums(obj):
+    def _checklistofNums(obj: Any) -> bool:
         if hasattr(obj, "__len__"):
             return bool(obj) and all(isinstance(elem, numbers.Number) for elem in obj)
         else:
             return isinstance(obj, numbers.Number)
 
-    def _md5_compute(self, f):
+    def _md5_compute(self, f) -> bytes:
         """
         Computes the checksum of the file
         """
@@ -2488,7 +2489,7 @@ class CDF:
         return md5.digest()
 
     @staticmethod
-    def _make_blocks(records):
+    def _make_blocks(records) -> List[Tuple[int, int]]:
         """
         Organizes the physical records into blocks in a list by
         placing consecutive physical records into a single block, so
@@ -2531,20 +2532,16 @@ class CDF:
                     y = y - 1
                     break
 
-            # Put the values of the records into "ablock", append to sparse_blocks
-            ablock = []
-            ablock.append(recstart)
             if (y + 1) == total:
                 recend = records[total - 1]
             else:
                 recend = records[y]
             x = y + 1
-            ablock.append(recend)
-            sparse_blocks.append(ablock)
+            sparse_blocks.append((recstart, recend))
 
         return sparse_blocks
 
-    def _make_sparse_blocks(self, variable, records, data):
+    def _make_sparse_blocks(self, variable, records, data: List[Tuple[int, int, np.ndarray]]):
         """
         Handles the data for the variable with sparse records.
         Organizes the physical record numbers into blocks in a list:
@@ -2627,7 +2624,7 @@ class CDF:
             print("Invalid sparse data... ", "Less data than the specified records... Skip")
         return
 
-    def _make_sparse_blocks_with_virtual(self, variable, records, data):
+    def _make_sparse_blocks_with_virtual(self, variable, records, data) -> List[Tuple[int, int, np.ndarray]]:
         """
         Handles the data for the variable with sparse records.
         Organizes the physical record numbers into blocks in a list:
@@ -2651,13 +2648,9 @@ class CDF:
         if isinstance(data, np.ndarray):
             for sblock in sparse_blocks:
                 # each block in this list: [starting_rec#, ending_rec#, data]
-                asparse = []
-                asparse.append(sblock[0])
-                asparse.append(sblock[1])
                 starting = sblock[0]
                 ending = sblock[1] + 1
-                asparse.append(data[starting:ending])
-                sparse_data.append(asparse)
+                sparse_data.append((sblock[0], sblock[1], data[starting:ending]))
             return sparse_data
         elif isinstance(data, bytes):
             y = 1
@@ -2666,13 +2659,9 @@ class CDF:
             y = y * self._datatype_size(variable["Data_Type"], variable["Num_Elements"])
             for x in sparse_blocks:
                 # each block in this list: [starting_rec#, ending_rec#, data]
-                asparse = []
-                asparse.append(sblock[0])
-                asparse.append(sblock[1])
                 starting = sblock[0] * y
                 ending = (sblock[1] + 1) * y
-                asparse.append(data[starting:ending])
-                sparse_data.append(asparse)
+                sparse_data.append((sblock[0], sblock[1], data[starting:ending]))
             return sparse_data
         elif isinstance(data, list):
             for x in sparse_blocks:
@@ -2680,19 +2669,18 @@ class CDF:
                 asparse = []
                 asparse.append(sblock[0])
                 asparse.append(sblock[1])
-                records = sparse_blocks[x][1] - sparse_blocks[x][0] + 1
+                records = x[1] - x[0] + 1
                 datax = []
                 ist = sblock[0]
                 for z in range(0, records):
                     datax.append(data[ist + z])
-                asparse.append(datax)
-                sparse_data.append(asparse)
+                sparse_data.append((sblock[0], sblock[1], datax))
             return sparse_data
         else:
             print("Can not handle data... Skip")
             return None
 
-    def _make_sparse_blocks_with_physical(self, variable, records, data):
+    def _make_sparse_blocks_with_physical(self, variable, records, data) -> List[Tuple[int, int, np.ndarray]]:
         # All records are physical... just a single block
         #   [[0,end_rec,data]]
 
@@ -2720,14 +2708,10 @@ class CDF:
         sparse_data = []
         recStart = 0
         for sblock in sparse_blocks:
-            asparse = []
             recs = sblock
-            asparse.append(recs[0])
-            asparse.append(recs[1])
             totalRecs = recs[1] - recs[0] + 1
             recEnd = recStart + totalRecs
-            asparse.append(data[recStart:recEnd])
-            sparse_data.append(asparse)
+            sparse_data.append((recs[0], recs[1], data[recStart:recEnd]))
             recStart = recStart + totalRecs
 
         return sparse_data
