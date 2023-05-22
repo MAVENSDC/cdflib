@@ -7,4 +7,5 @@ API Reference
    cdfread
    cdfwrite
    cdfepoch
+   dataclasses
    xarray

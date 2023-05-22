@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Tuple, Union
 import numpy as np
 
 import cdflib.epochs as epoch
-from cdflib.dataclasses import AEDR, VDR, ADRInfo, CDRInfo, GDRInfo
+from cdflib.dataclasses import AEDR, VDR, ADRInfo, AttData, CDRInfo, GDRInfo
 
 __all__ = ["CDF"]
 
@@ -331,7 +331,7 @@ class CDF:
             print("NAME: " + name + ", NUMBER: " + str(x) + ", SCOPE: " + attrs[x][name])
         return attrs
 
-    def attget(self, attribute=None, entry=None):
+    def attget(self, attribute=None, entry=None) -> AttData:
         """
         Returns the value of the attribute at the entry number provided.
 
@@ -343,24 +343,10 @@ class CDF:
         attribute : str, int, optional
             Attribute name or number to get.
         entry : int, optional
-        tp_np : bool, optional
-            If True, return a numpy array.
 
         Returns
         -------
-        dict
-            A dictionary is returned with the following defined keys
-
-            +-----------------+--------------------------------------------------------------------------------+
-            | ['Item_Size']   | the number of bytes for each entry value                                       |
-            +-----------------+--------------------------------------------------------------------------------+
-            | ['Num_Items']   | total number of values extracted                                               |
-            +-----------------+--------------------------------------------------------------------------------+
-            | ['Data_Type']   | the CDF data type                                                              |
-            +-----------------+--------------------------------------------------------------------------------+
-            | ['Data']        | retrieved attribute data as a scalar value, a numpy array or a string          |
-            +-----------------+--------------------------------------------------------------------------------+
-
+        AttData
         """
         # Starting position
         position = self._first_adr
@@ -1663,7 +1649,7 @@ class CDF:
             return "little-endian"
 
     @staticmethod
-    def _type_size(data_type, num_elms):
+    def _type_size(data_type, num_elms: int) -> int:
         # DATA TYPES
         #
         # 1 - 1 byte signed int
@@ -1701,6 +1687,8 @@ class CDF:
                 return 16
             elif (data_type == 51) or (data_type == 52):
                 return num_elms
+            else:
+                raise TypeError("Unknown data type....")
         elif isinstance(data_type, str):
             data_typeU = data_type.upper()
             if (data_typeU == "CDF_INT1") or (data_typeU == "CDF_UINT1") or (data_typeU == "CDF_BYTE"):
@@ -1719,6 +1707,8 @@ class CDF:
                 return 16
             elif (data_typeU == "CDF_CHAR") or (data_typeU == "CDF_UCHAR"):
                 return num_elms
+            else:
+                raise TypeError("Unknown data type....")
         else:
             raise TypeError("Unknown data type....")
 
@@ -1846,25 +1836,24 @@ class CDF:
                 values = values * vdr.dim_sizes[x]
         return values
 
-    def _get_attdata(self, adr_info, entry_num, num_entry, first_entry):
+    def _get_attdata(self, adr_info, entry_num, num_entry, first_entry) -> AttData:
         position = first_entry
         for _ in range(0, num_entry):
             got_entry_num, next_aedr = self._read_aedr_fast(position)
             if entry_num == got_entry_num:
                 aedr_info = self._read_aedr(position)
-                return_dict = {}
-                return_dict["Item_Size"] = self._type_size(aedr_info.data_type, aedr_info.num_elements)
-                return_dict["Data_Type"] = self._datatype_token(aedr_info.data_type)
+                item_size = self._type_size(aedr_info.data_type, aedr_info.num_elements)
+                data_type = self._datatype_token(aedr_info.data_type)
 
-                return_dict["Num_Items"] = aedr_info.num_elements
-                return_dict["Data"] = aedr_info.entry
+                num_items = aedr_info.num_elements
+                data = aedr_info.entry
                 if aedr_info.data_type == 51 or aedr_info.data_type == 52:
                     if aedr_info.num_strings is not None:
                         num_strings = aedr_info.num_strings
-                        return_dict["Num_Items"] = num_strings
+                        num_items = num_strings
                         if num_strings > 1:
-                            return_dict["Data"] = aedr_info.entry.split("\\N ")
-                return return_dict
+                            data = aedr_info.entry.split("\\N ")
+                return AttData(item_size, data_type, num_items, data)
             else:
                 position = next_aedr
 
@@ -1936,13 +1925,13 @@ class CDF:
                         "variable"
                     )
 
-                vdr_info = self.varinq(dependVar["Data"])
+                vdr_info = self.varinq(dependVar.Data)
                 if vdr_info["Data_Type"] != 31 and vdr_info["Data_Type"] != 32 and vdr_info["Data_Type"] != 33:
                     raise ValueError(
                         "Corresponding variable from 'DEPEND_0' attribute "
                         "for variable: {}".format(var_name) + " is not a CDF epoch type"
                     )
-                epochtimes = self.varget(dependVar["Data"])
+                epochtimes = self.varget(dependVar.Data)
 
         return self._findrangerecords(vdr_info["Data_Type"], epochtimes, starttime, endtime)
 
