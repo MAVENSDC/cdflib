@@ -31,6 +31,10 @@ Breaking changes
   code now behaves as if ``to_np=True`` throughout.
   This change has been made to reduce code omplexity and make maintaining
   the code easier.
+- The ``expand`` keyword argument to ``CDF.varget`` has been removed.
+  Use ``CDF.varinq`` to get variable information instead.
+- The ``expand`` keyword argument to ``CDF.globalattsget`` and ``CDF.varattsget`` has been removed.
+  Use ``CDF.attinq`` to get attribute information instead.
 
 Bugfixes
 --------
