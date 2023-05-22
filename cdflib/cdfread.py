@@ -18,10 +18,12 @@ from cdflib.dataclasses import (
     VDR,
     ADRInfo,
     AttData,
+    CDFInfo,
     CDRInfo,
     GDRInfo,
     VDRInfo,
 )
+from cdflib.s3 import S3object
 
 __all__ = ["CDF"]
 
@@ -106,7 +108,7 @@ class CDF:
 
         self._compressed = not (compressed_bool == "0000ffff")
         self.compressed_file = None
-        self.temp_file = None
+        self.temp_file: Optional[Path] = None
 
         if self._compressed:
             if self.ftype == "url" or self.ftype == "s3":
@@ -166,7 +168,7 @@ class CDF:
         if self.compressed_file is not None:
             self.compressed_file = None
 
-    def __del__(self):
+    def __del__(self) -> None:
         # This implicitly will delete a temporary uncompressed file if we
         # created it earlier.
         if hasattr(self, "_f") and hasattr(self._f, "close"):
@@ -177,63 +179,35 @@ class CDF:
     def __getitem__(self, variable: str) -> np.ndarray:
         return self.varget(variable)
 
-    def __enter__(self):
+    def __enter__(self) -> "CDF":
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         return
 
-    def close(self):
-        pass
-
-    def cdf_info(self):
+    def cdf_info(self) -> CDFInfo:
         """
         Returns a dictionary that shows the basic CDF information.
 
-        This information includes
-
-                +---------------+--------------------------------------------------------------------------------+
-                | ['CDF']       | the name of the CDF                                                            |
-                +---------------+--------------------------------------------------------------------------------+
-                | ['Version']   | the version of the CDF                                                         |
-                +---------------+--------------------------------------------------------------------------------+
-                | ['Encoding']  | the endianness of the CDF                                                      |
-                +---------------+--------------------------------------------------------------------------------+
-                | ['Majority']  | the row/column majority                                                        |
-                +---------------+--------------------------------------------------------------------------------+
-                | ['zVariables']| a list of the names of the zVariables                                          |
-                +---------------+--------------------------------------------------------------------------------+
-                | ['rVariables']| a list of the names of the rVariables                                          |
-                +---------------+--------------------------------------------------------------------------------+
-                | ['Attributes']| a list of dictionary objects that contain {attribute_name : scope}             |
-                +---------------+--------------------------------------------------------------------------------+
-                | ['Checksum']  | the checksum indicator                                                         |
-                +---------------+--------------------------------------------------------------------------------+
-                | ['Num_rdim']  | the number of dimensions, applicable only to rVariables                        |
-                +---------------+--------------------------------------------------------------------------------+
-                | ['rDim_sizes'] | the dimensional sizes, applicable only to rVariables                          |
-                +----------------+-------------------------------------------------------------------------------+
-                | ['Compressed']| CDF is compressed at the file-level                                            |
-                +---------------+--------------------------------------------------------------------------------+
-                | ['LeapSecondUpdated']| The last updated for the leap second table, if applicable               |
-                +---------------+--------------------------------------------------------------------------------+
-
+        Returns
+        -------
+        CDFInfo
         """
-        mycdf_info: Dict[str, Any] = {}
-        mycdf_info["CDF"] = self.file
-        mycdf_info["Version"] = self._version
-        mycdf_info["Encoding"] = self._encoding
-        mycdf_info["Majority"] = self._majority
-        mycdf_info["rVariables"], mycdf_info["zVariables"] = self._get_varnames()
-        mycdf_info["Attributes"] = self._get_attnames()
-        mycdf_info["Copyright"] = self._copyright
-        mycdf_info["Checksum"] = self._md5
-        mycdf_info["Num_rdim"] = self._num_rdim
-        mycdf_info["rDim_sizes"] = self._rdim_sizes
-        mycdf_info["Compressed"] = self._compressed
-        if self.cdfversion > 2:
-            mycdf_info["LeapSecondUpdated"] = self._leap_second_updated
-        return mycdf_info
+        varnames = self._get_varnames()
+        return CDFInfo(
+            self.file,
+            self._version,
+            self._encoding,
+            self._majority,
+            varnames[0],
+            varnames[1],
+            self._get_attnames(),
+            self._copyright,
+            self._md5,
+            self._num_rdim,
+            self._rdim_sizes,
+            self._compressed,
+        )
 
     def varinq(self, variable: str) -> VDRInfo:
         """
@@ -297,17 +271,6 @@ class CDF:
             return self._read_adr(position)
         else:
             raise ValueError("attribute keyword must be a string or integer")
-
-    def print_attrs(self):
-        """
-        Print all attribute information.
-        """
-        attrs = self._get_attnames()
-        print(attrs)
-        for x in range(0, self._num_att):
-            name = list(attrs[x].keys())[0]
-            print("NAME: " + name + ", NUMBER: " + str(x) + ", SCOPE: " + attrs[x][name])
-        return attrs
 
     def attget(self, attribute: Union[str, int], entry: Optional[Union[str, int]] = None) -> AttData:
         """
@@ -527,7 +490,12 @@ class CDF:
 
         return vdr_info
 
-    def epochrange(self, epoch=None, starttime=None, endtime=None):
+    def epochrange(
+        self,
+        epoch: Optional[str] = None,
+        starttime: Optional[datetime.datetime] = None,
+        endtime: Optional[datetime.datetime] = None,
+    ) -> VDR:
         """
         Get epoch range.
 
@@ -535,16 +503,10 @@ class CDF:
         corresponding starting and ending records within the time
         range from the epoch data. A None is returned if there is no
         data either written or found in the time range.
-
-        Parameters
-        ----------
-        epoch :
-        starttime :
-        endtime :
         """
         return self.varget(variable=epoch, starttime=starttime, endtime=endtime, record_range_only=True)
 
-    def globalattsget(self):
+    def globalattsget(self) -> Dict[str, List[Union[str, int]]]:
         """
         Gets all global attributes.
 
@@ -580,7 +542,7 @@ class CDF:
 
         return return_dict
 
-    def varattsget(self, variable=None):
+    def varattsget(self, variable: Optional[str] = None) -> Dict[str, Union[None, float, np.ndarray]]:
         """
         Gets all variable attributes.
 
@@ -2097,23 +2059,6 @@ class CDF:
                 break
         return -1, x - 1
 
-    def _convert_data(self, data, data_type, num_recs, num_values, num_elems):
-        """
-        Converts data to the appropriate type using the struct.unpack method,
-        rather than using numpy.
-        """
-
-        if data_type == 51 or data_type == 52:
-            return [
-                data[i : i + num_elems].decode(self.string_encoding) for i in range(0, num_recs * num_values * num_elems, num_elems)
-            ]
-        else:
-            tofrom = self._convert_option()
-            dt_string = self._convert_type(data_type)
-            form = tofrom + str(num_recs * num_values * num_elems) + dt_string
-            value_len = self._type_size(data_type, num_elems)
-            return list(struct.unpack_from(form, data[0 : num_recs * num_values * value_len]))
-
     def _file_or_url_or_s3_handler(
         self, filename: str, filetype: str, s3_read_method: int
     ) -> Union["S3object", io.BufferedReader, io.BytesIO]:
@@ -2171,48 +2116,3 @@ def s3_fetchall(obj) -> io.BytesIO:  # type: ignore
     rawdata = obj["Body"].read()
     bdata = io.BytesIO(rawdata)
     return bdata
-
-
-class S3object:
-    """
-    Handler for S3 objects so they behave like files.
-    S3 'read' reads specified byte range
-    S3 'seek' sets byte range for subsequent readers
-    """
-
-    def __init__(self, fhandle):
-        self.pos = 0  # used to track where in S3 we are
-        self.content_length = fhandle.content_length  # size in bytes
-        self.fhandle = fhandle
-        self.temp_file = None
-
-    def read(self, isize):
-        if isize == -1:
-            isize = self.content_length
-        myrange = "bytes=%d-%d" % (self.pos, (self.pos + isize - 1))
-        # print("debug: byte range ",myrange)
-        self.pos += isize  # advance the pointer
-        stream = self.fhandle.get(Range=myrange)["Body"]
-        rawdata = stream.read()
-        # bdata=io.BytesIO(rawdata)
-        return rawdata
-
-    def seek(self, offset, from_what=0):
-        if from_what == 2:
-            # offset is from end of file, ugh, used only for checksum
-            self.pos = self.content_length + offset
-        elif from_what == 1:
-            # from current position
-            self.pos = self.pos + offset
-        else:
-            # usual default is 0, from start of file
-            self.pos = offset
-
-    def tell(self):
-        return self.pos
-
-    def fetchS3entire(self):
-        obj = self.fhandle.get()["Body"]
-        rawdata = obj["Body"].read()
-        bdata = io.BytesIO(rawdata)
-        return bdata

@@ -40,6 +40,7 @@ Breaking changes
 - ``CDF.attget`` now returns a dataclass instead of a dict.
 - ``CDF.varget`` now returns a dataclass instead of a dict.
 - ``CDF.varinq`` now returns a dataclass instead of a dict.
+- Removed ``CDF.print_attrs``
 
 Bugfixes
 --------

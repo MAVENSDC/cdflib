@@ -8,9 +8,7 @@ fname = pathlib.Path(__file__) / ".." / "testfiles" / "fa_esa_l2_eeb_00000000_v0
 def test_read():
     cdf = cdflib.CDF(fname)
 
-    info = cdf.cdf_info()
-    assert isinstance(info, dict)
-
+    cdf.cdf_info()
     varatts = cdf.varattsget("eflux")
     assert isinstance(varatts, dict)
 
