@@ -84,14 +84,15 @@ class AttData:
     ----------
     Item_size : int
         Number of bytes for each entry value.
-    Data_Type : int
+    Data_Type : str
         CDF data type.
     Num_Items : int
         Number of values extracted.
     Data : numpy.ndarray
         Data as a scalar value, a numpy array or a string.
     """
+
     Item_Size: int
-    Data_Type: int
+    Data_Type: str
     Num_Items: int
     Data: np.ndarray

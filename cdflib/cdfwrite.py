@@ -2703,8 +2703,8 @@ class CDF:
             zVar = False
 
         # Determine dimension information
+        numDims = len(variable["Dim_Sizes"])
         if zVar:
-            numDims = len(variable["Dim_Sizes"])
             numValues = 1
             for x in range(0, numDims):
                 numValues = numValues * variable["Dim_Sizes"][x]

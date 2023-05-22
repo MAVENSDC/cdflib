@@ -272,7 +272,7 @@ class CDFepoch(object):
             raise TypeError("Unknown input")
 
     @staticmethod
-    def findepochrange(epochs, starttime=None, endtime=None):  # @NoSelf
+    def findepochrange(epochs, starttime=None, endtime=None) -> np.ndarray:
         """
         Finds the record range within the start and end time from values
         of a CDF epoch data type. It returns a list of record numbers.
@@ -1209,7 +1209,7 @@ class CDFepoch(object):
             return epoch
 
     @staticmethod
-    def epochrange_epoch16(epochs, starttime=None, endtime=None):
+    def epochrange_epoch16(epochs, starttime=None, endtime=None) -> np.ndarray:
         if isinstance(epochs, complex) or isinstance(epochs, np.complex128):
             new_epochs = [epochs]
         elif isinstance(epochs, list) or isinstance(epochs, tuple) or isinstance(epochs, np.ndarray):
@@ -1543,7 +1543,7 @@ class CDFepoch(object):
             return comp
 
     @staticmethod
-    def epochrange_epoch(epochs, starttime=None, endtime=None):  # @NoSelf
+    def epochrange_epoch(epochs, starttime=None, endtime=None) -> np.ndarray:
         if isinstance(epochs, (float, np.float64)):
             pass
         elif isinstance(epochs, (list, tuple, np.ndarray)):

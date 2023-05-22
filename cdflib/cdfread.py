@@ -34,7 +34,7 @@ class CDF:
     release = 7
     increment = 0
 
-    def __init__(self, path, validate=False, string_encoding="ascii", s3_read_method=1):
+    def __init__(self, path: Union[str, Path], validate: bool = False, string_encoding: str = "ascii", s3_read_method: int = 1):
         """
         Parameters
         ----------
@@ -60,10 +60,12 @@ class CDF:
         An open file handle to the CDF file remains whilst a CDF object is live.
         It is automatically cleaned up with the CDF instance is deleted.
         """
-        try:
+        if isinstance(path, Path):
             fname = path.absolute().as_posix()
-        except:
+        else:
             fname = path
+
+        self.file: Union[str, Path]
         if fname.startswith("s3://"):
             # later put in s3 'does it exist' checker
             self.ftype = "s3"
@@ -102,10 +104,10 @@ class CDF:
                 if s3_read_method == 3:
                     # extra step, read entire file
                     self._f.seek(0)
-                    self._f = s3_fetchall(self._f.fhandle)
-                self._unstream_file(path, self._f)
+                    self._f = s3_fetchall(self._f.fhandle)  # type: ignore
+                self._unstream_file(self._f)
                 path = self.file
-            self._uncompress_file(path)
+            self._uncompress_file()
             if self.temp_file is None:
                 raise OSError("Decompression was unsuccessful.  Only GZIP compression is currently supported.")
 
@@ -158,8 +160,9 @@ class CDF:
     def __del__(self):
         # This implicitly will delete a temporary uncompressed file if we
         # created it earlier.
-        self._f.close()
-        if self.temp_file is not None:
+        if hasattr(self, "_f") and hasattr(self._f, "close"):
+            self._f.close()
+        if hasattr(self, "temp_file") and self.temp_file is not None:
             os.remove(self.temp_file)
 
     def __getitem__(self, variable: str) -> np.ndarray:
@@ -207,7 +210,7 @@ class CDF:
                 +---------------+--------------------------------------------------------------------------------+
 
         """
-        mycdf_info = {}
+        mycdf_info: Dict[str, Any] = {}
         mycdf_info["CDF"] = self.file
         mycdf_info["Version"] = self._version
         mycdf_info["Encoding"] = self._encoding
@@ -223,7 +226,7 @@ class CDF:
             mycdf_info["LeapSecondUpdated"] = self._leap_second_updated
         return mycdf_info
 
-    def varinq(self, variable):
+    def varinq(self, variable) -> Dict[str, Any]:
         """
         Returns a dictionary that shows the basic variable information.
 
@@ -257,10 +260,6 @@ class CDF:
                 +-----------------+--------------------------------------------------------------------------------+
                 | ['Block_Factor']| the blocking factor if the variable is compressed                              |
                 +-----------------+--------------------------------------------------------------------------------+
-
-        Parameters
-        ----------
-        variable :
         """
         vdr_info = self.vdr_info(variable)
 
@@ -435,7 +434,9 @@ class CDF:
             raise ValueError("The entry does not exist")
         return self._get_attdata(adr_info, entry_num, getattr(adr_info, num_entry_string), getattr(adr_info, first_entry_string))
 
-    def varget(self, variable=None, epoch=None, starttime=None, endtime=None, startrec=0, endrec=None, record_range_only=False):
+    def varget(
+        self, variable=None, epoch=None, starttime=None, endtime=None, startrec=0, endrec=None, record_range_only=False
+    ) -> VDR:
         """
         Returns the variable data.
 
@@ -612,7 +613,7 @@ class CDF:
         if isinstance(variable, str):
             position = self._first_zvariable
             num_variables = self._num_zvariable
-            for zVar in [1, 0]:
+            for zVar in [True, False]:
                 for _ in range(0, num_variables):
                     name, vdr_next = self._read_vdr_fast(position)
                     if name.strip().lower() == variable.strip().lower():
@@ -635,7 +636,7 @@ class CDF:
         else:
             raise ValueError("Please set variable keyword equal to " "the name or number of an variable")
 
-    def _uncompress_rle(self, data):
+    def _uncompress_rle(self, data) -> bytearray:
         result = bytearray()
         index = 0
         while index < len(data):
@@ -649,7 +650,7 @@ class CDF:
             index += 1
         return result
 
-    def _uncompress_file(self, path):
+    def _uncompress_file(self) -> None:
         """
         Writes the current file into a file in the temporary directory.
 
@@ -675,7 +676,7 @@ class CDF:
             g.write(bytearray.fromhex("0000ffff"))
             g.write(decompressed_data)
 
-    def _read_ccr(self, byte_loc):
+    def _read_ccr(self, byte_loc: int) -> Tuple[int, int, int, int]:
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(8), "big")
         self._f.seek(byte_loc + 12)
@@ -687,7 +688,7 @@ class CDF:
 
         return data_start, data_size, cType, cParams
 
-    def _read_ccr2(self, byte_loc):
+    def _read_ccr2(self, byte_loc: int) -> Tuple[int, int, int, int]:
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(4), "big")
         self._f.seek(byte_loc + 8)
@@ -699,13 +700,13 @@ class CDF:
 
         return data_start, data_size, cType, cParams
 
-    def _read_cpr(self, byte_loc):
+    def _read_cpr(self, byte_loc: int) -> Tuple[int, int]:
         if self.cdfversion == 3:
             return self._read_cpr3(byte_loc)
         else:
             return self._read_cpr2(byte_loc)
 
-    def _read_cpr3(self, byte_loc):
+    def _read_cpr3(self, byte_loc: int) -> Tuple[int, int]:
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(8), "big")
         cpr = self._f.read(block_size - 8)
@@ -715,7 +716,7 @@ class CDF:
 
         return cType, cParams
 
-    def _read_cpr2(self, byte_loc):
+    def _read_cpr2(self, byte_loc: int) -> Tuple[int, int]:
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(4), "big")
         cpr = self._f.read(block_size - 4)
@@ -757,7 +758,7 @@ class CDF:
         return md5.hexdigest() == existing_md5
 
     @staticmethod
-    def _encoding_token(encoding):
+    def _encoding_token(encoding: int) -> str:
         encodings = {
             1: "NETWORK",
             2: "SUN",
@@ -777,22 +778,22 @@ class CDF:
         return encodings[encoding]
 
     @staticmethod
-    def _major_token(major):
+    def _major_token(major: int) -> str:
         majors = {1: "Row_major", 2: "Column_major"}
         return majors[major]
 
     @staticmethod
-    def _scope_token(scope):
+    def _scope_token(scope: int) -> str:
         scopes = {1: "Global", 2: "Variable"}
         return scopes[scope]
 
     @staticmethod
-    def _variable_token(variable):
+    def _variable_token(variable: int) -> str:
         variables = {3: "rVariable", 8: "zVariable"}
         return variables[variable]
 
     @staticmethod
-    def _datatype_token(datatype):
+    def _datatype_token(datatype: int) -> str:
         datatypes = {
             1: "CDF_INT1",
             2: "CDF_INT2",
@@ -815,11 +816,11 @@ class CDF:
         return datatypes[datatype]
 
     @staticmethod
-    def _sparse_token(sparse):
+    def _sparse_token(sparse: int) -> str:
         sparses = {0: "No_sparse", 1: "Pad_sparse", 2: "Prev_sparse"}
         return sparses[sparse]
 
-    def _get_varnames(self):
+    def _get_varnames(self) -> Tuple[List[str], List[str]]:
         zvars = []
         rvars = []
         if self._num_zvariable > 0:
@@ -838,7 +839,7 @@ class CDF:
                 position = next_vdr
         return rvars, zvars
 
-    def _get_attnames(self):
+    def _get_attnames(self) -> List[Dict[str, str]]:
         attrs = []
         position = self._first_adr
         for _ in range(0, self._num_att):
@@ -997,7 +998,7 @@ class CDF:
             eof=eof,
         )
 
-    def _read_varatts(self, var_num, zVar):
+    def _read_varatts(self, var_num: int, zVar: bool) -> Dict[str, Union[None, float, np.ndarray]]:
         byte_loc = self._first_adr
         return_dict = {}
         for z in range(0, self._num_att):
@@ -1102,7 +1103,7 @@ class CDF:
             name,
         )
 
-    def _read_adr_fast(self, position):
+    def _read_adr_fast(self, position: int) -> Tuple[str, int]:
         """
         Read an attribute descriptor record (ADR).
         """
@@ -1111,7 +1112,7 @@ class CDF:
         else:
             return self._read_adr_fast2(position)
 
-    def _read_adr_fast3(self, byte_loc):
+    def _read_adr_fast3(self, byte_loc: int) -> Tuple[str, int]:
         # Position of next ADR
         self._f.seek(byte_loc + 12, 0)
         next_adr_loc = int.from_bytes(self._f.read(8), "big", signed=True)
@@ -1123,7 +1124,7 @@ class CDF:
 
         return name, next_adr_loc
 
-    def _read_adr_fast2(self, byte_loc):
+    def _read_adr_fast2(self, byte_loc: int) -> Tuple[str, int]:
         # Position of next ADR
         self._f.seek(byte_loc + 8, 0)
         next_adr_loc = int.from_bytes(self._f.read(4), "big", signed=True)
@@ -1135,13 +1136,13 @@ class CDF:
 
         return name, next_adr_loc
 
-    def _read_aedr_fast(self, byte_loc):
+    def _read_aedr_fast(self, byte_loc: int) -> Tuple[int, int]:
         if self.cdfversion == 3:
             return self._read_aedr_fast3(byte_loc)
         else:
             return self._read_aedr_fast2(byte_loc)
 
-    def _read_aedr_fast3(self, byte_loc):
+    def _read_aedr_fast3(self, byte_loc: int) -> Tuple[int, int]:
         self._f.seek(byte_loc + 12, 0)
         next_aedr = int.from_bytes(self._f.read(8), "big", signed=True)
 
@@ -1151,7 +1152,7 @@ class CDF:
 
         return entry_num, next_aedr
 
-    def _read_aedr_fast2(self, byte_loc):
+    def _read_aedr_fast2(self, byte_loc: int) -> Tuple[int, int]:
         self._f.seek(byte_loc + 8, 0)
         next_aedr = int.from_bytes(self._f.read(4), "big", signed=True)
 
@@ -1459,7 +1460,9 @@ class CDF:
 
         return name, next_vdr
 
-    def _read_vxrs(self, byte_loc, vvr_offsets=[], vvr_start=[], vvr_end=[]):
+    def _read_vxrs(
+        self, byte_loc: int, vvr_offsets: List[int] = [], vvr_start: List[int] = [], vvr_end: List[int] = []
+    ) -> Tuple[List[int], List[int], List[int]]:
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(8), "big", signed=True)  # Block Size
         vxrs = self._f.read(block_size - 8)
@@ -1494,7 +1497,9 @@ class CDF:
 
         return vvr_offsets, vvr_start, vvr_end
 
-    def _read_vxrs2(self, byte_loc, vvr_offsets=[], vvr_start=[], vvr_end=[]):
+    def _read_vxrs2(
+        self, byte_loc: int, vvr_offsets: List[int] = [], vvr_start: List[int] = [], vvr_end: List[int] = []
+    ) -> Tuple[List[int], List[int], List[int]]:
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(4), "big", signed=True)
         vxrs = self._f.read(block_size - 4)
@@ -1613,7 +1618,7 @@ class CDF:
             dimensions.append(var_sizes[x])
         return self._read_data(byte_stream, vdr.data_type, totalRecs, vdr.num_elements, dimensions)
 
-    def _convert_option(self):
+    def _convert_option(self) -> str:
         """
         Determines how to convert CDF byte ordering to the system
         byte ordering.
@@ -1649,7 +1654,7 @@ class CDF:
             return "little-endian"
 
     @staticmethod
-    def _type_size(data_type, num_elms: int) -> int:
+    def _type_size(data_type: Union[int, str], num_elms: int) -> int:
         # DATA TYPES
         #
         # 1 - 1 byte signed int
@@ -1712,7 +1717,7 @@ class CDF:
         else:
             raise TypeError("Unknown data type....")
 
-    def _read_data(self, byte_stream, data_type, num_recs, num_elems, dimensions=None):
+    def _read_data(self, byte_stream, data_type: int, num_recs: int, num_elems: int, dimensions=None) -> np.ndarray:
         """
         This is the primary routine that converts streams of bytes into usable data.
 
@@ -1904,7 +1909,7 @@ class CDF:
         else:
             return data[0]
 
-    def _findtimerecords(self, var_name, starttime, endtime, epoch=None):
+    def _findtimerecords(self, var_name, starttime, endtime, epoch=None) -> np.ndarray:
         if epoch is not None:
             vdr_info = self.varinq(epoch)
             if vdr_info is None:
@@ -1935,7 +1940,7 @@ class CDF:
 
         return self._findrangerecords(vdr_info["Data_Type"], epochtimes, starttime, endtime)
 
-    def _findrangerecords(self, data_type, epochtimes, starttime, endtime):
+    def _findrangerecords(self, data_type: int, epochtimes, starttime, endtime) -> np.ndarray:
         if data_type == 31 or data_type == 32 or data_type == 33:
             # CDF_EPOCH or CDF_EPOCH16 or CDF_TIME_TT2000
             recs = epoch.CDFepoch.findepochrange(epochtimes, starttime, endtime)
@@ -1943,7 +1948,7 @@ class CDF:
             raise ValueError("Not a CDF epoch type")
         return recs
 
-    def _convert_type(self, data_type):
+    def _convert_type(self, data_type: int) -> str:
         """
         CDF data types to python struct data types
         """
@@ -1971,7 +1976,7 @@ class CDF:
             dt_string = "s"
         return dt_string
 
-    def _default_pad(self, data_type, num_elms):
+    def _default_pad(self, data_type: int, num_elms: int) -> np.ndarray:
         """
         The default pad values by CDF data type
         """
@@ -2019,7 +2024,7 @@ class CDF:
             pass
         return ret
 
-    def _convert_np_data(self, data, data_type, num_elems):
+    def _convert_np_data(self, data: np.ndarray, data_type: int, num_elems: int) -> bytes:
         """
         Converts a single np data into byte stream.
         """
@@ -2035,7 +2040,7 @@ class CDF:
         else:
             return data.tobytes()
 
-    def _read_vvr_block(self, offset):
+    def _read_vvr_block(self, offset: int):
         """
         Returns a VVR or decompressed CVVR block
         """
@@ -2052,7 +2057,7 @@ class CDF:
             # a VVR
             return block[4:]
 
-    def _read_vvr_block2(self, offset):
+    def _read_vvr_block2(self, offset: int):
         """
         Returns a VVR or decompressed CVVR block
         """
@@ -2070,7 +2075,7 @@ class CDF:
             return block[4:]
 
     @staticmethod
-    def _find_block(starts, ends, cur_block, rec_num):
+    def _find_block(starts, ends, cur_block, rec_num) -> Tuple[int, int]:
         """
         Finds the block that rec_num is in if it is found. Otherwise it returns -1.
         It also returns the block that has the physical data either at or
@@ -2104,8 +2109,8 @@ class CDF:
             value_len = self._type_size(data_type, num_elems)
             return list(struct.unpack_from(form, data[0 : num_recs * num_values * value_len]))
 
-    def _file_or_url_or_s3_handler(self, filename, filetype, s3_read_method):
-        bdata: Union[S3object, io.BufferedReader, io.BytesIO]
+    def _file_or_url_or_s3_handler(self, filename, filetype, s3_read_method) -> Union["S3object", io.BufferedReader, io.BytesIO]:
+        bdata: Union["S3object", io.BufferedReader, io.BytesIO]
         if filetype == "url":
             # print("debug, opening url")
             req = urllib.request.Request(filename)
@@ -2123,7 +2128,7 @@ class CDF:
                 # read in-place
                 s3c = boto3.resource("s3")
                 obj = s3c.Object(bucket_name=mybucket, key=mykey)
-                bdata = S3object(obj)
+                bdata = S3object(obj)  # type: ignore
                 # print("Debug, using S3 read-in-place, flag ",s3_flag)
             else:
                 # for store in memory or as temp copy
@@ -2138,7 +2143,7 @@ class CDF:
 
         return bdata
 
-    def _unstream_file(self, path, f):
+    def _unstream_file(self, f) -> None:
         """
         Typically for S3 or URL, writes the current file stream
         into a file in the temporary directory.
@@ -2153,10 +2158,9 @@ class CDF:
         self.file = self.temp_file
         self.file = Path(self.file).expanduser()
         self.ftype = "file"
-        # print("debug, using temp file ",self.temp_file)
 
 
-def s3_fetchall(obj):
+def s3_fetchall(obj) -> io.BytesIO:
     rawdata = obj["Body"].read()
     bdata = io.BytesIO(rawdata)
     return bdata
