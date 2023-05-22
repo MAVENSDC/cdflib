@@ -5,6 +5,20 @@ import numpy as np
 
 
 @dataclass
+class ADRInfo:
+    scope: int
+    next_adr_loc: int
+    attribute_number: int
+    num_gr_entry: int
+    max_gr_entry: int
+    num_z_entry: int
+    max_z_entry: int
+    first_z_entry: int
+    first_gr_entry: int
+    name: str
+
+
+@dataclass
 class CDRInfo:
     encoding: int
     copyright_: str

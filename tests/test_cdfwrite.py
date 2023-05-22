@@ -144,10 +144,10 @@ def test_globalattrs(tmp_path):
 
     # Test CDF info
     attrib = reader.attinq("Global2")
-    assert attrib["num_gr_entry"] == 1
+    assert attrib.num_gr_entry == 1
 
     attrib = reader.attinq("Global6")
-    assert attrib["num_gr_entry"] == 4
+    assert attrib.num_gr_entry == 4
 
     entry = reader.attget("Global6", 3)
     assert entry["Data_Type"] == "CDF_INT8"

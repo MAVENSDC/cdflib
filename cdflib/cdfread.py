@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Tuple, Union
 import numpy as np
 
 import cdflib.epochs as epoch
-from cdflib.dataclasses import AEDR, VDR, CDRInfo, GDRInfo
+from cdflib.dataclasses import AEDR, VDR, ADRInfo, CDRInfo, GDRInfo
 
 __all__ = ["CDF"]
 
@@ -285,7 +285,7 @@ class CDF:
 
         return var
 
-    def attinq(self, attribute=None):
+    def attinq(self, attribute=None) -> ADRInfo:
         """
         Get attribute information.
 
@@ -372,7 +372,7 @@ class CDF:
                 name, next_adr = self._read_adr_fast(position)
                 if name.strip().lower() == attribute.strip().lower():
                     adr_info = self._read_adr(position)
-                    if isinstance(entry, str) and adr_info["scope"] == 1:
+                    if isinstance(entry, str) and adr_info.scope == 1:
                         # If the user has specified a string entry, they are obviously looking for a variable attribute.
                         # Filter out any global attributes that may have the same name.
                         adr_info = None
@@ -399,7 +399,7 @@ class CDF:
             raise ValueError("Please set attribute keyword equal to " "the name or number of an attribute")
 
         # Find the correct entry from the "entry" variable
-        if adr_info["scope"] == 1:
+        if adr_info.scope == 1:
             if not isinstance(entry, int):
                 raise ValueError('"entry" must be an integer')
             num_entry_string = "num_gr_entry"
@@ -445,9 +445,9 @@ class CDF:
                 num_entry_string = "num_gr_entry"
                 first_entry_string = "first_gr_entry"
                 max_entry_string = "max_gr_entry"
-        if entry_num > adr_info[max_entry_string]:
+        if entry_num > getattr(adr_info, max_entry_string):
             raise ValueError("The entry does not exist")
-        return self._get_attdata(adr_info, entry_num, adr_info[num_entry_string], adr_info[first_entry_string])
+        return self._get_attdata(adr_info, entry_num, getattr(adr_info, num_entry_string), getattr(adr_info, first_entry_string))
 
     def varget(self, variable=None, epoch=None, starttime=None, endtime=None, startrec=0, endrec=None, record_range_only=False):
         """
@@ -584,15 +584,15 @@ class CDF:
         return_dict: Dict[str, List[Union[str, int]]] = {}
         for _ in range(self._num_att):
             adr_info = self._read_adr(byte_loc)
-            if adr_info["scope"] != 1:
-                byte_loc = adr_info["next_adr_location"]
+            if adr_info.scope != 1:
+                byte_loc = adr_info.next_adr_loc
                 continue
-            if adr_info["num_gr_entry"] == 0:
-                byte_loc = adr_info["next_adr_location"]
+            if adr_info.num_gr_entry == 0:
+                byte_loc = adr_info.next_adr_loc
                 continue
             entries = []
-            aedr_byte_loc = adr_info["first_gr_entry"]
-            for _ in range(adr_info["num_gr_entry"]):
+            aedr_byte_loc = adr_info.first_gr_entry
+            for _ in range(adr_info.num_gr_entry):
                 aedr_info = self._read_aedr(aedr_byte_loc)
                 entryData = aedr_info.entry
                 # This exists to get rid of extraneous numpy arrays
@@ -602,8 +602,8 @@ class CDF:
 
                 entries.append(entryData)
 
-            return_dict[adr_info["name"]] = entries
-            byte_loc = adr_info["next_adr_location"]
+            return_dict[adr_info.name] = entries
+            byte_loc = adr_info.next_adr_loc
 
         return return_dict
 
@@ -858,9 +858,9 @@ class CDF:
         for _ in range(0, self._num_att):
             attr = {}
             adr_info = self._read_adr(position)
-            attr[adr_info["name"]] = self._scope_token(int(adr_info["scope"]))
+            attr[adr_info.name] = self._scope_token(adr_info.scope)
             attrs.append(attr)
-            position = adr_info["next_adr_location"]
+            position = adr_info.next_adr_loc
         return attrs
 
     def _read_cdr(self, byte_loc: int) -> Tuple[CDRInfo, int]:
@@ -1016,15 +1016,15 @@ class CDF:
         return_dict = {}
         for z in range(0, self._num_att):
             adr_info = self._read_adr(byte_loc)
-            if adr_info["scope"] == 1:
-                byte_loc = adr_info["next_adr_location"]
+            if adr_info.scope == 1:
+                byte_loc = adr_info.next_adr_loc
                 continue
             if zVar:
-                byte_loc = adr_info["first_z_entry"]
-                num_entry = adr_info["num_z_entry"]
+                byte_loc = adr_info.first_z_entry
+                num_entry = adr_info.num_z_entry
             else:
-                byte_loc = adr_info["first_gr_entry"]
-                num_entry = adr_info["num_gr_entry"]
+                byte_loc = adr_info.first_gr_entry
+                num_entry = adr_info.num_gr_entry
             found = 0
             for _ in range(0, num_entry):
                 entryNum, byte_next = self._read_aedr_fast(byte_loc)
@@ -1037,15 +1037,15 @@ class CDF:
                 if isinstance(entryData, np.ndarray):
                     if len(entryData) == 1:
                         entryData = entryData[0]
-                return_dict[adr_info["name"]] = entryData
+                return_dict[adr_info.name] = entryData
                 found = 1
                 break
-            byte_loc = adr_info["next_adr_location"]
+            byte_loc = adr_info.next_adr_loc
             if found == 0:
-                return_dict[adr_info["name"]] = None
+                return_dict[adr_info.name] = None
         return return_dict
 
-    def _read_adr(self, position):
+    def _read_adr(self, position: int) -> ADRInfo:
         """
         Read an attribute descriptor record (ADR).
         """
@@ -1054,7 +1054,7 @@ class CDF:
         else:
             return self._read_adr2(position)
 
-    def _read_adr3(self, byte_loc):
+    def _read_adr3(self, byte_loc: int) -> ADRInfo:
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(8), "big")  # Block Size
         adr = self._f.read(block_size - 8)
@@ -1072,22 +1072,20 @@ class CDF:
         name = str(adr[60:315].decode(self.string_encoding))
         name = name.replace("\x00", "")
 
-        # Build the return dictionary
-        return_dict: Dict[str, Union[str, int]] = {}
-        return_dict["scope"] = scope
-        return_dict["next_adr_location"] = next_adr_loc
-        return_dict["attribute_number"] = num
-        return_dict["num_gr_entry"] = num_gr_entry
-        return_dict["max_gr_entry"] = MaxEntry
-        return_dict["num_z_entry"] = num_z_entry
-        return_dict["max_z_entry"] = MaxZEntry
-        return_dict["first_z_entry"] = position_next_z_entry
-        return_dict["first_gr_entry"] = position_next_gr_entry
-        return_dict["name"] = name
+        return ADRInfo(
+            scope,
+            next_adr_loc,
+            num,
+            num_gr_entry,
+            MaxEntry,
+            num_z_entry,
+            MaxZEntry,
+            position_next_z_entry,
+            position_next_gr_entry,
+            name,
+        )
 
-        return return_dict
-
-    def _read_adr2(self, byte_loc):
+    def _read_adr2(self, byte_loc: int) -> ADRInfo:
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(4), "big")  # Block Size
         adr = self._f.read(block_size - 4)
@@ -1105,20 +1103,18 @@ class CDF:
         name = str(adr[48:112].decode(self.string_encoding))
         name = name.replace("\x00", "")
 
-        # Build the return dictionary
-        return_dict: Dict[str, Union[int, str]] = {}
-        return_dict["scope"] = scope
-        return_dict["next_adr_location"] = next_adr_loc
-        return_dict["attribute_number"] = num
-        return_dict["num_gr_entry"] = num_gr_entry
-        return_dict["max_gr_entry"] = MaxEntry
-        return_dict["num_z_entry"] = num_z_entry
-        return_dict["max_z_entry"] = MaxZEntry
-        return_dict["first_z_entry"] = position_next_z_entry
-        return_dict["first_gr_entry"] = position_next_gr_entry
-        return_dict["name"] = name
-
-        return return_dict
+        return ADRInfo(
+            scope,
+            next_adr_loc,
+            num,
+            num_gr_entry,
+            MaxEntry,
+            num_z_entry,
+            MaxZEntry,
+            position_next_z_entry,
+            position_next_gr_entry,
+            name,
+        )
 
     def _read_adr_fast(self, position):
         """
