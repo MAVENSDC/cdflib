@@ -8,8 +8,9 @@ class TimeSuite:
     An example benchmark that times the performance of various kinds
     of iterating over dictionaries in Python.
     """
-    params = ([True, False], )
-    param_names = ['to_np']
+
+    params = ([True, False],)
+    param_names = ["to_np"]
 
     def setup(self, to_np):
         self.epochs = np.ones(1000) * 62567898765432.0

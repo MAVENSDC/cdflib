@@ -13,34 +13,34 @@ import numpy as np
 from astropy.time import Time
 from astropy.time.formats import TimeFromEpoch, erfa
 
-__all__ = ['CDFAstropy']
+__all__ = ["CDFAstropy"]
 
 
 class CDFEpoch(TimeFromEpoch):
-    name = 'cdf_epoch'
+    name = "cdf_epoch"
     unit = 1.0 / (erfa.DAYSEC * 1000)  # Milliseconds
-    epoch_val = '0000-01-01 00:00:00'
+    epoch_val = "0000-01-01 00:00:00"
     epoch_val2 = None
-    epoch_scale = 'utc'
-    epoch_format = 'iso'
+    epoch_scale = "utc"
+    epoch_format = "iso"
 
 
 class CDFEpoch16(TimeFromEpoch):
-    name = 'cdf_epoch16'
+    name = "cdf_epoch16"
     unit = 1.0 / (erfa.DAYSEC)  # Seconds
-    epoch_val = '0000-01-01 00:00:00'
+    epoch_val = "0000-01-01 00:00:00"
     epoch_val2 = None
-    epoch_scale = 'utc'
-    epoch_format = 'iso'
+    epoch_scale = "utc"
+    epoch_format = "iso"
 
 
 class CDFTT2000(TimeFromEpoch):
-    name = 'cdf_tt2000'
+    name = "cdf_tt2000"
     unit = 1.0 / (erfa.DAYSEC * 1e9)  # Nanoseconds
-    epoch_val = '2000-01-01 12:00:00'
+    epoch_val = "2000-01-01 12:00:00"
     epoch_val2 = None
-    epoch_scale = 'tt'
-    epoch_format = 'iso'
+    epoch_scale = "tt"
+    epoch_format = "iso"
 
 
 class CDFAstropy:
@@ -76,13 +76,13 @@ class CDFAstropy:
 
         # Determine best format for the input type
         if t in (int, np.int64):
-            return Time(epochs, format='cdf_tt2000', precision=9)
+            return Time(epochs, format="cdf_tt2000", precision=9)
         elif t in (complex, np.complex128):
-            return Time(epochs.real, epochs.imag / 1000000000000.0, format='cdf_epoch16', precision=9)
+            return Time(epochs.real, epochs.imag / 1000000000000.0, format="cdf_epoch16", precision=9)
         elif t in (float, np.float64):
-            return Time(epochs, format='cdf_epoch', precision=9)
+            return Time(epochs, format="cdf_epoch", precision=9)
         else:
-            raise TypeError('Not sure how to handle type {}'.format(type(epochs)))
+            raise TypeError("Not sure how to handle type {}".format(type(epochs)))
 
     @staticmethod
     def encode(epochs, iso_8601: bool = True):  # @NoSelf
@@ -90,19 +90,19 @@ class CDFAstropy:
         if iso_8601:
             return epochs.iso
         else:
-            return epochs.strftime('%d-%b-%Y %H:%M:%S.%f')
+            return epochs.strftime("%d-%b-%Y %H:%M:%S.%f")
 
     @staticmethod
     def breakdown(epochs, to_np: bool = False):
         # Returns either a single array, or a array of arrays depending on the input
         epochs = CDFAstropy.convert_to_astropy(epochs)
-        if epochs.format == 'cdf_tt2000':
+        if epochs.format == "cdf_tt2000":
             return CDFAstropy.breakdown_tt2000(epochs, to_np)
-        elif epochs.format == 'cdf_epoch':
+        elif epochs.format == "cdf_epoch":
             return CDFAstropy.breakdown_epoch(epochs, to_np)
-        elif epochs.format == 'cdf_epoch16':
+        elif epochs.format == "cdf_epoch16":
             return CDFAstropy.breakdown_epoch16(epochs, to_np)
-        raise TypeError('Not sure how to handle type {}'.format(type(epochs)))
+        raise TypeError("Not sure how to handle type {}".format(type(epochs)))
 
     @staticmethod
     def to_datetime(cdf_time) -> List[datetime.datetime]:
@@ -131,16 +131,16 @@ class CDFAstropy:
         for d in datetimes:
             unix_seconds = datetime.datetime(d[0], d[1], d[2], d[3], d[4], d[5]).replace(tzinfo=timezone.utc).timestamp()
             if len(d) == 7:
-                remainder_seconds = (d[6] / 1000.0)
-                astrotime = Time(unix_seconds, remainder_seconds, format='unix', precision=9)
+                remainder_seconds = d[6] / 1000.0
+                astrotime = Time(unix_seconds, remainder_seconds, format="unix", precision=9)
                 cdf_time.append(astrotime.cdf_epoch)
             if len(d) == 9:
                 remainder_seconds = (d[6] / 1000.0) + (d[7] / 1000000.0) + (d[8] / 1000000000.0)
-                astrotime = Time(unix_seconds, remainder_seconds, format='unix', precision=9)
+                astrotime = Time(unix_seconds, remainder_seconds, format="unix", precision=9)
                 cdf_time.append(astrotime.cdf_tt2000)
             if len(d) == 10:
                 remainder_seconds = (d[6] / 1000.0) + (d[7] / 1000000.0) + (d[8] / 1000000000.0) + (d[9] / 1000000000000.0)
-                astrotime = Time(unix_seconds, remainder_seconds, format='unix', precision=9)
+                astrotime = Time(unix_seconds, remainder_seconds, format="unix", precision=9)
                 cdf_time.append(astrotime.cdf_epoch16)
         if to_np:
             return np.array(cdf_time)
