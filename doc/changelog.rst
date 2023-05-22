@@ -37,6 +37,7 @@ Breaking changes
   Use ``CDF.attinq`` to get attribute information instead.
 - ``CDF.vdr_info`` now returns a dataclass instead of a dict.
 - ``CDF.attinq`` now returns a dataclass instead of a dict.
+- ``CDF.attget`` now returns a dataclass instead of a dict.
 
 Bugfixes
 --------

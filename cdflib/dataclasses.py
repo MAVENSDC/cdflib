@@ -73,3 +73,11 @@ class VDR:
     num_elements: int
     sparse: int
     pad: Optional[bool] = None
+
+
+@dataclass
+class AttData:
+    Item_Size: int
+    Data_Type: int
+    Num_Items: int
+    Data: np.ndarray
