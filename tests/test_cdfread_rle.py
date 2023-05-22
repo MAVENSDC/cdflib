@@ -2,8 +2,7 @@ import pathlib
 
 import cdflib
 
-fname = (pathlib.Path(__file__) / '..' / 'testfiles' /
-         'fa_esa_l2_eeb_00000000_v01.cdf')
+fname = pathlib.Path(__file__) / ".." / "testfiles" / "fa_esa_l2_eeb_00000000_v01.cdf"
 
 
 def test_read():
@@ -12,7 +11,7 @@ def test_read():
     info = cdf.cdf_info()
     assert isinstance(info, dict)
 
-    varatts = cdf.varattsget('eflux')
+    varatts = cdf.varattsget("eflux")
     assert isinstance(varatts, dict)
 
 

@@ -11,12 +11,12 @@ from cdflib.epochs_astropy import CDFAstropy as cdfepoch
 
 def test_encode_cdfepoch():
     x = cdfepoch.encode([62285326000000.0, 62985326000000.0])
-    assert x[0] == '1973-09-28 23:26:40.000000000'
-    assert x[1] == '1995-12-04 19:53:20.000000000'
+    assert x[0] == "1973-09-28 23:26:40.000000000"
+    assert x[1] == "1995-12-04 19:53:20.000000000"
 
 
 def test_encode_cdfepoch16():
-    '''
+    """
     cdf_encode_epoch16(dcomplex(63300946758.000000, 176214648000.00000)) in IDL
     returns 04-Dec-2005 20:39:28.176.214.654.976
 
@@ -24,21 +24,20 @@ def test_encode_cdfepoch16():
     https://www.epochconverter.com/seconds-days-since-y0
 
     shows a correct answer.
-    '''
+    """
     x = cdfepoch.encode(np.complex128(63300946758.000000 + 176214648000.00000j))
-    assert x == '2005-12-04 20:19:18.176214648'
-    y = cdfepoch.encode(np.complex128([33300946758.000000 + 106014648000.00000j,
-                                       61234543210.000000 + 000011148000.00000j]))
-    assert y[0] == '1055-04-07 14:59:18.106014648'
-    assert y[1] == '1940-06-12 03:20:10.000011148'
+    assert x == "2005-12-04 20:19:18.176214648"
+    y = cdfepoch.encode(np.complex128([33300946758.000000 + 106014648000.00000j, 61234543210.000000 + 000011148000.00000j]))
+    assert y[0] == "1055-04-07 14:59:18.106014648"
+    assert y[1] == "1940-06-12 03:20:10.000011148"
 
 
 def test_encode_cdftt2000():
     x = cdfepoch.encode(186999622360321123)
-    assert x == '2005-12-04 20:20:22.360321120'
+    assert x == "2005-12-04 20:20:22.360321120"
     y = cdfepoch.encode([500000000100, 123456789101112131])
-    assert y[0] == '2000-01-01 12:08:20.000000100'
-    assert y[1] == '2003-11-30 09:33:09.101112128'
+    assert y[0] == "2000-01-01 12:08:20.000000100"
+    assert y[1] == "2003-11-30 09:33:09.101112128"
 
 
 def test_unixtime():
@@ -97,9 +96,9 @@ def test_breakdown_cdftt2000():
 
 
 def test_compute_cdfepoch():
-    '''
+    """
     Using random numbers for the compute tests
-    '''
+    """
     random_time = []
     random_time.append(randint(1709, 2292))  # Year
     random_time.append(randint(1, 12))  # Month
@@ -111,7 +110,7 @@ def test_compute_cdfepoch():
     x = cdfepoch.breakdown(cdfepoch.compute(random_time))
     i = 0
     for t in x[0]:
-        assert t == random_time[i], f'Time {random_time} was not equal to {x}'
+        assert t == random_time[i], f"Time {random_time} was not equal to {x}"
         i += 1
 
 
@@ -127,11 +126,11 @@ def test_compute_cdfepoch16():
     random_time.append(randint(0, 999))  # Microsecond
     random_time.append(randint(0, 999))  # Nanosecond
     random_time.append(randint(0, 999))  # Picosecond
-    cdftime = cdfepoch.convert_to_astropy(cdfepoch.compute(random_time), format='cdf_epoch16')
+    cdftime = cdfepoch.convert_to_astropy(cdfepoch.compute(random_time), format="cdf_epoch16")
     x = cdfepoch.breakdown(cdftime)
     i = 0
     for t in x[0]:
-        assert t == random_time[i], f'Time {random_time} was not equal to {x}'
+        assert t == random_time[i], f"Time {random_time} was not equal to {x}"
         i += 1
         # Unfortunately, currently there is a pretty big loss of precision that comes with
         # the compute function.  Need to stop testing early.
@@ -143,7 +142,7 @@ def test_compute_cdftt2000():
     pass
 
     # Need to determine why computing and breaking down tt2000 types continually adds leap seconds + 32.184
-    '''
+    """
     random_time = []
     random_time.append(randint(0, 2018))  # Year
     random_time.append(randint(1, 12))  # Month
@@ -159,7 +158,7 @@ def test_compute_cdftt2000():
     for t in x[0]:
         assert t == random_time[i], 'Time {} was not equal to {}'.format(random_time, x)
         i += 1
-    '''
+    """
 
 
 def test_parse_cdfepoch():
@@ -176,7 +175,7 @@ def test_parse_cdfepoch16():
     assert x == "1694-05-01 07:42:23.543218654"
     add_precision = x + "000"
     parsed = cdfepoch.parse(add_precision)
-    assert parsed[0] == approx(53467976543 + .543218654)
+    assert parsed[0] == approx(53467976543 + 0.543218654)
 
     assert cdfepoch.to_datetime(input_time) == datetime(1694, 5, 1, 7, 42, 23, 543219)
 
@@ -200,7 +199,7 @@ def test_findepochrange_cdfepoch():
     index = cdfepoch.findepochrange(time_array, starttime=test_start, endtime=test_end)
     # Test that the test_start is less than the first index, but more than one less
     assert time_array[index[0]] >= cdfepoch.compute(test_start)
-    assert time_array[index[0]-1] <= cdfepoch.compute(test_start)
+    assert time_array[index[0] - 1] <= cdfepoch.compute(test_start)
 
     assert time_array[index[-1]] <= cdfepoch.compute(test_end)
 
@@ -216,11 +215,11 @@ def test_findepochrange_cdftt2000():
     index = cdfepoch.findepochrange(time_array, starttime=test_start, endtime=test_end)
     # Test that the test_start is less than the first index, but more than one less
     assert time_array[index[0]] >= cdfepoch.compute(test_start)
-    assert time_array[index[0]-1] <= cdfepoch.compute(test_start)
+    assert time_array[index[0] - 1] <= cdfepoch.compute(test_start)
 
     assert time_array[index[-1]] <= cdfepoch.compute(test_end)
-    assert time_array[index[-1]+1] >= cdfepoch.compute(test_end)
+    assert time_array[index[-1] + 1] >= cdfepoch.compute(test_end)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__])
