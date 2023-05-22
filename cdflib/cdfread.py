@@ -331,7 +331,7 @@ class CDF:
             print('NAME: ' + name + ', NUMBER: ' + str(x) + ', SCOPE: ' + attrs[x][name])
         return attrs
 
-    def attget(self, attribute=None, entry=None, to_np=True):
+    def attget(self, attribute=None, entry=None):
         """
         Returns the value of the attribute at the entry number provided.
 
@@ -451,11 +451,11 @@ class CDF:
         if entry_num > adr_info[max_entry_string]:
             raise ValueError('The entry does not exist')
         return self._get_attdata(adr_info, entry_num, adr_info[num_entry_string],
-                                 adr_info[first_entry_string], to_np=to_np)
+                                 adr_info[first_entry_string])
 
     def varget(self, variable=None, epoch=None, starttime=None,
                endtime=None, startrec=0, endrec=None,
-               record_range_only=False, expand=False, to_np=True):
+               record_range_only=False, expand=False):
         """
         Returns the variable data.
 
@@ -534,7 +534,7 @@ class CDF:
 
         return self._read_vardata(vdr_info, epoch=epoch, starttime=starttime, endtime=endtime,
                                     startrec=startrec, endrec=endrec, record_range_only=record_range_only,
-                                    expand=expand, to_np=to_np)
+                                    expand=expand)
 
     def vdr_info(self, variable: Union[str, int]):
         if (isinstance(variable, int) and self._num_zvariable > 0 and
@@ -598,7 +598,7 @@ class CDF:
         return self.varget(variable=epoch, starttime=starttime,
                            endtime=endtime, record_range_only=True)
 
-    def globalattsget(self, expand=False, to_np=True):
+    def globalattsget(self, expand=False):
         """
         Gets all global attributes.
 
@@ -613,8 +613,6 @@ class CDF:
         Parameters
         ----------
         expand : bool, optional
-        to_np : bool, optional
-            If True, return a numpy array.
         """
         byte_loc = self._first_adr
         return_dict = {}
@@ -634,7 +632,7 @@ class CDF:
                 entries = {}
             aedr_byte_loc = adr_info['first_gr_entry']
             for _ in range(adr_info['num_gr_entry']):
-                aedr_info = self._read_aedr(aedr_byte_loc, to_np=to_np)
+                aedr_info = self._read_aedr(aedr_byte_loc)
                 entryData = aedr_info['entry']
                 if (expand is False):
 
@@ -684,7 +682,7 @@ class CDF:
 
         return return_dict
 
-    def varattsget(self, variable=None, expand=False, to_np=True):
+    def varattsget(self, variable=None, expand=False):
         """
         Gets all variable attributes.
 
@@ -702,8 +700,6 @@ class CDF:
         ----------
         variable :
         expand : bool, optional
-        to_np: bool, optional
-            If True, return a numpy array.
         """
         if (isinstance(variable, int) and self._num_zvariable > 0 and self._num_rvariable > 0):
             raise ValueError('This CDF has both r and z variables. Use variable name')
@@ -715,7 +711,7 @@ class CDF:
                     name, vdr_next = self._read_vdr_fast(position)
                     if name.strip().lower() == variable.strip().lower():
                         vdr_info = self._read_vdr(position)
-                        return self._read_varatts(vdr_info['variable_number'], zVar, expand, to_np=to_np)
+                        return self._read_varatts(vdr_info['variable_number'], zVar, expand)
                     position = vdr_next
                 position = self._first_rvariable
                 num_variables = self._num_rvariable
@@ -729,7 +725,7 @@ class CDF:
                 zVar = False
             if (variable < 0 or variable >= num_variable):
                 raise ValueError(f'No variable by this number: {variable}')
-            return self._read_varatts(variable, zVar, expand, to_np=to_np)
+            return self._read_varatts(variable, zVar, expand)
         else:
             raise ValueError('Please set variable keyword equal to '
                              'the name or number of an variable')
@@ -1108,7 +1104,7 @@ class CDF:
 
         return gdr_info
 
-    def _read_varatts(self, var_num, zVar, expand, to_np=True):
+    def _read_varatts(self, var_num, zVar, expand):
         byte_loc = self._first_adr
         return_dict = {}
         for z in range(0, self._num_att):
@@ -1128,7 +1124,7 @@ class CDF:
                 if (entryNum != var_num):
                     byte_loc = byte_next
                     continue
-                aedr_info = self._read_aedr(byte_loc, to_np=to_np)
+                aedr_info = self._read_aedr(byte_loc)
                 entryData = aedr_info['entry']
                 if (expand is False):
                     # This exists to get rid of extraneous numpy arrays
@@ -1303,13 +1299,13 @@ class CDF:
 
         return entry_num, next_aedr
 
-    def _read_aedr(self, byte_loc, to_np=True):
+    def _read_aedr(self, byte_loc):
         if self.cdfversion == 3:
-            return self._read_aedr3(byte_loc, to_np)
+            return self._read_aedr3(byte_loc)
         else:
-            return self._read_aedr2(byte_loc, to_np)
+            return self._read_aedr2(byte_loc)
 
-    def _read_aedr3(self, byte_loc, to_np=True):
+    def _read_aedr3(self, byte_loc):
         """
         Reads an Attribute Entry Descriptor Record at a specific byte location.
 
@@ -1340,13 +1336,7 @@ class CDF:
         # _ = int.from_bytes(aedr[44:48],'big', signed=True) #Nothing
 
         byte_stream = aedr[48:]
-        if to_np:
-            entry = self._read_data(byte_stream, data_type, 1, num_elements)
-        else:
-            if (data_type == 32):
-                entry = self._convert_data(byte_stream, data_type, 1, 2, num_elements)
-            else:
-                entry = self._convert_data(byte_stream, data_type, 1, 1, num_elements)
+        entry = self._read_data(byte_stream, data_type, 1, num_elements)
 
         return_dict = {}
         return_dict['entry'] = entry
@@ -1358,7 +1348,7 @@ class CDF:
 
         return return_dict
 
-    def _read_aedr2(self, byte_loc, to_np=True):
+    def _read_aedr2(self, byte_loc):
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(4), 'big')
         aedr = self._f.read(block_size - 4)
@@ -1372,13 +1362,8 @@ class CDF:
         # Length of string if string, otherwise its the number of numbers
         num_elements = int.from_bytes(aedr[20:24], 'big', signed=True)
         byte_stream = aedr[44:]
-        if to_np:
-            entry = self._read_data(byte_stream, data_type, 1, num_elements)
-        else:
-            if (data_type == 32):
-                entry = self._convert_data(byte_stream, data_type, 1, 2, num_elements)
-            else:
-                entry = self._convert_data(byte_stream, data_type, 1, 1, num_elements)
+        entry = self._read_data(byte_stream, data_type, 1, num_elements)
+
         return_dict = {}
         return_dict['entry'] = entry
         return_dict['data_type'] = data_type
@@ -1705,7 +1690,7 @@ class CDF:
                                                                vvr_offsets=vvr_offsets, vvr_start=vvr_start, vvr_end=vvr_end)
         return vvr_offsets, vvr_start, vvr_end
 
-    def _read_vvrs(self, vdr_dict, vvr_offs, vvr_start, vvr_end, startrec, endrec, to_np=True):
+    def _read_vvrs(self, vdr_dict, vvr_offs, vvr_start, vvr_end, startrec, endrec):
         """
         Reads in all VVRS that are pointed to in the VVR_OFFS array.
         Creates a large byte array of all values called "byte_stream".
@@ -1796,21 +1781,9 @@ class CDF:
             if (var_vary[x] == 0):
                 continue
             dimensions.append(var_sizes[x])
-        if to_np:
-            y = self._read_data(byte_stream, vdr_dict['data_type'],
-                                totalRecs, vdr_dict['num_elements'],
-                                dimensions)
-        else:
-            if (vdr_dict['data_type'] == 32):
-                y = self._convert_data(byte_stream, vdr_dict['data_type'],
-                                       totalRecs, self._num_values(vdr_dict) * 2,
-                                       vdr_dict['num_elements'])
-            else:
-                y = self._convert_data(byte_stream, vdr_dict['data_type'],
-                                       totalRecs, self._num_values(vdr_dict),
-                                       vdr_dict['num_elements'])
-
-        return y
+        return self._read_data(byte_stream, vdr_dict['data_type'],
+                            totalRecs, vdr_dict['num_elements'],
+                            dimensions)
 
     def _convert_option(self):
         """
@@ -2027,12 +2000,12 @@ class CDF:
                 values = values * vdr_dict['dim_sizes'][x]
         return values
 
-    def _get_attdata(self, adr_info, entry_num, num_entry, first_entry, to_np=True):
+    def _get_attdata(self, adr_info, entry_num, num_entry, first_entry):
         position = first_entry
         for _ in range(0, num_entry):
             got_entry_num, next_aedr = self._read_aedr_fast(position)
             if entry_num == got_entry_num:
-                aedr_info = self._read_aedr(position, to_np=to_np)
+                aedr_info = self._read_aedr(position)
                 return_dict = {}
                 return_dict['Item_Size'] = self._type_size(aedr_info['data_type'],
                                                            aedr_info['num_elements'])
@@ -2045,9 +2018,6 @@ class CDF:
                         return_dict['Num_Items'] = aedr_info['num_strings']
                         if (aedr_info['num_strings'] > 1):
                             return_dict['Data'] = aedr_info['entry'].split('\\N ')
-                if not to_np and (aedr_info['data_type'] == 32):
-                    return_dict['Data'] = complex(aedr_info['entry'][0],
-                                                  aedr_info['entry'][1])
                 return return_dict
             else:
                 position = next_aedr
@@ -2056,7 +2026,7 @@ class CDF:
 
     def _read_vardata(self, vdr_info, epoch=None, starttime=None, endtime=None,
                       startrec=0, endrec=None, record_range_only=False,
-                      expand=False, to_np=True):
+                      expand=False):
 
         # Error checking
         if startrec:
@@ -2097,7 +2067,7 @@ class CDF:
             endrec = 0
 
         data = self._read_vvrs(vdr_info, vvr_offsets, vvr_start, vvr_end,
-                               startrec, endrec, to_np=to_np)
+                               startrec, endrec)
         if record_range_only:
             return [startrec, endrec]
         if (expand):
