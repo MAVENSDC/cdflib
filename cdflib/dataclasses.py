@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import List, Optional
 
+import numpy as np
+
 
 @dataclass(kw_only=True)
 class CDRInfo:
@@ -25,3 +27,13 @@ class GDRInfo:
     rvariables_dim_sizes: List[int]
     eof: int
     leapsecond_updated: Optional[int] = None
+
+
+@dataclass
+class AEDR:
+    entry: np.ndarray
+    data_type: int
+    num_elements: int
+    next_aedr: int
+    entry_num: int
+    num_strings: Optional[int] = None

@@ -12,7 +12,7 @@ from typing import Dict, List, Tuple, Union
 import numpy as np
 
 import cdflib.epochs as epoch
-from cdflib.dataclasses import CDRInfo, GDRInfo
+from cdflib.dataclasses import AEDR, CDRInfo, GDRInfo
 
 __all__ = ["CDF"]
 
@@ -594,7 +594,7 @@ class CDF:
             aedr_byte_loc = adr_info["first_gr_entry"]
             for _ in range(adr_info["num_gr_entry"]):
                 aedr_info = self._read_aedr(aedr_byte_loc)
-                entryData = aedr_info["entry"]
+                entryData = aedr_info.entry
                 # This exists to get rid of extraneous numpy arrays
                 if isinstance(entryData, np.ndarray):
                     if len(entryData) == 1:
@@ -1032,7 +1032,7 @@ class CDF:
                     byte_loc = byte_next
                     continue
                 aedr_info = self._read_aedr(byte_loc)
-                entryData = aedr_info["entry"]
+                entryData = aedr_info.entry
                 # This exists to get rid of extraneous numpy arrays
                 if isinstance(entryData, np.ndarray):
                     if len(entryData) == 1:
@@ -1179,13 +1179,13 @@ class CDF:
 
         return entry_num, next_aedr
 
-    def _read_aedr(self, byte_loc) -> Dict[str, Union[str, int]]:
+    def _read_aedr(self, byte_loc) -> AEDR:
         if self.cdfversion == 3:
             return self._read_aedr3(byte_loc)
         else:
             return self._read_aedr2(byte_loc)
 
-    def _read_aedr3(self, byte_loc) -> Dict[str, Union[str, int]]:
+    def _read_aedr3(self, byte_loc) -> AEDR:
         """
         Reads an Attribute Entry Descriptor Record at a specific byte location.
 
@@ -1218,17 +1218,9 @@ class CDF:
         byte_stream = aedr[48:]
         entry = self._read_data(byte_stream, data_type, 1, num_elements)
 
-        return_dict: Dict[str, Union[str, int]] = {}
-        return_dict["entry"] = entry
-        return_dict["data_type"] = data_type
-        return_dict["num_elements"] = num_elements
-        return_dict["num_strings"] = num_strings
-        return_dict["next_aedr"] = next_aedr
-        return_dict["entry_num"] = entry_num
+        return AEDR(entry, data_type, num_elements, next_aedr, entry_num, num_strings)
 
-        return return_dict
-
-    def _read_aedr2(self, byte_loc):
+    def _read_aedr2(self, byte_loc) -> AEDR:
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(4), "big")
         aedr = self._f.read(block_size - 4)
@@ -1244,14 +1236,7 @@ class CDF:
         byte_stream = aedr[44:]
         entry = self._read_data(byte_stream, data_type, 1, num_elements)
 
-        return_dict = {}
-        return_dict["entry"] = entry
-        return_dict["data_type"] = data_type
-        return_dict["num_elements"] = num_elements
-        # return_dict['num_strings'] = num_strings
-        return_dict["next_aedr"] = next_aedr
-        return_dict["entry_num"] = entry_num
-        return return_dict
+        return AEDR(entry, data_type, num_elements, next_aedr, entry_num)
 
     def _read_vdr(self, byte_loc):
         """
@@ -1872,18 +1857,17 @@ class CDF:
             if entry_num == got_entry_num:
                 aedr_info = self._read_aedr(position)
                 return_dict = {}
-                return_dict["Item_Size"] = self._type_size(aedr_info["data_type"], aedr_info["num_elements"])
-                return_dict["Data_Type"] = self._datatype_token(aedr_info["data_type"])
+                return_dict["Item_Size"] = self._type_size(aedr_info.data_type, aedr_info.num_elements)
+                return_dict["Data_Type"] = self._datatype_token(aedr_info.data_type)
 
-                return_dict["Num_Items"] = aedr_info["num_elements"]
-                return_dict["Data"] = aedr_info["entry"]
-                if aedr_info["data_type"] == 51 or aedr_info["data_type"] == 52:
-                    if "num_strings" in aedr_info:
-                        num_strings = int(aedr_info["num_strings"])
+                return_dict["Num_Items"] = aedr_info.num_elements
+                return_dict["Data"] = aedr_info.entry
+                if aedr_info.data_type == 51 or aedr_info.data_type == 52:
+                    if aedr_info.num_strings is not None:
+                        num_strings = aedr_info.num_strings
                         return_dict["Num_Items"] = num_strings
                         if num_strings > 1:
-                            entry = str(aedr_info["entry"])
-                            return_dict["Data"] = entry.split("\\N ")
+                            return_dict["Data"] = aedr_info.entry.split("\\N ")
                 return return_dict
             else:
                 position = next_aedr
