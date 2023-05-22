@@ -18,9 +18,9 @@ __all__ = ['CDF']
 
 class CDF:
     """
-    Read a CDF file into the CDF object. This object contains methods to load 
+    Read a CDF file into the CDF object. This object contains methods to load
     the cdf file information, variable names, and values.
-    
+
     Example
     -------
     >>> import cdflib

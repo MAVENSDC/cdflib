@@ -37,7 +37,7 @@ What can cdflib do?
 
 .. note::
     While we try to simplify things in this documentation, the full API description of each module can be found in the ``API Reference`` section
-    
+
 
 .. toctree::
    :maxdepth: 1

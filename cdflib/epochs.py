@@ -17,9 +17,9 @@ class CDFepoch(object):
     Convert between CDF-based epochs, np.datetime64, and Unix time.
 
     There are three (3) epoch data types in CDF:
-        1. CDF_EPOCH is milliseconds since Year 0 represented as a 
+        1. CDF_EPOCH is milliseconds since Year 0 represented as a
         single double (float in Python),
-        2. CDF_EPOCH16 is picoseconds since Year 0 represented as 
+        2. CDF_EPOCH16 is picoseconds since Year 0 represented as
         2-doubles (complex in Python), and
         3. CDF_TIME_TT2000 (TT2000 as short) is nanoseconds since J2000 with
         leap seconds, represented by an 8-byte integer (int in Python).
@@ -90,7 +90,7 @@ class CDFepoch(object):
     @staticmethod
     def encode(epochs, iso_8601: bool = True):  # @NoSelf
         """
-        Converts one or more epochs into UTC strings. The input epoch 
+        Converts one or more epochs into UTC strings. The input epoch
         format is deduced from the argument type.
 
         Parameters
@@ -105,8 +105,8 @@ class CDFepoch(object):
             (in numpy, a np.int64 or a np.ndarray of np.int64)
 
         iso_8601: bool
-                The return time format. If ISO 8601 is True, the format is, 
-                for example, 2008-02-02T06:08:10.10.012014016, otherwise 
+                The return time format. If ISO 8601 is True, the format is,
+                for example, 2008-02-02T06:08:10.10.012014016, otherwise
                 the format is 02-Feb-2008 06:08:10.012.014.016.
 
         """
@@ -174,8 +174,8 @@ class CDFepoch(object):
     def to_datetime(cls, cdf_time: Union[int, Sequence[int]],
                     to_np: bool = False) -> List[datetime.datetime]:
         """
-        Converts CDF epoch argument to np.numpy.datetime64. This method 
-        converts a scalar, or array-like. Precision is only kept to the 
+        Converts CDF epoch argument to np.numpy.datetime64. This method
+        converts a scalar, or array-like. Precision is only kept to the
         nearest microsecond.
 
         If to_np is True, then the values will be returned in a numpy array.
@@ -189,8 +189,8 @@ class CDFepoch(object):
     @staticmethod
     def unixtime(cdf_time, to_np: bool = False):  # @NoSelf
         """
-        Converts CDF epoch argument into seconds after 1970-01-01. This method 
-        converts a scalar, or array-like. Precision is only kept to the 
+        Converts CDF epoch argument into seconds after 1970-01-01. This method
+        converts a scalar, or array-like. Precision is only kept to the
         nearest microsecond.
 
         If to_np is True, then the values will be returned in a numpy array.
@@ -1120,7 +1120,7 @@ class CDFepoch(object):
 
     @staticmethod
     def breakdown_epoch16(epochs, to_np: bool = False):
-        """ 
+        """
         Calculate date and time from epochs
 
         Parameters
