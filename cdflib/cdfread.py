@@ -1,3 +1,4 @@
+import datetime
 import gzip
 import hashlib
 import io
@@ -7,7 +8,7 @@ import sys
 import tempfile
 import urllib.request
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -86,7 +87,7 @@ class CDF:
 
         self.string_encoding = string_encoding
 
-        self._f = self._file_or_url_or_s3_handler(self.file, self.ftype, s3_read_method)
+        self._f = self._file_or_url_or_s3_handler(str(self.file), self.ftype, s3_read_method)
         magic_number = self._f.read(4).hex()
         compressed_bool = self._f.read(4).hex()
 
@@ -226,7 +227,7 @@ class CDF:
             mycdf_info["LeapSecondUpdated"] = self._leap_second_updated
         return mycdf_info
 
-    def varinq(self, variable) -> Dict[str, Any]:
+    def varinq(self, variable: str) -> Dict[str, Any]:
         """
         Returns a dictionary that shows the basic variable information.
 
@@ -284,7 +285,7 @@ class CDF:
 
         return var
 
-    def attinq(self, attribute=None) -> ADRInfo:
+    def attinq(self, attribute: Union[str, int]) -> ADRInfo:
         """
         Get attribute information.
 
@@ -330,7 +331,7 @@ class CDF:
             print("NAME: " + name + ", NUMBER: " + str(x) + ", SCOPE: " + attrs[x][name])
         return attrs
 
-    def attget(self, attribute=None, entry=None) -> AttData:
+    def attget(self, attribute: Union[str, int], entry: Optional[Union[str, int]] = None) -> AttData:
         """
         Returns the value of the attribute at the entry number provided.
 
@@ -339,7 +340,7 @@ class CDF:
 
         Parameters
         ----------
-        attribute : str, int, optional
+        attribute : str, int
             Attribute name or number to get.
         entry : int, optional
 
@@ -435,7 +436,14 @@ class CDF:
         return self._get_attdata(adr_info, entry_num, getattr(adr_info, num_entry_string), getattr(adr_info, first_entry_string))
 
     def varget(
-        self, variable=None, epoch=None, starttime=None, endtime=None, startrec=0, endrec=None, record_range_only=False
+        self,
+        variable: Optional[str] = None,
+        epoch: Optional[str] = None,
+        starttime: Optional[datetime.datetime] = None,
+        endtime: Optional[datetime.datetime] = None,
+        startrec: int = 0,
+        endrec: Optional[int] = None,
+        record_range_only: bool = False,
     ) -> VDR:
         """
         Returns the variable data.
@@ -636,7 +644,7 @@ class CDF:
         else:
             raise ValueError("Please set variable keyword equal to " "the name or number of an variable")
 
-    def _uncompress_rle(self, data) -> bytearray:
+    def _uncompress_rle(self, data: np.ndarray) -> bytearray:
         result = bytearray()
         index = 0
         while index < len(data):
@@ -1162,13 +1170,13 @@ class CDF:
 
         return entry_num, next_aedr
 
-    def _read_aedr(self, byte_loc) -> AEDR:
+    def _read_aedr(self, byte_loc: int) -> AEDR:
         if self.cdfversion == 3:
             return self._read_aedr3(byte_loc)
         else:
             return self._read_aedr2(byte_loc)
 
-    def _read_aedr3(self, byte_loc) -> AEDR:
+    def _read_aedr3(self, byte_loc: int) -> AEDR:
         """
         Reads an Attribute Entry Descriptor Record at a specific byte location.
 
@@ -1203,7 +1211,7 @@ class CDF:
 
         return AEDR(entry, data_type, num_elements, next_aedr, entry_num, num_strings)
 
-    def _read_aedr2(self, byte_loc) -> AEDR:
+    def _read_aedr2(self, byte_loc: int) -> AEDR:
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(4), "big")
         aedr = self._f.read(block_size - 4)
@@ -1533,7 +1541,9 @@ class CDF:
             )
         return vvr_offsets, vvr_start, vvr_end
 
-    def _read_vvrs(self, vdr: VDR, vvr_offs, vvr_start, vvr_end, startrec, endrec):
+    def _read_vvrs(
+        self, vdr: VDR, vvr_offs: List[int], vvr_start: List[int], vvr_end: List[int], startrec: int, endrec: int
+    ) -> np.ndarray:
         """
         Reads in all VVRS that are pointed to in the VVR_OFFS array.
         Creates a large byte array of all values called "byte_stream".
@@ -1717,7 +1727,9 @@ class CDF:
         else:
             raise TypeError("Unknown data type....")
 
-    def _read_data(self, byte_stream, data_type: int, num_recs: int, num_elems: int, dimensions=None) -> np.ndarray:
+    def _read_data(
+        self, byte_stream: bytes, data_type: int, num_recs: int, num_elems: int, dimensions: Optional[List[int]] = None
+    ) -> np.ndarray:
         """
         This is the primary routine that converts streams of bytes into usable data.
 
@@ -1776,7 +1788,7 @@ class CDF:
                                 byte_stream[i : i + num_elems].decode(self.string_encoding, errors="ignore").replace("\x00", "")
                             )
                             onerec.append(string1)
-                        strings.append(onerec)
+                        strings.extend(onerec)
                 ret = np.array(strings).reshape((num_recs,) + tuple(dimensions))
                 if self._majority == "Column_major":
                     axes = [0] + list(range(len(dimensions), 0, -1))
@@ -1841,7 +1853,7 @@ class CDF:
                 values = values * vdr.dim_sizes[x]
         return values
 
-    def _get_attdata(self, adr_info, entry_num, num_entry, first_entry) -> AttData:
+    def _get_attdata(self, adr_info: ADRInfo, entry_num: int, num_entry: int, first_entry: int) -> AttData:
         position = first_entry
         for _ in range(0, num_entry):
             got_entry_num, next_aedr = self._read_aedr_fast(position)
@@ -1865,8 +1877,15 @@ class CDF:
         raise KeyError("The entry does not exist")
 
     def _read_vardata(
-        self, vdr_info: VDR, epoch=None, starttime=None, endtime=None, startrec=0, endrec=None, record_range_only=False
-    ):
+        self,
+        vdr_info: VDR,
+        epoch: Optional[str] = None,
+        starttime: Optional[datetime.datetime] = None,
+        endtime: Optional[datetime.datetime] = None,
+        startrec: int = 0,
+        endrec: Optional[int] = None,
+        record_range_only: bool = False,
+    ) -> np.ndarray:
         # Error checking
         if startrec:
             if startrec < 0:
@@ -1909,7 +1928,9 @@ class CDF:
         else:
             return data[0]
 
-    def _findtimerecords(self, var_name, starttime, endtime, epoch=None) -> np.ndarray:
+    def _findtimerecords(
+        self, var_name: str, starttime: datetime.datetime, endtime: datetime.datetime, epoch: Optional[str] = None
+    ) -> np.ndarray:
         if epoch is not None:
             vdr_info = self.varinq(epoch)
             if vdr_info is None:
@@ -1940,7 +1961,9 @@ class CDF:
 
         return self._findrangerecords(vdr_info["Data_Type"], epochtimes, starttime, endtime)
 
-    def _findrangerecords(self, data_type: int, epochtimes, starttime, endtime) -> np.ndarray:
+    def _findrangerecords(
+        self, data_type: int, epochtimes: epoch.epochs_type, starttime: datetime.datetime, endtime: datetime.datetime
+    ) -> np.ndarray:
         if data_type == 31 or data_type == 32 or data_type == 33:
             # CDF_EPOCH or CDF_EPOCH16 or CDF_TIME_TT2000
             recs = epoch.CDFepoch.findepochrange(epochtimes, starttime, endtime)
@@ -2040,7 +2063,7 @@ class CDF:
         else:
             return data.tobytes()
 
-    def _read_vvr_block(self, offset: int):
+    def _read_vvr_block(self, offset: int) -> bytes:
         """
         Returns a VVR or decompressed CVVR block
         """
@@ -2056,8 +2079,10 @@ class CDF:
         elif section_type == 7:
             # a VVR
             return block[4:]
+        else:
+            raise RuntimeError("Unexpected section type")
 
-    def _read_vvr_block2(self, offset: int):
+    def _read_vvr_block2(self, offset: int) -> bytes:
         """
         Returns a VVR or decompressed CVVR block
         """
@@ -2073,9 +2098,11 @@ class CDF:
         elif section_type == 7:
             # a VVR
             return block[4:]
+        else:
+            raise RuntimeError("Unexpected section type")
 
     @staticmethod
-    def _find_block(starts, ends, cur_block, rec_num) -> Tuple[int, int]:
+    def _find_block(starts: List[int], ends: List[int], cur_block: int, rec_num: int) -> Tuple[int, int]:
         """
         Finds the block that rec_num is in if it is found. Otherwise it returns -1.
         It also returns the block that has the physical data either at or
@@ -2109,7 +2136,9 @@ class CDF:
             value_len = self._type_size(data_type, num_elems)
             return list(struct.unpack_from(form, data[0 : num_recs * num_values * value_len]))
 
-    def _file_or_url_or_s3_handler(self, filename, filetype, s3_read_method) -> Union["S3object", io.BufferedReader, io.BytesIO]:
+    def _file_or_url_or_s3_handler(
+        self, filename: str, filetype: str, s3_read_method: int
+    ) -> Union["S3object", io.BufferedReader, io.BytesIO]:
         bdata: Union["S3object", io.BufferedReader, io.BytesIO]
         if filetype == "url":
             # print("debug, opening url")
@@ -2143,7 +2172,7 @@ class CDF:
 
         return bdata
 
-    def _unstream_file(self, f) -> None:
+    def _unstream_file(self, f) -> None: # type: ignore
         """
         Typically for S3 or URL, writes the current file stream
         into a file in the temporary directory.
@@ -2160,7 +2189,7 @@ class CDF:
         self.ftype = "file"
 
 
-def s3_fetchall(obj) -> io.BytesIO:
+def s3_fetchall(obj) -> io.BytesIO:  # type: ignore
     rawdata = obj["Body"].read()
     bdata = io.BytesIO(rawdata)
     return bdata

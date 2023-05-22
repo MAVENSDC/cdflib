@@ -4,11 +4,13 @@ import math
 import numbers
 import os
 import re
-from typing import List, Optional, Sequence, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
 LEAPSEC_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), "CDFLeapSeconds.txt")
+
+epochs_type = Union[np.ndarray, List[float], List[int], List[complex], Tuple[float, ...], Tuple[int, ...], Tuple[complex, ...]]
 
 
 class CDFepoch(object):
@@ -272,7 +274,7 @@ class CDFepoch(object):
             raise TypeError("Unknown input")
 
     @staticmethod
-    def findepochrange(epochs, starttime=None, endtime=None) -> np.ndarray:
+    def findepochrange(epochs: epochs_type, starttime=None, endtime=None) -> np.ndarray:
         """
         Finds the record range within the start and end time from values
         of a CDF epoch data type. It returns a list of record numbers.
