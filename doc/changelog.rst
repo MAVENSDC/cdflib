@@ -27,3 +27,7 @@ Breaking changes
 - Removed ``cdflib.cdfepochs.CDFepoch.getLeapSecondLastUpdated``.
   Directly inspect `CDFepoch.LTS` instead to get the last date at which a
   leapsecond was added.
+
+Bugfixes
+--------
+- ``"Majority"`` is now correctly read from the CDF spec if present.
