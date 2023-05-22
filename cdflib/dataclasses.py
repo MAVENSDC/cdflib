@@ -77,6 +77,20 @@ class VDR:
 
 @dataclass
 class AttData:
+    """
+    Attribute data.
+
+    Attributes
+    ----------
+    Item_size : int
+        Number of bytes for each entry value.
+    Data_Type : int
+        CDF data type.
+    Num_Items : int
+        Number of values extracted.
+    Data : numpy.ndarray
+        Data as a scalar value, a numpy array or a string.
+    """
     Item_Size: int
     Data_Type: int
     Num_Items: int
