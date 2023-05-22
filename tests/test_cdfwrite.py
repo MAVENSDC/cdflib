@@ -10,7 +10,7 @@ R = Path(__file__).parent
 fnbasic = "testing.cdf"
 
 
-def cdf_create(fn: Path, spec: dict):
+def cdf_create(fn: Path, spec):
     return cdfwrite.CDF(fn, cdf_spec=spec)
 
 

@@ -582,7 +582,7 @@ class CDF:
         returned.
         """
         byte_loc = self._first_adr
-        return_dict: Dict[str, List] = {}
+        return_dict: Dict[str, List[Union[str, int]]] = {}
         for _ in range(self._num_att):
             adr_info = self._read_adr(byte_loc)
             if adr_info["scope"] != 1:
@@ -603,11 +603,7 @@ class CDF:
 
                 entries.append(entryData)
 
-            if len(entries) != 0:
-                if len(entries) == 1:
-                    return_dict[adr_info["name"]] = entries[0]
-                else:
-                    return_dict[adr_info["name"]] = entries
+            return_dict[adr_info["name"]] = entries
             byte_loc = adr_info["next_adr_location"]
 
         return return_dict
@@ -1193,13 +1189,13 @@ class CDF:
 
         return entry_num, next_aedr
 
-    def _read_aedr(self, byte_loc):
+    def _read_aedr(self, byte_loc) -> Dict[str, Union[str, int]]:
         if self.cdfversion == 3:
             return self._read_aedr3(byte_loc)
         else:
             return self._read_aedr2(byte_loc)
 
-    def _read_aedr3(self, byte_loc):
+    def _read_aedr3(self, byte_loc) -> Dict[str, Union[str, int]]:
         """
         Reads an Attribute Entry Descriptor Record at a specific byte location.
 
@@ -1232,7 +1228,7 @@ class CDF:
         byte_stream = aedr[48:]
         entry = self._read_data(byte_stream, data_type, 1, num_elements)
 
-        return_dict = {}
+        return_dict: Dict[str, Union[str, int]] = {}
         return_dict["entry"] = entry
         return_dict["data_type"] = data_type
         return_dict["num_elements"] = num_elements
@@ -1893,9 +1889,11 @@ class CDF:
                 return_dict["Data"] = aedr_info["entry"]
                 if aedr_info["data_type"] == 51 or aedr_info["data_type"] == 52:
                     if "num_strings" in aedr_info:
-                        return_dict["Num_Items"] = aedr_info["num_strings"]
-                        if aedr_info["num_strings"] > 1:
-                            return_dict["Data"] = aedr_info["entry"].split("\\N ")
+                        num_strings = int(aedr_info["num_strings"])
+                        return_dict["Num_Items"] = num_strings
+                        if num_strings > 1:
+                            entry = str(aedr_info["entry"])
+                            return_dict["Data"] = entry.split("\\N ")
                 return return_dict
             else:
                 position = next_aedr

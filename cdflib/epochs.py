@@ -81,7 +81,7 @@ class CDFepoch(object):
 
     NDAT = len(LTS)
 
-    NST: Optional[list] = None
+    NST: Optional[List[int]] = None
     currentDay = -1
     currentJDay = -1
     currentLeapSeconds = -1
@@ -868,8 +868,7 @@ class CDFepoch(object):
         return 367 * y - a1 - a2 + a3 + d + 1721029
 
     @staticmethod
-    def compute_epoch16(datetimes: Union[List, List[List]], to_np: bool = False):
-        new_dates: List[list] = []
+    def compute_epoch16(datetimes, to_np: bool = False):
         if not isinstance(datetimes[0], list):
             new_dates = [datetimes]
         else:
@@ -1358,7 +1357,7 @@ class CDFepoch(object):
         return encoded
 
     @staticmethod
-    def compute_epoch(dates: Union[list, tuple], to_np: bool = False):
+    def compute_epoch(dates, to_np: bool = False):
         # TODOL Add docstring. What is the output format?
 
         if not isinstance(dates, list) and not isinstance(dates, tuple):
