@@ -7,11 +7,12 @@ import sys
 import tempfile
 import urllib.request
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 
 import cdflib.epochs as epoch
+from cdflib.dataclasses import CDRInfo, GDRInfo
 
 __all__ = ["CDF"]
 
@@ -121,37 +122,35 @@ class CDF:
             cdr_info, foffs = self._read_cdr2(8)
             gdr_info = self._read_gdr2(foffs)
 
-        if cdr_info["md5"] and validate:
+        if cdr_info.md5 and validate:
             if not self._md5_validation():
                 raise OSError("This file fails the md5 checksum.")
 
-        if not cdr_info["format"]:
+        if not cdr_info.format_:
             raise OSError("This package does not support multi-format CDF")
 
-        if cdr_info["encoding"] in (3, 14, 15):
-            raise OSError(
-                "This package does not support CDFs with this " + self._encoding_token(cdr_info["encoding"]) + " encoding"
-            )
+        if cdr_info.encoding in (3, 14, 15):
+            raise OSError("This package does not support CDFs with this " + self._encoding_token(cdr_info.encoding) + " encoding")
 
         # SET GLOBAL VARIABLES
-        self._post25 = cdr_info["post25"]
-        self._version = cdr_info["version"]
-        self._encoding = cdr_info["encoding"]
-        self._majority = self._major_token(cdr_info["majority"])
-        self._copyright = cdr_info["copyright"]
-        self._md5 = cdr_info["md5"]
-        self._first_zvariable = gdr_info["first_zvariable"]
-        self._first_rvariable = gdr_info["first_rvariable"]
-        self._first_adr = gdr_info["first_adr"]
-        self._num_zvariable = gdr_info["num_zvariables"]
-        self._num_rvariable = gdr_info["num_rvariables"]
-        self._rvariables_num_dims = gdr_info["rvariables_num_dims"]
-        self._rvariables_dim_sizes = gdr_info["rvariables_dim_sizes"]
-        self._num_att = gdr_info["num_attributes"]
-        self._num_rdim = gdr_info["rvariables_num_dims"]
-        self._rdim_sizes = gdr_info["rvariables_dim_sizes"]
+        self._post25 = cdr_info.post25
+        self._version = cdr_info.version
+        self._encoding = cdr_info.encoding
+        self._majority = self._major_token(cdr_info.majority)
+        self._copyright = cdr_info.copyright_
+        self._md5 = cdr_info.md5
+        self._first_zvariable = gdr_info.first_zvariable
+        self._first_rvariable = gdr_info.first_rvariable
+        self._first_adr = gdr_info.first_adr
+        self._num_zvariable = gdr_info.num_zvariables
+        self._num_rvariable = gdr_info.num_rvariables
+        self._rvariables_num_dims = gdr_info.rvariables_num_dims
+        self._rvariables_dim_sizes = gdr_info.rvariables_dim_sizes
+        self._num_att = gdr_info.num_attributes
+        self._num_rdim = gdr_info.rvariables_num_dims
+        self._rdim_sizes = gdr_info.rvariables_dim_sizes
         if self.cdfversion == 3:
-            self._leap_second_updated = gdr_info["leapsecond_updated"]
+            self._leap_second_updated = gdr_info.leapsecond_updated
 
         if self.compressed_file is not None:
             self.compressed_file = None
@@ -864,7 +863,7 @@ class CDF:
             position = adr_info["next_adr_location"]
         return attrs
 
-    def _read_cdr(self, byte_loc: int):
+    def _read_cdr(self, byte_loc: int) -> Tuple[CDRInfo, int]:
         """
         Read a CDF descriptor record (CDR).
         """
@@ -904,21 +903,19 @@ class CDF:
         cdfcopyright = cdr[48:].decode(self.string_encoding)
         cdfcopyright = cdfcopyright.replace("\x00", "")
 
-        cdr_info: Dict[str, Union[str, int]] = {}
-        cdr_info["encoding"] = encoding
-        cdr_info["copyright"] = cdfcopyright
-        cdr_info["version"] = str(version) + "." + str(release) + "." + str(increment)
-        if row_majority:
-            cdr_info["majority"] = 1
-        else:
-            cdr_info["majority"] = 2
-        cdr_info["format"] = single_format
-        cdr_info["md5"] = md5
-        cdr_info["post25"] = True
+        cdr_info = CDRInfo(
+            encoding=encoding,
+            copyright_=cdfcopyright,
+            version=str(version) + "." + str(release) + "." + str(increment),
+            majority=1 if row_majority else 2,
+            format_=single_format,
+            md5=md5,
+            post25=True,
+        )
 
         return cdr_info, foffs
 
-    def _read_cdr2(self, byte_loc):
+    def _read_cdr2(self, byte_loc: int) -> Tuple[CDRInfo, int]:
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(4), "big")
         cdr = self._f.read(block_size - 4)
@@ -937,24 +934,19 @@ class CDF:
         cdfcopyright = cdr[44:].decode(self.string_encoding)
         cdfcopyright = cdfcopyright.replace("\x00", "")
 
-        cdr_info: Dict[str, Union[int, str]] = {}
-        cdr_info["encoding"] = encoding
-        cdr_info["copyright"] = cdfcopyright
-        cdr_info["version"] = str(version) + "." + str(release) + "." + str(increment)
-        if row_majority:
-            cdr_info["majority"] = 1
-        else:
-            cdr_info["majority"] = 2
-        cdr_info["format"] = single_format
-        cdr_info["md5"] = md5
-        if version == 2 and release >= 5:
-            cdr_info["post25"] = True
-        else:
-            cdr_info["post25"] = False
+        cdr_info = CDRInfo(
+            encoding=encoding,
+            copyright_=cdfcopyright,
+            version=str(version) + "." + str(release) + "." + str(increment),
+            majority=1 if row_majority else 2,
+            format_=single_format,
+            md5=md5,
+            post25=version == 2 and release >= 5,
+        )
 
         return cdr_info, foffs
 
-    def _read_gdr(self, byte_loc):
+    def _read_gdr(self, byte_loc: int) -> GDRInfo:
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(8), "big")  # Block Size
         gdr = self._f.read(block_size - 8)
@@ -976,21 +968,20 @@ class CDF:
             ioff = 76 + x * 4
             rdim_sizes.append(int.from_bytes(gdr[ioff : ioff + 4], "big", signed=True))
 
-        gdr_info: Dict[str, Union[int, List[int]]] = {}
-        gdr_info["first_zvariable"] = first_zvariable
-        gdr_info["first_rvariable"] = first_rvariable
-        gdr_info["first_adr"] = first_adr
-        gdr_info["num_zvariables"] = num_zvariable
-        gdr_info["num_rvariables"] = num_rvariable
-        gdr_info["num_attributes"] = num_att
-        gdr_info["rvariables_num_dims"] = num_rdim
-        gdr_info["rvariables_dim_sizes"] = rdim_sizes
-        gdr_info["eof"] = eof
-        gdr_info["leapsecond_updated"] = leapSecondlastUpdated
+        return GDRInfo(
+            first_zvariable=first_zvariable,
+            first_rvariable=first_rvariable,
+            first_adr=first_adr,
+            num_zvariables=num_zvariable,
+            num_rvariables=num_rvariable,
+            num_attributes=num_att,
+            rvariables_num_dims=num_rdim,
+            rvariables_dim_sizes=rdim_sizes,
+            eof=eof,
+            leapsecond_updated=leapSecondlastUpdated,
+        )
 
-        return gdr_info
-
-    def _read_gdr2(self, byte_loc):
+    def _read_gdr2(self, byte_loc: int) -> GDRInfo:
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(4), "big")  # Block Size
         gdr = self._f.read(block_size - 4)
@@ -1008,18 +999,17 @@ class CDF:
             ioff = 56 + x * 4
             rdim_sizes.append(int.from_bytes(gdr[ioff : ioff + 4], "big", signed=True))
 
-        gdr_info: Dict[str, Union[int, List[int]]] = {}
-        gdr_info["first_zvariable"] = first_zvariable
-        gdr_info["first_rvariable"] = first_rvariable
-        gdr_info["first_adr"] = first_adr
-        gdr_info["num_zvariables"] = num_zvariable
-        gdr_info["num_rvariables"] = num_rvariable
-        gdr_info["num_attributes"] = num_att
-        gdr_info["rvariables_num_dims"] = num_rdim
-        gdr_info["rvariables_dim_sizes"] = rdim_sizes
-        gdr_info["eof"] = eof
-
-        return gdr_info
+        return GDRInfo(
+            first_zvariable=first_zvariable,
+            first_rvariable=first_rvariable,
+            first_adr=first_adr,
+            num_zvariables=num_zvariable,
+            num_rvariables=num_rvariable,
+            num_attributes=num_att,
+            rvariables_num_dims=num_rdim,
+            rvariables_dim_sizes=rdim_sizes,
+            eof=eof,
+        )
 
     def _read_varatts(self, var_num, zVar):
         byte_loc = self._first_adr
