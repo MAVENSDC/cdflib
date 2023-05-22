@@ -8,6 +8,7 @@ This Python code only creates V3 CDFs.
 import binascii
 import gzip
 import hashlib
+import io
 import logging
 import math
 import numbers
@@ -819,7 +820,7 @@ class CDF:
                     if maxRec < varMaxRec:
                         self._update_offset_value(f, self.gdr_head + 52, 4, varMaxRec)
 
-    def _write_var_attrs(self, f, varNum: int, var_attrs, zVar: bool) -> None:
+    def _write_var_attrs(self, f: io.BufferedRandom, varNum: int, var_attrs, zVar: bool) -> None:
         """
         Writes ADRs and AEDRs for variables
 
@@ -1999,7 +2000,7 @@ class CDF:
 
         return byte_loc
 
-    def _write_ccr(self, f, g, level: int):
+    def _write_ccr(self, f, g, level: int) -> None:
         """
         Write a CCR to file "g" from file "f" with level "level".
         Currently, only handles gzip compression.
