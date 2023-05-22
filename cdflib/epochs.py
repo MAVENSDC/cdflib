@@ -4,7 +4,7 @@ import math
 import numbers
 import os
 import re
-from typing import List, Sequence, Union
+from typing import List, Sequence, Union, Optional
 
 import numpy as np
 
@@ -81,7 +81,7 @@ class CDFepoch(object):
 
     NDAT = len(LTS)
 
-    NST = None
+    NST: Optional[list] = None
     currentDay = -1
     currentJDay = -1
     currentLeapSeconds = -1
