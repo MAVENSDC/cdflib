@@ -44,4 +44,5 @@ What can cdflib do?
    :caption: Contents:
 
    modules/index
+   changelog
    development
