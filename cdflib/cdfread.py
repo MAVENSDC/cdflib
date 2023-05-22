@@ -7,11 +7,12 @@ import sys
 import tempfile
 import urllib.request
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 
 import cdflib.epochs as epoch
+from cdflib.dataclasses import AEDR, VDR, CDRInfo, GDRInfo
 
 __all__ = ["CDF"]
 
@@ -121,37 +122,35 @@ class CDF:
             cdr_info, foffs = self._read_cdr2(8)
             gdr_info = self._read_gdr2(foffs)
 
-        if cdr_info["md5"] and validate:
+        if cdr_info.md5 and validate:
             if not self._md5_validation():
                 raise OSError("This file fails the md5 checksum.")
 
-        if not cdr_info["format"]:
+        if not cdr_info.format_:
             raise OSError("This package does not support multi-format CDF")
 
-        if cdr_info["encoding"] in (3, 14, 15):
-            raise OSError(
-                "This package does not support CDFs with this " + self._encoding_token(cdr_info["encoding"]) + " encoding"
-            )
+        if cdr_info.encoding in (3, 14, 15):
+            raise OSError("This package does not support CDFs with this " + self._encoding_token(cdr_info.encoding) + " encoding")
 
         # SET GLOBAL VARIABLES
-        self._post25 = cdr_info["post25"]
-        self._version = cdr_info["version"]
-        self._encoding = cdr_info["encoding"]
-        self._majority = self._major_token(cdr_info["majority"])
-        self._copyright = cdr_info["copyright"]
-        self._md5 = cdr_info["md5"]
-        self._first_zvariable = gdr_info["first_zvariable"]
-        self._first_rvariable = gdr_info["first_rvariable"]
-        self._first_adr = gdr_info["first_adr"]
-        self._num_zvariable = gdr_info["num_zvariables"]
-        self._num_rvariable = gdr_info["num_rvariables"]
-        self._rvariables_num_dims = gdr_info["rvariables_num_dims"]
-        self._rvariables_dim_sizes = gdr_info["rvariables_dim_sizes"]
-        self._num_att = gdr_info["num_attributes"]
-        self._num_rdim = gdr_info["rvariables_num_dims"]
-        self._rdim_sizes = gdr_info["rvariables_dim_sizes"]
+        self._post25 = cdr_info.post25
+        self._version = cdr_info.version
+        self._encoding = cdr_info.encoding
+        self._majority = self._major_token(cdr_info.majority)
+        self._copyright = cdr_info.copyright_
+        self._md5 = cdr_info.md5
+        self._first_zvariable = gdr_info.first_zvariable
+        self._first_rvariable = gdr_info.first_rvariable
+        self._first_adr = gdr_info.first_adr
+        self._num_zvariable = gdr_info.num_zvariables
+        self._num_rvariable = gdr_info.num_rvariables
+        self._rvariables_num_dims = gdr_info.rvariables_num_dims
+        self._rvariables_dim_sizes = gdr_info.rvariables_dim_sizes
+        self._num_att = gdr_info.num_attributes
+        self._num_rdim = gdr_info.rvariables_num_dims
+        self._rdim_sizes = gdr_info.rvariables_dim_sizes
         if self.cdfversion == 3:
-            self._leap_second_updated = gdr_info["leapsecond_updated"]
+            self._leap_second_updated = gdr_info.leapsecond_updated
 
         if self.compressed_file is not None:
             self.compressed_file = None
@@ -265,24 +264,24 @@ class CDF:
         """
         vdr_info = self.vdr_info(variable)
 
-        var = {}
-        var["Variable"] = vdr_info["name"]
-        var["Num"] = vdr_info["variable_number"]
-        var["Var_Type"] = self._variable_token(vdr_info["section_type"])
-        var["Data_Type"] = vdr_info["data_type"]
-        var["Data_Type_Description"] = self._datatype_token(vdr_info["data_type"])
-        var["Num_Elements"] = vdr_info["num_elements"]
-        var["Num_Dims"] = vdr_info["num_dims"]
-        var["Dim_Sizes"] = vdr_info["dim_sizes"]
-        var["Sparse"] = self._sparse_token(vdr_info["sparse"])
-        var["Last_Rec"] = vdr_info["max_records"]
-        var["Rec_Vary"] = vdr_info["record_vary"]
-        var["Dim_Vary"] = vdr_info["dim_vary"]
-        if "pad" in vdr_info:
-            var["Pad"] = vdr_info["pad"]
-        var["Compress"] = vdr_info["compression_level"]
-        if "blocking_factor" in vdr_info:
-            var["Block_Factor"] = vdr_info["blocking_factor"]
+        var: Dict[str, Any] = {}
+        var["Variable"] = vdr_info.name
+        var["Num"] = vdr_info.variable_number
+        var["Var_Type"] = self._variable_token(vdr_info.section_type)
+        var["Data_Type"] = vdr_info.data_type
+        var["Data_Type_Description"] = self._datatype_token(vdr_info.data_type)
+        var["Num_Elements"] = vdr_info.num_elements
+        var["Num_Dims"] = vdr_info.num_dims
+        var["Dim_Sizes"] = vdr_info.dim_sizes
+        var["Sparse"] = self._sparse_token(vdr_info.sparse)
+        var["Last_Rec"] = vdr_info.max_rec
+        var["Rec_Vary"] = vdr_info.record_vary
+        var["Dim_Vary"] = vdr_info.dim_vary
+        if vdr_info.pad is not None:
+            var["Pad"] = vdr_info.pad
+        var["Compress"] = vdr_info.compression_level
+        if vdr_info.blocking_factor is not None:
+            var["Block_Factor"] = vdr_info.blocking_factor
 
         return var
 
@@ -502,7 +501,7 @@ class CDF:
             raise ValueError("Can't specify both time and record range")
 
         vdr_info = self.vdr_info(variable)
-        if vdr_info["max_records"] < 0:
+        if vdr_info.max_rec < 0:
             raise ValueError(f"No records found for variable {variable}")
 
         return self._read_vardata(
@@ -515,7 +514,7 @@ class CDF:
             record_range_only=record_range_only,
         )
 
-    def vdr_info(self, variable: Union[str, int]):
+    def vdr_info(self, variable: Union[str, int]) -> VDR:
         if isinstance(variable, int) and self._num_zvariable > 0 and self._num_rvariable > 0:
             raise ValueError("This CDF has both r and z variables. " "Use variable name instead")
 
@@ -595,7 +594,7 @@ class CDF:
             aedr_byte_loc = adr_info["first_gr_entry"]
             for _ in range(adr_info["num_gr_entry"]):
                 aedr_info = self._read_aedr(aedr_byte_loc)
-                entryData = aedr_info["entry"]
+                entryData = aedr_info.entry
                 # This exists to get rid of extraneous numpy arrays
                 if isinstance(entryData, np.ndarray):
                     if len(entryData) == 1:
@@ -632,7 +631,7 @@ class CDF:
                     name, vdr_next = self._read_vdr_fast(position)
                     if name.strip().lower() == variable.strip().lower():
                         vdr_info = self._read_vdr(position)
-                        return self._read_varatts(vdr_info["variable_number"], zVar)
+                        return self._read_varatts(vdr_info.variable_number, zVar)
                     position = vdr_next
                 position = self._first_rvariable
                 num_variables = self._num_rvariable
@@ -864,7 +863,7 @@ class CDF:
             position = adr_info["next_adr_location"]
         return attrs
 
-    def _read_cdr(self, byte_loc: int):
+    def _read_cdr(self, byte_loc: int) -> Tuple[CDRInfo, int]:
         """
         Read a CDF descriptor record (CDR).
         """
@@ -904,21 +903,19 @@ class CDF:
         cdfcopyright = cdr[48:].decode(self.string_encoding)
         cdfcopyright = cdfcopyright.replace("\x00", "")
 
-        cdr_info: Dict[str, Union[str, int]] = {}
-        cdr_info["encoding"] = encoding
-        cdr_info["copyright"] = cdfcopyright
-        cdr_info["version"] = str(version) + "." + str(release) + "." + str(increment)
-        if row_majority:
-            cdr_info["majority"] = 1
-        else:
-            cdr_info["majority"] = 2
-        cdr_info["format"] = single_format
-        cdr_info["md5"] = md5
-        cdr_info["post25"] = True
+        cdr_info = CDRInfo(
+            encoding=encoding,
+            copyright_=cdfcopyright,
+            version=str(version) + "." + str(release) + "." + str(increment),
+            majority=1 if row_majority else 2,
+            format_=single_format,
+            md5=md5,
+            post25=True,
+        )
 
         return cdr_info, foffs
 
-    def _read_cdr2(self, byte_loc):
+    def _read_cdr2(self, byte_loc: int) -> Tuple[CDRInfo, int]:
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(4), "big")
         cdr = self._f.read(block_size - 4)
@@ -937,24 +934,19 @@ class CDF:
         cdfcopyright = cdr[44:].decode(self.string_encoding)
         cdfcopyright = cdfcopyright.replace("\x00", "")
 
-        cdr_info: Dict[str, Union[int, str]] = {}
-        cdr_info["encoding"] = encoding
-        cdr_info["copyright"] = cdfcopyright
-        cdr_info["version"] = str(version) + "." + str(release) + "." + str(increment)
-        if row_majority:
-            cdr_info["majority"] = 1
-        else:
-            cdr_info["majority"] = 2
-        cdr_info["format"] = single_format
-        cdr_info["md5"] = md5
-        if version == 2 and release >= 5:
-            cdr_info["post25"] = True
-        else:
-            cdr_info["post25"] = False
+        cdr_info = CDRInfo(
+            encoding=encoding,
+            copyright_=cdfcopyright,
+            version=str(version) + "." + str(release) + "." + str(increment),
+            majority=1 if row_majority else 2,
+            format_=single_format,
+            md5=md5,
+            post25=version == 2 and release >= 5,
+        )
 
         return cdr_info, foffs
 
-    def _read_gdr(self, byte_loc):
+    def _read_gdr(self, byte_loc: int) -> GDRInfo:
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(8), "big")  # Block Size
         gdr = self._f.read(block_size - 8)
@@ -976,21 +968,20 @@ class CDF:
             ioff = 76 + x * 4
             rdim_sizes.append(int.from_bytes(gdr[ioff : ioff + 4], "big", signed=True))
 
-        gdr_info: Dict[str, Union[int, List[int]]] = {}
-        gdr_info["first_zvariable"] = first_zvariable
-        gdr_info["first_rvariable"] = first_rvariable
-        gdr_info["first_adr"] = first_adr
-        gdr_info["num_zvariables"] = num_zvariable
-        gdr_info["num_rvariables"] = num_rvariable
-        gdr_info["num_attributes"] = num_att
-        gdr_info["rvariables_num_dims"] = num_rdim
-        gdr_info["rvariables_dim_sizes"] = rdim_sizes
-        gdr_info["eof"] = eof
-        gdr_info["leapsecond_updated"] = leapSecondlastUpdated
+        return GDRInfo(
+            first_zvariable=first_zvariable,
+            first_rvariable=first_rvariable,
+            first_adr=first_adr,
+            num_zvariables=num_zvariable,
+            num_rvariables=num_rvariable,
+            num_attributes=num_att,
+            rvariables_num_dims=num_rdim,
+            rvariables_dim_sizes=rdim_sizes,
+            eof=eof,
+            leapsecond_updated=leapSecondlastUpdated,
+        )
 
-        return gdr_info
-
-    def _read_gdr2(self, byte_loc):
+    def _read_gdr2(self, byte_loc: int) -> GDRInfo:
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(4), "big")  # Block Size
         gdr = self._f.read(block_size - 4)
@@ -1008,18 +999,17 @@ class CDF:
             ioff = 56 + x * 4
             rdim_sizes.append(int.from_bytes(gdr[ioff : ioff + 4], "big", signed=True))
 
-        gdr_info: Dict[str, Union[int, List[int]]] = {}
-        gdr_info["first_zvariable"] = first_zvariable
-        gdr_info["first_rvariable"] = first_rvariable
-        gdr_info["first_adr"] = first_adr
-        gdr_info["num_zvariables"] = num_zvariable
-        gdr_info["num_rvariables"] = num_rvariable
-        gdr_info["num_attributes"] = num_att
-        gdr_info["rvariables_num_dims"] = num_rdim
-        gdr_info["rvariables_dim_sizes"] = rdim_sizes
-        gdr_info["eof"] = eof
-
-        return gdr_info
+        return GDRInfo(
+            first_zvariable=first_zvariable,
+            first_rvariable=first_rvariable,
+            first_adr=first_adr,
+            num_zvariables=num_zvariable,
+            num_rvariables=num_rvariable,
+            num_attributes=num_att,
+            rvariables_num_dims=num_rdim,
+            rvariables_dim_sizes=rdim_sizes,
+            eof=eof,
+        )
 
     def _read_varatts(self, var_num, zVar):
         byte_loc = self._first_adr
@@ -1042,7 +1032,7 @@ class CDF:
                     byte_loc = byte_next
                     continue
                 aedr_info = self._read_aedr(byte_loc)
-                entryData = aedr_info["entry"]
+                entryData = aedr_info.entry
                 # This exists to get rid of extraneous numpy arrays
                 if isinstance(entryData, np.ndarray):
                     if len(entryData) == 1:
@@ -1189,13 +1179,13 @@ class CDF:
 
         return entry_num, next_aedr
 
-    def _read_aedr(self, byte_loc) -> Dict[str, Union[str, int]]:
+    def _read_aedr(self, byte_loc) -> AEDR:
         if self.cdfversion == 3:
             return self._read_aedr3(byte_loc)
         else:
             return self._read_aedr2(byte_loc)
 
-    def _read_aedr3(self, byte_loc) -> Dict[str, Union[str, int]]:
+    def _read_aedr3(self, byte_loc) -> AEDR:
         """
         Reads an Attribute Entry Descriptor Record at a specific byte location.
 
@@ -1228,17 +1218,9 @@ class CDF:
         byte_stream = aedr[48:]
         entry = self._read_data(byte_stream, data_type, 1, num_elements)
 
-        return_dict: Dict[str, Union[str, int]] = {}
-        return_dict["entry"] = entry
-        return_dict["data_type"] = data_type
-        return_dict["num_elements"] = num_elements
-        return_dict["num_strings"] = num_strings
-        return_dict["next_aedr"] = next_aedr
-        return_dict["entry_num"] = entry_num
+        return AEDR(entry, data_type, num_elements, next_aedr, entry_num, num_strings)
 
-        return return_dict
-
-    def _read_aedr2(self, byte_loc):
+    def _read_aedr2(self, byte_loc) -> AEDR:
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(4), "big")
         aedr = self._f.read(block_size - 4)
@@ -1254,16 +1236,9 @@ class CDF:
         byte_stream = aedr[44:]
         entry = self._read_data(byte_stream, data_type, 1, num_elements)
 
-        return_dict = {}
-        return_dict["entry"] = entry
-        return_dict["data_type"] = data_type
-        return_dict["num_elements"] = num_elements
-        # return_dict['num_strings'] = num_strings
-        return_dict["next_aedr"] = next_aedr
-        return_dict["entry_num"] = entry_num
-        return return_dict
+        return AEDR(entry, data_type, num_elements, next_aedr, entry_num)
 
-    def _read_vdr(self, byte_loc):
+    def _read_vdr(self, byte_loc: int) -> VDR:
         """
         Read a variable descriptor record (VDR).
         """
@@ -1272,7 +1247,7 @@ class CDF:
         else:
             return self._read_vdr2(byte_loc)
 
-    def _read_vdr3(self, byte_loc):
+    def _read_vdr3(self, byte_loc: int) -> VDR:
         self._f.seek(byte_loc, 0)
         block_size = int.from_bytes(self._f.read(8), "big")
         vdr = self._f.read(block_size - 8)
@@ -1336,37 +1311,38 @@ class CDF:
         if pad_bool:
             byte_stream = vdr[coff:]
             pad = self._read_data(byte_stream, data_type, 1, num_elements)
-
-        return_dict: Dict[str, Union[str, int, List[int]]] = {}
-        return_dict["data_type"] = data_type
-        return_dict["section_type"] = section_type
-        return_dict["next_vdr_location"] = next_vdr
-        return_dict["variable_number"] = var_num
-        return_dict["head_vxr"] = head_vxr
-        return_dict["last_vxr"] = last_vxr
-        return_dict["max_records"] = max_rec
-        return_dict["name"] = name
-        return_dict["num_dims"] = num_dims
-        if section_type == 8:
-            return_dict["dim_sizes"] = zdim_sizes
         else:
-            return_dict["dim_sizes"] = dim_sizes
-        if pad_bool:
-            return_dict["pad"] = pad
-        return_dict["compression_bool"] = compression_bool
+            pad = None
+
+        if section_type == 8:
+            dim_sizes = zdim_sizes
         if compression_bool:
             ctype, cparm = self._read_cpr(CPRorSPRoffset)
-            return_dict["compression_level"] = cparm
+            compression_level = cparm
         else:
-            return_dict["compression_level"] = 0
-        return_dict["blocking_factor"] = blocking_factor
-        return_dict["dim_vary"] = dim_varys
-        return_dict["record_vary"] = record_variance_bool
-        return_dict["num_elements"] = num_elements
-        return_dict["sparse"] = sparse
-        return return_dict
+            compression_level = 0
+        return VDR(
+            data_type=data_type,
+            section_type=section_type,
+            next_vdr_location=next_vdr,
+            variable_number=var_num,
+            head_vxr=head_vxr,
+            last_vxr=last_vxr,
+            max_rec=max_rec,
+            name=name,
+            num_dims=num_dims,
+            dim_sizes=dim_sizes,
+            compression_bool=compression_bool,
+            compression_level=compression_level,
+            blocking_factor=blocking_factor,
+            dim_vary=dim_varys,
+            record_vary=record_variance_bool,
+            num_elements=num_elements,
+            sparse=sparse,
+            pad=pad,
+        )
 
-    def _read_vdr2(self, byte_loc):
+    def _read_vdr2(self, byte_loc: int) -> VDR:
         if self._post25 is True:
             toadd = 0
         else:
@@ -1442,42 +1418,41 @@ class CDF:
                 if data_type == 51 or data_type == 52:
                     pad = " " * num_elements
 
-        return_dict: Dict[str, Union[str, int, List[int], List[bool]]] = {}
-        return_dict["data_type"] = data_type
-        return_dict["section_type"] = section_type
-        return_dict["next_vdr_location"] = next_vdr
-        return_dict["variable_number"] = var_num
-        return_dict["head_vxr"] = head_vxr
-        return_dict["last_vxr"] = last_vxr
-        return_dict["max_records"] = max_rec
-        return_dict["name"] = name
-        return_dict["num_dims"] = num_dims
         if section_type == 8:
-            return_dict["dim_sizes"] = zdim_sizes
-        else:
-            return_dict["dim_sizes"] = dim_sizes
-        if pad_bool:
-            return_dict["pad"] = pad
-        return_dict["compression_bool"] = compression_bool
+            dim_sizes = zdim_sizes
         if compression_bool:
             ctype, cparm = self._read_cpr(CPRorSPRoffset)
-            return_dict["compression_level"] = cparm
+            compression_level = cparm
         else:
-            return_dict["compression_level"] = 0
-        return_dict["blocking_factor"] = blocking_factor
-        return_dict["dim_vary"] = dim_varys
-        return_dict["record_vary"] = record_variance_bool
-        return_dict["num_elements"] = num_elements
-        return_dict["sparse"] = sparse
-        return return_dict
+            compression_level = 0
+        return VDR(
+            data_type=data_type,
+            section_type=section_type,
+            next_vdr_location=next_vdr,
+            variable_number=var_num,
+            head_vxr=head_vxr,
+            last_vxr=last_vxr,
+            max_rec=max_rec,
+            name=name,
+            num_dims=num_dims,
+            dim_sizes=dim_sizes,
+            compression_bool=compression_bool,
+            compression_level=compression_level,
+            blocking_factor=blocking_factor,
+            dim_vary=dim_varys,
+            record_vary=record_variance_bool,
+            num_elements=num_elements,
+            sparse=sparse,
+            pad=pad,
+        )
 
-    def _read_vdr_fast(self, byte_loc):
+    def _read_vdr_fast(self, byte_loc: int) -> Tuple[str, int]:
         if self.cdfversion == 3:
             return self._read_vdr_fast3(byte_loc)
         else:
             return self._read_vdr_fast2(byte_loc)
 
-    def _read_vdr_fast3(self, byte_loc):
+    def _read_vdr_fast3(self, byte_loc: int) -> Tuple[str, int]:
         self._f.seek(byte_loc + 12, 0)
         next_vdr = int.from_bytes(self._f.read(8), "big", signed=True)
         self._f.seek(byte_loc + 84, 0)
@@ -1487,7 +1462,7 @@ class CDF:
 
         return name, next_vdr
 
-    def _read_vdr_fast2(self, byte_loc):
+    def _read_vdr_fast2(self, byte_loc: int) -> Tuple[str, int]:
         if self._post25:
             toadd = 0
         else:
@@ -1571,22 +1546,22 @@ class CDF:
             )
         return vvr_offsets, vvr_start, vvr_end
 
-    def _read_vvrs(self, vdr_dict, vvr_offs, vvr_start, vvr_end, startrec, endrec):
+    def _read_vvrs(self, vdr: VDR, vvr_offs, vvr_start, vvr_end, startrec, endrec):
         """
         Reads in all VVRS that are pointed to in the VVR_OFFS array.
         Creates a large byte array of all values called "byte_stream".
         Decodes the byte_stream, then returns them.
         """
 
-        numBytes = self._type_size(vdr_dict["data_type"], vdr_dict["num_elements"])
-        numValues = self._num_values(vdr_dict)
+        numBytes = self._type_size(vdr.data_type, vdr.num_elements)
+        numValues = self._num_values(vdr)
         totalRecs = endrec - startrec + 1
         firstBlock = -1
         lastBlock = -1
         totalBytes = numBytes * numValues * totalRecs
         byte_stream = bytearray(totalBytes)
         pos = 0
-        if vdr_dict["sparse"] == 0:
+        if vdr.sparse == 0:
             for vvr_num in range(0, len(vvr_offs)):
                 if vvr_end[vvr_num] >= startrec and firstBlock == -1:
                     firstBlock = vvr_num
@@ -1606,14 +1581,14 @@ class CDF:
             byte_stream = byte_stream[startPos : len(byte_stream) - stopOff]
         else:
             # with sparse records
-            if "pad" in vdr_dict:
+            if vdr.pad is not None:
                 # use default pad value
-                filled_data = self._convert_np_data(vdr_dict["pad"], vdr_dict["data_type"], vdr_dict["num_elements"])
+                filled_data = self._convert_np_data(vdr.pad, vdr.data_type, vdr.num_elements)
             else:
                 filled_data = self._convert_np_data(
-                    self._default_pad(vdr_dict["data_type"], vdr_dict["num_elements"]),
-                    vdr_dict["data_type"],
-                    vdr_dict["num_elements"],
+                    self._default_pad(vdr.data_type, vdr.num_elements),
+                    vdr.data_type,
+                    vdr.num_elements,
                 )
             cur_block = -1
             rec_size = numBytes * numValues
@@ -1630,7 +1605,7 @@ class CDF:
                     xoff = record_off * rec_size
                     byte_stream[pos : pos + rec_size] = var_block_data[xoff : xoff + rec_size]
                 else:
-                    if vdr_dict["sparse"] == 1:
+                    if vdr.sparse == 1:
                         # use defined pad or default pad
                         byte_stream[pos : pos + rec_size] = filled_data * numValues
                     else:
@@ -1648,13 +1623,13 @@ class CDF:
                 if block > -1:
                     cur_block = block
         dimensions = []
-        var_vary = vdr_dict["dim_vary"]
-        var_sizes = vdr_dict["dim_sizes"]
-        for x in range(0, vdr_dict["num_dims"]):
+        var_vary = vdr.dim_vary
+        var_sizes = vdr.dim_sizes
+        for x in range(0, vdr.num_dims):
             if var_vary[x] == 0:
                 continue
             dimensions.append(var_sizes[x])
-        return self._read_data(byte_stream, vdr_dict["data_type"], totalRecs, vdr_dict["num_elements"], dimensions)
+        return self._read_data(byte_stream, vdr.data_type, totalRecs, vdr.num_elements, dimensions)
 
     def _convert_option(self):
         """
@@ -1863,16 +1838,16 @@ class CDF:
 
         return ret
 
-    def _num_values(self, vdr_dict):
+    def _num_values(self, vdr: VDR) -> int:
         """
         Returns the number of values in a record, using a given VDR
         dictionary. Multiplies the dimension sizes of each dimension,
         if it is varying.
         """
         values = 1
-        for x in range(0, vdr_dict["num_dims"]):
-            if vdr_dict["dim_vary"][x] != 0:
-                values = values * vdr_dict["dim_sizes"][x]
+        for x in range(0, vdr.num_dims):
+            if vdr.dim_vary[x] != 0:
+                values = values * vdr.dim_sizes[x]
         return values
 
     def _get_attdata(self, adr_info, entry_num, num_entry, first_entry):
@@ -1882,48 +1857,49 @@ class CDF:
             if entry_num == got_entry_num:
                 aedr_info = self._read_aedr(position)
                 return_dict = {}
-                return_dict["Item_Size"] = self._type_size(aedr_info["data_type"], aedr_info["num_elements"])
-                return_dict["Data_Type"] = self._datatype_token(aedr_info["data_type"])
+                return_dict["Item_Size"] = self._type_size(aedr_info.data_type, aedr_info.num_elements)
+                return_dict["Data_Type"] = self._datatype_token(aedr_info.data_type)
 
-                return_dict["Num_Items"] = aedr_info["num_elements"]
-                return_dict["Data"] = aedr_info["entry"]
-                if aedr_info["data_type"] == 51 or aedr_info["data_type"] == 52:
-                    if "num_strings" in aedr_info:
-                        num_strings = int(aedr_info["num_strings"])
+                return_dict["Num_Items"] = aedr_info.num_elements
+                return_dict["Data"] = aedr_info.entry
+                if aedr_info.data_type == 51 or aedr_info.data_type == 52:
+                    if aedr_info.num_strings is not None:
+                        num_strings = aedr_info.num_strings
                         return_dict["Num_Items"] = num_strings
                         if num_strings > 1:
-                            entry = str(aedr_info["entry"])
-                            return_dict["Data"] = entry.split("\\N ")
+                            return_dict["Data"] = aedr_info.entry.split("\\N ")
                 return return_dict
             else:
                 position = next_aedr
 
         raise KeyError("The entry does not exist")
 
-    def _read_vardata(self, vdr_info, epoch=None, starttime=None, endtime=None, startrec=0, endrec=None, record_range_only=False):
+    def _read_vardata(
+        self, vdr_info: VDR, epoch=None, starttime=None, endtime=None, startrec=0, endrec=None, record_range_only=False
+    ):
         # Error checking
         if startrec:
             if startrec < 0:
                 raise ValueError("Invalid start recond")
-            if not (vdr_info["record_vary"]):
+            if not (vdr_info.record_vary):
                 startrec = 0
 
         if not (endrec is None):
-            if (endrec < 0) or (endrec > vdr_info["max_records"]) or (endrec < startrec):
+            if (endrec < 0) or (endrec > vdr_info.max_rec) or (endrec < startrec):
                 raise ValueError("Invalid end recond")
-            if not (vdr_info["record_vary"]):
+            if not (vdr_info.record_vary):
                 endrec = 0
         else:
-            endrec = vdr_info["max_records"]
+            endrec = vdr_info.max_rec
         if self.cdfversion == 3:
-            vvr_offsets, vvr_start, vvr_end = self._read_vxrs(vdr_info["head_vxr"], vvr_offsets=[], vvr_start=[], vvr_end=[])
+            vvr_offsets, vvr_start, vvr_end = self._read_vxrs(vdr_info.head_vxr, vvr_offsets=[], vvr_start=[], vvr_end=[])
         else:
-            vvr_offsets, vvr_start, vvr_end = self._read_vxrs2(vdr_info["head_vxr"], vvr_offsets=[], vvr_start=[], vvr_end=[])
+            vvr_offsets, vvr_start, vvr_end = self._read_vxrs2(vdr_info.head_vxr, vvr_offsets=[], vvr_start=[], vvr_end=[])
 
-        if vdr_info["record_vary"]:
+        if vdr_info.record_vary:
             # Record varying
             if starttime is not None or endtime is not None:
-                recs = self._findtimerecords(vdr_info["name"], starttime, endtime, epoch=epoch)
+                recs = self._findtimerecords(vdr_info.name, starttime, endtime, epoch=epoch)
                 if recs is None:
                     return
                 if len(recs) == 0:
@@ -1938,7 +1914,7 @@ class CDF:
         data = self._read_vvrs(vdr_info, vvr_offsets, vvr_start, vvr_end, startrec, endrec)
         if record_range_only:
             return [startrec, endrec]
-        if vdr_info["record_vary"]:
+        if vdr_info.record_vary:
             return data
         else:
             return data[0]

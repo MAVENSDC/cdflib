@@ -35,6 +35,7 @@ Breaking changes
   Use ``CDF.varinq`` to get variable information instead.
 - The ``expand`` keyword argument to ``CDF.globalattsget`` and ``CDF.varattsget`` has been removed.
   Use ``CDF.attinq`` to get attribute information instead.
+- ``CDF.vdr_info`` now returns a dataclass instead of a dict.
 
 Bugfixes
 --------
