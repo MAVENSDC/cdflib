@@ -44,6 +44,56 @@ class GDRInfo:
 
 
 @dataclass
+class VDRInfo:
+    """
+    Variable data record info.
+
+    Attributes
+    ----------
+    Variable : str
+        Name of the variable.
+    Num : int
+        Variable number.
+    Var_Type : str
+        Variable type: zVariable or rVariable.
+    Data_Type : str
+        Variable CDF data type.
+    Num_Elements : int
+        Number of elements of the variable.
+    Num_Dims : int
+        Dimensionality of variable record.
+    Dim_sizes :
+        Shape of the variable record.
+    Last_Rec :
+        Maximum written variable number (0-based).
+    Dim_Vary :
+        Dimensional variance(s).
+    Rec_Vary :
+        Record variance.
+    Pad :
+        Padded value (if set).
+    Block_Factor:
+        Blocking factor (if variable is compressed).
+    """
+
+    Variable: str
+    Num: int
+    Var_Type: str
+    Data_Type: int
+    Data_Type_Description: str
+    Num_Elements: int
+    Num_Dims: int
+    Dim_Sizes: List[int]
+    Sparse: str
+    Last_Rec: int
+    Rec_Vary: int
+    Dim_Vary: Union[List[int], List[bool]]
+    Compress: int
+    Pad: Optional[int] = None
+    Block_Factor: Optional[int] = None
+
+
+@dataclass
 class AEDR:
     entry: np.ndarray
     data_type: int

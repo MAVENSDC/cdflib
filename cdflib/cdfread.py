@@ -13,7 +13,15 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 import cdflib.epochs as epoch
-from cdflib.dataclasses import AEDR, VDR, ADRInfo, AttData, CDRInfo, GDRInfo
+from cdflib.dataclasses import (
+    AEDR,
+    VDR,
+    ADRInfo,
+    AttData,
+    CDRInfo,
+    GDRInfo,
+    VDRInfo,
+)
 
 __all__ = ["CDF"]
 
@@ -227,63 +235,33 @@ class CDF:
             mycdf_info["LeapSecondUpdated"] = self._leap_second_updated
         return mycdf_info
 
-    def varinq(self, variable: str) -> Dict[str, Any]:
+    def varinq(self, variable: str) -> VDRInfo:
         """
-        Returns a dictionary that shows the basic variable information.
+        Get basic variable information.
 
-        This information includes
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Variable']    | the name of the variable                                                       |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Num']         | the variable number                                                            |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Var_Type']    | the variable type: zVariable or rVariable                                      |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Data_Type']   | the variable's CDF data type                                                   |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Num_Elements']| the number of elements of the variable                                         |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Num_Dims']    | the dimensionality of the variable record                                      |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Dim_Sizes']   | the shape of the variable record                                               |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Sparse']      | the variable's record sparseness                                               |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Last_Rec']    | the maximum written record number (0-based)                                    |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Dim_Vary']    | the dimensional variance(s)                                                    |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Rec_Vary']    | the record variance                                                            |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Pad']         | the padded value if set                                                        |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Compress']    | the GZIP compression level, 0 to 9. 0 if not compressed                        |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Block_Factor']| the blocking factor if the variable is compressed                              |
-                +-----------------+--------------------------------------------------------------------------------+
+        Returns
+        -------
+        VDRInfo
         """
         vdr_info = self.vdr_info(variable)
 
-        var: Dict[str, Any] = {}
-        var["Variable"] = vdr_info.name
-        var["Num"] = vdr_info.variable_number
-        var["Var_Type"] = self._variable_token(vdr_info.section_type)
-        var["Data_Type"] = vdr_info.data_type
-        var["Data_Type_Description"] = self._datatype_token(vdr_info.data_type)
-        var["Num_Elements"] = vdr_info.num_elements
-        var["Num_Dims"] = vdr_info.num_dims
-        var["Dim_Sizes"] = vdr_info.dim_sizes
-        var["Sparse"] = self._sparse_token(vdr_info.sparse)
-        var["Last_Rec"] = vdr_info.max_rec
-        var["Rec_Vary"] = vdr_info.record_vary
-        var["Dim_Vary"] = vdr_info.dim_vary
-        if vdr_info.pad is not None:
-            var["Pad"] = vdr_info.pad
-        var["Compress"] = vdr_info.compression_level
-        if vdr_info.blocking_factor is not None:
-            var["Block_Factor"] = vdr_info.blocking_factor
-
-        return var
+        return VDRInfo(
+            vdr_info.name,
+            vdr_info.variable_number,
+            self._variable_token(vdr_info.section_type),
+            vdr_info.data_type,
+            self._datatype_token(vdr_info.data_type),
+            vdr_info.num_elements,
+            vdr_info.num_dims,
+            vdr_info.dim_sizes,
+            self._sparse_token(vdr_info.sparse),
+            vdr_info.max_rec,
+            vdr_info.record_vary,
+            vdr_info.dim_vary,
+            vdr_info.compression_level,
+            vdr_info.pad,
+            vdr_info.blocking_factor,
+        )
 
     def attinq(self, attribute: Union[str, int]) -> ADRInfo:
         """
@@ -1935,11 +1913,11 @@ class CDF:
             vdr_info = self.varinq(epoch)
             if vdr_info is None:
                 raise ValueError("Epoch not found")
-            if vdr_info["Data_Type"] == 31 or vdr_info["Data_Type"] == 32 or vdr_info["Data_Type"] == 33:
+            if vdr_info.Data_Type == 31 or vdr_info.Data_Type == 32 or vdr_info.Data_Type == 33:
                 epochtimes = self.varget(epoch)
         else:
             vdr_info = self.varinq(var_name)
-            if vdr_info["Data_Type"] == 31 or vdr_info["Data_Type"] == 32 or vdr_info["Data_Type"] == 33:
+            if vdr_info.Data_Type == 31 or vdr_info.Data_Type == 32 or vdr_info.Data_Type == 33:
                 epochtimes = self.varget(var_name)
             else:
                 # acquire depend_0 variable
@@ -1952,14 +1930,14 @@ class CDF:
                     )
 
                 vdr_info = self.varinq(dependVar.Data)
-                if vdr_info["Data_Type"] != 31 and vdr_info["Data_Type"] != 32 and vdr_info["Data_Type"] != 33:
+                if vdr_info.Data_Type != 31 and vdr_info.Data_Type != 32 and vdr_info.Data_Type != 33:
                     raise ValueError(
                         "Corresponding variable from 'DEPEND_0' attribute "
                         "for variable: {}".format(var_name) + " is not a CDF epoch type"
                     )
                 epochtimes = self.varget(dependVar.Data)
 
-        return self._findrangerecords(vdr_info["Data_Type"], epochtimes, starttime, endtime)
+        return self._findrangerecords(vdr_info.Data_Type, epochtimes, starttime, endtime)
 
     def _findrangerecords(
         self, data_type: int, epochtimes: epoch.epochs_type, starttime: datetime.datetime, endtime: datetime.datetime
@@ -2172,7 +2150,7 @@ class CDF:
 
         return bdata
 
-    def _unstream_file(self, f) -> None: # type: ignore
+    def _unstream_file(self, f) -> None:  # type: ignore
         """
         Typically for S3 or URL, writes the current file stream
         into a file in the temporary directory.
