@@ -455,7 +455,7 @@ class CDF:
 
     def varget(self, variable=None, epoch=None, starttime=None,
                endtime=None, startrec=0, endrec=None,
-               record_range_only=False, expand=False):
+               record_range_only=False):
         """
         Returns the variable data.
 
@@ -475,25 +475,6 @@ class CDF:
         a name or a variable number. By default, it returns a
         'numpy.ndarray' or 'list' class object, depending on the
         data type, with the variable data and its specification.
-
-        If "expand" is set as True, a dictionary is returned
-        with the following defined keys for the output
-
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Rec_Ndim']         | the dimension number of each variable record                              |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Rec_Shape']        | the shape of the variable record dimensions                               |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Num_Records']      | the total number of records                                               |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Records_Returned'] | the number of records retrieved                                           |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Data_Type']        | the CDF data type                                                         |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Data']             | retrieved variable data                                                   |
-                +-----------------+--------------------------------------------------------------------------------+
-                | ['Real_Records']     | Record numbers for real data for sparse record variable in list           |
-                +-----------------+--------------------------------------------------------------------------------+
 
         By default, the full variable data is returned. To acquire
         only a portion of the data for a record-varying variable,
@@ -533,8 +514,7 @@ class CDF:
             raise ValueError(f'No records found for variable {variable}')
 
         return self._read_vardata(vdr_info, epoch=epoch, starttime=starttime, endtime=endtime,
-                                    startrec=startrec, endrec=endrec, record_range_only=record_range_only,
-                                    expand=expand)
+                                    startrec=startrec, endrec=endrec, record_range_only=record_range_only)
 
     def vdr_info(self, variable: Union[str, int]):
         if (isinstance(variable, int) and self._num_zvariable > 0 and
@@ -598,21 +578,14 @@ class CDF:
         return self.varget(variable=epoch, starttime=starttime,
                            endtime=endtime, record_range_only=True)
 
-    def globalattsget(self, expand=False):
+    def globalattsget(self):
         """
         Gets all global attributes.
 
         This function returns all of the global attribute entries,
         in a dictionary (in the form of ``'attribute': {entry: value}``
         pairs) from a CDF. If there is no entry found, None is
-        returned. If expand is entered with non-False, then each
-        entry's data type is also returned in a list form as
-        [entry, 'CDF_xxxx']. For attributes without any entries,
-        they will also return with ``None`` value.
-
-        Parameters
-        ----------
-        expand : bool, optional
+        returned.
         """
         byte_loc = self._first_adr
         return_dict = {}
@@ -622,67 +595,31 @@ class CDF:
                 byte_loc = adr_info['next_adr_location']
                 continue
             if (adr_info['num_gr_entry'] == 0):
-                if (expand is not False):
-                    return_dict[adr_info['name']] = None
                 byte_loc = adr_info['next_adr_location']
                 continue
-            if (expand is False):
-                entries = []
-            else:
-                entries = {}
+            entries = []
             aedr_byte_loc = adr_info['first_gr_entry']
             for _ in range(adr_info['num_gr_entry']):
                 aedr_info = self._read_aedr(aedr_byte_loc)
                 entryData = aedr_info['entry']
-                if (expand is False):
+                # This exists to get rid of extraneous numpy arrays
+                if isinstance(entryData, np.ndarray):
+                    if len(entryData) == 1:
+                        entryData = entryData[0]
 
-                    # This exists to get rid of extraneous numpy arrays
-                    if isinstance(entryData, np.ndarray):
-                        if len(entryData) == 1:
-                            entryData = entryData[0]
+                entries.append(entryData)
 
-                    entries.append(entryData)
-                else:
-                    entryWithType = []
-                    if (isinstance(entryData, str)):
-                        entryWithType.append(entryData)
-                    else:
-                        dataType = aedr_info['data_type']
-                        if (len(entryData.tolist()) == 1):
-                            if (dataType != 31 and dataType != 32 and dataType != 33):
-                                entryWithType.append(entryData.tolist()[0])
-                            else:
-                                if (dataType != 33):
-                                    entryWithType.append(epoch.CDFepoch.encode(entryData.tolist()[0],
-                                                                               iso_8601=False))
-                                else:
-                                    entryWithType.append(epoch.CDFepoch.encode(entryData.tolist()[0]))
-                        else:
-                            if (dataType != 31 and dataType != 32 and dataType != 33):
-                                entryWithType.append(entryData.tolist())
-                            else:
-                                if (dataType != 33):
-                                    entryWithType.append(epoch.CDFepoch.encode(entryData.tolist(),
-                                                                               iso_8601=False))
-                                else:
-                                    entryWithType.append(epoch.CDFepoch.encode(entryData.tolist()))
-                    entryWithType.append(self._datatype_token(aedr_info['data_type']))
-                    entries[aedr_info['entry_num']] = entryWithType
-                aedr_byte_loc = aedr_info['next_aedr']
 
             if (len(entries) != 0):
-                if (expand is False):
-                    if (len(entries) == 1):
-                        return_dict[adr_info['name']] = entries[0]
-                    else:
-                        return_dict[adr_info['name']] = entries
+                if (len(entries) == 1):
+                    return_dict[adr_info['name']] = entries[0]
                 else:
                     return_dict[adr_info['name']] = entries
             byte_loc = adr_info['next_adr_location']
 
         return return_dict
 
-    def varattsget(self, variable=None, expand=False):
+    def varattsget(self, variable=None):
         """
         Gets all variable attributes.
 
@@ -691,15 +628,10 @@ class CDF:
         in a dictionary (in the form of 'attribute': value pair) for
         a variable. If there is no entry found, None is returned.
         If no variable name is provided, a list of variables are printed.
-        If expand is entered with non-False, then each entry's data
-        type is also returned in a list form as [entry, 'CDF_xxxx'].
-        For attributes without any entries, they will also return with
-        None value.
 
         Parameters
         ----------
         variable :
-        expand : bool, optional
         """
         if (isinstance(variable, int) and self._num_zvariable > 0 and self._num_rvariable > 0):
             raise ValueError('This CDF has both r and z variables. Use variable name')
@@ -711,7 +643,7 @@ class CDF:
                     name, vdr_next = self._read_vdr_fast(position)
                     if name.strip().lower() == variable.strip().lower():
                         vdr_info = self._read_vdr(position)
-                        return self._read_varatts(vdr_info['variable_number'], zVar, expand)
+                        return self._read_varatts(vdr_info['variable_number'], zVar)
                     position = vdr_next
                 position = self._first_rvariable
                 num_variables = self._num_rvariable
@@ -725,7 +657,7 @@ class CDF:
                 zVar = False
             if (variable < 0 or variable >= num_variable):
                 raise ValueError(f'No variable by this number: {variable}')
-            return self._read_varatts(variable, zVar, expand)
+            return self._read_varatts(variable, zVar)
         else:
             raise ValueError('Please set variable keyword equal to '
                              'the name or number of an variable')
@@ -1104,7 +1036,7 @@ class CDF:
 
         return gdr_info
 
-    def _read_varatts(self, var_num, zVar, expand):
+    def _read_varatts(self, var_num, zVar):
         byte_loc = self._first_adr
         return_dict = {}
         for z in range(0, self._num_att):
@@ -1126,42 +1058,15 @@ class CDF:
                     continue
                 aedr_info = self._read_aedr(byte_loc)
                 entryData = aedr_info['entry']
-                if (expand is False):
-                    # This exists to get rid of extraneous numpy arrays
-                    if isinstance(entryData, np.ndarray):
-                        if len(entryData) == 1:
-                            entryData = entryData[0]
-                    return_dict[adr_info['name']] = entryData
-                else:
-                    entryWithType = []
-                    if (isinstance(entryData, str)):
-                        entryWithType.append(entryData)
-                    else:
-                        dataType = aedr_info['data_type']
-                        if (dataType != 31 and dataType != 32 and dataType != 33):
-                            if (len(entryData.tolist()) == 1):
-                                entryWithType.append(entryData.tolist()[0])
-                            else:
-                                entryWithType.append(entryData.tolist())
-                        else:
-                            if (len(entryData.tolist()) == 1):
-                                if (dataType != 33):
-                                    entryWithType.append(epoch.CDFepoch.encode(entryData.tolist()[0],
-                                                                               iso_8601=False))
-                                else:
-                                    entryWithType.append(epoch.CDFepoch.encode(entryData.tolist()[0]))
-                            else:
-                                if (dataType != 33):
-                                    entryWithType.append(epoch.CDFepoch.encode(entryData.tolist(),
-                                                                               iso_8601=False))
-                                else:
-                                    entryWithType.append(epoch.CDFepoch.encode(entryData.tolist()))
-                    entryWithType.append(self._datatype_token(aedr_info['data_type']))
-                    return_dict[adr_info['name']] = entryWithType
+                # This exists to get rid of extraneous numpy arrays
+                if isinstance(entryData, np.ndarray):
+                    if len(entryData) == 1:
+                        entryData = entryData[0]
+                return_dict[adr_info['name']] = entryData
                 found = 1
                 break
             byte_loc = adr_info['next_adr_location']
-            if (found == 0 and expand is not False):
+            if found == 0:
                 return_dict[adr_info['name']] = None
         return return_dict
 
@@ -2025,8 +1930,7 @@ class CDF:
         raise KeyError('The entry does not exist')
 
     def _read_vardata(self, vdr_info, epoch=None, starttime=None, endtime=None,
-                      startrec=0, endrec=None, record_range_only=False,
-                      expand=False):
+                      startrec=0, endrec=None, record_range_only=False):
 
         # Error checking
         if startrec:
@@ -2070,29 +1974,10 @@ class CDF:
                                startrec, endrec)
         if record_range_only:
             return [startrec, endrec]
-        if (expand):
-            new_dict = {}
-            new_dict['Rec_Ndim'] = vdr_info['num_dims']
-            new_dict['Rec_Shape'] = vdr_info['dim_sizes']
-            new_dict['Num_Records'] = vdr_info['max_records'] + 1
-            new_dict['Records_Returned'] = endrec - startrec
-            new_dict['Item_Size'] = self._type_size(vdr_info['data_type'],
-                                                    vdr_info['num_elements'])
-            new_dict['Data_Type'] = self._datatype_token(vdr_info['data_type'])
-            new_dict['Data'] = data
-            if (vdr_info['sparse']):
-                blocks = len(vvr_start)
-                physical_recs = []
-                for x in range(0, blocks):
-                    for y in range(vvr_start[x], vvr_end[x] + 1):
-                        physical_recs.append(y)
-                new_dict['Real_Records'] = physical_recs
-            return new_dict
+        if (vdr_info['record_vary']):
+            return data
         else:
-            if (vdr_info['record_vary']):
-                return data
-            else:
-                return data[0]
+            return data[0]
 
     def _findtimerecords(self, var_name, starttime, endtime, epoch=None):
 
