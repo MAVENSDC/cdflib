@@ -181,6 +181,7 @@ class CDF:
 
         major = 1
         if cdf_spec is not None:
+            major = cdf_spec.get('Majority', 'column_major')
             if (isinstance(major, str)):
                 major = self._majority_token(major)
 
