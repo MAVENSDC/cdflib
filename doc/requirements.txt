@@ -1,3 +1,0 @@
-xarray
-astropy
-sphinx-automodapi
