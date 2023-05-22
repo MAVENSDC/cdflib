@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import numpy as np
 
@@ -37,3 +37,25 @@ class AEDR:
     next_aedr: int
     entry_num: int
     num_strings: Optional[int] = None
+
+
+@dataclass(kw_only=True)
+class VDR:
+    data_type: int
+    section_type: int
+    next_vdr_location: int
+    variable_number: int
+    head_vxr: int
+    last_vxr: int
+    max_rec: int
+    name: str
+    num_dims: int
+    dim_sizes: List[int]
+    compression_bool: bool
+    compression_level: int
+    blocking_factor: int
+    dim_vary: Union[List[int], List[bool]]
+    record_vary: int
+    num_elements: int
+    sparse: int
+    pad: Optional[bool] = None
