@@ -115,7 +115,7 @@ def _convert_cdf_to_dicts(filename, to_datetime=False, to_unixtime=False):
             var_atts_temp[att] = cdf_file.attget(att, var_name)
         variable_properties[var_name] = cdf_file.varinq(var_name)
         # Gather the actual variable data
-        if variable_properties[var_name]["Last_Rec"] < 0:
+        if variable_properties[var_name].Last_Rec < 0:
             var_data_temp[var_name] = np.array([])
         else:
             var_data_temp[var_name] = cdf_file.varget(var_name)

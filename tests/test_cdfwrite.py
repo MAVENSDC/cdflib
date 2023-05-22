@@ -175,7 +175,7 @@ def test_create_zvariable(tmp_path):
 
     # Test CDF info
     varinfo = reader.varinq("Variable1")
-    assert varinfo["Data_Type"] == 1
+    assert varinfo.Data_Type == 1
 
     var = reader.varget("Variable1")
     assert (var == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).all()
@@ -202,7 +202,7 @@ def test_create_rvariable(tmp_path):
 
     # Test CDF info
     varinfo = reader.varinq("Variable1")
-    assert varinfo["Data_Type"] == 12
+    assert varinfo.Data_Type == 12
 
     var = reader.varget("Variable1")
     for x in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
@@ -230,7 +230,7 @@ def test_create_zvariable_no_recvory(tmp_path):
 
     # Test CDF info
     varinfo = reader.varinq("Variable1")
-    assert varinfo["Data_Type"] == 8
+    assert varinfo.Data_Type == 8
 
     var = reader.varget("Variable1")
     assert var == 2
@@ -363,7 +363,7 @@ def test_sparse_virtual_zvariable_blocking(tmp_path):
     varinq = reader.varinq("Variable1")
     var = reader.varget("Variable1")
 
-    pad_num = varinq["Pad"][0]
+    pad_num = varinq.Pad[0]
     assert var[30001] == pad_num
     assert var[70001] == 70001
 
@@ -399,7 +399,7 @@ def test_sparse_zvariable_blocking(tmp_path):
     # tfile = cdf_create(fn, {'rDim_sizes': [1]})
     varinq = reader.varinq("Variable1")
     var = reader.varget("Variable1")
-    pad_num = varinq["Pad"][0]
+    pad_num = varinq.Pad[0]
 
     assert var[30001] == pad_num
     assert var[70001] == 30000
@@ -427,7 +427,7 @@ def test_sparse_zvariable_pad(tmp_path):
     # Test CDF info
     varinq = reader.varinq("Variable1")
     var = reader.varget("Variable1")
-    pad_num = varinq["Pad"][0]
+    pad_num = varinq.Pad[0]
 
     assert var[100] == pad_num
     assert var[3000] == 1
@@ -456,7 +456,7 @@ def test_sparse_zvariable_previous(tmp_path):
     # Test CDF info
     varinq = reader.varinq("Variable1")
     var = reader.varget("Variable1")
-    pad_num = varinq["Pad"][0]
+    pad_num = varinq.Pad[0]
 
     assert var[100] == pad_num
     assert var[6001] == var[6000]
@@ -486,7 +486,7 @@ def test_create_2d_rvariable(tmp_path):
 
     # Test CDF info
     varinfo = reader.varinq("Variable1")
-    assert varinfo["Data_Type"] == 14
+    assert varinfo.Data_Type == 14
 
     var = reader.varget("Variable1")
     for x in [0, 1, 2, 3, 4]:
@@ -521,7 +521,7 @@ def test_create_2d_rvariable_dimvary(tmp_path):
     # Test CDF info
     varinfo = reader.varinq("Variable1")
 
-    assert varinfo["Data_Type"] == 21
+    assert varinfo.Data_Type == 21
     var = reader.varget("Variable1")
     for x in [0, 1, 2, 3, 4]:
         assert var[x][0] == 2 * x
@@ -557,7 +557,7 @@ def test_create_2d_r_and_z_variables(tmp_path):
 
     # Test CDF info
     varinfo = reader.varinq("Variable1")
-    assert varinfo["Data_Type"] == 22
+    assert varinfo.Data_Type == 22
 
     var = reader.varget("Variable1")
     for x in [0, 1, 2, 3, 4]:
