@@ -1,5 +1,5 @@
-#!/usr/bin/env python
 from pathlib import Path
+from typing import Any, Dict
 
 import numpy as np
 import pytest
@@ -10,7 +10,7 @@ R = Path(__file__).parent
 fnbasic = "testing.cdf"
 
 
-def cdf_create(fn: Path, spec: dict):
+def cdf_create(fn: Path, spec):
     return cdfwrite.CDF(fn, cdf_spec=spec)
 
 
@@ -34,13 +34,13 @@ def test_checksum(tmp_path):
     fn = tmp_path / fnbasic
     tfile = cdf_create(fn, {"Checksum": True})
 
-    var_spec = {}
+    var_spec: Dict[str, Any] = {}
     var_spec["Variable"] = "Variable1"
     var_spec["Data_Type"] = 4
     var_spec["Num_Elements"] = 1
     var_spec["Rec_Vary"] = True
     var_spec["Dim_Sizes"] = []
-    varatts = {}
+    varatts: Dict[str, Any] = {}
     varatts["Attribute1"] = 1
     varatts["Attribute2"] = "500"
 
@@ -60,13 +60,13 @@ def test_checksum(tmp_path):
 def test_checksum_compressed(tmp_path):
     # Setup the test_file
     fn = tmp_path / fnbasic
-    var_spec = {}
+    var_spec: Dict[str, Any] = {}
     var_spec["Variable"] = "Variable1"
     var_spec["Data_Type"] = 2
     var_spec["Num_Elements"] = 1
     var_spec["Rec_Vary"] = True
     var_spec["Dim_Sizes"] = []
-    varatts = {}
+    varatts: Dict[str, Any] = {}
     varatts["Attribute1"] = 1
     varatts["Attribute2"] = "500"
 
@@ -76,7 +76,7 @@ def test_checksum_compressed(tmp_path):
     tfile.write_var(var_spec, var_attrs=varatts, var_data=v)
 
     tfile.close()
-    # %% Open the file to read
+    # Open the file to read
     reader = cdf_read(fn, validate=True)
 
     var = reader.varget("Variable1")
@@ -93,13 +93,13 @@ def test_file_compression(tmp_path):
     # Setup the test_file
     fn = tmp_path / fnbasic
 
-    var_spec = {}
+    var_spec: Dict[str, Any] = {}
     var_spec["Variable"] = "Variable1"
     var_spec["Data_Type"] = 2
     var_spec["Num_Elements"] = 1
     var_spec["Rec_Vary"] = True
     var_spec["Dim_Sizes"] = []
-    varatts = {}
+    varatts: Dict[str, Any] = {}
     varatts["Attribute1"] = 1
     varatts["Attribute2"] = "500"
 
@@ -120,14 +120,14 @@ def test_globalattrs(tmp_path):
     # Setup the test_file
     fn = tmp_path / fnbasic
 
-    globalAttrs = {}
+    globalAttrs: Dict[str, Any] = {}
     globalAttrs["Global1"] = {0: "Global Value 1"}
     globalAttrs["Global2"] = {0: "Global Value 2"}
     globalAttrs["Global3"] = {0: [12, "cdf_int4"]}
     globalAttrs["Global4"] = {0: [12.34, "cdf_double"]}
     globalAttrs["Global5"] = {0: [12.34, 21.43]}
 
-    GA6 = {}
+    GA6: Dict[int, Any] = {}
     GA6[0] = "abcd"
     GA6[1] = [12, "cdf_int2"]
     GA6[2] = [12.5, "cdf_float"]
@@ -139,7 +139,7 @@ def test_globalattrs(tmp_path):
     tfile.write_globalattrs(globalAttrs)
 
     tfile.close()
-    # %% Open the file to read
+    # Open the file to read
     reader = cdf_read(fn)
 
     # Test CDF info
@@ -159,7 +159,7 @@ def test_globalattrs(tmp_path):
 def test_create_zvariable(tmp_path):
     # Setup the test_file
     fn = tmp_path / fnbasic
-    vs = {}
+    vs: Dict[str, Any] = {}
     vs["Variable"] = "Variable1"
     vs["Data_Type"] = 1
     vs["Num_Elements"] = 1
@@ -171,7 +171,7 @@ def test_create_zvariable(tmp_path):
     tfile.write_var(vs, var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
     tfile.close()
 
-    # %% Open the file to read
+    # Open the file to read
     reader = cdf_read(fn)
 
     # Test CDF info
@@ -185,7 +185,7 @@ def test_create_zvariable(tmp_path):
 def test_create_rvariable(tmp_path):
     # Setup the test_file
     fn = tmp_path / fnbasic
-    vs = {}
+    vs: Dict[str, Any] = {}
     vs["Variable"] = "Variable1"
     vs["Var_Type"] = "rvariable"
     vs["Data_Type"] = 12
@@ -214,7 +214,7 @@ def test_create_zvariable_no_recvory(tmp_path):
     # Setup the test_file
     fn = tmp_path / fnbasic
 
-    var_spec = {}
+    var_spec: Dict[str, Any] = {}
     var_spec["Variable"] = "Variable1"
     var_spec["Data_Type"] = 8
     var_spec["Num_Elements"] = 1
@@ -241,13 +241,13 @@ def test_create_zvariables_with_attributes(tmp_path):
     # Setup the test_file
     fn = tmp_path / fnbasic
 
-    var_spec = {}
+    var_spec: Dict[str, Any] = {}
     var_spec["Variable"] = "Variable1"
     var_spec["Data_Type"] = 8
     var_spec["Num_Elements"] = 1
     var_spec["Rec_Vary"] = True
     var_spec["Dim_Sizes"] = []
-    varatts = {}
+    varatts: Dict[str, Any] = {}
     varatts["Attribute1"] = 1
     varatts["Attribute2"] = "500"
 
@@ -255,7 +255,7 @@ def test_create_zvariables_with_attributes(tmp_path):
     tfile.write_var(var_spec, var_attrs=varatts, var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
 
     var_spec["Variable"] = "Variable2"
-    varatts2 = {}
+    varatts2: Dict[str, Any] = {}
     varatts2["Attribute1"] = 2
     varatts2["Attribute2"] = "1000"
     tfile.write_var(var_spec, var_attrs=varatts2, var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
@@ -277,7 +277,7 @@ def test_create_zvariables_then_attributes(tmp_path):
     # Setup the test_file
     fn = tmp_path / fnbasic
 
-    var_spec = {}
+    var_spec: Dict[str, Any] = {}
     var_spec["Variable"] = "Variable1"
     var_spec["Data_Type"] = 8
     var_spec["Num_Elements"] = 1
@@ -290,7 +290,7 @@ def test_create_zvariables_then_attributes(tmp_path):
     var_spec["Variable"] = "Variable2"
     tfile.write_var(var_spec, var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
 
-    varatts = {}
+    varatts: Dict[str, Any] = {}
     varatts["Attribute1"] = {"Variable1": 1, "Variable2": 2}
     varatts["Attribute2"] = {0: "500", 1: "1000"}
 
@@ -312,7 +312,7 @@ def test_nonsparse_zvariable_blocking(tmp_path):
     # Setup the test_file
     fn = tmp_path / fnbasic
 
-    var_spec = {}
+    var_spec: Dict[str, Any] = {}
     var_spec["Variable"] = "Variable1"
     var_spec["Data_Type"] = 8
     var_spec["Num_Elements"] = 1
@@ -337,7 +337,7 @@ def test_sparse_virtual_zvariable_blocking(tmp_path):
     # Setup the test_file
     fn = tmp_path / fnbasic
 
-    var_spec = {}
+    var_spec: Dict[str, Any] = {}
     var_spec["Variable"] = "Variable1"
     var_spec["Data_Type"] = 8
     var_spec["Num_Elements"] = 1
@@ -373,7 +373,7 @@ def test_sparse_zvariable_blocking(tmp_path):
     # Setup the test_file
     fn = tmp_path / fnbasic
 
-    var_spec = {}
+    var_spec: Dict[str, Any] = {}
     var_spec["Variable"] = "Variable1"
     var_spec["Data_Type"] = 8
     var_spec["Num_Elements"] = 1
@@ -409,7 +409,7 @@ def test_sparse_zvariable_blocking(tmp_path):
 def test_sparse_zvariable_pad(tmp_path):
     # Setup the test_file
     fn = tmp_path / fnbasic
-    var_spec = {}
+    var_spec: Dict[str, Any] = {}
     var_spec["Variable"] = "Variable1"
     var_spec["Data_Type"] = 8
     var_spec["Num_Elements"] = 1
@@ -438,7 +438,7 @@ def test_sparse_zvariable_previous(tmp_path):
     # Setup the test_file
     fn = tmp_path / fnbasic
 
-    var_spec = {}
+    var_spec: Dict[str, Any] = {}
     var_spec["Variable"] = "Variable1"
     var_spec["Data_Type"] = 8
     var_spec["Num_Elements"] = 1
@@ -467,7 +467,7 @@ def test_create_2d_rvariable(tmp_path):
     # Setup the test_file
     fn = tmp_path / fnbasic
 
-    var_spec = {}
+    var_spec: Dict[str, Any] = {}
     var_spec["Variable"] = "Variable1"
     var_spec["Var_Type"] = "rvariable"
     var_spec["Data_Type"] = 14
@@ -501,7 +501,7 @@ def test_create_2d_rvariable_dimvary(tmp_path):
     # Setup the test_file
     fn = tmp_path / fnbasic
 
-    var_spec = {}
+    var_spec: Dict[str, Any] = {}
     var_spec["Variable"] = "Variable1"
     var_spec["Var_Type"] = "rvariable"
     var_spec["Data_Type"] = 21
@@ -533,7 +533,7 @@ def test_create_2d_r_and_z_variables(tmp_path):
     # Setup the test_file
     fn = tmp_path / fnbasic
 
-    var_spec = {}
+    var_spec: Dict[str, Any] = {}
     var_spec["Variable"] = "Variable1"
     var_spec["Var_Type"] = "rvariable"
     var_spec["Data_Type"] = 22
@@ -547,7 +547,7 @@ def test_create_2d_r_and_z_variables(tmp_path):
 
     var_spec["Variable"] = "Variable2"
     var_spec["Var_Type"] = "zvariable"
-    varatts = {}
+    varatts: Dict[str, Any] = {}
     varatts["Attribute1"] = 2
     varatts["Attribute2"] = "1000"
     tfile.write_var(var_spec, var_attrs=varatts, var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))

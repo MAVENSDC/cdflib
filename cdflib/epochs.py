@@ -4,7 +4,7 @@ import math
 import numbers
 import os
 import re
-from typing import List, Sequence, Union
+from typing import List, Optional, Sequence, Union
 
 import numpy as np
 
@@ -81,7 +81,7 @@ class CDFepoch(object):
 
     NDAT = len(LTS)
 
-    NST = None
+    NST: Optional[List[int]] = None
     currentDay = -1
     currentJDay = -1
     currentLeapSeconds = -1
@@ -868,8 +868,7 @@ class CDFepoch(object):
         return 367 * y - a1 - a2 + a3 + d + 1721029
 
     @staticmethod
-    def compute_epoch16(datetimes: Union[List, List[List]], to_np: bool = False):
-        new_dates: List[list] = []
+    def compute_epoch16(datetimes, to_np: bool = False):
         if not isinstance(datetimes[0], list):
             new_dates = [datetimes]
         else:
@@ -1171,6 +1170,7 @@ class CDFepoch(object):
                 return comp[0]
             return comp
 
+    @staticmethod
     def _computeEpoch16(y, m, d, h, mn, s, ms, msu, msn, msp):  # @NoSelf
         if m == 0:
             daysSince0AD = CDFepoch._JulianDay(y, 1, 1) + (d - 1) - 1721060
@@ -1208,12 +1208,14 @@ class CDFepoch(object):
         else:
             return epoch
 
-    def epochrange_epoch16(epochs, starttime=None, endtime=None):  # @NoSelf
+    @staticmethod
+    def epochrange_epoch16(epochs, starttime=None, endtime=None):
         if isinstance(epochs, complex) or isinstance(epochs, np.complex128):
             new_epochs = [epochs]
         elif isinstance(epochs, list) or isinstance(epochs, tuple) or isinstance(epochs, np.ndarray):
             if isinstance(epochs[0], complex) or isinstance(epochs[0], np.complex128):
-                new_epochs = epochs
+                # TODO: fix type ignores
+                new_epochs = epochs  # type: ignore
             else:
                 raise ValueError("Bad data")
         else:
@@ -1227,7 +1229,7 @@ class CDFepoch(object):
                 stime = []
                 stime.append(starttime.real)
                 stime.append(starttime.imag)
-            elif isinstance(starttime, list) or isinstance(starttime, tuple):
+            elif isinstance(starttime, list):
                 sstime = CDFepoch.compute_epoch16(starttime)
                 stime = []
                 stime.append(sstime.real)
@@ -1239,7 +1241,7 @@ class CDFepoch(object):
                 etime = []
                 etime.append(endtime.real)
                 etime.append(endtime.imag)
-            elif isinstance(endtime, list) or isinstance(endtime, tuple):
+            elif isinstance(endtime, list):
                 eetime = CDFepoch.compute_epoch16(endtime)
                 etime = []
                 etime.append(eetime.real)
@@ -1355,7 +1357,7 @@ class CDFepoch(object):
         return encoded
 
     @staticmethod
-    def compute_epoch(dates: Union[list, tuple], to_np: bool = False):
+    def compute_epoch(dates, to_np: bool = False):
         # TODOL Add docstring. What is the output format?
 
         if not isinstance(dates, list) and not isinstance(dates, tuple):
@@ -1455,7 +1457,8 @@ class CDFepoch(object):
         else:
             return np.array(epochs)
 
-    def _computeEpoch(y, m, d, h, mn, s, ms):  # @NoSelf
+    @staticmethod
+    def _computeEpoch(y: int, m, d, h, mn, s, ms):
         if m == 0:
             daysSince0AD = CDFepoch._JulianDay(y, 1, 1) + (d - 1) - 1721060
         else:
@@ -1725,7 +1728,8 @@ class CDFepoch(object):
             else:
                 raise ValueError("Invalid cdf epoch type...")
 
-    def _month_index(month):  # @NoSelf
+    @staticmethod
+    def _month_index(month: str) -> int:
         if month.lower() == "jan":
             return 1
         elif month.lower() == "feb":
