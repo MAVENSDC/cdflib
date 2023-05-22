@@ -4,7 +4,7 @@ from typing import List, Optional, Union
 import numpy as np
 
 
-@dataclass(kw_only=True)
+@dataclass
 class CDRInfo:
     encoding: int
     copyright_: str
@@ -15,7 +15,7 @@ class CDRInfo:
     post25: bool
 
 
-@dataclass(kw_only=True)
+@dataclass
 class GDRInfo:
     first_zvariable: int
     first_rvariable: int
@@ -39,7 +39,7 @@ class AEDR:
     num_strings: Optional[int] = None
 
 
-@dataclass(kw_only=True)
+@dataclass
 class VDR:
     data_type: int
     section_type: int
