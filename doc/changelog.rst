@@ -56,6 +56,8 @@ Other breaking changes
   Use `cdflib.cdfread.CDF.attinq` to get attribute information instead.
 - Removed ``CDF.print_attrs``
 - The ``version``, ``release``, and ``increement`` attributes of ``CDF`` have been removed.
+- Removed the ``record_range_only`` argument to `cdflib.cdfread.CDF.varget`.
+- Removed ``CDF.epochrange``. Use `cdflib.cdfread.CDF.varinq` instead to get the data ranges.
 
 Bugfixes
 --------

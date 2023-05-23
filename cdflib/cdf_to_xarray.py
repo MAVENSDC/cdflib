@@ -1,5 +1,5 @@
 import re
-from typing import Dict
+from typing import Dict, Union
 
 import numpy as np
 
@@ -109,7 +109,7 @@ def _convert_cdf_to_dicts(filename, to_datetime=False, to_unixtime=False):
 
     for var_name in all_cdf_variables:
         var_attribute_list = cdf_file.varattsget(var_name)
-        var_data_temp = {}
+        var_data_temp: Dict[str, Union[str, np.ndarray]] = {}
         var_atts_temp = {}
         for att in var_attribute_list:
             var_atts_temp[att] = cdf_file.attget(att, var_name)

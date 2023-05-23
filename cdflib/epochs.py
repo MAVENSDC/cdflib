@@ -10,10 +10,15 @@ import numpy as np
 
 LEAPSEC_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), "CDFLeapSeconds.txt")
 
-epochs_type = Union[np.ndarray, List[float], List[int], List[complex], Tuple[float, ...], Tuple[int, ...], Tuple[complex, ...]]
+epochs_type = Union[np.ndarray, str, List[float], List[int], List[complex], Tuple[float, ...], Tuple[int, ...], Tuple[complex, ...]]
 
 
-class CDFepoch(object):
+_epoch_scalar_types = Union[int, np.int64, float, np.float64, complex, np.complex128]
+_epoch_list_types = Union[List[int], List[np.int64], List[float], List[np.float64], List[complex], List[np.complex128]]
+_epoch_all_types = Union[_epoch_list_types, _epoch_scalar_types]
+
+
+class CDFepoch:
     """
     Convert between CDF-based epochs, np.datetime64, and Unix time.
 
@@ -89,7 +94,7 @@ class CDFepoch(object):
     currentLeapSeconds = -1
 
     @staticmethod
-    def encode(epochs, iso_8601: bool = True):  # @NoSelf
+    def encode(epochs: _epoch_all_types, iso_8601: bool = True):
         """
         Converts one or more epochs into UTC strings. The input epoch
         format is deduced from the argument type.
@@ -305,11 +310,11 @@ class CDFepoch(object):
         raise TypeError("Bad input")
 
     @staticmethod
-    def encode_tt2000(tt2000, iso_8601: bool = True):  # @NoSelf
+    def encode_tt2000(tt2000: Union[int, np.int64, List[int], np.ndarray], iso_8601: bool = True) -> Union[str, List[str]]:
         if isinstance(tt2000, int) or isinstance(tt2000, np.int64):
-            new_tt2000 = [tt2000]
+            new_tt2000 = np.array([tt2000])
         elif isinstance(tt2000, list) or isinstance(tt2000, np.ndarray):
-            new_tt2000 = tt2000
+            new_tt2000 = np.array(tt2000)
         else:
             raise TypeError("Bad input")
 
@@ -521,11 +526,10 @@ class CDFepoch(object):
             raise TypeError("datetime must be in list form")
 
         if isinstance(datetimes[0], numbers.Number):
-            new_datetimes = [datetimes]
-            count = 1
-        else:
-            count = len(datetimes)
-            new_datetimes = datetimes
+            datetimes = [datetimes]
+
+        new_datetimes = np.array(datetimes)
+        count = len(datetimes)
         nanoSecSinceJ2000s = []
         for x in range(count):
             datetime = new_datetimes[x]
@@ -718,7 +722,7 @@ class CDFepoch(object):
         return da
 
     @staticmethod
-    def _LoadLeapNanoSecondsTable():  # @NoSelf
+    def _LoadLeapNanoSecondsTable() -> None:
         CDFepoch.NST = []
         for ix in range(0, CDFepoch.NERA1):
             CDFepoch.NST.append(CDFepoch.FILLED_TT2000_VALUE)
@@ -728,7 +732,6 @@ class CDFepoch(object):
                     [int(CDFepoch.LTS[ix][0]), int(CDFepoch.LTS[ix][1]), int(CDFepoch.LTS[ix][2]), 0, 0, 0, 0, 0, 0]
                 )
             )
-        CDFepoch.NST = np.array(CDFepoch.NST)
 
     @staticmethod
     def _EPOCHbreakdownTT2000(epoch):  # @NoSelf
@@ -756,7 +759,7 @@ class CDFepoch(object):
         return date
 
     @staticmethod
-    def epochrange_tt2000(epochs, starttime=None, endtime=None):  # @NoSelf
+    def epochrange_tt2000(epochs, starttime=None, endtime=None):
         if isinstance(epochs, int) or isinstance(epochs, np.int64):
             pass
         elif isinstance(epochs, list) or isinstance(epochs, tuple) or isinstance(epochs, np.ndarray):
@@ -766,6 +769,7 @@ class CDFepoch(object):
                 raise ValueError("Bad data")
         else:
             raise ValueError("Bad data")
+        stime: Union[int, np.int64]
         if starttime is None:
             stime = int(-9223372036854775807)
         else:
@@ -795,9 +799,9 @@ class CDFepoch(object):
     @staticmethod
     def encode_epoch16(epochs, iso_8601: bool = True):
         if isinstance(epochs, (complex, np.complex128)):
-            new_epochs = [epochs]
+            new_epochs = np.array([epochs])
         elif isinstance(epochs, (list, tuple, np.ndarray)):
-            new_epochs = epochs
+            new_epochs = np.array(epochs)
         else:
             raise TypeError("bad data")
 
@@ -1211,7 +1215,7 @@ class CDFepoch(object):
             return epoch
 
     @staticmethod
-    def epochrange_epoch16(epochs, starttime=None, endtime=None) -> np.ndarray:
+    def epochrange_epoch16(epochs, starttime=None, endtime=None) -> Optional[np.ndarray]:
         if isinstance(epochs, complex) or isinstance(epochs, np.complex128):
             new_epochs = [epochs]
         elif isinstance(epochs, list) or isinstance(epochs, tuple) or isinstance(epochs, np.ndarray):
@@ -1222,10 +1226,9 @@ class CDFepoch(object):
                 raise ValueError("Bad data")
         else:
             raise ValueError("Bad data")
+        stime: List[Union[float, np.float64]]
         if starttime is None:
-            stime = []
-            stime.append(-1.0e31)
-            stime.append(-1.0e31)
+            stime = [-1.0e31, -1.0e31]
         else:
             if isinstance(starttime, complex) or isinstance(starttime, np.complex128):
                 stime = []
@@ -1264,9 +1267,9 @@ class CDFepoch(object):
         count = count * 2
         indx = []
         if epoch16[0] > etime[0] or (epoch16[0] == etime[0] and epoch16[1] > etime[1]):
-            return
+            return None
         if epoch16[count - 2] < stime[0] or (epoch16[count - 2] == stime[0] and epoch16[count - 1] < stime[1]):
-            return
+            return None
         for x in range(0, count, 2):
             if epoch16[x] < stime[0]:
                 continue
@@ -1299,11 +1302,11 @@ class CDFepoch(object):
         return np.arange(indx[0], indx[1] + 1, step=1)
 
     @staticmethod
-    def encode_epoch(epochs, iso_8601: bool = True):  # @NoSelf
+    def encode_epoch(epochs, iso_8601: bool = True):
         if isinstance(epochs, (float, np.float64)):
-            new_epochs = [epochs]
+            new_epochs = np.array([epochs])
         elif isinstance(epochs, (list, np.ndarray)):
-            new_epochs = epochs
+            new_epochs = np.array(epochs)
         else:
             raise TypeError("Bad data")
 
@@ -1556,6 +1559,7 @@ class CDFepoch(object):
         else:
             raise TypeError("Bad data")
 
+        stime: Union[float, np.float64]
         if starttime is None:
             stime = 0.0
         else:
