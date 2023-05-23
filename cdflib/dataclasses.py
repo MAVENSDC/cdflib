@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import List, Optional, Union
+from pathlib import Path
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 
@@ -16,6 +17,54 @@ class ADRInfo:
     first_z_entry: int
     first_gr_entry: int
     name: str
+
+
+@dataclass
+class CDFInfo:
+    """
+    CDF information.
+
+    Parameters
+    ----------
+    CDF :
+        Path to the CDF.
+    Version :
+        CDF version.
+    Encoding :
+        Endianness of the CDF.
+    Majority :
+        Row/column majority.
+    zVariables :
+        zVariable names.
+    rVariables :
+        rVariable names.
+    Attributes :
+        List of dictionary objects that contain {attribute_name : scope}.
+    Checksum
+        Checksum indicator.
+    Num_rdim :
+        Number of dimensions for rVariables.
+    rDim_sizes :
+        Dimensional sizes for rVariables.
+    Compressed :
+        If CDF is compressed at file level.
+    LeapSecondUpdated :
+        Last updated leap second table.
+    """
+
+    CDF: Union[str, Path]
+    Version: str
+    Encoding: int
+    Majority: str
+    rVariables: List[str]
+    zVariables: List[str]
+    Attributes: List[Dict[str, str]]
+    Copyright: str
+    Checksum: bool
+    Num_rdim: int
+    rDim_sizes: List[int]
+    Compressed: bool
+    LeapSecondUpdate: Optional[int] = None
 
 
 @dataclass

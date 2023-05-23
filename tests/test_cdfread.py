@@ -10,9 +10,7 @@ fname = pathlib.Path(__file__) / ".." / "testfiles" / "psp_fld_l2_mag_rtn_1min_2
 def test_read():
     cdf = CDF(fname)
 
-    info = cdf.cdf_info()
-    assert isinstance(info, dict)
-
+    cdf.cdf_info()
     varatts = cdf.varattsget("psp_fld_l2_mag_RTN_1min")
     assert isinstance(varatts, dict)
 
