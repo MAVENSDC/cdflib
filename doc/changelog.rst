@@ -12,9 +12,28 @@ for older versions of Python, but this is not guarenteed. If you need to
 use ``cdflib`` on an older version of Python, please open an issue to
 discuss whether the ``cdflib`` maintainers can support this.
 
-Breaking changes
-----------------
-- The CDF factory class (``cdflib.CDF``) has been removed, and `cdflib.CDF`
+Changes to CDF method returns
+-----------------------------
+Most of the methods that return data from the CDF reader class have had their
+return types changed from dictionaries to dataclasses. This allows the return
+type to be more clearly documented (see :ref:`dataclasses`), for internal
+checks to be made to make sure data types are consistent, and a nicer
+representation when the return values are printed.
+
+Where previously an item would have been accessed as ``dict["value"]``,
+items in the dataclasses can be accessed using ``dataclass.value``.
+
+The methods that have been updated are:
+
+- `cdflib.cdfread.CDF.vdr_info`
+- `cdflib.cdfread.CDF.attinq`
+- `cdflib.cdfread.CDF.attget`
+- `cdflib.cdfread.CDF.varget`
+- `cdflib.cdfread.CDF.varinq`
+
+Other breaking changes
+----------------------
+- The CDF factory class (``cdflib.CDF``) has been removed, and ``cdflib.CDF``
   is now the reader class. This change has been made to prevent potential
   confusion when the user makes a mistake in specifying the file to open,
   and ``cdflib`` would silently create a writer class instead. If you want
@@ -31,15 +50,10 @@ Breaking changes
   code now behaves as if ``to_np=True`` throughout.
   This change has been made to reduce code omplexity and make maintaining
   the code easier.
-- The ``expand`` keyword argument to ``CDF.varget`` has been removed.
+- The ``expand`` keyword argument to `cdflib.cdfread.CDF.varget` has been removed.
   Use ``CDF.varinq`` to get variable information instead.
 - The ``expand`` keyword argument to ``CDF.globalattsget`` and ``CDF.varattsget`` has been removed.
-  Use ``CDF.attinq`` to get attribute information instead.
-- ``CDF.vdr_info`` now returns a dataclass instead of a dict.
-- ``CDF.attinq`` now returns a dataclass instead of a dict.
-- ``CDF.attget`` now returns a dataclass instead of a dict.
-- ``CDF.varget`` now returns a dataclass instead of a dict.
-- ``CDF.varinq`` now returns a dataclass instead of a dict.
+  Use `cdflib.cdfread.CDF.attinq` to get attribute information instead.
 - Removed ``CDF.print_attrs``
 - The ``version``, ``release``, and ``increement`` attributes of ``CDF`` have been removed.
 
