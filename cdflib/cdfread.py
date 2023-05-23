@@ -41,10 +41,6 @@ class CDF:
     >>> x = cdf_file.varget("NameOfVariable", startrec=0, endrec=150)
     """
 
-    version = 3
-    release = 7
-    increment = 0
-
     def __init__(self, path: Union[str, Path], validate: bool = False, string_encoding: str = "ascii", s3_read_method: int = 1):
         """
         Parameters
@@ -248,8 +244,7 @@ class CDF:
 
         Returns
         -------
-        dict
-            Dictionary of attribution infromation.
+        ADRInfo
         """
         position = self._first_adr
         if isinstance(attribute, str):
@@ -512,8 +507,7 @@ class CDF:
 
         This function returns all of the global attribute entries,
         in a dictionary (in the form of ``'attribute': {entry: value}``
-        pairs) from a CDF. If there is no entry found, None is
-        returned.
+        pairs) from a CDF.
         """
         byte_loc = self._first_adr
         return_dict: Dict[str, List[Union[str, int]]] = {}
@@ -550,11 +544,6 @@ class CDF:
         this function returns all of the variable attribute entries,
         in a dictionary (in the form of 'attribute': value pair) for
         a variable. If there is no entry found, None is returned.
-        If no variable name is provided, a list of variables are printed.
-
-        Parameters
-        ----------
-        variable :
         """
         if isinstance(variable, int) and self._num_zvariable > 0 and self._num_rvariable > 0:
             raise ValueError("This CDF has both r and z variables. Use variable name")

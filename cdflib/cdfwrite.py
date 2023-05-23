@@ -1,10 +1,3 @@
-"""
-This is a python script to write a CDF file from scratch
-without needing to install the CDF NASA library.
-This Python code only creates V3 CDFs.
-
-@author: Mike Liu
-"""
 import binascii
 import gzip
 import hashlib
@@ -17,14 +10,18 @@ import platform as pf
 import struct
 import sys
 import warnings
+from functools import wraps
 from typing import Any, List, Optional, Tuple
 
 import numpy as np
 
 import cdflib.epochs as cdfepoch
 
+__all__ = ["CDF"]
+
 
 def is_open(func):
+    @wraps(func)
     def ensure_open(self, *args, **kwargs):
         if self.is_closed:
             raise OSError("This file is already closed, and can no longer be modified.")

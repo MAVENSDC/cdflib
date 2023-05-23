@@ -41,6 +41,7 @@ Breaking changes
 - ``CDF.varget`` now returns a dataclass instead of a dict.
 - ``CDF.varinq`` now returns a dataclass instead of a dict.
 - Removed ``CDF.print_attrs``
+- The ``version``, ``release``, and ``increement`` attributes of ``CDF`` have been removed.
 
 Bugfixes
 --------
