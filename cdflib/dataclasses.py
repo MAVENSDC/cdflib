@@ -85,20 +85,32 @@ class VDRInfo:
     Variable data record info.
     """
 
+    #: Name of the variable.
     Variable: str
+    #: Variable number.
     Num: int
+    #: Variable type: zVariable or rVariable.
     Var_Type: str
+    #: Variable CDF data type.
     Data_Type: int
     Data_Type_Description: str
+    #: Number of elements of the variable.
     Num_Elements: int
+    #: Dimensionality of variable record.
     Num_Dims: int
+    #: Shape of the variable record.
     Dim_Sizes: List[int]
     Sparse: str
+    #: Maximum written variable number (0-based).
     Last_Rec: int
+    #: Record variance.
     Rec_Vary: int
+    #: Dimensional variance(s).
     Dim_Vary: Union[List[int], List[bool]]  #: a doc
     Compress: int
+    #: Padded value (if set).
     Pad: Optional[int] = None
+    #: Blocking factor (if variable is compressed).
     Block_Factor: Optional[int] = None
 
 
