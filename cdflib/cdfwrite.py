@@ -2658,7 +2658,7 @@ class CDF:
                 # each block in this list: [starting_rec#, ending_rec#, data]
                 starting = sblock[0] * y
                 ending = (sblock[1] + 1) * y
-                sparse_data.append((sblock[0], sblock[1], data[starting:ending]))
+                sparse_data.append((sblock[0], sblock[1], np.array(data[starting:ending])))
             return sparse_data
         elif isinstance(data, list):
             for x in sparse_blocks:
@@ -2671,7 +2671,7 @@ class CDF:
                 ist = sblock[0]
                 for z in range(0, records):
                     datax.append(data[ist + z])
-                sparse_data.append((sblock[0], sblock[1], datax))
+                sparse_data.append((sblock[0], sblock[1], np.array(datax)))
             return sparse_data
         else:
             print("Can not handle data... Skip")

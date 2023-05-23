@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from numbers import Number
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
@@ -109,14 +110,14 @@ class VDRInfo:
     Dim_Vary: Union[List[int], List[bool]]  #: a doc
     Compress: int
     #: Padded value (if set).
-    Pad: Optional[int] = None
+    Pad: Optional[Union[str, np.ndarray]] = None
     #: Blocking factor (if variable is compressed).
     Block_Factor: Optional[int] = None
 
 
 @dataclass
 class AEDR:
-    entry: np.ndarray
+    entry: Union[str, np.ndarray]
     data_type: int
     num_elements: int
     next_aedr: int
@@ -143,7 +144,7 @@ class VDR:
     record_vary: int
     num_elements: int
     sparse: int
-    pad: Optional[bool] = None
+    pad: Optional[Union[str, np.ndarray]] = None
 
 
 @dataclass
@@ -159,4 +160,4 @@ class AttData:
     #: Number of values extracted.
     Num_Items: int
     #: Data as a scalar value, a numpy array or a string.
-    Data: np.ndarray
+    Data: Union[Number, str, np.ndarray]

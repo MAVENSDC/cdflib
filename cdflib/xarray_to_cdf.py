@@ -25,7 +25,7 @@ def _dtype_to_cdf_type(var):
         return 51, int(var.dtype.str[2:])  # CDF_CHAR, and the length of the longest string in the numpy array
     elif var.dtype.type == np.bytes_:  # Bytes are usually strings
         return 51, int(var.dtype.str[2:])  # CDF_CHAR, and the length of the longest string in the numpy array
-    elif var.dtype == np.object:  # This commonly means we have multidimensional arrays of strings
+    elif var.dtype == object:  # This commonly means we have multidimensional arrays of strings
         try:
             longest_string = 0
             for x in np.nditer(var.data, flags=["refs_ok"]):

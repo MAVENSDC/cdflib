@@ -172,7 +172,7 @@ class CDF:
         if hasattr(self, "temp_file") and self.temp_file is not None:
             os.remove(self.temp_file)
 
-    def __getitem__(self, variable: str) -> np.ndarray:
+    def __getitem__(self, variable: str) -> Union[str, np.ndarray]:
         return self.varget(variable)
 
     def __enter__(self) -> "CDF":
@@ -379,8 +379,7 @@ class CDF:
         endtime: Optional[datetime.datetime] = None,
         startrec: int = 0,
         endrec: Optional[int] = None,
-        record_range_only: bool = False,
-    ) -> VDR:
+    ) -> Union[str, np.ndarray]:
         """
         Returns the variable data.
 
@@ -442,7 +441,6 @@ class CDF:
             endtime=endtime,
             startrec=startrec,
             endrec=endrec,
-            record_range_only=record_range_only,
         )
 
     def vdr_info(self, variable: Union[str, int]) -> VDR:
@@ -485,23 +483,7 @@ class CDF:
 
         return vdr_info
 
-    def epochrange(
-        self,
-        epoch: Optional[str] = None,
-        starttime: Optional[datetime.datetime] = None,
-        endtime: Optional[datetime.datetime] = None,
-    ) -> VDR:
-        """
-        Get epoch range.
-
-        Returns a list of the record numbers, representing the
-        corresponding starting and ending records within the time
-        range from the epoch data. A None is returned if there is no
-        data either written or found in the time range.
-        """
-        return self.varget(variable=epoch, starttime=starttime, endtime=endtime, record_range_only=True)
-
-    def globalattsget(self) -> Dict[str, List[Union[str, int]]]:
+    def globalattsget(self) -> Dict[str, List[Union[str, np.ndarray]]]:
         """
         Gets all global attributes.
 
@@ -510,7 +492,7 @@ class CDF:
         pairs) from a CDF.
         """
         byte_loc = self._first_adr
-        return_dict: Dict[str, List[Union[str, int]]] = {}
+        return_dict: Dict[str, List[Union[str, np.ndarray]]] = {}
         for _ in range(self._num_att):
             adr_info = self._read_adr(byte_loc)
             if adr_info.scope != 1:
@@ -536,7 +518,7 @@ class CDF:
 
         return return_dict
 
-    def varattsget(self, variable: Optional[str] = None) -> Dict[str, Union[None, float, np.ndarray]]:
+    def varattsget(self, variable: Optional[str] = None) -> Dict[str, Union[None, str, np.ndarray]]:
         """
         Gets all variable attributes.
 
@@ -573,7 +555,7 @@ class CDF:
         else:
             raise ValueError("Please set variable keyword equal to " "the name or number of an variable")
 
-    def _uncompress_rle(self, data: np.ndarray) -> bytearray:
+    def _uncompress_rle(self, data: bytes) -> bytearray:
         result = bytearray()
         index = 0
         while index < len(data):
@@ -935,9 +917,9 @@ class CDF:
             eof=eof,
         )
 
-    def _read_varatts(self, var_num: int, zVar: bool) -> Dict[str, Union[None, float, np.ndarray]]:
+    def _read_varatts(self, var_num: int, zVar: bool) -> Dict[str, Union[None, str, np.ndarray]]:
         byte_loc = self._first_adr
-        return_dict = {}
+        return_dict: Dict[str, Union[None, str, np.ndarray]] = {}
         for z in range(0, self._num_att):
             adr_info = self._read_adr(byte_loc)
             if adr_info.scope == 1:
@@ -1332,6 +1314,7 @@ class CDF:
         # Only set if pad value is in the flags
         if pad_bool:
             byte_stream = vdr[coff:]
+            pad: Union[str, np.ndarray]
             try:
                 pad = self._read_data(byte_stream, data_type, 1, num_elements)
             except Exception:
@@ -1472,7 +1455,7 @@ class CDF:
 
     def _read_vvrs(
         self, vdr: VDR, vvr_offs: List[int], vvr_start: List[int], vvr_end: List[int], startrec: int, endrec: int
-    ) -> np.ndarray:
+    ) -> Union[str, np.ndarray]:
         """
         Reads in all VVRS that are pointed to in the VVR_OFFS array.
         Creates a large byte array of all values called "byte_stream".
@@ -1658,7 +1641,7 @@ class CDF:
 
     def _read_data(
         self, byte_stream: bytes, data_type: int, num_recs: int, num_elems: int, dimensions: Optional[List[int]] = None
-    ) -> np.ndarray:
+    ) -> Union[str, np.ndarray]:
         """
         This is the primary routine that converts streams of bytes into usable data.
 
@@ -1747,7 +1730,7 @@ class CDF:
             dt = np.dtype(dt_string)
             ret = np.frombuffer(byte_stream, dtype=dt, count=num_recs * num_elems)
             try:
-                ret.setflags("WRITEABLE")
+                ret.setflags(write=True)
             except ValueError:
                 # If we can't set the writable flag, just continue
                 pass
@@ -1793,12 +1776,12 @@ class CDF:
 
                 num_items = aedr_info.num_elements
                 data = aedr_info.entry
-                if aedr_info.data_type == 51 or aedr_info.data_type == 52:
+                if isinstance(data, str):
                     if aedr_info.num_strings is not None:
                         num_strings = aedr_info.num_strings
                         num_items = num_strings
-                        if num_strings > 1:
-                            data = aedr_info.entry.split("\\N ")
+                        if num_strings > 1 and isinstance(aedr_info.entry, str):
+                            data = np.array(aedr_info.entry.split("\\N "))
                 return AttData(item_size, data_type, num_items, data)
             else:
                 position = next_aedr
@@ -1813,8 +1796,7 @@ class CDF:
         endtime: Optional[datetime.datetime] = None,
         startrec: int = 0,
         endrec: Optional[int] = None,
-        record_range_only: bool = False,
-    ) -> np.ndarray:
+    ) -> Optional[Union[str, np.ndarray]]:
         # Error checking
         if startrec:
             if startrec < 0:
@@ -1839,9 +1821,9 @@ class CDF:
             if starttime is not None or endtime is not None:
                 recs = self._findtimerecords(vdr_info.name, starttime, endtime, epoch=epoch)
                 if recs is None:
-                    return
-                if len(recs) == 0:
-                    return
+                    return None
+                elif len(recs) == 0:
+                    return None
                 else:
                     startrec = recs[0]
                     endrec = recs[-1]
@@ -1850,8 +1832,6 @@ class CDF:
             endrec = 0
 
         data = self._read_vvrs(vdr_info, vvr_offsets, vvr_start, vvr_end, startrec, endrec)
-        if record_range_only:
-            return [startrec, endrec]
         if vdr_info.record_vary:
             return data
         else:
@@ -1880,12 +1860,16 @@ class CDF:
                         "variable"
                     )
 
+                if not isinstance(dependVar.Data, str):
+                    raise ValueError()
+
                 vdr_info = self.varinq(dependVar.Data)
                 if vdr_info.Data_Type != 31 and vdr_info.Data_Type != 32 and vdr_info.Data_Type != 33:
                     raise ValueError(
                         "Corresponding variable from 'DEPEND_0' attribute "
                         "for variable: {}".format(var_name) + " is not a CDF epoch type"
                     )
+
                 epochtimes = self.varget(dependVar.Data)
 
         return self._findrangerecords(vdr_info.Data_Type, epochtimes, starttime, endtime)
@@ -1928,7 +1912,7 @@ class CDF:
             dt_string = "s"
         return dt_string
 
-    def _default_pad(self, data_type: int, num_elms: int) -> np.ndarray:
+    def _default_pad(self, data_type: int, num_elms: int) -> Union[str, np.ndarray]:
         """
         The default pad values by CDF data type
         """
@@ -1970,22 +1954,22 @@ class CDF:
         dt = np.dtype(dt_string)
         ret = np.frombuffer(pad_value, dtype=dt, count=1)
         try:
-            ret.setflags("WRITEABLE")
+            ret.setflags(write=True)
         except Exception:
             # TODO: Figure out why we need to array set to writeable
             pass
         return ret
 
-    def _convert_np_data(self, data: np.ndarray, data_type: int, num_elems: int) -> bytes:
+    def _convert_np_data(self, data: Union[str, np.ndarray], data_type: int, num_elems: int) -> bytes:
         """
         Converts a single np data into byte stream.
         """
-        if data_type == 51 or data_type == 52:
+        if isinstance(data, str):
             if data == "":
                 return ("\x00" * num_elems).encode()
             else:
                 return data.ljust(num_elems, "\x00").encode(self.string_encoding)
-        elif data_type == 32:
+        elif isinstance(data, np.ndarray):
             data_stream = data.real.tobytes()
             data_stream += data.imag.tobytes()
             return data_stream
