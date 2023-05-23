@@ -1054,14 +1054,14 @@ class CDFepoch(object):
 
         Parameters
         ----------
-        epoch0 : int, float, or array-like
+        epoch0 : int, float, array-like
             First element of an epoch array (epoch time in seconds)
-        epoch1 : float or array-like
+        epoch1 : float, array-like
             Second element of an epoch array (epoch time in picoseconds)
 
         Returns
         -------
-        out : array of int
+        out : array-like
             Array of 10 integers (year, month, day, hour, minute, second,
             millisecond, microsecond, nanosecond, picosecond) if a single value
             is input. For array input, the shape is altered by adding another
@@ -1120,7 +1120,7 @@ class CDFepoch(object):
 
         Parameters
         ----------
-        epochs : np.complex128 or array-like
+        epochs : array-like
             Single, list, tuple, or np.array of epoch values
         to_np : bool
             Flag for output type, if True will be an np.array, if False
@@ -1128,7 +1128,7 @@ class CDFepoch(object):
 
         Returns
         -------
-        components : list-like of ints
+        components : list
             List or array of date and time values.  The last axis contains
             (in order): year, month, day, hour, minute, second, millisecond,
             microsecond, nanosecond, and picosecond
@@ -1491,7 +1491,7 @@ class CDFepoch(object):
 
         Returns
         -------
-        components : list-like of ints
+        components : list
             List or array of date and time values.  The last axis contains
             (in order): year, month, day, hour, minute, second, and millisecond
 

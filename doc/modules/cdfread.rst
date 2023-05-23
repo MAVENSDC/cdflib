@@ -20,4 +20,4 @@ For example:
 
 >>> x = cdf_file.varget("NameOfVariable", startrec = 0, endrec = 150)
 
-This command will return all data inside of the variable `Variable1`, from records 0 to 150.
+This command will return all data inside of the variable ``Variable1``, from records 0 to 150.
