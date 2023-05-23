@@ -41,15 +41,19 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx_copybutton",
     "sphinx.ext.linkcode",
+    "sphinx.ext.intersphinx",
     "sphinx_automodapi.automodapi",
 ]
 
 numpydoc_class_members_toctree = False
 numpydoc_show_class_members = False
+autodoc_typehints = "description"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
-
+default_role = "any"
+nitpicky = True
+nitpick_ignore = [("py:class", "array-like"), ("py:class", "optional")]
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
@@ -142,8 +146,12 @@ texinfo_documents = [
 # -- Options for intersphinx extension ---------------------------------------
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {"https://docs.python.org/3": None}
-# autodoc_mock_imports = ['xarray', 'astropy']
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "astropy": ("https://docs.astropy.org/en/stable/", None),
+    "xarray": ("https://docs.xarray.dev/en/stable/", None),
+}
 
 
 def linkcode_resolve(domain, info):

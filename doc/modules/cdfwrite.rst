@@ -1,8 +1,8 @@
 CDF Writer Class
 =================
 
-.. automodapi:: cdflib.cdfwrite
-    :no-inheritance-diagram:
+.. autoclass:: cdflib.cdfwrite.CDF
+   :members:
 
 
 Sample Usage

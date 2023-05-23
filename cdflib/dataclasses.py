@@ -4,6 +4,8 @@ from typing import Dict, List, Optional, Union
 
 import numpy as np
 
+__all__ = ["ADRInfo", "CDFInfo", "CDRInfo", "GDRInfo", "VDRInfo", "AEDR", "VDR", "AEDR", "AttData"]
+
 
 @dataclass
 class ADRInfo:
@@ -23,47 +25,32 @@ class ADRInfo:
 class CDFInfo:
     """
     CDF information.
-
-    Parameters
-    ----------
-    CDF :
-        Path to the CDF.
-    Version :
-        CDF version.
-    Encoding :
-        Endianness of the CDF.
-    Majority :
-        Row/column majority.
-    zVariables :
-        zVariable names.
-    rVariables :
-        rVariable names.
-    Attributes :
-        List of dictionary objects that contain {attribute_name : scope}.
-    Checksum
-        Checksum indicator.
-    Num_rdim :
-        Number of dimensions for rVariables.
-    rDim_sizes :
-        Dimensional sizes for rVariables.
-    Compressed :
-        If CDF is compressed at file level.
-    LeapSecondUpdated :
-        Last updated leap second table.
     """
 
+    #: Path to the CDF.
     CDF: Union[str, Path]
+    #: CDF version.
     Version: str
+    #: Endianness of the CDF.
     Encoding: int
+    #: Row/column majority.
     Majority: str
+    #: zVariable names.
     rVariables: List[str]
+    #: rVariable names.
     zVariables: List[str]
+    #: List of dictionary objects that map attribute_name to scope.
     Attributes: List[Dict[str, str]]
     Copyright: str
+    #: Checksum indicator.
     Checksum: bool
+    #: Number of dimensions for rVariables.
     Num_rdim: int
+    #: Dimensional sizes for rVariables.
     rDim_sizes: List[int]
+    #: If CDF is compressed at file level.
     Compressed: bool
+    #: Last updated leap second table.
     LeapSecondUpdate: Optional[int] = None
 
 
@@ -96,49 +83,34 @@ class GDRInfo:
 class VDRInfo:
     """
     Variable data record info.
-
-    Attributes
-    ----------
-    Variable : str
-        Name of the variable.
-    Num : int
-        Variable number.
-    Var_Type : str
-        Variable type: zVariable or rVariable.
-    Data_Type : str
-        Variable CDF data type.
-    Num_Elements : int
-        Number of elements of the variable.
-    Num_Dims : int
-        Dimensionality of variable record.
-    Dim_sizes :
-        Shape of the variable record.
-    Last_Rec :
-        Maximum written variable number (0-based).
-    Dim_Vary :
-        Dimensional variance(s).
-    Rec_Vary :
-        Record variance.
-    Pad :
-        Padded value (if set).
-    Block_Factor:
-        Blocking factor (if variable is compressed).
     """
 
+    #: Name of the variable.
     Variable: str
+    #: Variable number.
     Num: int
+    #: Variable type: zVariable or rVariable.
     Var_Type: str
+    #: Variable CDF data type.
     Data_Type: int
     Data_Type_Description: str
+    #: Number of elements of the variable.
     Num_Elements: int
+    #: Dimensionality of variable record.
     Num_Dims: int
+    #: Shape of the variable record.
     Dim_Sizes: List[int]
     Sparse: str
+    #: Maximum written variable number (0-based).
     Last_Rec: int
+    #: Record variance.
     Rec_Vary: int
-    Dim_Vary: Union[List[int], List[bool]]
+    #: Dimensional variance(s).
+    Dim_Vary: Union[List[int], List[bool]]  #: a doc
     Compress: int
+    #: Padded value (if set).
     Pad: Optional[int] = None
+    #: Blocking factor (if variable is compressed).
     Block_Factor: Optional[int] = None
 
 
@@ -178,20 +150,13 @@ class VDR:
 class AttData:
     """
     Attribute data.
-
-    Attributes
-    ----------
-    Item_size : int
-        Number of bytes for each entry value.
-    Data_Type : str
-        CDF data type.
-    Num_Items : int
-        Number of values extracted.
-    Data : numpy.ndarray
-        Data as a scalar value, a numpy array or a string.
     """
 
+    #: Number of bytes for each entry value.
     Item_Size: int
+    #: CDF data type.
     Data_Type: str
+    #: Number of values extracted.
     Num_Items: int
+    #: Data as a scalar value, a numpy array or a string.
     Data: np.ndarray

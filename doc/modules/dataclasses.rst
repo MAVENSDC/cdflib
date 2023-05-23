@@ -1,8 +1,8 @@
+.. _dataclasses:
+
 Dataclasses
 ===========
+These classes store information returned from reading a CDF file.
 
-CDF Writer Class
-=================
-
-.. automodapi:: cdflib.dataclasses
-    :no-inheritance-diagram:
+.. automodule:: cdflib.dataclasses
+   :members:
