@@ -11,7 +11,9 @@ import struct
 import sys
 import warnings
 from functools import wraps
-from typing import Any, List, Optional, Tuple
+from numbers import Number
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -174,7 +176,7 @@ class CDF:
 
     level = 0
 
-    def __init__(self, path, cdf_spec=None, delete=False):
+    def __init__(self, path: Union[str, Path], cdf_spec: Optional[Dict[str, Any]] = None, delete: bool = False):
         path = pathlib.Path(path).expanduser()
 
         major = 1
@@ -196,8 +198,8 @@ class CDF:
             else:
                 cdf_compression = 6 if cdf_compression else 0
 
-            rdim_sizes = cdf_spec.get("rDim_sizes", None)
-            num_rdim = len(rdim_sizes) if rdim_sizes is not None else 0
+            rdim_sizes: Optional[List[int]] = cdf_spec.get("rDim_sizes", None)
+            num_rdim: int = len(rdim_sizes) if rdim_sizes is not None else 0
 
         else:
             encoding = 8
@@ -238,17 +240,17 @@ class CDF:
         self.compressed_file = path.with_suffix(".tmp") if cdf_compression > 0 else None
 
         # Dictionary objects, these contains name, offset, and dimension information
-        self.zvarsinfo = {}
-        self.rvarsinfo = {}
+        self.zvarsinfo: Dict[int, Tuple[str, int, int, List[int], List[bool]]] = {}
+        self.rvarsinfo: Dict[int, Tuple[str, int, int, List[int], List[bool]]] = {}
 
         # Dictionary object, contains name, offset, and scope (global or variable)
-        self.attrsinfo = {}
+        self.attrsinfo: Dict[int, Tuple[str, int, int]] = {}
 
-        self.gattrs = []  # List of global attributes
-        self.vattrs = []  # List of variable attributes
-        self.attrs = []  # List of ALL attributes
-        self.zvars = []  # List of z variable names
-        self.rvars = []  # List of r variable names
+        self.gattrs: List[str] = []  # List of global attributes
+        self.vattrs: List[str] = []  # List of variable attributes
+        self.attrs: List[str] = []  # List of ALL attributes
+        self.zvars: List[str] = []  # List of z variable names
+        self.rvars: List[str] = []  # List of r variable names
         self.checksum = checksum  # Boolean, whether or not to include the checksum at the end
         self.compression = cdf_compression  # Compression level (or True/False)
         self.num_rdim = num_rdim  # Number of r dimensions
@@ -817,7 +819,7 @@ class CDF:
                     if maxRec < varMaxRec:
                         self._update_offset_value(f, self.gdr_head + 52, 4, varMaxRec)
 
-    def _write_var_attrs(self, f: io.BufferedRandom, varNum: int, var_attrs, zVar: bool) -> None:
+    def _write_var_attrs(self, f: io.BufferedWriter, varNum: int, var_attrs: Dict[str, Any], zVar: bool) -> None:
         """
         Writes ADRs and AEDRs for variables
 
@@ -917,37 +919,47 @@ class CDF:
             self._update_aedr_link(f, attrNum, zVar, varNum, offset)
 
     def _write_var_data_nonsparse(
-        self, f, zVar: bool, var, dataType, numElems, recVary, compression, blockingfactor, indata
+        self,
+        f: io.BufferedWriter,
+        zVar: bool,
+        var: int,
+        dataType: int,
+        numElems: int,
+        recVary: bool,
+        compression: int,
+        blockingfactor: int,
+        indata: Union[np.ndarray, bytearray, Dict[str, np.ndarray]],
     ) -> int:
         """
         Creates VVRs and the corresponding VXRs full of "indata" data.
         If there is no compression, creates exactly one VXR and VVR
         If there is compression
 
-        Parameters:
-            f : file
-                The open CDF file
-            zVar : bool
-                True if this is z variable data
-            var : str
-                The name of the variable
-            dataType : int
-                the CDF variable type
-            numElems : int
-                number of elements in each record
-            recVary : bool
-                True if each record is unque
-            compression : int
-                The amount of compression
-            blockingfactor: int
-                The size (in number of records) of a VVR data block
-            indata : varies
-                the data to write, should be a numpy or byte array
+        Parameters
+        ----------
+        f : file
+            The open CDF file
+        zVar : bool
+            True if this is z variable data
+        var : str
+            The name of the variable
+        dataType : int
+            the CDF variable type
+        numElems : int
+            number of elements in each record
+        recVary : bool
+            True if each record is unque
+        compression : int
+            The amount of compression
+        blockingfactor: int
+            The size (in number of records) of a VVR data block
+        indata : varies
+            the data to write, should be a numpy or byte array
 
-        Returns:
-            recs : int
-                The number of records
-
+        Returns
+        -------
+        recs : int
+            The number of records
         """
 
         numValues = self._num_values(zVar, var)
@@ -965,7 +977,7 @@ class CDF:
                     for x in range(0, recs):
                         epoch16.append(indata[x].real)
                         epoch16.append(indata[x].imag)
-                    indata = epoch16
+                    indata = np.array(epoch16)
             else:
                 if isinstance(indata, complex):
                     epoch16.append(indata.real)
@@ -1062,7 +1074,16 @@ class CDF:
 
         return recs - 1
 
-    def _write_var_data_sparse(self, f, zVar: bool, var, dataType, numElems, recVary, oneblock):
+    def _write_var_data_sparse(
+        self,
+        f: io.BufferedWriter,
+        zVar: bool,
+        var: int,
+        dataType: int,
+        numElems: int,
+        recVary: bool,
+        oneblock: Tuple[int, int, np.ndarray],
+    ) -> int:
         """
         Writes a VVR and a VXR for this block of sparse data
 
@@ -1075,7 +1096,7 @@ class CDF:
                 The variable number
             dataType : int
                 The CDF data type of this variable
-            numElems : str
+            numElems : int
                 The number of elements in each record
             recVary : bool
                 True if the value varies across records
@@ -1142,7 +1163,7 @@ class CDF:
 
         return rec_end
 
-    def _create_vxr(self, f, recStart: int, recEnd: int, currentVDR: int, priorVXR: int, vvrOffset) -> int:
+    def _create_vxr(self, f: io.BufferedWriter, recStart: int, recEnd: int, currentVDR: int, priorVXR: int, vvrOffset: int) -> int:
         """
         Create a VXR AND use a VXR
 
@@ -1178,7 +1199,7 @@ class CDF:
         self._update_offset_value(f, currentVDR + 36, 8, vxroffset)
         return vxroffset
 
-    def _use_vxrentry(self, f, VXRoffset: int, recStart: int, recEnd: int, offset: int) -> int:
+    def _use_vxrentry(self, f: io.BufferedWriter, VXRoffset: int, recStart: int, recEnd: int, offset: int) -> int:
         """
         Adds a VVR pointer to a VXR
         """
@@ -1199,7 +1220,7 @@ class CDF:
         self._update_offset_value(f, VXRoffset + 24, 4, usedEntries)
         return usedEntries
 
-    def _add_vxr_levels_r(self, f, vxrhead, numVXRs: int) -> Tuple[int, int]:
+    def _add_vxr_levels_r(self, f: io.BufferedWriter, vxrhead: int, numVXRs: int) -> Tuple[int, int]:
         """
         Build a new level of VXRs... make VXRs more tree-like
 
@@ -1215,20 +1236,21 @@ class CDF:
                              ...
                     VXR5  ..........  VXRn
 
-        Parameters:
-            f : file
-                The open CDF file
-            vxrhead : int
-                The byte location of the first VXR for a variable
-            numVXRs : int
-                The total number of VXRs
+        Parameters
+        ----------
+        f : file
+            The open CDF file
+        vxrhead : int
+            The byte location of the first VXR for a variable
+        numVXRs : int
+            The total number of VXRs
 
-        Returns:
-            newVXRhead : int
-                The byte location of the newest VXR head
-            newvxroff : int
-                The byte location of the last VXR head
-
+        Returns
+        -------
+        newVXRhead : int
+            The byte location of the newest VXR head
+        newvxroff : int
+            The byte location of the last VXR head
         """
         newNumVXRs = int(numVXRs / self.NUM_VXRlvl_ENTRIES)
         remaining = int(numVXRs % self.NUM_VXRlvl_ENTRIES)
@@ -1269,7 +1291,7 @@ class CDF:
         else:
             return newvxrhead, newvxroff
 
-    def _update_vdr_vxrheadtail(self, f, vdr_offset: int, VXRoffset: int) -> None:
+    def _update_vdr_vxrheadtail(self, f: io.BufferedWriter, vdr_offset: int, VXRoffset: int) -> None:
         """
         This sets a VXR to be the first and last VXR in the VDR
         """
@@ -1278,7 +1300,7 @@ class CDF:
         # VDR's VXRtail
         self._update_offset_value(f, vdr_offset + 36, 8, VXRoffset)
 
-    def _get_recrange(self, f, VXRoffset: int) -> Tuple[int, int]:
+    def _get_recrange(self, f: io.BufferedWriter, VXRoffset: int) -> Tuple[int, int]:
         """
         Finds the first and last record numbers pointed by the VXR
         Assumes the VXRs are in order
@@ -1296,7 +1318,7 @@ class CDF:
         return firstRec, lastRec
 
     @staticmethod
-    def _majority_token(major):
+    def _majority_token(major: str) -> int:
         """
         Returns the numberical type for a CDF row/column major type
         """
@@ -1366,7 +1388,7 @@ class CDF:
         except Exception:
             return 0
 
-    def _datatype_define(self, value) -> Tuple[int, int]:
+    def _datatype_define(self, value: Union[str, int, float, complex, np.ndarray]) -> Tuple[int, int]:
         if isinstance(value, str):
             return len(value), self.CDF_CHAR
         else:
@@ -1453,7 +1475,7 @@ class CDF:
         except Exception:
             return 0
 
-    def _write_cdr(self, f, major, encoding, checksum) -> int:
+    def _write_cdr(self, f: io.BufferedWriter, major: int, encoding: int, checksum: int) -> int:
         f.seek(0, 2)
         byte_loc = f.tell()
         block_size = self.CDR_BASE_SIZE64 + self.CDF_COPYRIGHT_LEN
@@ -1500,7 +1522,7 @@ class CDF:
 
         return byte_loc
 
-    def _write_gdr(self, f) -> int:
+    def _write_gdr(self, f: io.BufferedWriter) -> int:
         f.seek(0, 2)
         byte_loc = f.tell()
         block_size = self.GDR_BASE_SIZE64 + 4 * self.num_rdim
@@ -1542,25 +1564,28 @@ class CDF:
 
         return byte_loc
 
-    def _write_adr(self, f, gORv, name) -> Tuple[int, int]:
+    def _write_adr(self, f: io.BufferedWriter, gORv: bool, name: str) -> Tuple[int, int]:
         """
         Writes and ADR to the end of the file.
 
         Additionally, it will update the offset values to either the previous ADR
         or the ADRhead field in the GDR.
 
-        Parameters:
-            f : file
-                The open CDF file
-            gORv : bool
-                True if a global attribute, False if variable attribute
-            name : str
-                name of the attribute
-        Returns:
-            num : int
-                The attribute number
-            byte_loc : int
-                The current location in file f
+        Parameters
+        ----------
+        f : file
+            The open CDF file
+        gORv : bool
+            True if a global attribute, False if variable attribute
+        name : str
+            name of the attribute
+
+        Returns
+        -------
+        num : int
+            The attribute number
+        byte_loc : int
+            The current location in file f
         """
 
         f.seek(0, 2)
@@ -1599,10 +1624,7 @@ class CDF:
         tofill = 256 - len(name)
         adr[68:324] = (name + "\0" * tofill).encode()
         f.write(adr)
-        info = []
-        info.append(name)
-        info.append(scope)
-        info.append(byte_loc)
+        info = (name, scope, byte_loc)
         self.attrsinfo[num] = info
         if scope == 1:
             self.gattrs.append(name)
@@ -1622,31 +1644,43 @@ class CDF:
 
         return num, byte_loc
 
-    def _write_aedr(self, f, gORz, attrNum, entryNum, value, pdataType, pnumElems, zVar) -> int:
+    def _write_aedr(
+        self,
+        f: io.BufferedWriter,
+        gORz: bool,
+        attrNum: int,
+        entryNum: int,
+        value: Union[Number, np.ndarray],
+        pdataType: int,
+        pnumElems: int,
+        zVar: bool,
+    ) -> int:
         """
         Writes an aedr into the end of the file.
 
-        Parameters:
-            f : file
-                The current open CDF file
-            gORz : bool
-                True if this entry is for a global or z variable, False if r variable
-            attrNum : int
-                Number of the attribute this aedr belongs to.
-            entryNum : int
-                Number of the entry
-            value :
-                The value of this entry
-            pdataType : int
-                The CDF data type of the value
-            pnumElems : int
-                Number of elements in the value.
-            zVar : bool
-                True if this entry belongs to a z variable
+        Parameters
+        ----------
+        f : file
+            The current open CDF file
+        gORz : bool
+            True if this entry is for a global or z variable, False if r variable
+        attrNum : int
+            Number of the attribute this aedr belongs to.
+        entryNum : int
+            Number of the entry
+        value :
+            The value of this entry
+        pdataType : int
+            The CDF data type of the value
+        pnumElems : int
+            Number of elements in the value.
+        zVar : bool
+            True if this entry belongs to a z variable
 
-        Returns:
-            byte_loc : int
-                This current location in the file after writing the aedr.
+        Returns
+        -------
+        byte_loc : int
+            This current location in the file after writing the aedr.
         """
         f.seek(0, 2)
         byte_loc = f.tell()
@@ -1658,7 +1692,7 @@ class CDF:
 
         if pdataType is None:
             # Figure out Data Type if not supplied
-            if hasattr(value, "__len__") and not isinstance(value, str):
+            if not isinstance(value, Number):
                 avalue = value[0]
             else:
                 avalue = value
@@ -1725,45 +1759,60 @@ class CDF:
         return byte_loc
 
     def _write_vdr(
-        self, f, cdataType, numElems, numDims, dimSizes, name, dimVary, recVary, sparse, blockingfactor, compression, pad, zVar
+        self,
+        f: io.BufferedWriter,
+        cdataType: int,
+        numElems: int,
+        numDims: int,
+        dimSizes: List[int],
+        name: str,
+        dimVary: List[bool],
+        recVary: bool,
+        sparse: int,
+        blockingfactor: int,
+        compression: int,
+        pad: str,
+        zVar: bool,
     ) -> Tuple[int, int]:
         """
         Writes a VDR block to the end of the file.
 
-        Parameters:
-            f : file
-                The open CDF file
-            cdataType : int
-                The CDF data type
-            numElems : int
-                The number of elements in the variable
-            numDims : int
-                The number of dimensions in the variable
-            dimSizes : int
-                The size of each dimension
-            name : str
-                The name of the variable
-            dimVary : array of bool
-                Bool array of size numDims.
-                True if a dimension is physical, False if a dimension is not physical
-            recVary : bool
-                True if each record is unique
-            sparse : bool
-                True if using sparse records
-            blockingfactor: int
-                No idea
-            compression : int
-                The level of compression between 0-9
-            pad : num
-                The pad values to insert
-            zVar : bool
-                True if this variable is a z variable
+        Parameters
+        ----------
+        f : file
+            The open CDF file
+        cdataType : int
+            The CDF data type
+        numElems : int
+            The number of elements in the variable
+        numDims : int
+            The number of dimensions in the variable
+        dimSizes : int
+            The size of each dimension
+        name : str
+            The name of the variable
+        dimVary : array of bool
+            Bool array of size numDims.
+            True if a dimension is physical, False if a dimension is not physical
+        recVary : bool
+            True if each record is unique
+        sparse : bool
+            True if using sparse records
+        blockingfactor: int
+            No idea
+        compression : int
+            The level of compression between 0-9
+        pad : num
+            The pad values to insert
+        zVar : bool
+            True if this variable is a z variable
 
-        Returns:
-            num : int
-                The number of the variable
-            byte_loc : int
-                The current byte location within the file
+        Returns
+        -------
+        num : int
+            The number of the variable
+        byte_loc : int
+            The current byte location within the file
         """
 
         if zVar:
@@ -1820,15 +1869,15 @@ class CDF:
                     pad += "\0" * (numElems - len(pad))
                 elif len(pad) > numElems:
                     pad = pad[:numElems]
-                pad = pad.encode()
+                pad_bytes = pad.encode()
             else:
-                dummy, pad = self._convert_data(dataType, numElems, 1, pad)
+                dummy, pad_bytes = self._convert_data(dataType, numElems, 1, pad)
         else:
-            pad = self._default_pad(dataType, numElems)
+            pad_bytes = self._default_pad(dataType, numElems)
 
         f.seek(0, 2)
         byte_loc = f.tell()
-        block_size += len(pad)
+        block_size += len(pad_bytes)
         vdr = bytearray(block_size)
         # if (dataType == 51):
         #    numElems = len(pad)
@@ -1867,20 +1916,16 @@ class CDF:
                     else:
                         vdr[340 + i * 4 : 344 + i * 4] = struct.pack(">i", self.NOVARY)
             ist = 340 + 4 * numDims
-        vdr[ist:block_size] = pad
+        vdr[ist:block_size] = pad_bytes
         f.write(vdr)
 
         # Set variable info
-        info = []
-        info.append(name)
-        info.append(byte_loc)
-        if zVar:
-            info.append(numDims)
-            info.append(dimSizes)
-        else:
-            info.append(self.num_rdim)
-            info.append(self.rdim_sizes)
-        info.append(dimVary)
+
+        if not zVar:
+            numDims = self.num_rdim
+            dimSizes = self.rdim_sizes
+
+        info = (name, byte_loc, numDims, dimSizes, dimVary)
 
         # Update the pointers from the CDR/previous VDR
         if zVar:
@@ -1902,7 +1947,7 @@ class CDF:
 
         return num, byte_loc
 
-    def _write_vxr(self, f, numEntries: Optional[int] = None) -> int:
+    def _write_vxr(self, f: io.BufferedWriter, numEntries: Optional[int] = None) -> int:
         """
         Creates a VXR at the end of the file.
         Returns byte location of the VXR
@@ -1937,7 +1982,7 @@ class CDF:
         f.write(vxr)
         return byte_loc
 
-    def _write_vvr(self, f, data) -> int:
+    def _write_vvr(self, f: io.BufferedWriter, data: bytes) -> int:
         """
         Writes a vvr to the end of file "f" with the byte stream "data".
         """
@@ -1954,7 +1999,7 @@ class CDF:
 
         return byte_loc
 
-    def _write_cpr(self, f, cType, parameter) -> int:
+    def _write_cpr(self, f: io.BufferedWriter, cType: int, parameter: int) -> int:
         """
         Write compression info to the end of the file in a CPR.
         """
@@ -1976,7 +2021,7 @@ class CDF:
 
         return byte_loc
 
-    def _write_cvvr(self, f, data) -> int:
+    def _write_cvvr(self, f: io.BufferedWriter, data: Any) -> int:
         """
         Write compressed "data" variable to the end of the file in a CVVR
         """
@@ -1997,7 +2042,7 @@ class CDF:
 
         return byte_loc
 
-    def _write_ccr(self, f, g, level: int) -> None:
+    def _write_ccr(self, f: io.BufferedWriter, g: io.BufferedWriter, level: int) -> None:
         """
         Write a CCR to file "g" from file "f" with level "level".
         Currently, only handles gzip compression.
@@ -2099,7 +2144,7 @@ class CDF:
         return dt_string
 
     @staticmethod
-    def _convert_nptype(data_type: int, data) -> bytes:
+    def _convert_nptype(data_type: int, data: Any) -> bytes:
         """
         Converts "data" of CDF type "data_type" into a numpy array
         """
@@ -2162,28 +2207,30 @@ class CDF:
             pad_value = struct.pack(form + "b", *tmpPad)
         return pad_value
 
-    def _convert_data(self, data_type: int, num_elems: int, num_values: int, indata) -> Tuple[int, bytes]:
+    def _convert_data(self, data_type: int, num_elems: int, num_values: int, indata: Any) -> Tuple[int, bytes]:
         """
         Converts "indata" into a byte stream
 
-        Parameters:
-            data_type : int
-                The CDF file data type
+        Parameters
+        ----------
+        data_type : int
+            The CDF file data type
 
-            num_elems : int
-                The number of elements in the data
+        num_elems : int
+            The number of elements in the data
 
-            num_values : int
-                The number of values in each record
+        num_values : int
+            The number of values in each record
 
-            indata : (varies)
-                The data to be converted
+        indata : (varies)
+            The data to be converted
 
-        Returns:
-            recs : int
-                The number of records generated by converting indata
-            odata : byte stream
-                The stream of bytes to write to the CDF file
+        Returns
+        -------
+        recs : int
+            The number of records generated by converting indata
+        odata : byte stream
+            The stream of bytes to write to the CDF file
         """
 
         recSize = self._datatype_size(data_type, num_elems) * num_values
@@ -2306,7 +2353,7 @@ class CDF:
             else:
                 return recs, struct.pack(form, indata)
 
-    def _num_values(self, zVar: bool, varNum):
+    def _num_values(self, zVar: bool, varNum: int) -> int:
         """
         Determines the number of values in a record.
         Set zVar=True if this is a zvariable.
@@ -2331,7 +2378,7 @@ class CDF:
                         values = values * dimSizes[x]
             return values
 
-    def _read_offset_value(self, f, offset: int, size: int) -> int:
+    def _read_offset_value(self, f: io.BufferedWriter, offset: int, size: int) -> int:
         """
         Reads an integer value from file "f" at location "offset".
         """
@@ -2341,7 +2388,7 @@ class CDF:
         else:
             return int.from_bytes(f.read(4), "big", signed=True)
 
-    def _update_offset_value(self, f, offset: int, size: int, value) -> None:
+    def _update_offset_value(self, f: io.BufferedWriter, offset: int, size: int, value: Any) -> None:
         """
         Writes "value" into location "offset" in file "f".
         """
@@ -2351,23 +2398,22 @@ class CDF:
         else:
             f.write(struct.pack(">i", value))
 
-    def _update_aedr_link(self, f, attrNum, zVar, varNum, offset) -> None:
+    def _update_aedr_link(self, f: io.BufferedWriter, attrNum: int, zVar: bool, varNum: int, offset: int) -> None:
         """
         Updates variable aedr links
 
-        Parameters:
-            f : file
-                The open CDF file
-            attrNum : int
-                The number of the attribute to change
-            zVar : bool
-                True if we are updating a z variable attribute
-            varNum : int
-                The variable number associated with this aedr
-            offset : int
-                The offset in the file to the AEDR
-        Returns: None
-
+        Parameters
+        ----------
+        f : file
+            The open CDF file
+        attrNum : int
+            The number of the attribute to change
+        zVar : bool
+            True if we are updating a z variable attribute
+        varNum : int
+            The variable number associated with this aedr
+        offset : int
+            The offset in the file to the AEDR
         """
 
         # The offset to this AEDR's ADR
@@ -2446,15 +2492,15 @@ class CDF:
                     self._update_offset_value(f, adr_offset + 40, 4, varNum)
 
     @staticmethod
-    def _set_bit(value: int, bit: int):
+    def _set_bit(value: int, bit: int) -> int:
         return value | (1 << bit)
 
     @staticmethod
-    def _clear_bit(value: int, bit: int):
+    def _clear_bit(value: int, bit: int) -> int:
         return value & ~(1 << bit)
 
     @staticmethod
-    def _checklistofstrs(obj):
+    def _checklistofstrs(obj: Any) -> bool:
         return bool(obj) and all(isinstance(elem, str) for elem in obj)
 
     @staticmethod
@@ -2464,7 +2510,7 @@ class CDF:
         else:
             return isinstance(obj, numbers.Number)
 
-    def _md5_compute(self, f) -> bytes:
+    def _md5_compute(self, f: io.BufferedWriter) -> bytes:
         """
         Computes the checksum of the file
         """
@@ -2486,20 +2532,22 @@ class CDF:
         return md5.digest()
 
     @staticmethod
-    def _make_blocks(records) -> List[Tuple[int, int]]:
+    def _make_blocks(records) -> List[Tuple[int, int]]:  # type: ignore[no-untyped-def]
         """
         Organizes the physical records into blocks in a list by
         placing consecutive physical records into a single block, so
         lesser VXRs will be created.
           [[start_rec1,end_rec1,data_1], [start_rec2,enc_rec2,data_2], ...]
 
-        Parameters:
-            records: list
-                A list of records that there is data for
+        Parameters
+        ----------
+        records: list
+            A list of records that there is data for
 
-        Returns:
-            sparse_blocks: list of list
-                A list of ranges we have physical values for.
+        Returns
+        -------
+        sparse_blocks: list of list
+            A list of ranges we have physical values for.
 
         Example:
             Input: [1,2,3,4,10,11,12,13,50,51,52,53]
@@ -2538,7 +2586,7 @@ class CDF:
 
         return sparse_blocks
 
-    def _make_sparse_blocks(self, variable, records, data: List[Tuple[int, int, np.ndarray]]):
+    def _make_sparse_blocks(self, variable, records, data: List[Tuple[int, int, np.ndarray]]):  # type: ignore[no-untyped-def]
         """
         Handles the data for the variable with sparse records.
         Organizes the physical record numbers into blocks in a list:
@@ -2621,7 +2669,7 @@ class CDF:
             print("Invalid sparse data... ", "Less data than the specified records... Skip")
         return
 
-    def _make_sparse_blocks_with_virtual(self, variable, records, data) -> List[Tuple[int, int, np.ndarray]]:
+    def _make_sparse_blocks_with_virtual(self, variable, records, data) -> List[Tuple[int, int, np.ndarray]]:  # type: ignore[no-untyped-def]
         """
         Handles the data for the variable with sparse records.
         Organizes the physical record numbers into blocks in a list:
@@ -2677,7 +2725,7 @@ class CDF:
             print("Can not handle data... Skip")
             return None
 
-    def _make_sparse_blocks_with_physical(self, variable, records, data) -> List[Tuple[int, int, np.ndarray]]:
+    def _make_sparse_blocks_with_physical(self, variable, records, data) -> List[Tuple[int, int, np.ndarray]]:  # type: ignore[no-untyped-def]
         # All records are physical... just a single block
         #   [[0,end_rec,data]]
 
