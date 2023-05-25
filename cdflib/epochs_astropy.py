@@ -69,17 +69,14 @@ class CDFAstropy:
         if format is not None:
             return Time(epochs, format=format, precision=9)
 
-        if isinstance(epochs, (list, np.ndarray)):
-            t = type(epochs[0])
-        else:
-            t = type(epochs)
+        epochs = np.array(epochs)
 
         # Determine best format for the input type
-        if t in (int, np.int64):
+        if epochs.dtype == np.int64:
             return Time(epochs, format="cdf_tt2000", precision=9)
-        elif t in (complex, np.complex128):
+        elif epochs.dtype == np.complex128:
             return Time(epochs.real, epochs.imag / 1000000000000.0, format="cdf_epoch16", precision=9)
-        elif t in (float, np.float64):
+        elif epochs.dtype == np.float64:
             return Time(epochs, format="cdf_epoch", precision=9)
         else:
             raise TypeError("Not sure how to handle type {}".format(type(epochs)))

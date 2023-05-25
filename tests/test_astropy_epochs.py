@@ -3,7 +3,6 @@ from datetime import datetime
 from random import randint
 
 import numpy as np
-import pytest
 from pytest import approx
 
 from cdflib.epochs_astropy import CDFAstropy as cdfepoch
@@ -25,9 +24,9 @@ def test_encode_cdfepoch16():
 
     shows a correct answer.
     """
-    x = cdfepoch.encode(np.complex128(63300946758.000000 + 176214648000.00000j))
+    x = cdfepoch.encode(np.array(63300946758.000000 + 176214648000.00000j))
     assert x == "2005-12-04 20:19:18.176214648"
-    y = cdfepoch.encode(np.complex128([33300946758.000000 + 106014648000.00000j, 61234543210.000000 + 000011148000.00000j]))
+    y = cdfepoch.encode(np.array([33300946758.000000 + 106014648000.00000j, 61234543210.000000 + 000011148000.00000j]))
     assert y[0] == "1055-04-07 14:59:18.106014648"
     assert y[1] == "1940-06-12 03:20:10.000011148"
 
@@ -219,7 +218,3 @@ def test_findepochrange_cdftt2000():
 
     assert time_array[index[-1]] <= cdfepoch.compute(test_end)
     assert time_array[index[-1] + 1] >= cdfepoch.compute(test_end)
-
-
-if __name__ == "__main__":
-    pytest.main([__file__])
