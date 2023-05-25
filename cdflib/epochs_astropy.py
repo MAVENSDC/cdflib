@@ -93,15 +93,15 @@ class CDFAstropy:
             return epochs.strftime("%d-%b-%Y %H:%M:%S.%f")
 
     @staticmethod
-    def breakdown(epochs, to_np: bool = False):
+    def breakdown(epochs):
         # Returns either a single array, or a array of arrays depending on the input
         epochs = CDFAstropy.convert_to_astropy(epochs)
         if epochs.format == "cdf_tt2000":
-            return CDFAstropy.breakdown_tt2000(epochs, to_np)
+            return CDFAstropy.breakdown_tt2000(epochs)
         elif epochs.format == "cdf_epoch":
-            return CDFAstropy.breakdown_epoch(epochs, to_np)
+            return CDFAstropy.breakdown_epoch(epochs)
         elif epochs.format == "cdf_epoch16":
-            return CDFAstropy.breakdown_epoch16(epochs, to_np)
+            return CDFAstropy.breakdown_epoch16(epochs)
         raise TypeError("Not sure how to handle type {}".format(type(epochs)))
 
     @staticmethod
@@ -110,21 +110,16 @@ class CDFAstropy:
         return cdf_time.datetime
 
     @staticmethod
-    def unixtime(cdf_time, to_np: bool = False):  # @NoSelf
+    def unixtime(cdf_time):  # @NoSelf
         """
         Encodes the epoch(s) into seconds after 1970-01-01.  Precision is only
         kept to the nearest microsecond.
-
-        If to_np is True, then the values will be returned in a numpy array.
         """
         epochs = CDFAstropy.convert_to_astropy(cdf_time)
-        if to_np:
-            return epochs.unix
-        else:
-            return epochs.unix.tolist()
+        return epochs.unix
 
     @staticmethod
-    def compute(datetimes, to_np: bool = False):  # @NoSelf
+    def compute(datetimes):
         if not isinstance(datetimes[0], list):
             datetimes = [datetimes]
         cdf_time = []
@@ -142,10 +137,7 @@ class CDFAstropy:
                 remainder_seconds = (d[6] / 1000.0) + (d[7] / 1000000.0) + (d[8] / 1000000000.0) + (d[9] / 1000000000000.0)
                 astrotime = Time(unix_seconds, remainder_seconds, format="unix", precision=9)
                 cdf_time.append(astrotime.cdf_epoch16)
-        if to_np:
-            return np.array(cdf_time)
-        else:
-            return cdf_time
+        return np.array(cdf_time)
 
     @staticmethod
     def findepochrange(epochs, starttime=None, endtime=None):  # @NoSelf
@@ -161,7 +153,7 @@ class CDFAstropy:
         return min(indices[0]), max(indices[0])
 
     @staticmethod
-    def breakdown_tt2000(tt2000, to_np: bool = False):
+    def breakdown_tt2000(tt2000):
         tt2000strings = tt2000.iso
         if not isinstance(tt2000strings, (list, np.ndarray)):
             tt2000strings = [tt2000strings]
@@ -191,7 +183,7 @@ class CDFAstropy:
         return times
 
     @staticmethod
-    def breakdown_epoch16(epochs, to_np: bool = False):  # @NoSelf
+    def breakdown_epoch16(epochs):
         epoch16strings = epochs.iso
         if not isinstance(epoch16strings, (list, np.ndarray)):
             epoch16strings = [epoch16strings]
@@ -224,7 +216,7 @@ class CDFAstropy:
         return times
 
     @staticmethod
-    def breakdown_epoch(epochs, to_np: bool = False):  # @NoSelf
+    def breakdown_epoch(epochs):
         epochstrings = epochs.iso
         if not isinstance(epochstrings, (list, np.ndarray)):
             epochstrings = [epochstrings]
@@ -249,7 +241,7 @@ class CDFAstropy:
         return times
 
     @staticmethod
-    def parse(value, to_np: bool = False):  # @NoSelf
+    def parse(value):
         """
         Parses the provided date/time string(s) into CDF epoch value(s).
 
@@ -266,8 +258,6 @@ class CDFAstropy:
                 The string has to be in the form of
                 'yyyy-mm-dd hh:mm:ss.mmmuuunnn' (in iso_8601). The string is
                 the output from encode function.
-
-        Specify to_np to True, if the result should be in numpy class.
         """
         if not isinstance(value, (list, np.ndarray)):
             value = [value]
@@ -283,7 +273,4 @@ class CDFAstropy:
             if len(subs) == 9:
                 time_list.append(int(Time(t, precision=9).cdf_tt2000))
 
-        if not to_np:
-            return time_list
-        else:
-            return np.array(time_list)
+        return np.array(time_list)
