@@ -1,16 +1,20 @@
 import re
-from typing import Dict, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 
 import numpy as np
+import numpy.typing as npt
 
 from cdflib import CDF
-from cdflib.dataclasses import AttData, VDRInfo
+from cdflib.dataclasses import VDRInfo
 from cdflib.epochs import CDFepoch as cdfepoch
+
+if TYPE_CHECKING:
+    import xarray as xr
 
 ISTP_TO_XARRAY_ATTRS = {"FIELDNAM": "standard_name", "LABLAXIS": "long_name", "UNITS": "units"}
 
 
-def _find_xarray_plotting_values(var_att_dict):
+def _find_xarray_plotting_values(var_att_dict) -> Dict[str, str]:
     """
     This is a simple function that looks through a variable attribute dictionary for ISTP attributes that are similar
     to ones used natively by Xarray, specifically their plotting routines.  If some are found, this returns a dictionary
@@ -27,7 +31,9 @@ def _find_xarray_plotting_values(var_att_dict):
     return xarray_att_dict
 
 
-def _convert_cdf_time_types(data, atts: Dict[str, AttData], properties: VDRInfo, to_datetime=False, to_unixtime=False):
+def _convert_cdf_time_types(
+    data: npt.ArrayLike, atts, properties: VDRInfo, to_datetime: bool = False, to_unixtime: bool = False
+) -> Tuple[npt.NDArray, Dict[str, Any]]:
     """
     # Converts CDF time types into either datetime objects, unixtime, or nothing
     # If nothing, ALL CDF_EPOCH16 types are converted to CDF_EPOCH, because xarray can't handle int64s
@@ -62,9 +68,7 @@ def _convert_cdf_time_types(data, atts: Dict[str, AttData], properties: VDRInfo,
     new_atts = {}
     for att in atts:
         data_type = atts[att].Data_Type
-        data = atts[att].Data
-        if not hasattr(data, "__len__"):
-            data = [data]
+        data = np.atleast_1d(atts[att]["Data"])
         if len(data) == 0 or data_type not in ("CDF_EPOCH", "CDF_EPOCH16", "CDF_TIME_TT2000"):
             new_atts[att] = data
         else:
@@ -81,7 +85,9 @@ def _convert_cdf_time_types(data, atts: Dict[str, AttData], properties: VDRInfo,
     return new_data, new_atts
 
 
-def _convert_cdf_to_dicts(filename, to_datetime=False, to_unixtime=False):
+def _convert_cdf_to_dicts(
+    filename, to_datetime: bool = False, to_unixtime: bool = False
+) -> Tuple[Dict[str, List[Union[str, np.ndarray]]], Dict[str, Any], Dict[str, npt.NDArray], Dict[str, VDRInfo]]:
     # Open the CDF file
     # Converts the entire CDF file into python dictionary objects
 
@@ -96,9 +102,9 @@ def _convert_cdf_to_dicts(filename, to_datetime=False, to_unixtime=False):
         gatt = {}
 
     # Gather all information about the CDF file, and store in the below dictionaries
-    variable_data = {}
-    variable_attributes = {}
-    variable_properties = {}
+    variable_data: Dict[str, npt.NDArray] = {}
+    variable_attributes: Dict[str, Any] = {}
+    variable_properties: Dict[str, VDRInfo] = {}
 
     for var_name in all_cdf_variables:
         var_attribute_list = cdf_file.varattsget(var_name)
@@ -122,7 +128,7 @@ def _convert_cdf_to_dicts(filename, to_datetime=False, to_unixtime=False):
 
 def _verify_depend_dimensions(
     dataset, dimension_number, primary_variable_name, coordinate_variable_name, primary_variable_properties: VDRInfo
-):
+) -> bool:
     primary_data = np.array(dataset[primary_variable_name])
     coordinate_data = np.array(dataset[coordinate_variable_name])
 
@@ -183,7 +189,7 @@ def _verify_depend_dimensions(
     return True
 
 
-def _discover_depend_variables(vardata, varatts, varprops):
+def _discover_depend_variables(vardata, varatts, varprops) -> List[str]:
     # This loops through the variable attributes to discover which variables are the coordinates of other variables,
     # Unfortunately, there is no easy way to tell this by looking at the variable ITSELF,
     # you need to look at all variables and see if one points to it.
@@ -202,7 +208,7 @@ def _discover_depend_variables(vardata, varatts, varprops):
     return list(set(list_of_depend_vars))
 
 
-def _discover_uncertainty_variables(varatts):
+def _discover_uncertainty_variables(varatts) -> Dict[str, str]:
     # This loops through the variable attributes to discover which variables are the labels of other variables
     # Unfortunately, there is no easy way to tell this by looking at the label variable itself
     # This returns a KEY:VALUE pair, with the LABEL VARIABLE corresponding to which dimension it covers.
@@ -217,12 +223,12 @@ def _discover_uncertainty_variables(varatts):
     return list_of_label_vars
 
 
-def _discover_label_variables(varatts, all_variable_properties: Dict[str, VDRInfo], all_variable_data):
+def _discover_label_variables(varatts, all_variable_properties: Dict[str, VDRInfo], all_variable_data) -> Dict[str, str]:
     # This loops through the variable attributes to discover which variables are the labels of other variables
     # Unfortunately, there is no easy way to tell this by looking at the label variable itself
     # This returns a KEY:VALUE pair, with the LABEL VARIABLE corresponding to which dimension it covers.
 
-    list_of_label_vars = {}
+    list_of_label_vars: Dict[str, str] = {}
 
     for v in varatts:
         label_keys = [x for x in list(varatts[v].keys()) if x.startswith("LABL_PTR_")]
@@ -256,7 +262,7 @@ def _discover_label_variables(varatts, all_variable_properties: Dict[str, VDRInf
     return list_of_label_vars
 
 
-def _convert_fillvals_to_nan(var_data, var_atts, var_properties: VDRInfo):
+def _convert_fillvals_to_nan(var_data, var_atts, var_properties: VDRInfo) -> npt.NDArray:
     if var_atts is None:
         return var_data
     if var_data is None:
@@ -291,7 +297,7 @@ def _determine_record_dimensions(
     all_variable_data,
     all_variable_properties,
     created_unlimited_dims,
-):
+) -> Tuple[str, bool, bool]:
     """
     Determines the name of the
     :param var_name:
@@ -392,7 +398,7 @@ def _determine_dimension_names(
     all_variable_properties,
     created_regular_dims,
     record_name_found,
-):
+) -> List[Tuple[str, int, bool, bool]]:
     """
     :param var_name:
     :param var_atts:
@@ -522,7 +528,7 @@ def _determine_dimension_names(
     return return_list
 
 
-def _reformat_variable_dims_and_data(var_dims, var_data):
+def _reformat_variable_dims_and_data(var_dims, var_data) -> Tuple[str, npt.NDArray]:
     if len(var_dims) > 0 and var_data is None:
         var_data = np.array([])
 
@@ -540,7 +546,9 @@ def _reformat_variable_dims_and_data(var_dims, var_data):
     return var_dims, var_data
 
 
-def _generate_xarray_data_variables(all_variable_data, all_variable_attributes, all_variable_properties, fillval_to_nan):
+def _generate_xarray_data_variables(
+    all_variable_data, all_variable_attributes, all_variable_properties, fillval_to_nan
+) -> Tuple[Dict[str, "xr.Variable"], Dict[str, int]]:
     # Import here to avoid xarray as a dependency of all of cdflib
     import xarray as xr
 
@@ -551,10 +559,10 @@ def _generate_xarray_data_variables(all_variable_data, all_variable_attributes, 
     created_regular_dims: Dict[
         str, int
     ] = {}  # These hold the records of the names/lengths of the standard dimensions of the variable
-    depend_dimensions = (
-        {}
-    )  # This will be used after the creation of DataArrays, to determine which are "data" and which are "coordinates"
-    created_vars = {}
+    depend_dimensions: Dict[
+        str, int
+    ] = {}  # This will be used after the creation of DataArrays, to determine which are "data" and which are "coordinates"
+    created_vars: Dict[str, xr.Variable] = {}
 
     for var_name in all_variable_data:
         var_dims = []
@@ -616,14 +624,14 @@ def _generate_xarray_data_variables(all_variable_data, all_variable_attributes, 
 
         # Finally, create the new variable
         try:
-            created_vars[var_name] = xr.Variable(var_dims, var_data, attrs=var_atts)
+            created_vars[var_name] = xr.Variable(var_dims, var_data, attrs=var_atts)  # type: ignore[no-untyped-call]
         except Exception as e:
             print(f"ERROR: Creating Variable {var_name} ran into exception: {e}")
 
     return created_vars, depend_dimensions
 
 
-def _verify_dimension_sizes(created_data_vars, created_coord_vars):
+def _verify_dimension_sizes(created_data_vars, created_coord_vars) -> None:
     for var in created_data_vars:
         for d in created_data_vars[var].dims:
             if d in created_data_vars:
@@ -780,7 +788,7 @@ def cdf_to_xarray(filename, to_datetime=False, to_unixtime=False, fillval_to_nan
                         else:
                             created_vars[lab].dims = created_vars[var_name].dims
                     else:
-                        created_vars[lab].dims = created_vars[var_name].dims[-1]
+                        created_vars[lab].dims = (created_vars[var_name].dims[-1],)
                     # Add the labels to the coordinates as well
                     created_coord_vars[lab] = created_vars[lab]
         elif var_name in uncertainty_variables:
