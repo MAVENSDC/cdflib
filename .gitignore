@@ -1,13 +1,9 @@
 .mypy_cache/
-*.cdf
 *.tmp
 .pytest_cache/
-*.tar
+
 *.pyc
-*.tar.gz
 *.egg-info/
-*.tar.gz
-*.tgz
 build
 /.project
 /.pydevproject
@@ -26,3 +22,9 @@ dist/*
 *asv/*
 
 cdflib/_version.py
+*.nc
+*.ncdf
+*.cdf
+*.tar
+*.tar.gz
+*.tgz
