@@ -1,15 +1,13 @@
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
+import xarray as xr
 
 from cdflib import CDF
 from cdflib.dataclasses import VDRInfo
 from cdflib.epochs import CDFepoch as cdfepoch
-
-if TYPE_CHECKING:
-    import xarray as xr
 
 ISTP_TO_XARRAY_ATTRS = {"FIELDNAM": "standard_name", "LABLAXIS": "long_name", "UNITS": "units"}
 
@@ -674,7 +672,7 @@ def _verify_dimension_sizes(created_data_vars, created_coord_vars) -> None:
                     )
 
 
-def cdf_to_xarray(filename, to_datetime=False, to_unixtime=False, fillval_to_nan=False):
+def cdf_to_xarray(filename, to_datetime=False, to_unixtime=False, fillval_to_nan=False) -> xr.Dataset:
     """
     This function converts CDF files into XArray Dataset Objects.
 

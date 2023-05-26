@@ -7,7 +7,7 @@ CDF Astropy Epochs
 """
 import datetime
 from datetime import timezone
-from typing import List, Union, Optional
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -54,7 +54,7 @@ class CDFAstropy:
     increment = 0
 
     @staticmethod
-    def convert_to_astropy(epochs: Union[Time, npt.ArrayLike], format: Optional[str]=None) -> Time:
+    def convert_to_astropy(epochs: Union[Time, npt.ArrayLike], format: Optional[str] = None) -> Time:
         """
         Convert CDF epochs to astropy time objects.
 
@@ -91,7 +91,7 @@ class CDFAstropy:
             return epochs.strftime("%d-%b-%Y %H:%M:%S.%f")
 
     @staticmethod
-    def breakdown(epochs):
+    def breakdown(epochs: Union[Time, npt.ArrayLike]) -> npt.NDArray:
         # Returns either a single array, or a array of arrays depending on the input
         epochs = CDFAstropy.convert_to_astropy(epochs)
         if epochs.format == "cdf_tt2000":
@@ -108,7 +108,7 @@ class CDFAstropy:
         return cdf_time.datetime
 
     @staticmethod
-    def unixtime(cdf_time):  # @NoSelf
+    def unixtime(cdf_time: Union[Time, npt.ArrayLike]) -> npt.NDArray:
         """
         Encodes the epoch(s) into seconds after 1970-01-01.  Precision is only
         kept to the nearest microsecond.
@@ -137,7 +137,9 @@ class CDFAstropy:
         return np.squeeze(cdf_time)
 
     @staticmethod
-    def findepochrange(epochs, starttime=None, endtime=None):  # @NoSelf
+    def findepochrange(
+        epochs: Union[Time, npt.ArrayLike], starttime: Optional[npt.ArrayLike] = None, endtime: Optional[npt.ArrayLike] = None
+    ) -> Tuple[int, int]:
         if isinstance(starttime, list):
             start = CDFAstropy.compute(starttime)
         if isinstance(endtime, list):
@@ -233,7 +235,7 @@ class CDFAstropy:
         return np.squeeze(times)
 
     @staticmethod
-    def parse(value):
+    def parse(value: npt.ArrayLike) -> npt.NDArray:
         """
         Parses the provided date/time string(s) into CDF epoch value(s).
 
@@ -251,8 +253,7 @@ class CDFAstropy:
                 'yyyy-mm-dd hh:mm:ss.mmmuuunnn' (in iso_8601). The string is
                 the output from encode function.
         """
-        if not isinstance(value, (list, np.ndarray)):
-            value = [value]
+        value = np.atleast_1d(value)
 
         time_list = []
 
@@ -265,4 +266,4 @@ class CDFAstropy:
             if len(subs) == 9:
                 time_list.append(int(Time(t, precision=9).cdf_tt2000))
 
-        return np.array(time_list)
+        return np.squeeze(time_list)
