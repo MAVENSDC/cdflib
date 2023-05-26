@@ -930,7 +930,6 @@ class CDF:
             else:
                 byte_loc = adr_info.first_gr_entry
                 num_entry = adr_info.num_gr_entry
-            found = 0
             for _ in range(0, num_entry):
                 entryNum, byte_next = self._read_aedr_fast(byte_loc)
                 if entryNum != var_num:
@@ -943,11 +942,8 @@ class CDF:
                     if len(entryData) == 1:
                         entryData = entryData[0]
                 return_dict[adr_info.name] = entryData
-                found = 1
                 break
             byte_loc = adr_info.next_adr_loc
-            if found == 0:
-                return_dict[adr_info.name] = None
         return return_dict
 
     def _read_adr(self, position: int) -> ADRInfo:
