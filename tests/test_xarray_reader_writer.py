@@ -19,38 +19,25 @@ import cdflib
 
 
 @pytest.mark.remote_data
-def test_mms_fpi():
+def test_mms_fpi(tmp_path):
     fname = "mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf"
-    url = (
-        "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf"
-    )
+    url = f"https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/{fname}"
     if not os.path.exists(fname):
         urllib.request.urlretrieve(url, fname)
 
-    a = cdflib.cdf_to_xarray("mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf", to_unixtime=True, fillval_to_nan=True)
+    a = cdflib.cdf_to_xarray(fname, to_unixtime=True, fillval_to_nan=True)
 
-    cdflib.xarray_to_cdf(a, "mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-cdf-input.cdf", from_unixtime=True)
-    b = cdflib.cdf_to_xarray(
-        "mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True
-    )
-    os.remove("mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-cdf-input.cdf")
-    os.remove("mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf")
+    cdflib.xarray_to_cdf(a, tmp_path / fname, from_unixtime=True)
+    b = cdflib.cdf_to_xarray(tmp_path / fname, to_unixtime=True, fillval_to_nan=True)
 
     fname = "mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc"
-    url = (
-        "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc"
-    )
+    url = f"https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/{fname}"
     if not os.path.exists(fname):
         urllib.request.urlretrieve(url, fname)
 
-    c = xr.load_dataset("mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc")
-
-    cdflib.xarray_to_cdf(c, "mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray(
-        "mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True
-    )
-    os.remove("mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0-created-from-netcdf-input.cdf")
-    os.remove("mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc")
+    c = xr.load_dataset(fname)
+    cdflib.xarray_to_cdf(c, tmp_path / fname)
+    d = cdflib.cdf_to_xarray(tmp_path / fname, to_unixtime=True, fillval_to_nan=True)
 
 
 @pytest.mark.remote_data

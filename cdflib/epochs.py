@@ -8,6 +8,8 @@ from typing import List, Optional, Tuple, Union
 import numpy as np
 import numpy.typing as npt
 
+from cdflib.utils import _squeeze_or_scalar_complex, _squeeze_or_scalar_real
+
 LEAPSEC_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), "CDFLeapSeconds.txt")
 
 epochs_type = Union[str, List[float], List[int], List[complex], Tuple[float, ...], Tuple[int, ...], Tuple[complex, ...], np.ndarray]
@@ -186,7 +188,7 @@ class CDFepoch:
         return cls._compose_date(*times.T[:9]).astype("datetime64[us]")
 
     @staticmethod
-    def unixtime(cdf_time: npt.ArrayLike) -> npt.NDArray:
+    def unixtime(cdf_time: npt.ArrayLike) -> Union[float, npt.NDArray]:
         """
         Converts CDF epoch argument into seconds after 1970-01-01. This method
         converts a scalar, or array-like. Precision is only kept to the
@@ -211,39 +213,39 @@ class CDFepoch:
             unixtime.append(
                 datetime.datetime(date[0], date[1], date[2], date[3], date[4], date[5], date[6], tzinfo=utc).timestamp()
             )
-        return np.squeeze(unixtime)
+        return _squeeze_or_scalar_real(unixtime)
 
     @staticmethod
-    def compute(datetimes: npt.ArrayLike) -> npt.NDArray:
+    def compute(datetimes: npt.ArrayLike) -> Union[float, complex, npt.NDArray]:
         """
         Computes the provided date/time components into CDF epoch value(s).
 
         For CDF_EPOCH:
-                For computing into CDF_EPOCH value, each date/time elements should
-                have exactly seven (7) components, as year, month, day, hour, minute,
-                second and millisecond, in a list. For example:
-                [[2017,1,1,1,1,1,111],[2017,2,2,2,2,2,222]]
-                Or, call function compute_epoch directly, instead, with at least three
-                (3) first (up to seven) components. The last component, if
-                not the 7th, can be a float that can have a fraction of the unit.
+            For computing into CDF_EPOCH value, each date/time elements should
+            have exactly seven (7) components, as year, month, day, hour, minute,
+            second and millisecond, in a list. For example:
+            [[2017,1,1,1,1,1,111],[2017,2,2,2,2,2,222]]
+            Or, call function compute_epoch directly, instead, with at least three
+            (3) first (up to seven) components. The last component, if
+            not the 7th, can be a float that can have a fraction of the unit.
 
         For CDF_EPOCH16:
-                They should have exactly ten (10) components, as year,
-                month, day, hour, minute, second, millisecond, microsecond, nanosecond
-                and picosecond, in a list. For example:
-                [[2017,1,1,1,1,1,123,456,789,999],[2017,2,2,2,2,2,987,654,321,999]]
-                Or, call function compute_epoch directly, instead, with at least three
-                (3) first (up to ten) components. The last component, if
-                not the 10th, can be a float that can have a fraction of the unit.
+            They should have exactly ten (10) components, as year,
+            month, day, hour, minute, second, millisecond, microsecond, nanosecond
+            and picosecond, in a list. For example:
+            [[2017,1,1,1,1,1,123,456,789,999],[2017,2,2,2,2,2,987,654,321,999]]
+            Or, call function compute_epoch directly, instead, with at least three
+            (3) first (up to ten) components. The last component, if
+            not the 10th, can be a float that can have a fraction of the unit.
 
         For TT2000:
-                Each TT2000 typed date/time should have exactly nine (9) components, as
-                year, month, day, hour, minute, second, millisecond, microsecond,
-                and nanosecond, in a list.  For example:
-                [[2017,1,1,1,1,1,123,456,789],[2017,2,2,2,2,2,987,654,321]]
-                Or, call function compute_tt2000 directly, instead, with at least three
-                (3) first (up to nine) components. The last component, if
-                not the 9th, can be a float that can have a fraction of the unit.
+            Each TT2000 typed date/time should have exactly nine (9) components, as
+            year, month, day, hour, minute, second, millisecond, microsecond,
+            and nanosecond, in a list.  For example:
+            [[2017,1,1,1,1,1,123,456,789],[2017,2,2,2,2,2,987,654,321]]
+            Or, call function compute_tt2000 directly, instead, with at least three
+            (3) first (up to nine) components. The last component, if
+            not the 9th, can be a float that can have a fraction of the unit.
         """
 
         if not isinstance(datetimes, (list, tuple, np.ndarray)):
@@ -253,15 +255,13 @@ class CDFepoch:
         items = datetimes.shape[1]
 
         if items == 7:
-            ret = CDFepoch.compute_epoch(datetimes)
+            return _squeeze_or_scalar_real(CDFepoch.compute_epoch(datetimes))
         elif items == 10:
-            ret = CDFepoch.compute_epoch16(datetimes)
+            return _squeeze_or_scalar_complex(CDFepoch.compute_epoch16(datetimes))
         elif items == 9:
-            ret = CDFepoch.compute_tt2000(datetimes)
+            return _squeeze_or_scalar_real(CDFepoch.compute_tt2000(datetimes))
         else:
             raise TypeError("Unknown input")
-
-        return np.squeeze(ret)
 
     @staticmethod
     def findepochrange(
@@ -490,7 +490,7 @@ class CDFepoch:
         return np.squeeze(toutcs.T)
 
     @staticmethod
-    def compute_tt2000(datetimes: npt.ArrayLike) -> npt.NDArray[np.int64]:
+    def compute_tt2000(datetimes: npt.ArrayLike) -> Union[int, npt.NDArray[np.int64]]:
         if not isinstance(datetimes, (list, tuple, np.ndarray)):
             raise TypeError("datetime must be in list form")
 
@@ -829,7 +829,7 @@ class CDFepoch:
         return 367 * y - a1 - a2 + a3 + d + 1721029
 
     @staticmethod
-    def compute_epoch16(datetimes: npt.ArrayLike) -> npt.NDArray[np.complex128]:
+    def compute_epoch16(datetimes: npt.ArrayLike) -> Union[complex, npt.NDArray[np.complex128]]:
         new_dates = np.atleast_2d(datetimes)
         count = len(new_dates)
         epochs = []
@@ -992,7 +992,7 @@ class CDFepoch:
             cepoch = complex(epoch[0], epoch[1])
             epochs.append(cepoch)
 
-        return np.squeeze(epochs)
+        return _squeeze_or_scalar_complex(epochs)
 
     @staticmethod
     def _calc_from_julian(epoch0: npt.ArrayLike, epoch1: npt.ArrayLike) -> npt.NDArray:
@@ -1276,8 +1276,8 @@ class CDFepoch:
         return encoded
 
     @staticmethod
-    def compute_epoch(dates: npt.ArrayLike) -> np.ndarray:
-        # TODOL Add docstring. What is the output format?
+    def compute_epoch(dates: npt.ArrayLike) -> Union[float, npt.NDArray]:
+        # TODO Add docstring. What is the output format?
 
         new_dates = np.atleast_2d(dates)
         count = new_dates.shape[0]
@@ -1366,7 +1366,7 @@ class CDFepoch:
                 return np.array(86400000.0 * daysSince0AD + msecInDay)
             epochs.append(86400000.0 * daysSince0AD + msecInDay)
 
-        return np.squeeze(epochs)
+        return _squeeze_or_scalar_real(epochs)
 
     @staticmethod
     def _computeEpoch(y: int, m: int, d: int, h: int, mn: int, s: int, ms: int) -> float:

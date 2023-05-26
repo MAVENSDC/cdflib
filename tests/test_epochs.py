@@ -81,6 +81,7 @@ def test_encode_cdftt2000():
 
 def test_unixtime():
     x = cdfepoch.unixtime([500000000100, 123456789101112131])
+    assert isinstance(x, np.ndarray)
     assert x[0] == 946728435.816
     assert x[1] == 1070184724.917112
 
@@ -93,7 +94,7 @@ def test_unixtime_roundtrip(tzone):
         y, m, d = 2000, 1, 1
         epoch = cdfepoch.compute_tt2000([[y, m, d]])
         unixtime = cdfepoch.unixtime(epoch)
-        assert unixtime == [946684800.0]
+        assert unixtime == 946684800.0
     finally:
         os.environ.clear()
         os.environ.update(_environ)
