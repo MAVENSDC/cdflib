@@ -217,7 +217,7 @@ def test_parse_cdfepoch16():
     parsed = cdfepoch.parse(x)
     assert parsed == input_time
 
-    assert cdfepoch().to_datetime(parsed) == [datetime(1694, 5, 1, 7, 42, 23, 543218)]
+    assert cdfepoch().to_datetime(parsed) == datetime(1694, 5, 1, 7, 42, 23, 543218)
 
 
 def test_parse_cdftt2000():
@@ -227,7 +227,7 @@ def test_parse_cdftt2000():
     parsed = cdfepoch.parse(x)
     assert parsed == input_time
 
-    assert cdfepoch().to_datetime(parsed) == [datetime(2004, 3, 1, 12, 24, 22, 351793)]
+    assert cdfepoch().to_datetime(parsed) == datetime(2004, 3, 1, 12, 24, 22, 351793)
 
 
 def test_findepochrange_cdfepoch():
