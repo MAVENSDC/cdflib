@@ -18,82 +18,42 @@ import cdflib
 # The primary motivation for doing so was to read the data into xarray using different methods (cdf_to_xarray vs load_dataset)
 
 
+@pytest.mark.parametrize(
+    "cdf_fname, nc_fname",
+    [
+        ("mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf", "mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc"),
+        ("mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4.cdf", "mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4.nc"),
+        ("mms2_fgm_srvy_l2_20160809_v4.47.0.cdf", "mms2_fgm_srvy_l2_20160809_v4.47.0.nc"),
+        ("mvn_lpw_l2_lpiv_20180717_v02_r02.cdf", "mvn_lpw_l2_lpiv_20180717_v02_r02.nc"),
+        ("mvn_lpw_l2_lpnt_20180717_v03_r01.cdf", "mvn_lpw_l2_lpnt_20180717_v03_r01.nc"),
+        ("mvn_swi_l2_onboardsvyspec_20180720_v01_r01.cdf", "mvn_swi_l2_onboardsvyspec_20180720_v01_r01.nc"),
+        ("mvn_lpw_l2_mrgscpot_20180717_v02_r01.cdf", "mvn_lpw_l2_mrgscpot_20180717_v02_r01.nc"),
+        ("mvn_swi_l2_finearc3d_20180720_v01_r01.cdf", "mvn_swi_l2_finearc3d_20180720_v01_r01.nc"),
+        ("omni_hro2_1min_20151001_v01.cdf", "omni_hro2_1min_20151001_v01.nc"),
+        ("thc_l2_sst_20210709_v01.cdf", "thc_l2_sst_20210709_v01.nc"),
+        ("thg_l2_mag_amd_20070323_v01.cdf", "thg_l2_mag_amd_20070323_v01.nc"),
+        ("wi_elsp_3dp_20210115_v01.cdf", "wi_elsp_3dp_20210115_v01.nc"),
+        ("wi_k0_spha_20210121_v01.cdf", "wi_k0_spha_20210121_v01.nc"),
+    ],
+)
 @pytest.mark.remote_data
-def test_mms_fpi(tmp_path):
-    fname = "mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf"
-    url = f"https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/{fname}"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
+def test_xarray_read_write(tmp_path, cdf_fname, nc_fname):
+    url = f"https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/{cdf_fname}"
+    if not os.path.exists(cdf_fname):
+        urllib.request.urlretrieve(url, cdf_fname)
 
-    a = cdflib.cdf_to_xarray(fname, to_unixtime=True, fillval_to_nan=True)
+    a = cdflib.cdf_to_xarray(cdf_fname, to_unixtime=True, fillval_to_nan=True)
 
-    cdflib.xarray_to_cdf(a, tmp_path / fname, from_unixtime=True)
-    b = cdflib.cdf_to_xarray(tmp_path / fname, to_unixtime=True, fillval_to_nan=True)
+    cdflib.xarray_to_cdf(a, tmp_path / cdf_fname, from_unixtime=True)
+    b = cdflib.cdf_to_xarray(tmp_path / cdf_fname, to_unixtime=True, fillval_to_nan=True)
 
-    fname = "mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc"
-    url = f"https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/{fname}"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
+    url = f"https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/{nc_fname}"
+    if not os.path.exists(nc_fname):
+        urllib.request.urlretrieve(url, nc_fname)
 
-    c = xr.load_dataset(fname)
-    cdflib.xarray_to_cdf(c, tmp_path / fname)
-    d = cdflib.cdf_to_xarray(tmp_path / fname, to_unixtime=True, fillval_to_nan=True)
-
-
-@pytest.mark.remote_data
-def test_mms_epd():
-    fname = "mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4.cdf"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4.cdf"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    a = cdflib.cdf_to_xarray("mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4.cdf", to_unixtime=True, fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, "mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4-created-from-cdf-input.cdf", from_unixtime=True)
-    b = cdflib.cdf_to_xarray(
-        "mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True
-    )
-    os.remove("mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4-created-from-cdf-input.cdf")
-    os.remove("mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4.cdf")
-
-    fname = "mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4.nc"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4.nc"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    c = xr.load_dataset("mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4.nc")
-    cdflib.xarray_to_cdf(c, "mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray(
-        "mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True
-    )
-    os.remove("mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4-created-from-netcdf-input.cdf")
-    os.remove("mms2_epd-eis_srvy_l2_extof_20160809_v3.0.4.nc")
-
-
-@pytest.mark.remote_data
-def test_mms_fgm():
-    fname = "mms2_fgm_srvy_l2_20160809_v4.47.0.cdf"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mms2_fgm_srvy_l2_20160809_v4.47.0.cdf"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    a = cdflib.cdf_to_xarray("mms2_fgm_srvy_l2_20160809_v4.47.0.cdf", to_unixtime=True, fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, "mms2_fgm_srvy_l2_20160809_v4.47.0-created-from-cdf-input.cdf", from_unixtime=True)
-    b = cdflib.cdf_to_xarray("mms2_fgm_srvy_l2_20160809_v4.47.0-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
-    os.remove("mms2_fgm_srvy_l2_20160809_v4.47.0-created-from-cdf-input.cdf")
-    os.remove("mms2_fgm_srvy_l2_20160809_v4.47.0.cdf")
-
-    fname = "mms2_fgm_srvy_l2_20160809_v4.47.0.nc"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mms2_fgm_srvy_l2_20160809_v4.47.0.nc"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    c = xr.load_dataset("mms2_fgm_srvy_l2_20160809_v4.47.0.nc")
-    cdflib.xarray_to_cdf(c, "mms2_fgm_srvy_l2_20160809_v4.47.0-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray(
-        "mms2_fgm_srvy_l2_20160809_v4.47.0-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True
-    )
-    os.remove("mms2_fgm_srvy_l2_20160809_v4.47.0-created-from-netcdf-input.cdf")
-    os.remove("mms2_fgm_srvy_l2_20160809_v4.47.0.nc")
+    c = xr.load_dataset(nc_fname)
+    cdflib.xarray_to_cdf(c, tmp_path / ("nc_" + cdf_fname))
+    d = cdflib.cdf_to_xarray(tmp_path / ("nc_" + cdf_fname), to_unixtime=True, fillval_to_nan=True)
 
 
 @pytest.mark.remote_data
@@ -170,89 +130,6 @@ def test_euv():
     b = cdflib.cdf_to_xarray("mvn_euv_l3_minute_20201130_v14_r02-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
     os.remove("mvn_euv_l3_minute_20201130_v14_r02-created-from-cdf-input.cdf")
     os.remove("mvn_euv_l3_minute_20201130_v14_r02.cdf")
-
-
-@pytest.mark.remote_data
-def test_lpw_lpiv():
-    fname = "mvn_lpw_l2_lpiv_20180717_v02_r02.cdf"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mvn_lpw_l2_lpiv_20180717_v02_r02.cdf"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    a = cdflib.cdf_to_xarray("mvn_lpw_l2_lpiv_20180717_v02_r02.cdf", to_unixtime=True, fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, "mvn_lpw_l2_lpiv_20180717_v02_r02-created-from-cdf-input.cdf", from_unixtime=True)
-    b = cdflib.cdf_to_xarray("mvn_lpw_l2_lpiv_20180717_v02_r02-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
-    os.remove("mvn_lpw_l2_lpiv_20180717_v02_r02-created-from-cdf-input.cdf")
-    os.remove("mvn_lpw_l2_lpiv_20180717_v02_r02.cdf")
-
-    fname = "mvn_lpw_l2_lpiv_20180717_v02_r02.nc"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mvn_lpw_l2_lpiv_20180717_v02_r02.nc"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    c = xr.load_dataset("mvn_lpw_l2_lpiv_20180717_v02_r02.nc")
-    cdflib.xarray_to_cdf(c, "mvn_lpw_l2_lpiv_20180717_v02_r02-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray(
-        "mvn_lpw_l2_lpiv_20180717_v02_r02-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True
-    )
-    os.remove("mvn_lpw_l2_lpiv_20180717_v02_r02-created-from-netcdf-input.cdf")
-    os.remove("mvn_lpw_l2_lpiv_20180717_v02_r02.nc")
-
-
-@pytest.mark.remote_data
-def test_lpw_lpnt():
-    fname = "mvn_lpw_l2_lpnt_20180717_v03_r01.cdf"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mvn_lpw_l2_lpnt_20180717_v03_r01.cdf"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    a = cdflib.cdf_to_xarray("mvn_lpw_l2_lpnt_20180717_v03_r01.cdf", to_unixtime=True, fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, "mvn_lpw_l2_lpnt_20180717_v03_r01-created-from-cdf-input.cdf", from_unixtime=True)
-    b = cdflib.cdf_to_xarray("mvn_lpw_l2_lpnt_20180717_v03_r01-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
-    os.remove("mvn_lpw_l2_lpnt_20180717_v03_r01-created-from-cdf-input.cdf")
-    os.remove("mvn_lpw_l2_lpnt_20180717_v03_r01.cdf")
-
-    fname = "mvn_lpw_l2_lpnt_20180717_v03_r01.nc"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mvn_lpw_l2_lpnt_20180717_v03_r01.nc"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    c = xr.load_dataset("mvn_lpw_l2_lpnt_20180717_v03_r01.nc")
-    cdflib.xarray_to_cdf(c, "mvn_lpw_l2_lpnt_20180717_v03_r01-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray(
-        "mvn_lpw_l2_lpnt_20180717_v03_r01-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True
-    )
-    os.remove("mvn_lpw_l2_lpnt_20180717_v03_r01-created-from-netcdf-input.cdf")
-    os.remove("mvn_lpw_l2_lpnt_20180717_v03_r01.nc")
-
-
-@pytest.mark.remote_data
-def test_lpw_mrgscpot():
-    fname = "mvn_lpw_l2_mrgscpot_20180717_v02_r01.cdf"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mvn_lpw_l2_mrgscpot_20180717_v02_r01.cdf"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    a = cdflib.cdf_to_xarray("mvn_lpw_l2_mrgscpot_20180717_v02_r01.cdf", to_unixtime=True, fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, "mvn_lpw_l2_mrgscpot_20180717_v02_r01-created-from-cdf-input.cdf", from_unixtime=True)
-    b = cdflib.cdf_to_xarray(
-        "mvn_lpw_l2_mrgscpot_20180717_v02_r01-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True
-    )
-    os.remove("mvn_lpw_l2_mrgscpot_20180717_v02_r01-created-from-cdf-input.cdf")
-    os.remove("mvn_lpw_l2_mrgscpot_20180717_v02_r01.cdf")
-
-    fname = "mvn_lpw_l2_mrgscpot_20180717_v02_r01.nc"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mvn_lpw_l2_mrgscpot_20180717_v02_r01.nc"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    c = xr.load_dataset("mvn_lpw_l2_mrgscpot_20180717_v02_r01.nc")
-    cdflib.xarray_to_cdf(c, "mvn_lpw_l2_mrgscpot_20180717_v02_r01-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray(
-        "mvn_lpw_l2_mrgscpot_20180717_v02_r01-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True
-    )
-    os.remove("mvn_lpw_l2_mrgscpot_20180717_v02_r01-created-from-netcdf-input.cdf")
-    os.remove("mvn_lpw_l2_mrgscpot_20180717_v02_r01.nc")
 
 
 @pytest.mark.remote_data
@@ -363,89 +240,6 @@ def test_swe_svyspec():
 
 
 @pytest.mark.remote_data
-def test_swi_finearc3d():
-    fname = "mvn_swi_l2_finearc3d_20180720_v01_r01.cdf"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mvn_swi_l2_finearc3d_20180720_v01_r01.cdf"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    a = cdflib.cdf_to_xarray("mvn_swi_l2_finearc3d_20180720_v01_r01.cdf", to_unixtime=True, fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, "mvn_swi_l2_finearc3d_20180720_v01_r01-created-from-cdf-input.cdf", from_unixtime=True)
-    b = cdflib.cdf_to_xarray(
-        "mvn_swi_l2_finearc3d_20180720_v01_r01-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True
-    )
-    os.remove("mvn_swi_l2_finearc3d_20180720_v01_r01-created-from-cdf-input.cdf")
-    os.remove("mvn_swi_l2_finearc3d_20180720_v01_r01.cdf")
-
-    fname = "mvn_swi_l2_finearc3d_20180720_v01_r01.nc"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mvn_swi_l2_finearc3d_20180720_v01_r01.nc"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    c = xr.load_dataset("mvn_swi_l2_finearc3d_20180720_v01_r01.nc")
-    cdflib.xarray_to_cdf(c, "mvn_swi_l2_finearc3d_20180720_v01_r01-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray(
-        "mvn_swi_l2_finearc3d_20180720_v01_r01-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True
-    )
-    os.remove("mvn_swi_l2_finearc3d_20180720_v01_r01-created-from-netcdf-input.cdf")
-    os.remove("mvn_swi_l2_finearc3d_20180720_v01_r01.nc")
-
-
-@pytest.mark.remote_data
-def test_swi_onboardsvyspec():
-    fname = "mvn_swi_l2_onboardsvyspec_20180720_v01_r01.cdf"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mvn_swi_l2_onboardsvyspec_20180720_v01_r01.cdf"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    a = cdflib.cdf_to_xarray("mvn_swi_l2_onboardsvyspec_20180720_v01_r01.cdf", to_unixtime=True, fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, "mvn_swi_l2_onboardsvyspec_20180720_v01_r01-created-from-cdf-input.cdf", from_unixtime=True)
-    b = cdflib.cdf_to_xarray(
-        "mvn_swi_l2_onboardsvyspec_20180720_v01_r01-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True
-    )
-    os.remove("mvn_swi_l2_onboardsvyspec_20180720_v01_r01-created-from-cdf-input.cdf")
-    os.remove("mvn_swi_l2_onboardsvyspec_20180720_v01_r01.cdf")
-
-    fname = "mvn_swi_l2_onboardsvyspec_20180720_v01_r01.nc"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mvn_swi_l2_onboardsvyspec_20180720_v01_r01.nc"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    c = xr.load_dataset("mvn_swi_l2_onboardsvyspec_20180720_v01_r01.nc")
-    cdflib.xarray_to_cdf(c, "mvn_swi_l2_onboardsvyspec_20180720_v01_r01-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray(
-        "mvn_swi_l2_onboardsvyspec_20180720_v01_r01-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True
-    )
-    os.remove("mvn_swi_l2_onboardsvyspec_20180720_v01_r01-created-from-netcdf-input.cdf")
-    os.remove("mvn_swi_l2_onboardsvyspec_20180720_v01_r01.nc")
-
-
-@pytest.mark.remote_data
-def test_omni():
-    fname = "omni_hro2_1min_20151001_v01.cdf"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/omni_hro2_1min_20151001_v01.cdf"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    a = cdflib.cdf_to_xarray("omni_hro2_1min_20151001_v01.cdf", to_unixtime=True, fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, "omni_hro2_1min_20151001_v01-created-from-cdf-input.cdf", from_unixtime=True)
-    b = cdflib.cdf_to_xarray("omni_hro2_1min_20151001_v01-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
-    os.remove("omni_hro2_1min_20151001_v01-created-from-cdf-input.cdf")
-    os.remove("omni_hro2_1min_20151001_v01.cdf")
-
-    fname = "omni_hro2_1min_20151001_v01.nc"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/omni_hro2_1min_20151001_v01.nc"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    c = xr.load_dataset("omni_hro2_1min_20151001_v01.nc")
-    cdflib.xarray_to_cdf(c, "omni_hro2_1min_20151001_v01-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray("omni_hro2_1min_20151001_v01-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
-    os.remove("omni_hro2_1min_20151001_v01-created-from-netcdf-input.cdf")
-    os.remove("omni_hro2_1min_20151001_v01.nc")
-
-
-@pytest.mark.remote_data
 def test_raids():
     fname = "raids_nirs_20100823_v1.1.nc"
     url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/raids_nirs_20100823_v1.1.nc"
@@ -521,106 +315,6 @@ def test_something():
     d = cdflib.cdf_to_xarray("sgpsondewnpnC1-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
     os.remove("sgpsondewnpnC1-created-from-netcdf-input.cdf")
     os.remove("sgpsondewnpnC1.nc")
-
-
-@pytest.mark.remote_data
-def test_themis_sst():
-    fname = "thc_l2_sst_20210709_v01.cdf"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/thc_l2_sst_20210709_v01.cdf"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    a = cdflib.cdf_to_xarray("thc_l2_sst_20210709_v01.cdf", to_unixtime=True, fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, "thc_l2_sst_20210709_v01-created-from-cdf-input.cdf", from_unixtime=True)
-    b = cdflib.cdf_to_xarray("thc_l2_sst_20210709_v01-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
-    os.remove("thc_l2_sst_20210709_v01-created-from-cdf-input.cdf")
-    os.remove("thc_l2_sst_20210709_v01.cdf")
-
-    fname = "thc_l2_sst_20210709_v01.nc"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/thc_l2_sst_20210709_v01.nc"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    c = xr.load_dataset("thc_l2_sst_20210709_v01.nc")
-    cdflib.xarray_to_cdf(c, "thc_l2_sst_20210709_v01-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray("thc_l2_sst_20210709_v01-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
-    os.remove("thc_l2_sst_20210709_v01-created-from-netcdf-input.cdf")
-    os.remove("thc_l2_sst_20210709_v01.nc")
-
-
-@pytest.mark.remote_data
-def test_themis_mag():
-    fname = "thg_l2_mag_amd_20070323_v01.cdf"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/thg_l2_mag_amd_20070323_v01.cdf"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    a = cdflib.cdf_to_xarray("thg_l2_mag_amd_20070323_v01.cdf", to_unixtime=True, fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, "thg_l2_mag_amd_20070323_v01-created-from-cdf-input.cdf", from_unixtime=True)
-    b = cdflib.cdf_to_xarray("thg_l2_mag_amd_20070323_v01-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
-    os.remove("thg_l2_mag_amd_20070323_v01-created-from-cdf-input.cdf")
-    os.remove("thg_l2_mag_amd_20070323_v01.cdf")
-
-    fname = "thg_l2_mag_amd_20070323_v01.nc"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/thg_l2_mag_amd_20070323_v01.nc"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    c = xr.load_dataset("thg_l2_mag_amd_20070323_v01.nc")
-    cdflib.xarray_to_cdf(c, "thg_l2_mag_amd_20070323_v01-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray("thg_l2_mag_amd_20070323_v01-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
-    os.remove("thg_l2_mag_amd_20070323_v01-created-from-netcdf-input.cdf")
-    os.remove("thg_l2_mag_amd_20070323_v01.nc")
-
-
-@pytest.mark.remote_data
-def test_wi_elsp():
-    fname = "wi_elsp_3dp_20210115_v01.cdf"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/wi_elsp_3dp_20210115_v01.cdf"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    a = cdflib.cdf_to_xarray("wi_elsp_3dp_20210115_v01.cdf", to_unixtime=True, fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, "wi_elsp_3dp_20210115_v01-created-from-cdf-input.cdf", from_unixtime=True)
-    b = cdflib.cdf_to_xarray("wi_elsp_3dp_20210115_v01-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
-    os.remove("wi_elsp_3dp_20210115_v01-created-from-cdf-input.cdf")
-    os.remove("wi_elsp_3dp_20210115_v01.cdf")
-
-    fname = "wi_elsp_3dp_20210115_v01.nc"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/wi_elsp_3dp_20210115_v01.nc"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    c = xr.load_dataset("wi_elsp_3dp_20210115_v01.nc")
-    cdflib.xarray_to_cdf(c, "wi_elsp_3dp_20210115_v01-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray("wi_elsp_3dp_20210115_v01-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
-    os.remove("wi_elsp_3dp_20210115_v01-created-from-netcdf-input.cdf")
-    os.remove("wi_elsp_3dp_20210115_v01.nc")
-
-
-@pytest.mark.remote_data
-def test_wi_k0():
-    fname = "wi_k0_spha_20210121_v01.cdf"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/wi_k0_spha_20210121_v01.cdf"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    a = cdflib.cdf_to_xarray("wi_k0_spha_20210121_v01.cdf", to_unixtime=True, fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, "wi_k0_spha_20210121_v01-created-from-cdf-input.cdf", from_unixtime=True)
-    b = cdflib.cdf_to_xarray("wi_k0_spha_20210121_v01-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
-    os.remove("wi_k0_spha_20210121_v01-created-from-cdf-input.cdf")
-    os.remove("wi_k0_spha_20210121_v01.cdf")
-
-    fname = "wi_k0_spha_20210121_v01.nc"
-    url = "https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/wi_k0_spha_20210121_v01.nc"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
-
-    c = xr.load_dataset("wi_k0_spha_20210121_v01.nc")
-    cdflib.xarray_to_cdf(c, "wi_k0_spha_20210121_v01-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray("wi_k0_spha_20210121_v01-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
-    os.remove("wi_k0_spha_20210121_v01-created-from-netcdf-input.cdf")
-    os.remove("wi_k0_spha_20210121_v01.nc")
 
 
 def test_build_from_scratch():
