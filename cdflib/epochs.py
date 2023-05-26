@@ -4,18 +4,25 @@ import math
 import numbers
 import os
 import re
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
+import numpy.typing as npt
 
 LEAPSEC_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), "CDFLeapSeconds.txt")
 
-epochs_type = Union[np.ndarray, str, List[float], List[int], List[complex], Tuple[float, ...], Tuple[int, ...], Tuple[complex, ...]]
+epochs_type = Union[str, List[float], List[int], List[complex], Tuple[float, ...], Tuple[int, ...], Tuple[complex, ...], np.ndarray]
 
 
-_epoch_scalar_types = Union[int, np.int64, float, np.float64, complex, np.complex128]
-_epoch_list_types = Union[List[int], List[np.int64], List[float], List[np.float64], List[complex], List[np.complex128]]
-_epoch_all_types = Union[_epoch_list_types, _epoch_scalar_types]
+epoch_scalar_types = Union[int, np.int64, float, np.float64, complex, np.complex128]
+epoch_list_types = Union[List[int], List[np.int64], List[float], List[np.float64], List[complex], List[np.complex128]]
+epoch_types = Union[epoch_scalar_types, epoch_list_types, npt.NDArray]
+
+encoded_type = Union[str, List[str]]
+
+cdf_epoch_type = Union[float, np.float64, List[float], npt.NDArray[np.float64]]
+cdf_epoch16_type = Union[complex, np.complex128, List[complex], npt.NDArray[np.complex128]]
+cdf_tt2000_type = Union[int, np.int64, List[int], npt.NDArray[np.int64]]
 
 
 class CDFepoch:
@@ -91,10 +98,10 @@ class CDFepoch:
     NST: Optional[List[int]] = None
     currentDay = -1
     currentJDay = -1
-    currentLeapSeconds = -1
+    currentLeapSeconds: float = -1
 
     @staticmethod
-    def encode(epochs: _epoch_all_types, iso_8601: bool = True):
+    def encode(epochs: epoch_types, iso_8601: bool = True) -> encoded_type:
         """
         Converts one or more epochs into UTC strings. The input epoch
         format is deduced from the argument type.
@@ -116,51 +123,47 @@ class CDFepoch:
                 the format is 02-Feb-2008 06:08:10.012.014.016.
 
         """
-        if isinstance(epochs, (int, np.int64)):
+        epochs = np.array(epochs)
+        if epochs.dtype == np.int64:
             return CDFepoch.encode_tt2000(epochs, iso_8601)
-        elif isinstance(epochs, (float, np.float64)):
+        elif epochs.dtype == np.float64:
             return CDFepoch.encode_epoch(epochs, iso_8601)
-        elif isinstance(epochs, (complex, np.complex128)):
+        elif epochs.dtype == np.complex128:
             return CDFepoch.encode_epoch16(epochs, iso_8601)
-        elif isinstance(epochs, (list, np.ndarray)):
-            if isinstance(epochs[0], (int, np.int64)):
-                return CDFepoch.encode_tt2000(epochs, iso_8601)
-            elif isinstance(epochs[0], (float, np.float64)):
-                return CDFepoch.encode_epoch(epochs, iso_8601)
-            elif isinstance(epochs[0], (complex, np.complex128)):
-                return CDFepoch.encode_epoch16(epochs, iso_8601)
-
-        raise TypeError("Not sure how to handle type {}".format(type(epochs)))
+        else:
+            raise TypeError(f"Not sure how to handle type {epochs.dtype}")
 
     @staticmethod
-    def breakdown(epochs, to_np: bool = False):
-        if isinstance(epochs, (list, tuple, np.ndarray)):
-            if isinstance(epochs, np.ndarray) and len(epochs.shape) > 1:
-                epochs = np.squeeze(epochs)
-            item = epochs[0]
-        else:
-            item = epochs
-
-        if isinstance(item, (int, np.int64)):
-            return CDFepoch.breakdown_tt2000(epochs, to_np)
-        elif isinstance(item, (float, np.float64)):
-            return CDFepoch.breakdown_epoch(epochs, to_np)
-        elif isinstance(item, (complex, np.complex128)):
-            return CDFepoch.breakdown_epoch16(epochs, to_np)
-        elif isinstance(item, np.ndarray):
-            if item.dtype.type == np.int64:
-                return CDFepoch.breakdown_tt2000(epochs, to_np)
-            elif item.dtype.type == np.float64:
-                return CDFepoch.breakdown_epoch(epochs, to_np)
-            elif item.dtype.type == np.complex128:
-                return CDFepoch.breakdown_epoch16(epochs, to_np)
+    def breakdown(epochs: epoch_types) -> np.ndarray:
+        """
+        Returns
+        -------
+        np.ndarray
+            1D if scalar input, 2D otherwise.
+        """
+        epochs = np.array(epochs)
+        if epochs.dtype.type == np.int64:
+            return CDFepoch.breakdown_tt2000(epochs)
+        elif epochs.dtype.type == np.float64:
+            return CDFepoch.breakdown_epoch(epochs)
+        elif epochs.dtype.type == np.complex128:
+            return CDFepoch.breakdown_epoch16(epochs)
         else:
             raise TypeError("Not sure how to handle type {}".format(type(epochs)))
 
     @staticmethod
     def _compose_date(
-        years, months, days, hours=None, minutes=None, seconds=None, milliseconds=None, microseconds=None, nanoseconds=None, *extras
-    ):
+        years: npt.NDArray,
+        months: npt.NDArray,
+        days: npt.NDArray,
+        hours: Optional[npt.NDArray] = None,
+        minutes: Optional[npt.NDArray] = None,
+        seconds: Optional[npt.NDArray] = None,
+        milliseconds: Optional[npt.NDArray] = None,
+        microseconds: Optional[npt.NDArray] = None,
+        nanoseconds: Optional[npt.NDArray] = None,
+        *extras,
+    ) -> npt.NDArray[np.datetime64]:
         """
         Take date components and return a numpy datetime array.
         """
@@ -168,43 +171,31 @@ class CDFepoch:
         months = np.asarray(months) - 1
         days = np.asarray(days) - 1
         types = ("<M8[Y]", "<m8[M]", "<m8[D]", "<m8[h]", "<m8[m]", "<m8[s]", "<m8[ms]", "<m8[us]", "<m8[ns]")
-        vals = (years, months, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds)
+        vals = (v for v in (years, months, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) if v is not None)
 
-        return sum(np.asarray(v, dtype=t) for t, v in zip(types, vals) if v is not None)
+        arrays: List[npt.NDArray[np.datetime64]] = [np.array(v, dtype=t) for t, v in zip(types, vals)]
+        return np.array(sum(arrays))
 
     @classmethod
-    def to_datetime(cls, cdf_time: Union[int, Sequence[int]], to_np: bool = False) -> List[datetime.datetime]:
+    def to_datetime(cls, cdf_time: epoch_types) -> npt.NDArray[np.datetime64]:
         """
-        Converts CDF epoch argument to np.numpy.datetime64. This method
+        Converts CDF epoch argument to numpy.datetime64. This method
         converts a scalar, or array-like. Precision is only kept to the
         nearest microsecond.
-
-        If to_np is True, then the values will be returned in a numpy array.
         """
-        times = cls.breakdown(cdf_time, to_np=to_np)
+        times = cls.breakdown(cdf_time)
         times = np.atleast_2d(times)
-        times = cls._compose_date(*times.T).astype("datetime64[us]")
-
-        return times if to_np else times.tolist()
+        return cls._compose_date(*times.T).astype("datetime64[us]")
 
     @staticmethod
-    def unixtime(cdf_time, to_np: bool = False):  # @NoSelf
+    def unixtime(cdf_time: npt.ArrayLike) -> npt.NDArray:
         """
         Converts CDF epoch argument into seconds after 1970-01-01. This method
         converts a scalar, or array-like. Precision is only kept to the
         nearest microsecond.
-
-        If to_np is True, then the values will be returned in a numpy array.
         """
-        time_list = CDFepoch.breakdown(cdf_time, to_np=False)
-
-        # Check if only one time was input into unixtime.
-        # If so, turn the output of breakdown into a list for this function to work
-        if hasattr(cdf_time, "__len__"):
-            if len(cdf_time) == 1:
-                time_list = [time_list]
-        else:
-            time_list = [time_list]
+        cdf_time = np.atleast_1d(cdf_time)
+        time_list = np.atleast_2d(CDFepoch.breakdown(cdf_time))
 
         unixtime = []
         utc = datetime.timezone(datetime.timedelta())
@@ -222,10 +213,10 @@ class CDFepoch:
             unixtime.append(
                 datetime.datetime(date[0], date[1], date[2], date[3], date[4], date[5], date[6], tzinfo=utc).timestamp()
             )
-        return np.array(unixtime) if to_np else unixtime
+        return np.squeeze(unixtime)
 
     @staticmethod
-    def compute(datetimes, to_np: bool = False):  # @NoSelf
+    def compute(datetimes: npt.ArrayLike) -> npt.NDArray:
         """
         Computes the provided date/time components into CDF epoch value(s).
 
@@ -255,28 +246,24 @@ class CDFepoch:
                 Or, call function compute_tt2000 directly, instead, with at least three
                 (3) first (up to nine) components. The last component, if
                 not the 9th, can be a float that can have a fraction of the unit.
-
-        Specify to_np to True, if the result should be in numpy class.
         """
 
         if not isinstance(datetimes, (list, tuple, np.ndarray)):
             raise TypeError("datetime must be in list form")
 
-        if isinstance(datetimes[0], numbers.Number):
-            items = len(datetimes)
-        elif isinstance(datetimes[0], (list, tuple, np.ndarray)):
-            items = len(datetimes[0])
-        else:
-            raise TypeError("Not sure how to handle type {}".format(type(datetimes[0])))
+        datetimes = np.atleast_2d(datetimes)
+        items = datetimes.shape[1]
 
         if items == 7:
-            return CDFepoch.compute_epoch(datetimes, to_np)
+            ret = CDFepoch.compute_epoch(datetimes)
         elif items == 10:
-            return CDFepoch.compute_epoch16(datetimes, to_np)
+            ret = CDFepoch.compute_epoch16(datetimes)
         elif items == 9:
-            return CDFepoch.compute_tt2000(datetimes, to_np)
+            ret = CDFepoch.compute_tt2000(datetimes)
         else:
             raise TypeError("Unknown input")
+
+        return np.squeeze(ret)
 
     @staticmethod
     def findepochrange(epochs: epochs_type, starttime=None, endtime=None) -> np.ndarray:
@@ -293,30 +280,19 @@ class CDFepoch:
         The start/end times should be in either be in epoch units, or in the list
         format described in "compute_epoch/epoch16/tt2000" section.
         """
-        if isinstance(epochs, float) or isinstance(epochs, np.float64):
-            return CDFepoch.epochrange_epoch(epochs, starttime, endtime)
-        elif isinstance(epochs, int) or isinstance(epochs, np.int64):
+        epochs = np.array(epochs)
+        if epochs.dtype == np.int64:
             return CDFepoch.epochrange_tt2000(epochs, starttime, endtime)
-        elif isinstance(epochs, (complex, np.complex128)):
+        elif epochs.dtype == np.float64:
+            return CDFepoch.epochrange_epoch(epochs, starttime, endtime)
+        elif epochs.dtype == np.complex128:
             return CDFepoch.epochrange_epoch16(epochs, starttime, endtime)
-        elif isinstance(epochs, (list, tuple, np.ndarray)):
-            if isinstance(epochs[0], float) or isinstance(epochs[0], np.float64):
-                return CDFepoch.epochrange_epoch(epochs, starttime, endtime)
-            elif isinstance(epochs[0], int) or isinstance(epochs[0], np.int64):
-                return CDFepoch.epochrange_tt2000(epochs, starttime, endtime)
-            elif isinstance(epochs[0], complex) or isinstance(epochs[0], np.complex128):
-                return CDFepoch.epochrange_epoch16(epochs, starttime, endtime)
-
-        raise TypeError("Bad input")
-
-    @staticmethod
-    def encode_tt2000(tt2000: Union[int, np.int64, List[int], np.ndarray], iso_8601: bool = True) -> Union[str, List[str]]:
-        if isinstance(tt2000, int) or isinstance(tt2000, np.int64):
-            new_tt2000 = np.array([tt2000])
-        elif isinstance(tt2000, list) or isinstance(tt2000, np.ndarray):
-            new_tt2000 = np.array(tt2000)
         else:
             raise TypeError("Bad input")
+
+    @staticmethod
+    def encode_tt2000(tt2000: cdf_tt2000_type, iso_8601: bool = True) -> encoded_type:
+        new_tt2000 = np.atleast_1d(tt2000)
 
         count = len(new_tt2000)
         encodeds = []
@@ -386,7 +362,7 @@ class CDFepoch:
         return encodeds
 
     @staticmethod
-    def breakdown_tt2000(tt2000, to_np: bool = False):
+    def breakdown_tt2000(tt2000: cdf_tt2000_type) -> np.ndarray:
         """
         Breaks down the epoch(s) into UTC components.
 
@@ -401,10 +377,8 @@ class CDFepoch:
                 they are 9 date/time components: year, month, day,
                 hour, minute, second, millisecond, microsecond,
                 nanosecond.
-
-        Specify to_np to True, if the result should be in numpy array.
         """
-        new_tt2000: np.ndarray = np.atleast_1d(tt2000).astype(np.longlong)
+        new_tt2000 = np.atleast_1d(tt2000).astype(np.longlong)
         count = len(new_tt2000)
         toutcs = np.zeros((9, count), dtype=int)
         datxs = CDFepoch._LeapSecondsfromJ2000(new_tt2000)
@@ -513,15 +487,10 @@ class CDFepoch:
         toutcs[7, :] = ma1
         toutcs[8, :] = na1
 
-        if not to_np:
-            toutcs = toutcs.T.tolist()
-            if len(toutcs) == 1:
-                return toutcs[0]
-            return toutcs
-        return toutcs.T
+        return np.squeeze(toutcs.T)
 
     @staticmethod
-    def compute_tt2000(datetimes, to_np: bool = False):
+    def compute_tt2000(datetimes) -> npt.NDArray[np.int64]:
         if not isinstance(datetimes, (list, tuple, np.ndarray)):
             raise TypeError("datetime must be in list form")
 
@@ -669,20 +638,13 @@ class CDFepoch:
                     nanoSecSinceJ2000 = int(nanoSecSinceJ2000 - CDFepoch.T12hinNanoSecs)
                     nanoSecSinceJ2000 = int(nanoSecSinceJ2000 + t2)
                     nanoSecSinceJ2000 = int(nanoSecSinceJ2000 + CDFepoch.dTinNanoSecs)
-            if count == 1:
-                if not to_np:
-                    return int(nanoSecSinceJ2000)
-                else:
-                    return np.array(int(nanoSecSinceJ2000))
-            else:
-                nanoSecSinceJ2000s.append(int(nanoSecSinceJ2000))
-        if not to_np:
-            return nanoSecSinceJ2000s
-        else:
-            return np.array(nanoSecSinceJ2000s)
+
+            nanoSecSinceJ2000s.append(int(nanoSecSinceJ2000))
+
+        return np.array(nanoSecSinceJ2000s)
 
     @staticmethod
-    def _LeapSecondsfromYMD(year, month, day):  # @NoSelf
+    def _LeapSecondsfromYMD(year: int, month: int, day: int) -> float:
         j = -1
         m = 12 * year + month
         for i, _ in reversed(list(enumerate(CDFepoch.LTS))):
@@ -691,7 +653,7 @@ class CDFepoch:
                 j = i
                 break
         if j == -1:
-            return 0.0
+            return 0
         da = CDFepoch.LTS[j][3]
         # pre-1972
         if j < CDFepoch.NERA1:
@@ -700,7 +662,7 @@ class CDFepoch:
         return da
 
     @staticmethod
-    def _LeapSecondsfromJ2000(nanosecs):  # @NoSelf
+    def _LeapSecondsfromJ2000(nanosecs: npt.ArrayLike) -> npt.NDArray:
         nanosecs = np.atleast_1d(nanosecs)
         da = np.zeros((nanosecs.size, 2))
         j = -1 * np.ones(nanosecs.size, dtype=int)
@@ -728,13 +690,15 @@ class CDFepoch:
             CDFepoch.NST.append(CDFepoch.FILLED_TT2000_VALUE)
         for ix in range(CDFepoch.NERA1, CDFepoch.NDAT):
             CDFepoch.NST.append(
-                CDFepoch.compute_tt2000(
-                    [int(CDFepoch.LTS[ix][0]), int(CDFepoch.LTS[ix][1]), int(CDFepoch.LTS[ix][2]), 0, 0, 0, 0, 0, 0]
+                int(
+                    CDFepoch.compute_tt2000(
+                        [int(CDFepoch.LTS[ix][0]), int(CDFepoch.LTS[ix][1]), int(CDFepoch.LTS[ix][2]), 0, 0, 0, 0, 0, 0]
+                    )
                 )
             )
 
     @staticmethod
-    def _EPOCHbreakdownTT2000(epoch):  # @NoSelf
+    def _EPOCHbreakdownTT2000(epoch: npt.ArrayLike) -> npt.NDArray:
         epoch = np.atleast_1d(epoch)
 
         minute_AD, second_AD = np.divmod(epoch, 60)
@@ -759,7 +723,7 @@ class CDFepoch:
         return date
 
     @staticmethod
-    def epochrange_tt2000(epochs, starttime=None, endtime=None):
+    def epochrange_tt2000(epochs: cdf_tt2000_type, starttime: Optional[epoch_types] = None, endtime: Optional[epoch_types] = None):
         if isinstance(epochs, int) or isinstance(epochs, np.int64):
             pass
         elif isinstance(epochs, list) or isinstance(epochs, tuple) or isinstance(epochs, np.ndarray):
@@ -776,34 +740,26 @@ class CDFepoch:
             if isinstance(starttime, int) or isinstance(starttime, np.int64):
                 stime = starttime
             elif isinstance(starttime, list):
-                stime = CDFepoch.compute_tt2000(starttime)
+                stime = int(CDFepoch.compute_tt2000(starttime))
             else:
                 raise ValueError("Bad start time")
         if endtime is not None:
             if isinstance(endtime, int) or isinstance(endtime, np.int64):
                 etime = endtime
             elif isinstance(endtime, list) or isinstance(endtime, tuple):
-                etime = CDFepoch.compute_tt2000(endtime)
+                etime = int(CDFepoch.compute_tt2000(endtime))
             else:
                 raise ValueError("Bad end time")
         else:
             etime = int(9223372036854775807)
         if stime > etime:
             raise ValueError("Invalid start/end time")
-        if isinstance(epochs, list) or isinstance(epochs, tuple):
-            new_epochs = np.array(epochs)
-        else:
-            new_epochs = epochs
+        new_epochs = np.array(epochs)
         return np.where(np.logical_and(new_epochs >= stime, new_epochs <= etime))[0]
 
     @staticmethod
-    def encode_epoch16(epochs, iso_8601: bool = True):
-        if isinstance(epochs, (complex, np.complex128)):
-            new_epochs = np.array([epochs])
-        elif isinstance(epochs, (list, tuple, np.ndarray)):
-            new_epochs = np.array(epochs)
-        else:
-            raise TypeError("bad data")
+    def encode_epoch16(epochs: cdf_epoch16_type, iso_8601: bool = True) -> encoded_type:
+        new_epochs = np.atleast_1d(epochs)
 
         count = len(new_epochs)
         encodeds = []
@@ -823,7 +779,7 @@ class CDFepoch:
         return encodeds
 
     @staticmethod
-    def _encodex_epoch16(epoch16, iso_8601: bool = True) -> str:
+    def _encodex_epoch16(epoch16: cdf_epoch16_type, iso_8601: bool = True) -> str:
         components = CDFepoch.breakdown_epoch16(epoch16)
         if iso_8601:
             # year-mm-ddThh:mm:ss.mmmuuunnnppp
@@ -874,14 +830,9 @@ class CDFepoch:
         return 367 * y - a1 - a2 + a3 + d + 1721029
 
     @staticmethod
-    def compute_epoch16(datetimes, to_np: bool = False):
-        if not isinstance(datetimes[0], list):
-            new_dates = [datetimes]
-        else:
-            new_dates = datetimes
+    def compute_epoch16(datetimes) -> npt.NDArray[np.complex128]:
+        new_dates = np.atleast_2d(datetimes)
         count = len(new_dates)
-        if count == 0:
-            return
         epochs = []
         for x in range(count):
             epoch = []
@@ -1040,20 +991,12 @@ class CDFepoch:
                 epoch.append(epoch16_0)
                 epoch.append(epoch16_1)
             cepoch = complex(epoch[0], epoch[1])
-            if count == 1:
-                if not to_np:
-                    return cepoch
-                else:
-                    return np.array(cepoch)
-            else:
-                epochs.append(cepoch)
-        if not to_np:
-            return epochs
-        else:
-            return np.array(epochs)
+            epochs.append(cepoch)
+
+        return np.squeeze(epochs)
 
     @staticmethod
-    def _calc_from_julian(epoch0, epoch1):
+    def _calc_from_julian(epoch0: npt.ArrayLike, epoch1: npt.ArrayLike) -> npt.NDArray:
         """Calculate the date and time from epoch input
 
         Parameters
@@ -1118,7 +1061,7 @@ class CDFepoch:
         return out
 
     @staticmethod
-    def breakdown_epoch16(epochs, to_np: bool = False):
+    def breakdown_epoch16(epochs: cdf_epoch16_type):
         """
         Calculate date and time from epochs
 
@@ -1126,9 +1069,6 @@ class CDFepoch:
         ----------
         epochs : array-like
             Single, list, tuple, or np.array of epoch values
-        to_np : bool
-            Flag for output type, if True will be an np.array, if False
-            will be a list (default=False)
 
         Returns
         -------
@@ -1168,16 +1108,10 @@ class CDFepoch:
                 else:
                     components[i] = CDFepoch._calc_from_julian(esec, efra)
 
-        if to_np:
-            return components
-        else:
-            comp = components.tolist()
-            if len(comp) == 1:
-                return comp[0]
-            return comp
+        return components
 
     @staticmethod
-    def _computeEpoch16(y, m, d, h, mn, s, ms, msu, msn, msp):  # @NoSelf
+    def _computeEpoch16(y: int, m: int, d: int, h: int, mn: int, s: int, ms: int, msu: int, msn: int, msp: int) -> List[float]:
         if m == 0:
             daysSince0AD = CDFepoch._JulianDay(y, 1, 1) + (d - 1) - 1721060
         else:
@@ -1215,48 +1149,34 @@ class CDFepoch:
             return epoch
 
     @staticmethod
-    def epochrange_epoch16(epochs, starttime=None, endtime=None) -> Optional[np.ndarray]:
-        if isinstance(epochs, complex) or isinstance(epochs, np.complex128):
-            new_epochs = [epochs]
-        elif isinstance(epochs, list) or isinstance(epochs, tuple) or isinstance(epochs, np.ndarray):
-            if isinstance(epochs[0], complex) or isinstance(epochs[0], np.complex128):
-                # TODO: fix type ignores
-                new_epochs = epochs  # type: ignore
-            else:
-                raise ValueError("Bad data")
-        else:
-            raise ValueError("Bad data")
-        stime: List[Union[float, np.float64]]
+    def epochrange_epoch16(
+        epochs: cdf_epoch16_type, starttime: Union[complex, np.complex128] = None, endtime=None
+    ) -> Optional[np.ndarray]:
+        new_epochs = np.atleast_1d(epochs)
+
+        stime: Tuple[Union[float, np.float64], Union[float, np.float64]]
+        etime: Tuple[Union[float, np.float64], Union[float, np.float64]]
+
         if starttime is None:
-            stime = [-1.0e31, -1.0e31]
+            stime = (-1.0e31, -1.0e31)
         else:
             if isinstance(starttime, complex) or isinstance(starttime, np.complex128):
-                stime = []
-                stime.append(starttime.real)
-                stime.append(starttime.imag)
+                stime = (starttime.real, starttime.imag)
             elif isinstance(starttime, list):
-                sstime = CDFepoch.compute_epoch16(starttime)
-                stime = []
-                stime.append(sstime.real)
-                stime.append(sstime.imag)
+                sstime = complex(CDFepoch.compute_epoch16(starttime))
+                stime = (sstime.real, sstime.imag)
             else:
                 raise ValueError("Bad start time")
         if endtime is not None:
             if isinstance(endtime, complex) or isinstance(endtime, np.complex128):
-                etime = []
-                etime.append(endtime.real)
-                etime.append(endtime.imag)
+                etime = (endtime.real, endtime.imag)
             elif isinstance(endtime, list):
-                eetime = CDFepoch.compute_epoch16(endtime)
-                etime = []
-                etime.append(eetime.real)
-                etime.append(eetime.imag)
+                eetime = complex(CDFepoch.compute_epoch16(endtime))
+                etime = (eetime.real, eetime.imag)
             else:
                 raise ValueError("Bad start time")
         else:
-            etime = []
-            etime.append(1.0e31)
-            etime.append(1.0e31)
+            etime = (1.0e31, 1.0e31)
         if stime[0] > etime[0] or (stime[0] == etime[0] and stime[1] > etime[1]):
             raise ValueError("Invalid start/end time")
         count = len(new_epochs)
@@ -1302,13 +1222,8 @@ class CDFepoch:
         return np.arange(indx[0], indx[1] + 1, step=1)
 
     @staticmethod
-    def encode_epoch(epochs, iso_8601: bool = True):
-        if isinstance(epochs, (float, np.float64)):
-            new_epochs = np.array([epochs])
-        elif isinstance(epochs, (list, np.ndarray)):
-            new_epochs = np.array(epochs)
-        else:
-            raise TypeError("Bad data")
+    def encode_epoch(epochs: cdf_epoch_type, iso_8601: bool = True) -> encoded_type:
+        new_epochs = np.atleast_1d(epochs)
 
         count = len(new_epochs)
         encodeds = []
@@ -1327,7 +1242,7 @@ class CDFepoch:
         return encodeds
 
     @staticmethod
-    def _encodex_epoch(epoch, iso_8601: bool = True):  # @NoSelf
+    def _encodex_epoch(epoch: cdf_epoch_type, iso_8601: bool = True):
         components = CDFepoch.breakdown_epoch(epoch)
         if iso_8601:
             # year-mm-ddThh:mm:ss.mmm
@@ -1362,15 +1277,12 @@ class CDFepoch:
         return encoded
 
     @staticmethod
-    def compute_epoch(dates, to_np: bool = False):
+    def compute_epoch(dates: npt.ArrayLike) -> np.ndarray:
         # TODOL Add docstring. What is the output format?
 
-        if not isinstance(dates, list) and not isinstance(dates, tuple):
-            raise ValueError("Bad input")
-        new_dates = [dates]
-        count = len(new_dates)
-        if count == 0:
-            return
+        new_dates = np.atleast_2d(dates)
+        count = new_dates.shape[0]
+
         epochs = []
         for x in range(0, count):
             date = new_dates[x]
@@ -1452,15 +1364,10 @@ class CDFepoch:
             else:
                 msecInDay = (3600000 * hour) + (60000 * minute) + (1000 * second) + msec
             if count == 1:
-                if not to_np:
-                    return 86400000.0 * daysSince0AD + msecInDay
-                else:
-                    return np.array(86400000.0 * daysSince0AD + msecInDay)
+                return np.array(86400000.0 * daysSince0AD + msecInDay)
             epochs.append(86400000.0 * daysSince0AD + msecInDay)
-        if not to_np:
-            return epochs
-        else:
-            return np.array(epochs)
+
+        return np.squeeze(epochs)
 
     @staticmethod
     def _computeEpoch(y: int, m, d, h, mn, s, ms):
@@ -1481,16 +1388,13 @@ class CDFepoch:
             return msecFromEpoch
 
     @staticmethod
-    def breakdown_epoch(epochs, to_np: bool = False):
+    def breakdown_epoch(epochs: cdf_epoch_type) -> np.ndarray:
         """Calculate date and time from epochs
 
         Parameters
         ----------
         epochs : int, float, or array-like
             Single, list, tuple, or np.array of epoch values
-        to_np : bool
-            Flag for output type, if True will be an np.array, if False
-            will be a list (default=False)
 
         Returns
         -------
@@ -1539,16 +1443,10 @@ class CDFepoch:
                 else:
                     components[i] = date_time[..., :7]
 
-        if to_np:
-            return components
-        else:
-            comp = components.tolist()
-            if len(comp) == 1:
-                return comp[0]
-            return comp
+        return np.squeeze(components)
 
     @staticmethod
-    def epochrange_epoch(epochs, starttime=None, endtime=None) -> np.ndarray:
+    def epochrange_epoch(epochs, starttime: Optional[epoch_types] = None, endtime: Optional[epoch_types] = None) -> np.ndarray:
         if isinstance(epochs, (float, np.float64)):
             pass
         elif isinstance(epochs, (list, tuple, np.ndarray)):
@@ -1566,7 +1464,7 @@ class CDFepoch:
             if isinstance(starttime, (float, int, np.float64)):
                 stime = starttime
             elif isinstance(starttime, (list, tuple)):
-                stime = CDFepoch.compute_epoch(starttime)
+                stime = float(CDFepoch.compute_epoch(starttime))
             else:
                 raise TypeError("Bad start time")
 
@@ -1574,7 +1472,7 @@ class CDFepoch:
             if isinstance(endtime, (float, int, np.float64)):
                 etime = endtime
             elif isinstance(endtime, (list, tuple)):
-                etime = CDFepoch.compute_epoch(endtime)
+                etime = float(CDFepoch.compute_epoch(endtime))
             else:
                 raise TypeError("Bad end time")
         else:
@@ -1589,28 +1487,26 @@ class CDFepoch:
         return np.where(np.logical_and(new_epochs >= stime, new_epochs <= etime))[0]
 
     @staticmethod
-    def parse(value, to_np: bool = False):
+    def parse(value: Union[str, Tuple[str, ...], List[str]]) -> np.ndarray:
         """
         Parses the provided date/time string(s) into CDF epoch value(s).
 
         For CDF_EPOCH:
-                The string has to be in the form of 'dd-mmm-yyyy hh:mm:ss.xxx' or
-                'yyyy-mm-ddThh:mm:ss.xxx' (in iso_8601). The string is the output
-                from encode function.
+            The string has to be in the form of 'dd-mmm-yyyy hh:mm:ss.xxx' or
+            'yyyy-mm-ddThh:mm:ss.xxx' (in iso_8601). The string is the output
+            from encode function.
 
         For CDF_EPOCH16:
-                The string has to be in the form of
-                'dd-mmm-yyyy hh:mm:ss.mmm.uuu.nnn.ppp' or
-                'yyyy-mm-ddThh:mm:ss.mmmuuunnnppp' (in iso_8601). The string is
-                the output from encode function.
+            The string has to be in the form of
+            'dd-mmm-yyyy hh:mm:ss.mmm.uuu.nnn.ppp' or
+            'yyyy-mm-ddThh:mm:ss.mmmuuunnnppp' (in iso_8601). The string is
+            the output from encode function.
 
         For TT2000:
-                The string has to be in the form of
-                'dd-mmm-yyyy hh:mm:ss.mmm.uuu.nnn' or
-                'yyyy-mm-ddThh:mm:ss.mmmuuunnn' (in iso_8601). The string is
-                the output from encode function.
-
-        Specify to_np to True, if the result should be in numpy class.
+            The string has to be in the form of
+            'dd-mmm-yyyy hh:mm:ss.mmm.uuu.nnn' or
+            'yyyy-mm-ddThh:mm:ss.mmmuuunnn' (in iso_8601). The string is
+            the output from encode function.
         """
         if isinstance(value, (list, tuple)) and not isinstance(value[0], str):
             raise TypeError("should be a string or a list of string")
@@ -1623,116 +1519,104 @@ class CDFepoch:
                 epochs = []
                 for x in range(num):
                     epochs.append(CDFepoch._parse_epoch(value[x]))
-                if not to_np:
-                    return epochs
-                else:
-                    return np.array(epochs)
+                return np.squeeze(epochs)
             else:
-                if not to_np:
-                    return CDFepoch._parse_epoch(value)
-                else:
-                    return np.array(CDFepoch._parse_epoch(value))
+                return np.squeeze(CDFepoch._parse_epoch(value))
 
     @staticmethod
-    def _parse_epoch(value):
-        if isinstance(value, (list, tuple)):
-            epochs = []
-            for x in range(0, len(value)):
-                epochs.append(value[x])
-            return epochs
-        else:
-            if len(value) in (23, 24):
-                # CDF_EPOCH
-                if value.lower() in ("31-dec-9999 23:59:59.999", "9999-12-31t23:59:59.999"):
-                    return -1.0e31
-                else:
-                    if len(value) == 24:
-                        date = re.findall(r"(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)", value)
-                        dd = int(date[0][0])
-                        mm = CDFepoch._month_index(date[0][1])
-                        yy = int(date[0][2])
-                        hh = int(date[0][3])
-                        mn = int(date[0][4])
-                        ss = int(date[0][5])
-                        ms = int(date[0][6])
-                    else:
-                        date = re.findall(r"(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)\.(\d+)", value)
-                        yy = int(date[0][0])
-                        mm = int(date[0][1])
-                        dd = int(date[0][2])
-                        hh = int(date[0][3])
-                        mn = int(date[0][4])
-                        ss = int(date[0][5])
-                        ms = int(date[0][6])
-                    return CDFepoch.compute_epoch([yy, mm, dd, hh, mn, ss, ms])
-            elif len(value) == 36 or (len(value) == 32 and value[10].lower() == "t"):
-                # CDF_EPOCH16
-                if value.lower() in ("31-dec-9999 23:59:59.999.999.999.999", "9999-12-31t23:59:59.999999999999"):
-                    return -1.0e31 - 1.0e31j
-                else:
-                    if len(value) == 36:
-                        date = re.findall(r"(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)\.(\d+)\.(\d+)\.(\d+)", value)
-                        dd = int(date[0][0])
-                        mm = CDFepoch._month_index(date[0][1])
-                        yy = int(date[0][2])
-                        hh = int(date[0][3])
-                        mn = int(date[0][4])
-                        ss = int(date[0][5])
-                        ms = int(date[0][6])
-                        us = int(date[0][7])
-                        ns = int(date[0][8])
-                        ps = int(date[0][9])
-                    else:
-                        date = re.findall(r"(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)\.(\d+)", value)
-                        yy = int(date[0][0])
-                        mm = int(date[0][1])
-                        dd = int(date[0][2])
-                        hh = int(date[0][3])
-                        mn = int(date[0][4])
-                        ss = int(date[0][5])
-                        subs = int(date[0][6])
-                        ms = int(subs / 1000000000)
-                        subms = int(subs % 1000000000)
-                        us = int(subms / 1000000)
-                        subus = int(subms % 1000000)
-                        ns = int(subus / 1000)
-                        ps = int(subus % 1000)
-                    return CDFepoch.compute_epoch16([yy, mm, dd, hh, mn, ss, ms, us, ns, ps])
-            elif len(value) == 29 or (len(value) == 32 and value[11] == " "):
-                # CDF_TIME_TT2000
-                value = value.lower()
-                if value == "9999-12-31t23:59:59.999999999" or value == "31-dec-9999 23:59:59.999.999.999":
-                    return -9223372036854775808
-                elif value == "0000-01-01t00:00.000000000" or value == "01-jan-0000 00:00.000.000.000":
-                    return -9223372036854775807
-                else:
-                    if len(value) == 29:
-                        date = re.findall(r"(\d+)\-(\d+)\-(\d+)t(\d+)\:(\d+)\:(\d+)\.(\d+)", value)
-                        yy = int(date[0][0])
-                        mm = int(date[0][1])
-                        dd = int(date[0][2])
-                        hh = int(date[0][3])
-                        mn = int(date[0][4])
-                        ss = int(date[0][5])
-                        subs = int(date[0][6])
-                        ms = int(subs / 1000000)
-                        subms = int(subs % 1000000)
-                        us = int(subms / 1000)
-                        ns = int(subms % 1000)
-                    else:
-                        date = re.findall(r"(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)\.(\d+)\.(\d+)", value)
-                        dd = int(date[0][0])
-                        mm = CDFepoch._month_index(date[0][1])
-                        yy = int(date[0][2])
-                        hh = int(date[0][3])
-                        mn = int(date[0][4])
-                        ss = int(date[0][5])
-                        ms = int(date[0][6])
-                        us = int(date[0][7])
-                        ns = int(date[0][8])
-                    return CDFepoch.compute_tt2000([yy, mm, dd, hh, mn, ss, ms, us, ns])
+    def _parse_epoch(value: str) -> Union[int, float, complex]:
+        if len(value) in (23, 24):
+            # CDF_EPOCH
+            if value.lower() in ("31-dec-9999 23:59:59.999", "9999-12-31t23:59:59.999"):
+                return -1.0e31
             else:
-                raise ValueError("Invalid cdf epoch type...")
+                if len(value) == 24:
+                    date = re.findall(r"(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)", value)
+                    dd = int(date[0][0])
+                    mm = CDFepoch._month_index(date[0][1])
+                    yy = int(date[0][2])
+                    hh = int(date[0][3])
+                    mn = int(date[0][4])
+                    ss = int(date[0][5])
+                    ms = int(date[0][6])
+                else:
+                    date = re.findall(r"(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)\.(\d+)", value)
+                    yy = int(date[0][0])
+                    mm = int(date[0][1])
+                    dd = int(date[0][2])
+                    hh = int(date[0][3])
+                    mn = int(date[0][4])
+                    ss = int(date[0][5])
+                    ms = int(date[0][6])
+                return float(CDFepoch.compute_epoch([yy, mm, dd, hh, mn, ss, ms]))
+        elif len(value) == 36 or (len(value) == 32 and value[10].lower() == "t"):
+            # CDF_EPOCH16
+            if value.lower() in ("31-dec-9999 23:59:59.999.999.999.999", "9999-12-31t23:59:59.999999999999"):
+                return -1.0e31 - 1.0e31j
+            else:
+                if len(value) == 36:
+                    date = re.findall(r"(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)\.(\d+)\.(\d+)\.(\d+)", value)
+                    dd = int(date[0][0])
+                    mm = CDFepoch._month_index(date[0][1])
+                    yy = int(date[0][2])
+                    hh = int(date[0][3])
+                    mn = int(date[0][4])
+                    ss = int(date[0][5])
+                    ms = int(date[0][6])
+                    us = int(date[0][7])
+                    ns = int(date[0][8])
+                    ps = int(date[0][9])
+                else:
+                    date = re.findall(r"(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)\.(\d+)", value)
+                    yy = int(date[0][0])
+                    mm = int(date[0][1])
+                    dd = int(date[0][2])
+                    hh = int(date[0][3])
+                    mn = int(date[0][4])
+                    ss = int(date[0][5])
+                    subs = int(date[0][6])
+                    ms = int(subs / 1000000000)
+                    subms = int(subs % 1000000000)
+                    us = int(subms / 1000000)
+                    subus = int(subms % 1000000)
+                    ns = int(subus / 1000)
+                    ps = int(subus % 1000)
+                return complex(CDFepoch.compute_epoch16([yy, mm, dd, hh, mn, ss, ms, us, ns, ps]))
+        elif len(value) == 29 or (len(value) == 32 and value[11] == " "):
+            # CDF_TIME_TT2000
+            value = value.lower()
+            if value == "9999-12-31t23:59:59.999999999" or value == "31-dec-9999 23:59:59.999.999.999":
+                return -9223372036854775808
+            elif value == "0000-01-01t00:00.000000000" or value == "01-jan-0000 00:00.000.000.000":
+                return -9223372036854775807
+            else:
+                if len(value) == 29:
+                    date = re.findall(r"(\d+)\-(\d+)\-(\d+)t(\d+)\:(\d+)\:(\d+)\.(\d+)", value)
+                    yy = int(date[0][0])
+                    mm = int(date[0][1])
+                    dd = int(date[0][2])
+                    hh = int(date[0][3])
+                    mn = int(date[0][4])
+                    ss = int(date[0][5])
+                    subs = int(date[0][6])
+                    ms = int(subs / 1000000)
+                    subms = int(subs % 1000000)
+                    us = int(subms / 1000)
+                    ns = int(subms % 1000)
+                else:
+                    date = re.findall(r"(\d+)\-(.+)\-(\d+) (\d+)\:(\d+)\:(\d+)\.(\d+)\.(\d+)\.(\d+)", value)
+                    dd = int(date[0][0])
+                    mm = CDFepoch._month_index(date[0][1])
+                    yy = int(date[0][2])
+                    hh = int(date[0][3])
+                    mn = int(date[0][4])
+                    ss = int(date[0][5])
+                    ms = int(date[0][6])
+                    us = int(date[0][7])
+                    ns = int(date[0][8])
+                return int(CDFepoch.compute_tt2000([yy, mm, dd, hh, mn, ss, ms, us, ns]))
+        else:
+            raise ValueError("Invalid cdf epoch type...")
 
     @staticmethod
     def _month_index(month: str) -> int:

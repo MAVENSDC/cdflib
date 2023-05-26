@@ -455,7 +455,7 @@ def _unixtime_to_tt2000(unixtime_data):
                 int(dt.microsecond % 1000),
                 0,
             ]
-            converted_data = cdfepoch.compute(dt_to_convert)
+            converted_data = float(cdfepoch.compute(dt_to_convert))
         else:
             converted_data = np.nan
 

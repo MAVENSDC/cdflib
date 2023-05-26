@@ -12,6 +12,17 @@ for older versions of Python, but this is not guarenteed. If you need to
 use ``cdflib`` on an older version of Python, please open an issue to
 discuss whether the ``cdflib`` maintainers can support this.
 
+Returning arrays
+----------------
+All ``to_np`` keyword arguments have been removed throughout the library, and the
+code now behaves as if ``to_np=True`` throughout. This change has been made to
+reduce code omplexity and make maintaining the code easier. If you need outputs
+as lists, call ``.tolist()`` on the output array.
+
+``to_np=True`` was the deafult in ``cdfread``, so if you weren't specifying it
+behaviour will not change there. ``to_np=False`` was the default in ``epochs``,
+so if you weren't specifying it there beahviour **will** change.
+
 Changes to CDF method returns
 -----------------------------
 Most of the methods that return data from the CDF reader class have had their
@@ -46,10 +57,6 @@ Other breaking changes
 - Removed ``cdflib.cdfepochs.CDFepoch.getLeapSecondLastUpdated``.
   Directly inspect `CDFepoch.LTS` instead to get the last date at which a
   leapsecond was added.
-- All ``to_np`` keyword arguments have been removed in ``cdfread``, and the
-  code now behaves as if ``to_np=True`` throughout.
-  This change has been made to reduce code omplexity and make maintaining
-  the code easier.
 - The ``expand`` keyword argument to `cdflib.cdfread.CDF.varget` has been removed.
   Use ``CDF.varinq`` to get variable information instead.
 - The ``expand`` keyword argument to ``CDF.globalattsget`` and ``CDF.varattsget`` has been removed.
