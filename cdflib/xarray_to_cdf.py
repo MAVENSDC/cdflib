@@ -1,15 +1,17 @@
 import os
 import re
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
+import numpy.typing as npt
+import xarray as xr
 
 from cdflib.cdfwrite import CDF
 from cdflib.epochs import CDFepoch as cdfepoch
 
 
-def _dtype_to_cdf_type(var):
+def _dtype_to_cdf_type(var) -> Tuple[int, int]:
     epoch_regex_1 = re.compile("epoch$")
     epoch_regex_2 = re.compile("epoch_[0-9]+$")
     if epoch_regex_1.match(var.name.lower()) or epoch_regex_2.match(var.name.lower()):
@@ -44,7 +46,7 @@ def _dtype_to_cdf_type(var):
         return 51, 1
 
 
-def _dtype_to_fillval(dtype):
+def _dtype_to_fillval(dtype) -> Union[float, int, str, None]:
     if dtype == np.int8 or dtype == np.int16 or dtype == np.int32 or dtype == np.int64:
         return -9223372036854775808  # Default FILLVAL of 'CDF_INT8'
     elif dtype == np.float64 or dtype == np.float32 or dtype == np.float16:
@@ -55,11 +57,10 @@ def _dtype_to_fillval(dtype):
         return " "  # Default FILLVAL of 'CDF_CHAR'
     else:
         print(f"Data type of {dtype} not supported")
+        return None
 
-    return
 
-
-def _verify_depend_dimensions(dataset, dimension_number, primary_variable_name, coordinate_variable_name):
+def _verify_depend_dimensions(dataset, dimension_number, primary_variable_name, coordinate_variable_name) -> bool:
     primary_data = np.array(dataset[primary_variable_name])
     coordinate_data = np.array(dataset[coordinate_variable_name])
 
@@ -102,7 +103,7 @@ def _verify_depend_dimensions(dataset, dimension_number, primary_variable_name, 
     return True
 
 
-def _dimension_checker(dataset):
+def _dimension_checker(dataset) -> List[int]:
     depend_regex = re.compile("depend_[0-9]+$")
 
     # NOTE: This may add attributes to the dataset object!
@@ -166,7 +167,7 @@ def _dimension_checker(dataset):
     return combined_depend_dimension_list
 
 
-def _recheck_dimensions_after_epoch_checker(dataset, time_varying_dimensions, dim_vars):
+def _recheck_dimensions_after_epoch_checker(dataset, time_varying_dimensions, dim_vars) -> List[str]:
     # We need to go back and take a look at the first dimensions of data that were not identified as time-varying
     depend_dimension_list = []
     data = (dataset, dataset.coords)
@@ -176,12 +177,12 @@ def _recheck_dimensions_after_epoch_checker(dataset, time_varying_dimensions, di
                 if len(dataset[var].dims) >= 1:
                     depend_dimension_list.append(dataset[var].dims[0])
 
-    depend_dimension_list = set(depend_dimension_list + dim_vars)
+    depend_dimension_list = list(set(depend_dimension_list + dim_vars))
 
     return depend_dimension_list
 
 
-def _epoch_checker(dataset, dim_vars):
+def _epoch_checker(dataset, dim_vars) -> Tuple[List[str], List[str]]:
     # This holds the list of epoch variables
     depend_0_list = []
     time_varying_dimensions = []
@@ -254,7 +255,7 @@ def _epoch_checker(dataset, dim_vars):
     return depend_0_list, time_varying_dimensions
 
 
-def _add_depend_variables_to_dataset(dataset, dim_vars, depend_0_vars, time_varying_dimensions):
+def _add_depend_variables_to_dataset(dataset, dim_vars, depend_0_vars, time_varying_dimensions) -> xr.Dataset:
     data = (dataset, dataset.coords)
 
     for d in data:
@@ -292,7 +293,7 @@ def _add_depend_variables_to_dataset(dataset, dim_vars, depend_0_vars, time_vary
     return dataset
 
 
-def _global_attribute_checker(dataset):
+def _global_attribute_checker(dataset) -> None:
     required_global_attributes = [
         "Project",
         "Source_name",
@@ -314,7 +315,7 @@ def _global_attribute_checker(dataset):
             print(f"ISTP Compliance_Warning: Missing dataset attribute {ga}.")
 
 
-def _variable_attribute_checker(dataset, epoch_list):
+def _variable_attribute_checker(dataset, epoch_list) -> None:
     data = (dataset, dataset.coords)
 
     for d in data:
@@ -404,7 +405,7 @@ def _variable_attribute_checker(dataset, epoch_list):
                             print(f"ISTP Compliance Action: Automatically set FILLVAL to {fillval} for variable {var}")
 
 
-def _label_checker(dataset):
+def _label_checker(dataset) -> List[str]:
     # NOTE: This may add attributes to the dataset object!
 
     # This variable will capture all ISTP compliant variables
@@ -431,7 +432,7 @@ def _label_checker(dataset):
     return istp_label_list
 
 
-def _unixtime_to_tt2000(unixtime_data):
+def _unixtime_to_tt2000(unixtime_data) -> npt.NDArray:
     # Make sure the object is iterable.  Sometimes numpy arrays claim to be iterable when they aren't.
     if not hasattr(unixtime_data, "__len__"):
         unixtime_data = [unixtime_data]
@@ -465,7 +466,7 @@ def _unixtime_to_tt2000(unixtime_data):
     return tt2000_data
 
 
-def _datetime_to_tt2000(datetime_data):
+def _datetime_to_tt2000(datetime_data) -> npt.NDArray:
     tt2000_data = np.array([])
     for dd in datetime_data:
         dd_to_convert = [
@@ -485,7 +486,7 @@ def _datetime_to_tt2000(datetime_data):
 
 def xarray_to_cdf(
     xarray_dataset, file_name, from_unixtime=False, from_datetime=False, istp=True, record_dimensions=[], compression=0
-):
+) -> None:
     """
     This function converts XArray Dataset objects into CDF files.
 

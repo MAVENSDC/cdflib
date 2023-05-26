@@ -36,3 +36,4 @@ repos:
       rev: 'v1.3.0'
       hooks:
       - id: mypy
+        additional_dependencies: [xarray]

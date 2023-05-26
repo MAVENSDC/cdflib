@@ -165,7 +165,7 @@ def test_parse_cdfepoch():
     assert x == "1982-09-12 11:52:45.432000000"
     stripped_time = x[:23]
     parsed = cdfepoch.parse(stripped_time)
-    assert parsed[0] == approx(62567898765432.0)
+    assert parsed == approx(62567898765432.0)
 
 
 def test_parse_cdfepoch16():
@@ -174,7 +174,7 @@ def test_parse_cdfepoch16():
     assert x == "1694-05-01 07:42:23.543218654"
     add_precision = x + "000"
     parsed = cdfepoch.parse(add_precision)
-    assert parsed[0] == approx(53467976543 + 0.543218654)
+    assert parsed == approx(53467976543 + 0.543218654)
 
     assert cdfepoch.to_datetime(input_time) == datetime(1694, 5, 1, 7, 42, 23, 543219)
 
@@ -182,9 +182,9 @@ def test_parse_cdfepoch16():
 def test_parse_cdftt2000():
     x = "2004-03-01 12:24:22.351793238"
     parsed = cdfepoch.parse(x)
-    assert parsed == [131415926535793232]
+    assert parsed == 131415926535793232
 
-    assert cdfepoch.to_datetime(parsed) == [datetime(2004, 3, 1, 12, 25, 26, 535793)]
+    assert cdfepoch.to_datetime(parsed) == datetime(2004, 3, 1, 12, 25, 26, 535793)
 
 
 def test_findepochrange_cdfepoch():
