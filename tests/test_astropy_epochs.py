@@ -170,7 +170,7 @@ def test_parse_cdfepoch():
 
 def test_parse_cdfepoch16():
     input_time = 53467976543.0 + 543218654100j
-    x = cdfepoch.encode(input_time)
+    x = str(cdfepoch.encode(input_time))
     assert x == "1694-05-01 07:42:23.543218654"
     add_precision = x + "000"
     parsed = cdfepoch.parse(add_precision)
