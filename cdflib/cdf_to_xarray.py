@@ -4,6 +4,7 @@ from typing import Dict, Union
 import numpy as np
 
 from cdflib import CDF
+from cdflib.dataclasses import AttData, VDRInfo
 from cdflib.epochs import CDFepoch as cdfepoch
 
 ISTP_TO_XARRAY_ATTRS = {"FIELDNAM": "standard_name", "LABLAXIS": "long_name", "UNITS": "units"}
@@ -26,7 +27,7 @@ def _find_xarray_plotting_values(var_att_dict):
     return xarray_att_dict
 
 
-def _convert_cdf_time_types(data, atts, properties, to_datetime=False, to_unixtime=False):
+def _convert_cdf_time_types(data, atts: Dict[str, AttData], properties: VDRInfo, to_datetime=False, to_unixtime=False):
     """
     # Converts CDF time types into either datetime objects, unixtime, or nothing
     # If nothing, ALL CDF_EPOCH16 types are converted to CDF_EPOCH, because xarray can't handle int64s
@@ -47,18 +48,18 @@ def _convert_cdf_time_types(data, atts, properties, to_datetime=False, to_unixti
         to_datetime = False
 
     # Convert all data in the "data" variable to unixtime or datetime if needed
-    data_type = properties["Data_Type_Description"]
+    data_type = properties.Data_Type_Description
     if len(data) == 0 or data_type not in ("CDF_EPOCH", "CDF_EPOCH16", "CDF_TIME_TT2000"):
         new_data = data
     else:
         if to_datetime:
             new_data = cdfepoch.to_datetime(data)
             if "UNITS" in atts:
-                atts["UNITS"]["Data"] = "Datetime (UTC)"
+                atts["UNITS"].Data = "Datetime (UTC)"
         elif to_unixtime:
             new_data = cdfepoch.unixtime(data)
             if "UNITS" in atts:
-                atts["UNITS"]["Data"] = "seconds"
+                atts["UNITS"].Data = "seconds"
         else:
             if data_type == "CDF_EPOCH16":
                 new_data = cdfepoch.compute(cdfepoch.breakdown(data)[0:7])
@@ -68,8 +69,8 @@ def _convert_cdf_time_types(data, atts, properties, to_datetime=False, to_unixti
     # Convert all the attributes in the "atts" dictionary to unixtime or datetime if needed
     new_atts = {}
     for att in atts:
-        data_type = atts[att]["Data_Type"]
-        data = atts[att]["Data"]
+        data_type = atts[att].Data_Type
+        data = atts[att].Data
         if not hasattr(data, "__len__"):
             data = [data]
         if len(data) == 0 or data_type not in ("CDF_EPOCH", "CDF_EPOCH16", "CDF_TIME_TT2000"):
@@ -128,7 +129,7 @@ def _convert_cdf_to_dicts(filename, to_datetime=False, to_unixtime=False):
 
 
 def _verify_depend_dimensions(
-    dataset, dimension_number, primary_variable_name, coordinate_variable_name, primary_variable_properties
+    dataset, dimension_number, primary_variable_name, coordinate_variable_name, primary_variable_properties: VDRInfo
 ):
     primary_data = np.array(dataset[primary_variable_name])
     coordinate_data = np.array(dataset[coordinate_variable_name])
@@ -157,7 +158,7 @@ def _verify_depend_dimensions(
             )
             return False
 
-    if primary_variable_properties["Rec_Vary"] and primary_variable_properties["Last_Rec"] > 0:
+    if primary_variable_properties.Rec_Vary and primary_variable_properties.Last_Rec > 0:
         if len(primary_data.shape) <= dimension_number:
             print(
                 f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but {primary_variable_name} does not have that many dimensions"
@@ -224,7 +225,7 @@ def _discover_uncertainty_variables(varatts):
     return list_of_label_vars
 
 
-def _discover_label_variables(varatts, all_variable_properties, all_variable_data):
+def _discover_label_variables(varatts, all_variable_properties: Dict[str, VDRInfo], all_variable_data):
     # This loops through the variable attributes to discover which variables are the labels of other variables
     # Unfortunately, there is no easy way to tell this by looking at the label variable itself
     # This returns a KEY:VALUE pair, with the LABEL VARIABLE corresponding to which dimension it covers.
@@ -240,11 +241,10 @@ def _discover_label_variables(varatts, all_variable_properties, all_variable_dat
             depend_var_name = varatts[v][label_dependency]
 
             if (
-                all_variable_properties[depend_var_name]["Dim_Sizes"]
-                and len(all_variable_properties[v]["Dim_Sizes"]) > 0
+                all_variable_properties[depend_var_name].Dim_Sizes
+                and len(all_variable_properties[v].Dim_Sizes) > 0
                 and (
-                    all_variable_properties[depend_var_name]["Dim_Sizes"][0]
-                    == all_variable_properties[v]["Dim_Sizes"][int(lab[-1]) - 1]
+                    all_variable_properties[depend_var_name].Dim_Sizes[0] == all_variable_properties[v].Dim_Sizes[int(lab[-1]) - 1]
                 )
             ):
                 if all_variable_data[depend_var_name].size == 0:
@@ -264,7 +264,7 @@ def _discover_label_variables(varatts, all_variable_properties, all_variable_dat
     return list_of_label_vars
 
 
-def _convert_fillvals_to_nan(var_data, var_atts, var_properties):
+def _convert_fillvals_to_nan(var_data, var_atts, var_properties: VDRInfo):
     if var_atts is None:
         return var_data
     if var_data is None:
@@ -272,14 +272,14 @@ def _convert_fillvals_to_nan(var_data, var_atts, var_properties):
 
     new_data = var_data
     if "FILLVAL" in var_atts:
-        if (
-            var_properties["Data_Type_Description"] == "CDF_FLOAT"
-            or var_properties["Data_Type_Description"] == "CDF_REAL4"
-            or var_properties["Data_Type_Description"] == "CDF_DOUBLE"
-            or var_properties["Data_Type_Description"] == "CDF_REAL8"
-            or var_properties["Data_Type_Description"] == "CDF_TIME_TT2000"
-            or var_properties["Data_Type_Description"] == "CDF_EPOCH"
-            or var_properties["Data_Type_Description"] == "CDF_EPOCH16"
+        if var_properties.Data_Type_Description in (
+            "CDF_FLOAT",
+            "CDF_REAL4",
+            "CDF_DOUBLE",
+            "CDF_REAL8",
+            "CDF_TIME_TT2000",
+            "CDF_EPOCH",
+            "CDF_EPOCH16",
         ):
             if new_data.size > 1:
                 if new_data[new_data == var_atts["FILLVAL"]].size != 0:
@@ -291,7 +291,14 @@ def _convert_fillvals_to_nan(var_data, var_atts, var_properties):
 
 
 def _determine_record_dimensions(
-    var_name, var_atts, var_data, var_props, depend_variables, all_variable_data, all_variable_properties, created_unlimited_dims
+    var_name,
+    var_atts,
+    var_data,
+    var_props: VDRInfo,
+    depend_variables,
+    all_variable_data,
+    all_variable_properties,
+    created_unlimited_dims,
 ):
     """
     Determines the name of the
@@ -303,18 +310,17 @@ def _determine_record_dimensions(
     :param all_variable_data:
     :param all_variable_properties:
     :param created_unlimited_dims:
-    :return:
     """
 
-    if var_props["Rec_Vary"] and var_props["Last_Rec"] > 0:
+    if var_props.Rec_Vary and var_props.Last_Rec > 0:
         # Check if this variable is itself the dimension
-        if var_name in depend_variables and (len(var_props["Dim_Sizes"]) == 0 or var_props["Last_Rec"] >= 0):
-            if not (len(var_props["Dim_Sizes"]) > 0 and var_props["Last_Rec"] > 0):
+        if var_name in depend_variables and (len(var_props.Dim_Sizes) == 0 or var_props.Last_Rec >= 0):
+            if not (len(var_props.Dim_Sizes) > 0 and var_props.Last_Rec > 0):
                 return var_name, True, False
             # There might be dimensions listed, but they might not vary
-            if len(var_props["Dim_Sizes"]) > 0:
-                for i in range(0, len(var_props["Dim_Sizes"])):
-                    if var_props["Dim_Vary"][i]:
+            if len(var_props.Dim_Sizes) > 0:
+                for i in range(0, len(var_props.Dim_Sizes)):
+                    if var_props.Dim_Vary[i]:
                         break
                 else:
                     return var_name, True, False
@@ -388,7 +394,7 @@ def _determine_dimension_names(
     var_name,
     var_atts,
     var_data,
-    var_props,
+    var_props: VDRInfo,
     depend_variables,
     all_variable_data,
     all_variable_properties,
@@ -408,7 +414,7 @@ def _determine_dimension_names(
 
     return_list = []
 
-    if len(var_props["Dim_Sizes"]) != 0 and var_props["Last_Rec"] >= 0:
+    if len(var_props.Dim_Sizes) != 0 and var_props.Last_Rec >= 0:
         i = 0
         skip_first_dim = record_name_found
         for dim_size in var_data.shape:
@@ -491,14 +497,14 @@ def _determine_dimension_names(
 
             # Check if the variable is itself a dimension
             if var_name in depend_variables:
-                if len(var_data.shape) == 2 and var_props["Last_Rec"] == 0:
+                if len(var_data.shape) == 2 and var_props.Last_Rec == 0:
                     if i == 1 and not record_name_found:
                         pass
                     else:
                         basic_dimension_name = var_name + "_dim"
                         return_list.append((basic_dimension_name, dim_size, True, False))
                         continue
-                elif var_props["Rec_Vary"] and var_props["Last_Rec"] != 0:
+                elif var_props.Rec_Vary and var_props.Last_Rec != 0:
                     basic_dimension_name = var_name + "_dim"
                     for x in return_list:
                         vn = x[0]
