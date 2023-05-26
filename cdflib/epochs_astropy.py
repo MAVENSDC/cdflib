@@ -7,9 +7,10 @@ CDF Astropy Epochs
 """
 import datetime
 from datetime import timezone
-from typing import List
+from typing import List, Union, Optional
 
 import numpy as np
+import numpy.typing as npt
 from astropy.time import Time
 from astropy.time.formats import TimeFromEpoch, erfa
 
@@ -53,7 +54,7 @@ class CDFAstropy:
     increment = 0
 
     @staticmethod
-    def convert_to_astropy(epochs, format=None) -> Time:
+    def convert_to_astropy(epochs: Union[Time, npt.ArrayLike], format: Optional[str]=None) -> Time:
         """
         Convert CDF epochs to astropy time objects.
 
@@ -82,7 +83,7 @@ class CDFAstropy:
             raise TypeError("Not sure how to handle type {}".format(type(epochs)))
 
     @staticmethod
-    def encode(epochs, iso_8601: bool = True):  # @NoSelf
+    def encode(epochs: npt.ArrayLike, iso_8601: bool = True) -> npt.NDArray[np.str_]:
         epochs = CDFAstropy.convert_to_astropy(epochs)
         if iso_8601:
             return epochs.iso
@@ -102,7 +103,7 @@ class CDFAstropy:
         raise TypeError("Not sure how to handle type {}".format(type(epochs)))
 
     @staticmethod
-    def to_datetime(cdf_time) -> Time:
+    def to_datetime(cdf_time: npt.ArrayLike) -> Time:
         cdf_time = CDFAstropy.convert_to_astropy(cdf_time)
         return cdf_time.datetime
 
@@ -116,9 +117,8 @@ class CDFAstropy:
         return epochs.unix
 
     @staticmethod
-    def compute(datetimes):
-        if not isinstance(datetimes[0], list):
-            datetimes = [datetimes]
+    def compute(datetimes: npt.ArrayLike) -> npt.NDArray:
+        datetimes = np.atleast_2d(datetimes)
         cdf_time = []
         for d in datetimes:
             unix_seconds = datetime.datetime(d[0], d[1], d[2], d[3], d[4], d[5]).replace(tzinfo=timezone.utc).timestamp()
@@ -134,7 +134,7 @@ class CDFAstropy:
                 remainder_seconds = (d[6] / 1000.0) + (d[7] / 1000000.0) + (d[8] / 1000000000.0) + (d[9] / 1000000000000.0)
                 astrotime = Time(unix_seconds, remainder_seconds, format="unix", precision=9)
                 cdf_time.append(astrotime.cdf_epoch16)
-        return np.array(cdf_time)
+        return np.squeeze(cdf_time)
 
     @staticmethod
     def findepochrange(epochs, starttime=None, endtime=None):  # @NoSelf
@@ -150,10 +150,8 @@ class CDFAstropy:
         return min(indices[0]), max(indices[0])
 
     @staticmethod
-    def breakdown_tt2000(tt2000):
-        tt2000strings = tt2000.iso
-        if not isinstance(tt2000strings, (list, np.ndarray)):
-            tt2000strings = [tt2000strings]
+    def breakdown_tt2000(tt2000: Time) -> npt.NDArray:
+        tt2000strings = np.atleast_1d(tt2000.iso)
         times = []
         for t in tt2000strings:
             date, time = t.split(" ")
@@ -177,13 +175,11 @@ class CDFAstropy:
             time_as_list.append(int(nanoseconds))  # microseconds
             times.append(time_as_list)
 
-        return times
+        return np.squeeze(times)
 
     @staticmethod
-    def breakdown_epoch16(epochs):
-        epoch16strings = epochs.iso
-        if not isinstance(epoch16strings, (list, np.ndarray)):
-            epoch16strings = [epoch16strings]
+    def breakdown_epoch16(epochs: Time) -> npt.NDArray:
+        epoch16strings = np.atleast_1d(epochs.iso)
         times = []
         for t in epoch16strings:
             time_as_list: List[int] = []
@@ -210,13 +206,12 @@ class CDFAstropy:
             time_as_list.append(int(picoseconds))  # picoseconds
             times.append(time_as_list)
 
-        return times
+        return np.squeeze(times)
 
     @staticmethod
-    def breakdown_epoch(epochs):
-        epochstrings = epochs.iso
-        if not isinstance(epochstrings, (list, np.ndarray)):
-            epochstrings = [epochstrings]
+    def breakdown_epoch(epochs: Time) -> npt.NDArray:
+        epochstrings = np.atleast_1d(epochs.iso)
+
         times = []
         for t in epochstrings:
             date, time = t.split(" ")
@@ -235,7 +230,7 @@ class CDFAstropy:
             milliseconds = decimal_seconds * 1000
             time_as_list.append(int(milliseconds))  # milliseconds
             times.append(time_as_list)
-        return times
+        return np.squeeze(times)
 
     @staticmethod
     def parse(value):

@@ -67,31 +67,31 @@ def test_breakdown_cdfepoch():
 
 def test_breakdown_cdfepoch16():
     x = cdfepoch.breakdown(np.complex128(63300946758.000000 + 176214648000.00000j))
-    assert x[0][0] == 2005
-    assert x[0][1] == 12
-    assert x[0][2] == 4
-    assert x[0][3] == 20
-    assert x[0][4] == 19
-    assert x[0][5] == 18
-    assert x[0][6] == 176
-    assert x[0][7] == 214
-    assert x[0][8] == 648
-    assert x[0][9] == 0
+    assert x[0] == 2005
+    assert x[1] == 12
+    assert x[2] == 4
+    assert x[3] == 20
+    assert x[4] == 19
+    assert x[5] == 18
+    assert x[6] == 176
+    assert x[7] == 214
+    assert x[8] == 648
+    assert x[9] == 0
 
 
 def test_breakdown_cdftt2000():
     x = cdfepoch.breakdown(123456789101112131)
-    assert x[0][0] == 2003
-    assert x[0][1] == 11
-    assert x[0][2] == 30
-    assert x[0][3] == 9
-    assert x[0][4] == 33
-    assert x[0][5] == 9
-    assert x[0][6] == 101
-    assert x[0][7] == 112
+    assert x[0] == 2003
+    assert x[1] == 11
+    assert x[2] == 30
+    assert x[3] == 9
+    assert x[4] == 33
+    assert x[5] == 9
+    assert x[6] == 101
+    assert x[7] == 112
 
     # Apparently there is a loss of precision at this level
-    # assert x[0][8] == 131
+    # assert x[8] == 131
 
 
 def test_compute_cdfepoch():
@@ -108,7 +108,7 @@ def test_compute_cdfepoch():
     random_time.append(randint(0, 999))  # Millisecond
     x = cdfepoch.breakdown(cdfepoch.compute(random_time))
     i = 0
-    for t in x[0]:
+    for t in x:
         assert t == random_time[i], f"Time {random_time} was not equal to {x}"
         i += 1
 
@@ -128,7 +128,7 @@ def test_compute_cdfepoch16():
     cdftime = cdfepoch.convert_to_astropy(cdfepoch.compute(random_time), format="cdf_epoch16")
     x = cdfepoch.breakdown(cdftime)
     i = 0
-    for t in x[0]:
+    for t in x:
         assert t == random_time[i], f"Time {random_time} was not equal to {x}"
         i += 1
         # Unfortunately, currently there is a pretty big loss of precision that comes with
@@ -170,7 +170,7 @@ def test_parse_cdfepoch():
 
 def test_parse_cdfepoch16():
     input_time = 53467976543.0 + 543218654100j
-    x = cdfepoch.encode(input_time)
+    x = str(cdfepoch.encode(input_time))
     assert x == "1694-05-01 07:42:23.543218654"
     add_precision = x + "000"
     parsed = cdfepoch.parse(add_precision)
