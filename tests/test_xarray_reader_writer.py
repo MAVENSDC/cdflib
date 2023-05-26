@@ -18,26 +18,28 @@ import cdflib
 # The primary motivation for doing so was to read the data into xarray using different methods (cdf_to_xarray vs load_dataset)
 
 
+@pytest.mark.parametrize(
+    "cdf_fname, nc_fname",
+    [("mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf", "mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc")],
+)
 @pytest.mark.remote_data
-def test_mms_fpi(tmp_path):
-    fname = "mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.cdf"
-    url = f"https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/{fname}"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
+def test_mms_fpi(tmp_path, cdf_fname, nc_fname):
+    url = f"https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/{cdf_fname}"
+    if not os.path.exists(cdf_fname):
+        urllib.request.urlretrieve(url, cdf_fname)
 
-    a = cdflib.cdf_to_xarray(fname, to_unixtime=True, fillval_to_nan=True)
+    a = cdflib.cdf_to_xarray(cdf_fname, to_unixtime=True, fillval_to_nan=True)
 
-    cdflib.xarray_to_cdf(a, tmp_path / fname, from_unixtime=True)
-    b = cdflib.cdf_to_xarray(tmp_path / fname, to_unixtime=True, fillval_to_nan=True)
+    cdflib.xarray_to_cdf(a, tmp_path / cdf_fname, from_unixtime=True)
+    b = cdflib.cdf_to_xarray(tmp_path / cdf_fname, to_unixtime=True, fillval_to_nan=True)
 
-    fname = "mms1_fpi_brst_l2_des-moms_20151016130334_v3.3.0.nc"
-    url = f"https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/{fname}"
-    if not os.path.exists(fname):
-        urllib.request.urlretrieve(url, fname)
+    url = f"https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/{nc_fname}"
+    if not os.path.exists(nc_fname):
+        urllib.request.urlretrieve(url, nc_fname)
 
-    c = xr.load_dataset(fname)
-    cdflib.xarray_to_cdf(c, tmp_path / fname)
-    d = cdflib.cdf_to_xarray(tmp_path / fname, to_unixtime=True, fillval_to_nan=True)
+    c = xr.load_dataset(nc_fname)
+    cdflib.xarray_to_cdf(c, tmp_path / ("nc_" + cdf_fname))
+    d = cdflib.cdf_to_xarray(tmp_path / ("nc_" + cdf_fname), to_unixtime=True, fillval_to_nan=True)
 
 
 @pytest.mark.remote_data
