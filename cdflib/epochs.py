@@ -183,7 +183,7 @@ class CDFepoch:
         """
         times = cls.breakdown(cdf_time)
         times = np.atleast_2d(times)
-        return cls._compose_date(*times.T).astype("datetime64[us]")
+        return cls._compose_date(*times.T[:9]).astype("datetime64[us]")
 
     @staticmethod
     def unixtime(cdf_time: npt.ArrayLike) -> npt.NDArray:
@@ -495,7 +495,7 @@ class CDFepoch:
             raise TypeError("datetime must be in list form")
 
         new_datetimes = np.atleast_2d(datetimes)
-        count = len(datetimes)
+        count = len(new_datetimes)
         nanoSecSinceJ2000s = []
         for x in range(count):
             datetime = new_datetimes[x]
