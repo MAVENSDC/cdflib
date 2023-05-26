@@ -1,4 +1,3 @@
-import datetime
 import gzip
 import hashlib
 import io
@@ -375,8 +374,8 @@ class CDF:
         self,
         variable: Optional[str] = None,
         epoch: Optional[str] = None,
-        starttime: Optional[datetime.datetime] = None,
-        endtime: Optional[datetime.datetime] = None,
+        starttime: Optional[epoch.epoch_types] = None,
+        endtime: Optional[epoch.epoch_types] = None,
         startrec: int = 0,
         endrec: Optional[int] = None,
     ) -> Union[str, np.ndarray]:
@@ -1792,8 +1791,8 @@ class CDF:
         self,
         vdr_info: VDR,
         epoch: Optional[str] = None,
-        starttime: Optional[datetime.datetime] = None,
-        endtime: Optional[datetime.datetime] = None,
+        starttime: Optional[epoch.epoch_types] = None,
+        endtime: Optional[epoch.epoch_types] = None,
         startrec: int = 0,
         endrec: Optional[int] = None,
     ) -> Optional[Union[str, np.ndarray]]:
@@ -1838,7 +1837,7 @@ class CDF:
             return data[0]
 
     def _findtimerecords(
-        self, var_name: str, starttime: datetime.datetime, endtime: datetime.datetime, epoch: Optional[str] = None
+        self, var_name: str, starttime: epoch.epoch_types, endtime: epoch.epoch_types, epoch: Optional[str] = None
     ) -> np.ndarray:
         if epoch is not None:
             vdr_info = self.varinq(epoch)
@@ -1875,7 +1874,7 @@ class CDF:
         return self._findrangerecords(vdr_info.Data_Type, epochtimes, starttime, endtime)
 
     def _findrangerecords(
-        self, data_type: int, epochtimes: epoch.epochs_type, starttime: datetime.datetime, endtime: datetime.datetime
+        self, data_type: int, epochtimes: epoch.epochs_type, starttime: epoch.epoch_types, endtime: epoch.epoch_types
     ) -> np.ndarray:
         if data_type == 31 or data_type == 32 or data_type == 33:
             # CDF_EPOCH or CDF_EPOCH16 or CDF_TIME_TT2000

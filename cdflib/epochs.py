@@ -1,7 +1,6 @@
 import csv
 import datetime
 import math
-import numbers
 import os
 import re
 from typing import List, Optional, Tuple, Union
@@ -162,7 +161,6 @@ class CDFepoch:
         milliseconds: Optional[npt.NDArray] = None,
         microseconds: Optional[npt.NDArray] = None,
         nanoseconds: Optional[npt.NDArray] = None,
-        *extras,
     ) -> npt.NDArray[np.datetime64]:
         """
         Take date components and return a numpy datetime array.
@@ -266,7 +264,9 @@ class CDFepoch:
         return np.squeeze(ret)
 
     @staticmethod
-    def findepochrange(epochs: epochs_type, starttime=None, endtime=None) -> np.ndarray:
+    def findepochrange(
+        epochs: epochs_type, starttime: Optional[epoch_types] = None, endtime: Optional[epoch_types] = None
+    ) -> np.ndarray:
         """
         Finds the record range within the start and end time from values
         of a CDF epoch data type. It returns a list of record numbers.
@@ -490,14 +490,11 @@ class CDFepoch:
         return np.squeeze(toutcs.T)
 
     @staticmethod
-    def compute_tt2000(datetimes) -> npt.NDArray[np.int64]:
+    def compute_tt2000(datetimes: npt.ArrayLike) -> npt.NDArray[np.int64]:
         if not isinstance(datetimes, (list, tuple, np.ndarray)):
             raise TypeError("datetime must be in list form")
 
-        if isinstance(datetimes[0], numbers.Number):
-            datetimes = [datetimes]
-
-        new_datetimes = np.array(datetimes)
+        new_datetimes = np.atleast_2d(datetimes)
         count = len(datetimes)
         nanoSecSinceJ2000s = []
         for x in range(count):
@@ -723,7 +720,9 @@ class CDFepoch:
         return date
 
     @staticmethod
-    def epochrange_tt2000(epochs: cdf_tt2000_type, starttime: Optional[epoch_types] = None, endtime: Optional[epoch_types] = None):
+    def epochrange_tt2000(
+        epochs: cdf_tt2000_type, starttime: Optional[epoch_types] = None, endtime: Optional[epoch_types] = None
+    ) -> npt.NDArray:
         if isinstance(epochs, int) or isinstance(epochs, np.int64):
             pass
         elif isinstance(epochs, list) or isinstance(epochs, tuple) or isinstance(epochs, np.ndarray):
@@ -830,7 +829,7 @@ class CDFepoch:
         return 367 * y - a1 - a2 + a3 + d + 1721029
 
     @staticmethod
-    def compute_epoch16(datetimes) -> npt.NDArray[np.complex128]:
+    def compute_epoch16(datetimes: npt.ArrayLike) -> npt.NDArray[np.complex128]:
         new_dates = np.atleast_2d(datetimes)
         count = len(new_dates)
         epochs = []
@@ -1061,7 +1060,7 @@ class CDFepoch:
         return out
 
     @staticmethod
-    def breakdown_epoch16(epochs: cdf_epoch16_type):
+    def breakdown_epoch16(epochs: cdf_epoch16_type) -> npt.NDArray:
         """
         Calculate date and time from epochs
 
@@ -1072,7 +1071,7 @@ class CDFepoch:
 
         Returns
         -------
-        components : list
+        components : ndarray
             List or array of date and time values.  The last axis contains
             (in order): year, month, day, hour, minute, second, millisecond,
             microsecond, nanosecond, and picosecond
@@ -1150,7 +1149,7 @@ class CDFepoch:
 
     @staticmethod
     def epochrange_epoch16(
-        epochs: cdf_epoch16_type, starttime: Union[complex, np.complex128] = None, endtime=None
+        epochs: cdf_epoch16_type, starttime: Optional[epoch_types] = None, endtime: Optional[epoch_types] = None
     ) -> Optional[np.ndarray]:
         new_epochs = np.atleast_1d(epochs)
 
@@ -1242,7 +1241,7 @@ class CDFepoch:
         return encodeds
 
     @staticmethod
-    def _encodex_epoch(epoch: cdf_epoch_type, iso_8601: bool = True):
+    def _encodex_epoch(epoch: cdf_epoch_type, iso_8601: bool = True) -> str:
         components = CDFepoch.breakdown_epoch(epoch)
         if iso_8601:
             # year-mm-ddThh:mm:ss.mmm
@@ -1370,7 +1369,7 @@ class CDFepoch:
         return np.squeeze(epochs)
 
     @staticmethod
-    def _computeEpoch(y: int, m, d, h, mn, s, ms):
+    def _computeEpoch(y: int, m: int, d: int, h: int, mn: int, s: int, ms: int) -> float:
         if m == 0:
             daysSince0AD = CDFepoch._JulianDay(y, 1, 1) + (d - 1) - 1721060
         else:
@@ -1446,7 +1445,9 @@ class CDFepoch:
         return np.squeeze(components)
 
     @staticmethod
-    def epochrange_epoch(epochs, starttime: Optional[epoch_types] = None, endtime: Optional[epoch_types] = None) -> np.ndarray:
+    def epochrange_epoch(
+        epochs: epoch_types, starttime: Optional[epoch_types] = None, endtime: Optional[epoch_types] = None
+    ) -> np.ndarray:
         if isinstance(epochs, (float, np.float64)):
             pass
         elif isinstance(epochs, (list, tuple, np.ndarray)):
@@ -1480,10 +1481,7 @@ class CDFepoch:
         if stime > etime:
             raise ValueError("Invalid start/end time")
 
-        if isinstance(epochs, (list, tuple)):
-            new_epochs = np.array(epochs)
-        else:
-            new_epochs = epochs
+        new_epochs = np.array(epochs)
         return np.where(np.logical_and(new_epochs >= stime, new_epochs <= etime))[0]
 
     @staticmethod
