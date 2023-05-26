@@ -33,7 +33,7 @@ def _convert_cdf_time_types(data, atts: Dict[str, AttData], properties: VDRInfo,
     # If nothing, ALL CDF_EPOCH16 types are converted to CDF_EPOCH, because xarray can't handle int64s
     """
 
-    data = np.atleast_1d(data)
+    data = np.atleast_1d(np.squeeze(data))
 
     if to_datetime and to_unixtime:
         print("Cannot convert to both unixtime and datetime.  Continuing with conversion to unixtime.")
