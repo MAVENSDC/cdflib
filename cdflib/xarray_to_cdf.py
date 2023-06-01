@@ -153,7 +153,7 @@ def _dimension_checker(dataset: xr.Dataset) -> List[str]:
             potential_depend_dims = cast(List[str], potential_depend_dims)
             i = 1
             for dim in potential_depend_dims:
-                depend_dimension_list.append(d)
+                depend_dimension_list.append(dim)
                 if dim not in dataset:  # Check if the dimension is in the coordinates themselves
                     if var_type is not None and var_type.lower() == "data":
                         if f"DEPEND_{i}" not in dataset[var].attrs:
