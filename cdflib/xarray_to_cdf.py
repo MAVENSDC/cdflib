@@ -1,7 +1,7 @@
 import os
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -11,7 +11,7 @@ from cdflib.cdfwrite import CDF
 from cdflib.epochs import CDFepoch as cdfepoch
 
 
-def _dtype_to_cdf_type(var) -> Tuple[int, int]:
+def _dtype_to_cdf_type(var: xr.Dataset) -> Tuple[int, int]:
     epoch_regex_1 = re.compile("epoch$")
     epoch_regex_2 = re.compile("epoch_[0-9]+$")
     if epoch_regex_1.match(var.name.lower()) or epoch_regex_2.match(var.name.lower()):
@@ -46,7 +46,7 @@ def _dtype_to_cdf_type(var) -> Tuple[int, int]:
         return 51, 1
 
 
-def _dtype_to_fillval(dtype) -> Union[float, int, str, None]:
+def _dtype_to_fillval(dtype: np.dtype) -> Union[float, int, str, None]:
     if dtype == np.int8 or dtype == np.int16 or dtype == np.int32 or dtype == np.int64:
         return -9223372036854775808  # Default FILLVAL of 'CDF_INT8'
     elif dtype == np.float64 or dtype == np.float32 or dtype == np.float16:
@@ -60,7 +60,9 @@ def _dtype_to_fillval(dtype) -> Union[float, int, str, None]:
         return None
 
 
-def _verify_depend_dimensions(dataset, dimension_number, primary_variable_name, coordinate_variable_name) -> bool:
+def _verify_depend_dimensions(
+    dataset: xr.Dataset, dimension_number: int, primary_variable_name: str, coordinate_variable_name: str
+) -> bool:
     primary_data = np.array(dataset[primary_variable_name])
     coordinate_data = np.array(dataset[coordinate_variable_name])
 
@@ -103,7 +105,7 @@ def _verify_depend_dimensions(dataset, dimension_number, primary_variable_name, 
     return True
 
 
-def _dimension_checker(dataset) -> List[int]:
+def _dimension_checker(dataset: xr.Dataset) -> List[str]:
     depend_regex = re.compile("depend_[0-9]+$")
 
     # NOTE: This may add attributes to the dataset object!
@@ -119,6 +121,7 @@ def _dimension_checker(dataset) -> List[int]:
     for d in data:
         # Loop through the data
         for var in d:
+            var = cast(str, var)
             # Determine the variable type (data, support_data, metadata, ignore_data)
             if "VAR_TYPE" not in dataset[var].attrs:
                 print(
@@ -147,10 +150,11 @@ def _dimension_checker(dataset) -> List[int]:
 
             # Determine potential dimension (non-epoch) variables
             potential_depend_dims = dataset[var].dims[1:]
+            potential_depend_dims = cast(List[str], potential_depend_dims)
             i = 1
-            for d in potential_depend_dims:
-                depend_dimension_list.append(d)
-                if d not in dataset:  # Check if the dimension is in the coordinates themselves
+            for dim in potential_depend_dims:
+                depend_dimension_list.append(dim)
+                if dim not in dataset:  # Check if the dimension is in the coordinates themselves
                     if var_type is not None and var_type.lower() == "data":
                         if f"DEPEND_{i}" not in dataset[var].attrs:
                             print(
@@ -167,7 +171,9 @@ def _dimension_checker(dataset) -> List[int]:
     return combined_depend_dimension_list
 
 
-def _recheck_dimensions_after_epoch_checker(dataset, time_varying_dimensions, dim_vars) -> List[str]:
+def _recheck_dimensions_after_epoch_checker(
+    dataset: xr.Dataset, time_varying_dimensions: List[str], dim_vars: List[str]
+) -> List[str]:
     # We need to go back and take a look at the first dimensions of data that were not identified as time-varying
     depend_dimension_list = []
     data = (dataset, dataset.coords)
@@ -178,11 +184,12 @@ def _recheck_dimensions_after_epoch_checker(dataset, time_varying_dimensions, di
                     depend_dimension_list.append(dataset[var].dims[0])
 
     depend_dimension_list = list(set(depend_dimension_list + dim_vars))
+    depend_dimension_list = cast(List[str], depend_dimension_list)
 
     return depend_dimension_list
 
 
-def _epoch_checker(dataset, dim_vars) -> Tuple[List[str], List[str]]:
+def _epoch_checker(dataset: xr.Dataset, dim_vars: List[str]) -> Tuple[List[str], List[str]]:
     # This holds the list of epoch variables
     depend_0_list = []
     time_varying_dimensions = []
@@ -192,13 +199,14 @@ def _epoch_checker(dataset, dim_vars) -> Tuple[List[str], List[str]]:
     for d in data:
         # Loop through the non-coordinate data
         for var in d:
+            var = cast(str, var)
             # Continue if there are no dimensions
             if len(dataset[var].dims) == 0:
                 continue
 
             epoch_regex_1 = re.compile("epoch$")
             epoch_regex_2 = re.compile("epoch_[0-9]+$")
-            first_dim_name = dataset[var].dims[0]
+            first_dim_name = cast(str, dataset[var].dims[0])
 
             # Look at the first dimension of each data
             if "DEPEND_0" in dataset[var].attrs:
@@ -255,7 +263,9 @@ def _epoch_checker(dataset, dim_vars) -> Tuple[List[str], List[str]]:
     return depend_0_list, time_varying_dimensions
 
 
-def _add_depend_variables_to_dataset(dataset, dim_vars, depend_0_vars, time_varying_dimensions) -> xr.Dataset:
+def _add_depend_variables_to_dataset(
+    dataset: xr.Dataset, dim_vars: List[str], depend_0_vars: List[str], time_varying_dimensions: List[str]
+) -> xr.Dataset:
     data = (dataset, dataset.coords)
 
     for d in data:
@@ -283,17 +293,17 @@ def _add_depend_variables_to_dataset(dataset, dim_vars, depend_0_vars, time_vary
 
             # Check if we should add a DEPEND_{i}
             i = 1
-            for d in potential_depend_dims:
-                if d in dataset and d in dim_vars:
-                    if not f"DEPEND_{i}" in dataset[var].attrs and var != d:
-                        print(f"ISTP Compliance Action: Adding attribute DEPEND_{i}={d} to {var}")
-                        dataset[var].attrs[f"DEPEND_{i}"] = d
+            for dim in potential_depend_dims:
+                if dim in dataset and dim in dim_vars:
+                    if not f"DEPEND_{i}" in dataset[var].attrs and var != dim:
+                        print(f"ISTP Compliance Action: Adding attribute DEPEND_{i}={dim} to {var}")
+                        dataset[var].attrs[f"DEPEND_{i}"] = dim
                 i += 1
 
     return dataset
 
 
-def _global_attribute_checker(dataset) -> None:
+def _global_attribute_checker(dataset: xr.Dataset) -> None:
     required_global_attributes = [
         "Project",
         "Source_name",
@@ -315,7 +325,7 @@ def _global_attribute_checker(dataset) -> None:
             print(f"ISTP Compliance_Warning: Missing dataset attribute {ga}.")
 
 
-def _variable_attribute_checker(dataset, epoch_list) -> None:
+def _variable_attribute_checker(dataset: xr.Dataset, epoch_list: List[str]) -> None:
     data = (dataset, dataset.coords)
 
     for d in data:
@@ -405,7 +415,7 @@ def _variable_attribute_checker(dataset, epoch_list) -> None:
                             print(f"ISTP Compliance Action: Automatically set FILLVAL to {fillval} for variable {var}")
 
 
-def _label_checker(dataset) -> List[str]:
+def _label_checker(dataset: xr.Dataset) -> List[str]:
     # NOTE: This may add attributes to the dataset object!
 
     # This variable will capture all ISTP compliant variables
@@ -432,7 +442,7 @@ def _label_checker(dataset) -> List[str]:
     return istp_label_list
 
 
-def _unixtime_to_tt2000(unixtime_data) -> npt.NDArray:
+def _unixtime_to_tt2000(unixtime_data) -> npt.NDArray:  # type: ignore[no-untyped-def]
     # Make sure the object is iterable.  Sometimes numpy arrays claim to be iterable when they aren't.
     if not hasattr(unixtime_data, "__len__"):
         unixtime_data = [unixtime_data]
@@ -466,7 +476,7 @@ def _unixtime_to_tt2000(unixtime_data) -> npt.NDArray:
     return tt2000_data
 
 
-def _datetime_to_tt2000(datetime_data) -> npt.NDArray:
+def _datetime_to_tt2000(datetime_data) -> npt.NDArray:  # type: ignore[no-untyped-def]
     tt2000_data = np.array([])
     for dd in datetime_data:
         dd_to_convert = [
@@ -485,7 +495,13 @@ def _datetime_to_tt2000(datetime_data) -> npt.NDArray:
 
 
 def xarray_to_cdf(
-    xarray_dataset, file_name, from_unixtime=False, from_datetime=False, istp=True, record_dimensions=[], compression=0
+    xarray_dataset: xr.Dataset,
+    file_name: str,
+    from_unixtime: bool = False,
+    from_datetime: bool = False,
+    istp: bool = True,
+    record_dimensions: List[str] = [],
+    compression: int = 0,
 ) -> None:
     """
     This function converts XArray Dataset objects into CDF files.
@@ -648,6 +664,7 @@ def xarray_to_cdf(
     datasets = (dataset, dataset.coords)
     for d in datasets:
         for var in d:
+            var = cast(str, var)
             var_att_dict = {}
             for att in d[var].attrs:
                 var_att_dict[att] = d[var].attrs[att]
