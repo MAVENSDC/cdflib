@@ -4,7 +4,8 @@ import urllib.request
 import pytest
 import xarray as xr
 
-import cdflib
+from cdflib.cdf_to_xarray import cdf_to_xarray
+from cdflib.xarray_to_cdf import xarray_to_cdf
 
 # To run these tests use `pytest --remote-data`
 
@@ -42,18 +43,18 @@ def test_xarray_read_write(tmp_path, cdf_fname, nc_fname):
     if not os.path.exists(cdf_fname):
         urllib.request.urlretrieve(url, cdf_fname)
 
-    a = cdflib.cdf_to_xarray(cdf_fname, to_unixtime=True, fillval_to_nan=True)
+    a = cdf_to_xarray(cdf_fname, to_unixtime=True, fillval_to_nan=True)
 
-    cdflib.xarray_to_cdf(a, tmp_path / cdf_fname, from_unixtime=True)
-    b = cdflib.cdf_to_xarray(tmp_path / cdf_fname, to_unixtime=True, fillval_to_nan=True)
+    xarray_to_cdf(a, tmp_path / cdf_fname, from_unixtime=True)
+    b = cdf_to_xarray(tmp_path / cdf_fname, to_unixtime=True, fillval_to_nan=True)
 
     url = f"https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/{nc_fname}"
     if not os.path.exists(nc_fname):
         urllib.request.urlretrieve(url, nc_fname)
 
     c = xr.load_dataset(nc_fname)
-    cdflib.xarray_to_cdf(c, tmp_path / ("nc_" + cdf_fname))
-    d = cdflib.cdf_to_xarray(tmp_path / ("nc_" + cdf_fname), to_unixtime=True, fillval_to_nan=True)
+    xarray_to_cdf(c, tmp_path / ("nc_" + cdf_fname))
+    d = cdf_to_xarray(tmp_path / ("nc_" + cdf_fname), to_unixtime=True, fillval_to_nan=True)
 
 
 @pytest.mark.remote_data
@@ -71,8 +72,8 @@ def test_MGITM_model():
     c["latitude"].attrs["VAR_TYPE"] = "support_data"
     c["altitude"].attrs["VAR_TYPE"] = "support_data"
 
-    cdflib.xarray_to_cdf(c, "MGITM_LS180_F130_150615-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray("MGITM_LS180_F130_150615-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
+    xarray_to_cdf(c, "MGITM_LS180_F130_150615-created-from-netcdf-input.cdf")
+    d = cdf_to_xarray("MGITM_LS180_F130_150615-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
     os.remove("MGITM_LS180_F130_150615-created-from-netcdf-input.cdf")
     os.remove("MGITM_LS180_F130_150615.nc")
 
@@ -90,10 +91,8 @@ def test_goes_mag():
     c["coordinate"].attrs["VAR_TYPE"] = "support_data"
     c["time"].attrs["VAR_TYPE"] = "support_data"
     c["time_orbit"].attrs["VAR_TYPE"] = "support_data"
-    cdflib.xarray_to_cdf(c, "dn_magn-l2-hires_g17_d20211219_v1-0-1-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray(
-        "dn_magn-l2-hires_g17_d20211219_v1-0-1-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True
-    )
+    xarray_to_cdf(c, "dn_magn-l2-hires_g17_d20211219_v1-0-1-created-from-netcdf-input.cdf")
+    d = cdf_to_xarray("dn_magn-l2-hires_g17_d20211219_v1-0-1-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
     os.remove("dn_magn-l2-hires_g17_d20211219_v1-0-1-created-from-netcdf-input.cdf")
     os.remove("dn_magn-l2-hires_g17_d20211219_v1-0-1.nc")
 
@@ -112,8 +111,8 @@ def test_saber():
     c["sclatitude"].attrs["VAR_TYPE"] = "support_data"
     c["sclongitude"].attrs["VAR_TYPE"] = "support_data"
     c["scaltitude"].attrs["VAR_TYPE"] = "support_data"
-    cdflib.xarray_to_cdf(c, "SABER_L2B_2021020_103692_02.07-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray("SABER_L2B_2021020_103692_02.07-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
+    xarray_to_cdf(c, "SABER_L2B_2021020_103692_02.07-created-from-netcdf-input.cdf")
+    d = cdf_to_xarray("SABER_L2B_2021020_103692_02.07-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
     os.remove("SABER_L2B_2021020_103692_02.07-created-from-netcdf-input.cdf")
     os.remove("SABER_L2B_2021020_103692_02.07.nc")
 
@@ -125,9 +124,9 @@ def test_euv():
     if not os.path.exists(fname):
         urllib.request.urlretrieve(url, fname)
 
-    a = cdflib.cdf_to_xarray("mvn_euv_l3_minute_20201130_v14_r02.cdf", to_unixtime=True, fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, "mvn_euv_l3_minute_20201130_v14_r02-created-from-cdf-input.cdf", from_unixtime=True)
-    b = cdflib.cdf_to_xarray("mvn_euv_l3_minute_20201130_v14_r02-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
+    a = cdf_to_xarray("mvn_euv_l3_minute_20201130_v14_r02.cdf", to_unixtime=True, fillval_to_nan=True)
+    xarray_to_cdf(a, "mvn_euv_l3_minute_20201130_v14_r02-created-from-cdf-input.cdf", from_unixtime=True)
+    b = cdf_to_xarray("mvn_euv_l3_minute_20201130_v14_r02-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
     os.remove("mvn_euv_l3_minute_20201130_v14_r02-created-from-cdf-input.cdf")
     os.remove("mvn_euv_l3_minute_20201130_v14_r02.cdf")
 
@@ -139,9 +138,9 @@ def test_sep_anc():
     if not os.path.exists(fname):
         urllib.request.urlretrieve(url, fname)
 
-    a = cdflib.cdf_to_xarray("mvn_sep_l2_anc_20210501_v06_r00.cdf", to_unixtime=True, fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, "mvn_sep_l2_anc_20210501_v06_r00-created-from-cdf-input.cdf", from_unixtime=True)
-    a = cdflib.cdf_to_xarray("mvn_sep_l2_anc_20210501_v06_r00-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
+    a = cdf_to_xarray("mvn_sep_l2_anc_20210501_v06_r00.cdf", to_unixtime=True, fillval_to_nan=True)
+    xarray_to_cdf(a, "mvn_sep_l2_anc_20210501_v06_r00-created-from-cdf-input.cdf", from_unixtime=True)
+    a = cdf_to_xarray("mvn_sep_l2_anc_20210501_v06_r00-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
     os.remove("mvn_sep_l2_anc_20210501_v06_r00-created-from-cdf-input.cdf")
     os.remove("mvn_sep_l2_anc_20210501_v06_r00.cdf")
 
@@ -153,9 +152,9 @@ def test_sep_svy():
     if not os.path.exists(fname):
         urllib.request.urlretrieve(url, fname)
 
-    a = cdflib.cdf_to_xarray("mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05.cdf", to_unixtime=True, fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, "mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05-created-from-cdf-input.cdf", from_unixtime=True)
-    b = cdflib.cdf_to_xarray(
+    a = cdf_to_xarray("mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05.cdf", to_unixtime=True, fillval_to_nan=True)
+    xarray_to_cdf(a, "mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05-created-from-cdf-input.cdf", from_unixtime=True)
+    b = cdf_to_xarray(
         "mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True
     )
     os.remove("mvn_sep_l2_s2-raw-svy-full_20191231_v04_r05-created-from-cdf-input.cdf")
@@ -173,10 +172,10 @@ def test_sta():
     if not os.path.exists(fname):
         urllib.request.urlretrieve(url, fname)
 
-    a = cdflib.cdf_to_xarray("mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04.cdf", to_unixtime=True,
+    a = cdf_to_xarray("mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04.cdf", to_unixtime=True,
                              fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, 'mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04-created-from-cdf-input.cdf', from_unixtime=True)
-    b = cdflib.cdf_to_xarray('mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04-created-from-cdf-input.cdf', to_unixtime=True,
+    xarray_to_cdf(a, 'mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04-created-from-cdf-input.cdf', from_unixtime=True)
+    b = cdf_to_xarray('mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04-created-from-cdf-input.cdf', to_unixtime=True,
                              fillval_to_nan=True)
     os.remove('mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04-created-from-cdf-input.cdf')
     os.remove('mvn_sta_l2_d1-32e4d16a8m_20201130_v02_r04.cdf')
@@ -190,9 +189,9 @@ def test_swe_arc3d():
     if not os.path.exists(fname):
         urllib.request.urlretrieve(url, fname)
 
-    a = cdflib.cdf_to_xarray("mvn_swe_l2_arc3d_20180717_v04_r02.cdf", to_unixtime=True, fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, "mvn_swe_l2_arc3d_20180717_v04_r02-created-from-cdf-input.cdf", from_unixtime=True)
-    b = cdflib.cdf_to_xarray("mvn_swe_l2_arc3d_20180717_v04_r02-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
+    a = cdf_to_xarray("mvn_swe_l2_arc3d_20180717_v04_r02.cdf", to_unixtime=True, fillval_to_nan=True)
+    xarray_to_cdf(a, "mvn_swe_l2_arc3d_20180717_v04_r02-created-from-cdf-input.cdf", from_unixtime=True)
+    b = cdf_to_xarray("mvn_swe_l2_arc3d_20180717_v04_r02-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
     os.remove("mvn_swe_l2_arc3d_20180717_v04_r02-created-from-cdf-input.cdf")
     os.remove("mvn_swe_l2_arc3d_20180717_v04_r02.cdf")
 
@@ -202,10 +201,8 @@ def test_swe_arc3d():
         urllib.request.urlretrieve(url, fname)
 
     c = xr.load_dataset("mvn_swe_l2_arc3d_20180717_v04_r02.nc")
-    cdflib.xarray_to_cdf(c, "mvn_swe_l2_arc3d_20180717_v04_r02-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray(
-        "mvn_swe_l2_arc3d_20180717_v04_r02-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True
-    )
+    xarray_to_cdf(c, "mvn_swe_l2_arc3d_20180717_v04_r02-created-from-netcdf-input.cdf")
+    d = cdf_to_xarray("mvn_swe_l2_arc3d_20180717_v04_r02-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
     os.remove("mvn_swe_l2_arc3d_20180717_v04_r02-created-from-netcdf-input.cdf")
     os.remove("mvn_swe_l2_arc3d_20180717_v04_r02.nc")
 
@@ -217,11 +214,9 @@ def test_swe_svyspec():
     if not os.path.exists(fname):
         urllib.request.urlretrieve(url, fname)
 
-    a = cdflib.cdf_to_xarray("mvn_swe_l2_svyspec_20180718_v04_r04.cdf", to_unixtime=True, fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, "mvn_swe_l2_svyspec_20180718_v04_r04-created-from-cdf-input.cdf", from_unixtime=True)
-    b = cdflib.cdf_to_xarray(
-        "mvn_swe_l2_svyspec_20180718_v04_r04-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True
-    )
+    a = cdf_to_xarray("mvn_swe_l2_svyspec_20180718_v04_r04.cdf", to_unixtime=True, fillval_to_nan=True)
+    xarray_to_cdf(a, "mvn_swe_l2_svyspec_20180718_v04_r04-created-from-cdf-input.cdf", from_unixtime=True)
+    b = cdf_to_xarray("mvn_swe_l2_svyspec_20180718_v04_r04-created-from-cdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
     os.remove("mvn_swe_l2_svyspec_20180718_v04_r04-created-from-cdf-input.cdf")
     os.remove("mvn_swe_l2_svyspec_20180718_v04_r04.cdf")
 
@@ -231,10 +226,8 @@ def test_swe_svyspec():
         urllib.request.urlretrieve(url, fname)
 
     c = xr.load_dataset("mvn_swe_l2_svyspec_20180718_v04_r04.nc")
-    cdflib.xarray_to_cdf(c, "mvn_swe_l2_svyspec_20180718_v04_r04-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray(
-        "mvn_swe_l2_svyspec_20180718_v04_r04-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True
-    )
+    xarray_to_cdf(c, "mvn_swe_l2_svyspec_20180718_v04_r04-created-from-netcdf-input.cdf")
+    d = cdf_to_xarray("mvn_swe_l2_svyspec_20180718_v04_r04-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
     os.remove("mvn_swe_l2_svyspec_20180718_v04_r04-created-from-netcdf-input.cdf")
     os.remove("mvn_swe_l2_svyspec_20180718_v04_r04.nc")
 
@@ -247,8 +240,8 @@ def test_raids():
         urllib.request.urlretrieve(url, fname)
 
     c = xr.load_dataset("raids_nirs_20100823_v1.1.nc")
-    cdflib.xarray_to_cdf(c, "raids_nirs_20100823_v1.1-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray("raids_nirs_20100823_v1.1-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
+    xarray_to_cdf(c, "raids_nirs_20100823_v1.1-created-from-netcdf-input.cdf")
+    d = cdf_to_xarray("raids_nirs_20100823_v1.1-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
     os.remove("raids_nirs_20100823_v1.1-created-from-netcdf-input.cdf")
     os.remove("raids_nirs_20100823_v1.1.nc")
 
@@ -264,11 +257,11 @@ def test_rbsp():
     if not os.path.exists(fname):
         urllib.request.urlretrieve(url, fname)
 
-    a = cdflib.cdf_to_xarray("rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2.cdf",
+    a = cdf_to_xarray("rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2.cdf",
                              to_unixtime=True, fillval_to_nan=True)
-    cdflib.xarray_to_cdf(a, 'rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2-created-from-cdf-input.cdf',
+    xarray_to_cdf(a, 'rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2-created-from-cdf-input.cdf',
                          from_unixtime=True)
-    b = cdflib.cdf_to_xarray('rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2-created-from-cdf-input.cdf',
+    b = cdf_to_xarray('rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2-created-from-cdf-input.cdf',
                              to_unixtime=True, fillval_to_nan=True)
     os.remove('rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2-created-from-cdf-input.cdf')
     os.remove('rbsp-a_magnetometer_1sec-gsm_emfisis-l3_20190122_v1.6.2.cdf')
@@ -283,8 +276,8 @@ def test_see_l3():
         urllib.request.urlretrieve(url, fname)
 
     c = xr.load_dataset("see__L3_2021009_012_01.ncdf")
-    cdflib.xarray_to_cdf(c, "see__L3_2021009_012_01.ncdfhello2.cdf")
-    d = cdflib.cdf_to_xarray("see__L3_2021009_012_01.ncdfhello2.cdf", to_unixtime=True, fillval_to_nan=True)
+    xarray_to_cdf(c, "see__L3_2021009_012_01.ncdfhello2.cdf")
+    d = cdf_to_xarray("see__L3_2021009_012_01.ncdfhello2.cdf", to_unixtime=True, fillval_to_nan=True)
     os.remove("see__L3_2021009_012_01.ncdfhello2.cdf")
     os.remove("see__L3_2021009_012_01.ncdf")
 
@@ -297,8 +290,8 @@ def test_see_l2a():
         urllib.request.urlretrieve(url, fname)
 
     c = xr.load_dataset("see__xps_L2A_2021006_012_02.ncdf")
-    cdflib.xarray_to_cdf(c, "see__xps_L2A_2021006_012_02.ncdfhello2.cdf")
-    d = cdflib.cdf_to_xarray("see__xps_L2A_2021006_012_02.ncdfhello2.cdf", to_unixtime=True, fillval_to_nan=True)
+    xarray_to_cdf(c, "see__xps_L2A_2021006_012_02.ncdfhello2.cdf")
+    d = cdf_to_xarray("see__xps_L2A_2021006_012_02.ncdfhello2.cdf", to_unixtime=True, fillval_to_nan=True)
     os.remove("see__xps_L2A_2021006_012_02.ncdfhello2.cdf")
     os.remove("see__xps_L2A_2021006_012_02.ncdf")
 
@@ -311,8 +304,8 @@ def test_something():
         urllib.request.urlretrieve(url, fname)
 
     c = xr.load_dataset("sgpsondewnpnC1.nc")
-    cdflib.xarray_to_cdf(c, "sgpsondewnpnC1-created-from-netcdf-input.cdf")
-    d = cdflib.cdf_to_xarray("sgpsondewnpnC1-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
+    xarray_to_cdf(c, "sgpsondewnpnC1-created-from-netcdf-input.cdf")
+    d = cdf_to_xarray("sgpsondewnpnC1-created-from-netcdf-input.cdf", to_unixtime=True, fillval_to_nan=True)
     os.remove("sgpsondewnpnC1-created-from-netcdf-input.cdf")
     os.remove("sgpsondewnpnC1.nc")
 
@@ -326,7 +319,7 @@ def test_build_from_scratch():
     epoch_dims = ["epoch"]
     epoch = xr.Variable(epoch_dims, epoch_data)  # type: ignore[no-untyped-call]
     ds = xr.Dataset(data_vars={"data": data, "epoch": epoch})
-    cdflib.xarray_to_cdf(ds, "hello.cdf")
+    xarray_to_cdf(ds, "hello.cdf")
     os.remove("hello.cdf")
     global_attributes = {
         "Project": "Hail Mary",
@@ -347,11 +340,11 @@ def test_build_from_scratch():
     data = xr.Variable(var_dims, var_data)  # type: ignore[no-untyped-call]
     epoch = xr.Variable(epoch_dims, epoch_data)  # type: ignore[no-untyped-call]
     ds = xr.Dataset(data_vars={"data": data, "epoch": epoch}, attrs=global_attributes)
-    cdflib.xarray_to_cdf(ds, "hello.cdf")
+    xarray_to_cdf(ds, "hello.cdf")
     os.remove("hello.cdf")
     dir_data = [1, 2, 3]
     dir_dims = ["direction"]
     direction = xr.Variable(dir_dims, dir_data)  # type: ignore[no-untyped-call]
     ds = xr.Dataset(data_vars={"data": data, "epoch": epoch, "direction": direction}, attrs=global_attributes)
-    cdflib.xarray_to_cdf(ds, "hello.cdf")
+    xarray_to_cdf(ds, "hello.cdf")
     os.remove("hello.cdf")
