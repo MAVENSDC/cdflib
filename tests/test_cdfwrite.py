@@ -9,11 +9,11 @@ R = Path(__file__).parent
 fnbasic = "testing.cdf"
 
 
-def cdf_create(fn: Path, spec):
+def cdf_create(fn: Path, spec: Dict[str, Any]) -> cdfwrite.CDF:
     return cdfwrite.CDF(fn, cdf_spec=spec)
 
 
-def cdf_read(fn: Path, validate: bool = False):
+def cdf_read(fn: Path, validate: bool = False) -> cdfread.CDF:
     return cdfread.CDF(fn, validate=validate)
 
 
@@ -51,9 +51,9 @@ def test_checksum(tmp_path):
     reader = cdf_read(fn, validate=True)
     # Test CDF info
     var = reader.varget("Variable1")
-    assert (var == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).all()
+    np.testing.assert_equal(var, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     # test convenience info
-    assert (reader["Variable1"] == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).all()
+    np.testing.assert_equal(reader["Variable1"], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
 
 def test_checksum_compressed(tmp_path):
@@ -79,7 +79,7 @@ def test_checksum_compressed(tmp_path):
     reader = cdf_read(fn, validate=True)
 
     var = reader.varget("Variable1")
-    assert (var == v).all()
+    np.testing.assert_equal(var, v)
 
     att = reader.attget("Attribute1", entry=0)
     assert att.Data == [1]
@@ -112,7 +112,7 @@ def test_file_compression(tmp_path):
     reader = cdf_read(fn)
     # Test CDF info
     var = reader.varget("Variable1")
-    assert (var == v).all()
+    np.testing.assert_equal(var, v)
 
 
 def test_globalattrs(tmp_path):
@@ -151,8 +151,7 @@ def test_globalattrs(tmp_path):
     entry = reader.attget("Global6", 3)
     assert entry.Data_Type == "CDF_INT8"
 
-    for x in [0, 1, 2]:
-        assert entry.Data[x] == x
+    np.testing.assert_equal(entry.Data, [0, 1, 2])
 
 
 def test_create_zvariable(tmp_path):
@@ -178,7 +177,7 @@ def test_create_zvariable(tmp_path):
     assert varinfo.Data_Type == 1
 
     var = reader.varget("Variable1")
-    assert (var == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).all()
+    np.testing.assert_equal(var, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
 
 def test_create_rvariable(tmp_path):
@@ -565,7 +564,7 @@ def test_create_2d_r_and_z_variables(tmp_path):
         assert var[x][1] == 2 * x + 1
 
     var = reader.varget("Variable2")
-    assert (var == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).all()
+    np.testing.assert_equal(var, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
     att = reader.attget("Attribute1", entry="Variable2")
     assert att.Data == [2]
