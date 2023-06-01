@@ -4,6 +4,14 @@ Changelog
 
 1.0.0
 =====
+Version 1.0.0 is a new major version for ``cdflib``, and contains a number
+of breaking changes. These have been made to improve consistency across the
+package, and make it easier to maintain and build on the package going forward
+in the future.
+
+Although we have tried our best to not introduce new bugs and
+list all changes below, some things may have slipped through the cracks. If you
+have any issues, please do not hesitate to open them at https://github.com/MAVENSDC/cdflib/issues.
 
 Python support
 --------------
@@ -65,6 +73,10 @@ Other breaking changes
 - The ``version``, ``release``, and ``increement`` attributes of ``CDF`` have been removed.
 - Removed the ``record_range_only`` argument to `cdflib.cdfread.CDF.varget`.
 - Removed ``CDF.epochrange``. Use `cdflib.cdfread.CDF.varinq` instead to get the data ranges.
+
+New features
+------------
+- Type hints have been added across the majority of the package.
 
 Bugfixes
 --------
