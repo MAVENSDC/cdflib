@@ -2,6 +2,13 @@
 Changelog
 =========
 
+1.0.1
+=====
+To keep ``astropy`` and ``xarray`` as optional dependencies, ``cdfastropy``,
+``cdf_to_xarray``, and ``xarray_to_cdf`` are no longer available under ``cdflib``.
+Instead import them from ``cdflib.xarray_to_cdf``, ``cdflib.cdf_to_xarray``, or
+``cdflib.epochs_astropy``.
+
 1.0.0
 =====
 Version 1.0.0 is a new major version for ``cdflib``, and contains a number
