@@ -4,8 +4,7 @@ import urllib.request
 import pytest
 import xarray as xr
 
-from cdflib.cdf_to_xarray import cdf_to_xarray
-from cdflib.xarray_to_cdf import xarray_to_cdf
+from cdflib.xarray import cdf_to_xarray, xarray_to_cdf
 
 # To run these tests use `pytest --remote-data`
 
