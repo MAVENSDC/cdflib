@@ -2,12 +2,22 @@
 Changelog
 =========
 
+1.0.2
+=====
+To make the ``xarray`` functionality easier to discover and import, a new
+``cdflib.xarray`` namespace has been added. This means the recommended
+way to import the xarray functionality is now
+``from cdflib.xarray import cdf_to_xarray, xarray_to_cdf``
+
+
 1.0.1
 =====
 To keep ``astropy`` and ``xarray`` as optional dependencies, ``cdfastropy``,
 ``cdf_to_xarray``, and ``xarray_to_cdf`` are no longer available under ``cdflib``.
-Instead import them from ``cdflib.xarray_to_cdf``, ``cdflib.cdf_to_xarray``, or
-``cdflib.epochs_astropy``.
+Instead import them from
+``cdflib.xarray_to_cdf.xarray_to_cdf``,
+``cdflib.cdf_to_xarray.cdf_to_xarray``, or
+``cdflib.epochs_astropy.CDFAstropy``.
 
 1.0.0
 =====

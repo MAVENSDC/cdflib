@@ -540,9 +540,6 @@ def _generate_xarray_data_variables(
     all_variable_properties: Dict[str, VDRInfo],
     fillval_to_nan: bool,
 ) -> Tuple[Dict[str, xr.Variable], Dict[str, int]]:
-    # Import here to avoid xarray as a dependency of all of cdflib
-    import xarray as xr
-
     # Make a list of all of the special variables in the file.  These are variables that are pointed to by
     # other variables.
     depend_variables = _discover_depend_variables(all_variable_data, all_variable_attributes, all_variable_properties)
@@ -681,19 +678,19 @@ def cdf_to_xarray(filename: str, to_datetime: bool = False, to_unixtime: bool = 
         An XArray Dataset Object
 
     Example MMS:
-        >>> #Import necessary libraries
+        >>> # Import necessary libraries
         >>> import cdflib
         >>> import xarray as xr
         >>> import os
         >>> import urllib.request
 
-        >>> #Download a CDF file
+        >>> # Download a CDF file
         >>> fname = 'mms2_fgm_srvy_l2_20160809_v4.47.0.cdf'
         >>> url = ("https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/mms2_fgm_srvy_l2_20160809_v4.47.0.cdf")
         >>> if not os.path.exists(fname):
         >>>     urllib.request.urlretrieve(url, fname)
 
-        >>> #Load in and display the CDF file
+        >>> # Load in and display the CDF file
         >>> mms_data = cdflib.cdf_to_xarray("mms2_fgm_srvy_l2_20160809_v4.47.0.cdf", to_unixtime=True, fillval_to_nan=True)
         >>> print(mms_data)
 
@@ -709,19 +706,19 @@ def cdf_to_xarray(filename: str, to_datetime: bool = False, to_unixtime: bool = 
         >>> mms_data3['mms2_fgm_b_gse_srvy_l2'].plot()
 
     Example THEMIS:
-        >>> #Import necessary libraries
+        >>> # Import necessary libraries
         >>> import cdflib
         >>> import xarray as xr
         >>> import os
         >>> import urllib.request
 
-        >>> #Download a CDF file
+        >>> # Download a CDF file
         >>> fname = 'thg_l2_mag_amd_20070323_v01.cdf'
         >>> url = ("https://lasp.colorado.edu/maven/sdc/public/data/sdc/web/cdflib_testing/thg_l2_mag_amd_20070323_v01.cdf")
         >>> if not os.path.exists(fname):
         >>>     urllib.request.urlretrieve(url, fname)
 
-        >>> #Load in and display the CDF file
+        >>> # Load in and display the CDF file
         >>> thg_data = cdflib.cdf_to_xarray(fname, to_unixtime=True, fillval_to_nan=True)
         >>> print(thg_data)
 
