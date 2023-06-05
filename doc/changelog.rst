@@ -6,6 +6,7 @@ Changelog
 =====
 - The ``variable`` parameter to `cdflib.cdfread.CDF.varattsget` is no longer optional.
   Not specifying it raised an error anyway in previous versions of cdflib.
+- Fixed an error loading CDF files without a pad value set.
 
 1.0.2
 =====
