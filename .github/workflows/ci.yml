@@ -28,4 +28,4 @@ jobs:
       run: pytest --cov=cdflib
 
     - name: Upload code coverage
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v3
