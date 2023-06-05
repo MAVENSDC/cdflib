@@ -517,14 +517,14 @@ class CDF:
 
         return return_dict
 
-    def varattsget(self, variable: Optional[str] = None) -> Dict[str, Union[None, str, np.ndarray]]:
+    def varattsget(self, variable: Union[str, int]) -> Dict[str, Union[None, str, np.ndarray]]:
         """
         Gets all variable attributes.
 
         Unlike attget, which returns a single attribute entry value,
         this function returns all of the variable attribute entries,
         in a dictionary (in the form of 'attribute': value pair) for
-        a variable. If there is no entry found, None is returned.
+        a variable.
         """
         if isinstance(variable, int) and self._num_zvariable > 0 and self._num_rvariable > 0:
             raise ValueError("This CDF has both r and z variables. Use variable name")
@@ -551,8 +551,6 @@ class CDF:
             if variable < 0 or variable >= num_variable:
                 raise ValueError(f"No variable by this number: {variable}")
             return self._read_varatts(variable, zVar)
-        else:
-            raise ValueError("Please set variable keyword equal to " "the name or number of an variable")
 
     def _uncompress_rle(self, data: bytes) -> bytearray:
         result = bytearray()

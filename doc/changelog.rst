@@ -2,6 +2,11 @@
 Changelog
 =========
 
+1.0.3
+=====
+- The ``variable`` parameter to `cdflib.cdfread.CDF.varattsget` is no longer optional.
+  Not specifying it raised an error anyway in previous versions of cdflib.
+
 1.0.2
 =====
 To make the ``xarray`` functionality easier to discover and import, a new
