@@ -17,8 +17,12 @@ def test_read(fname):
         cdf.varattsget(var)
         cdf.varget(var)
 
+    # Smoke test context manager
     with CDF(fname) as cdf:
         cdf.cdf_info()
+
+    # Smoke test global attributes
+    cdf.globalattsget()
 
 
 def test_nonexist_file_errors(tmp_path):
