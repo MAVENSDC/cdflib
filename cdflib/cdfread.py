@@ -1305,9 +1305,10 @@ class CDF:
             num_dims = len(dim_sizes)
             coff = 124 + toadd + 4 * self._rvariables_num_dims
         # Only set if pad value is in the flags
+        pad: Union[None, str, np.ndarray] = None
         if pad_bool:
             byte_stream = vdr[coff:]
-            pad: Union[str, np.ndarray]
+
             try:
                 pad = self._read_data(byte_stream, data_type, 1, num_elements)
             except Exception:

@@ -4,18 +4,19 @@ import pytest
 
 from cdflib import CDF
 
-fname = pathlib.Path(__file__) / ".." / "testfiles" / "psp_fld_l2_mag_rtn_1min_20200104_v02.cdf"
 
-
-def test_read():
+@pytest.mark.parametrize("fname", ["psp_fld_l2_mag_rtn_1min_20200104_v02.cdf", "de2_ion2s_rpa_19830213_v01.cdf"])
+def test_read(fname):
+    fname = (pathlib.Path(__file__) / ".." / "testfiles" / fname).resolve()
     cdf = CDF(fname)
 
-    cdf.cdf_info()
-    varatts = cdf.varattsget("psp_fld_l2_mag_RTN_1min")
-    assert isinstance(varatts, dict)
+    info = cdf.cdf_info()
 
+    # Smoke test variable access
+    for var in info.zVariables:
+        cdf.varattsget(var)
+        cdf.varget(var)
 
-def test_context():
     with CDF(fname) as cdf:
         cdf.cdf_info()
 

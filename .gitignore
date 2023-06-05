@@ -2,23 +2,26 @@
 *.tmp
 .pytest_cache/
 
+*.DS_Store
+
 *.pyc
 *.egg-info/
 build
 /.project
 /.pydevproject
 *.ipynb
-/*.html
-/testing.py
-**/.coverage
-**/.hypothesis
-**/coverage.xml
-**/codecov.sh
+
 doc/_build
 doc/api
+
 .eggs/*
 dist/*
 .hypothesis/*
+
+/*.html
+coverage.xml
+.coverage
+htmlcov
 *asv/*
 
 cdflib/_version.py
