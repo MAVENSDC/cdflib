@@ -1,14 +1,10 @@
-import pathlib
-
 import pytest
 
 from cdflib import CDF
 
 
-@pytest.mark.parametrize("fname", ["psp_fld_l2_mag_rtn_1min_20200104_v02.cdf", "de2_ion2s_rpa_19830213_v01.cdf"])
-def test_read(fname):
-    fname = (pathlib.Path(__file__) / ".." / "testfiles" / fname).resolve()
-    cdf = CDF(fname)
+def test_read(cdf_path):
+    cdf = CDF(cdf_path)
 
     info = cdf.cdf_info()
 
@@ -18,7 +14,7 @@ def test_read(fname):
         cdf.varget(var)
 
     # Smoke test context manager
-    with CDF(fname) as cdf:
+    with CDF(cdf_path) as cdf:
         cdf.cdf_info()
 
     # Smoke test global attributes

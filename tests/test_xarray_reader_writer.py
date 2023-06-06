@@ -347,3 +347,8 @@ def test_build_from_scratch():
     ds = xr.Dataset(data_vars={"data": data, "epoch": epoch, "direction": direction}, attrs=global_attributes)
     xarray_to_cdf(ds, "hello.cdf")
     os.remove("hello.cdf")
+
+
+def test_smoke(cdf_path, tmp_path):
+    a = cdf_to_xarray(cdf_path, to_unixtime=True, fillval_to_nan=True)
+    xarray_to_cdf(a, tmp_path / cdf_path.name, from_unixtime=True)
