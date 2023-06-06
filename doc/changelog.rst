@@ -4,6 +4,10 @@ Changelog
 
 1.0.3
 =====
+Fixed issue where multi-dimensional variables were dropped when converting to xarray.
+
+1.0.3
+=====
 - The ``variable`` parameter to `cdflib.cdfread.CDF.varattsget` is no longer optional.
   Not specifying it raised an error anyway in previous versions of cdflib.
 - Fixed an error loading CDF files without a pad value set.

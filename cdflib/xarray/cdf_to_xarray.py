@@ -402,8 +402,10 @@ def _determine_dimension_names(
 
     if len(var_props.Dim_Sizes) != 0 and var_props.Last_Rec >= 0:
         i = 0
+        skip_first_dim = bool(record_name_found)
         for dim_size in var_data.shape:
-            if record_name_found:
+            if skip_first_dim:
+                skip_first_dim = False
                 continue
 
             i += 1
