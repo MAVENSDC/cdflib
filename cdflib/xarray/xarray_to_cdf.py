@@ -7,9 +7,9 @@ import numpy as np
 import numpy.typing as npt
 import xarray as xr
 
-from cdflib import logger
 from cdflib.cdfwrite import CDF
 from cdflib.epochs import CDFepoch as cdfepoch
+from cdflib.logging import logger
 
 
 def _dtype_to_cdf_type(var: xr.Dataset) -> Tuple[int, int]:

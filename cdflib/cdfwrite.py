@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 import cdflib.epochs as cdfepoch
-from cdflib import logger
+from cdflib.logging import logger
 
 __all__ = ["CDF"]
 

@@ -6,9 +6,10 @@ import numpy as np
 import numpy.typing as npt
 import xarray as xr
 
-from cdflib import CDF, logger
+from cdflib import CDF
 from cdflib.dataclasses import AttData, VDRInfo
 from cdflib.epochs import CDFepoch as cdfepoch
+from cdflib.logging import logger
 
 ISTP_TO_XARRAY_ATTRS = {"FIELDNAM": "standard_name", "LABLAXIS": "long_name", "UNITS": "units"}
 
