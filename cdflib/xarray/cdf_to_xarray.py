@@ -9,6 +9,7 @@ import xarray as xr
 from cdflib import CDF
 from cdflib.dataclasses import AttData, VDRInfo
 from cdflib.epochs import CDFepoch as cdfepoch
+from cdflib.logging import logger
 
 ISTP_TO_XARRAY_ATTRS = {"FIELDNAM": "standard_name", "LABLAXIS": "long_name", "UNITS": "units"}
 
@@ -41,7 +42,7 @@ def _convert_cdf_time_types(
     data = np.atleast_1d(np.squeeze(data))
 
     if to_datetime and to_unixtime:
-        print("Cannot convert to both unixtime and datetime.  Continuing with conversion to unixtime.")
+        logger.info("Cannot convert to both unixtime and datetime.  Continuing with conversion to unixtime.")
         to_datetime = False
 
     # Convert all data in the "data" variable to unixtime or datetime if needed
@@ -136,44 +137,44 @@ def _verify_depend_dimensions(
     coordinate_data = np.array(dataset[coordinate_variable_name])
 
     if len(primary_data.shape) != 0 and len(coordinate_data.shape) == 0:
-        print(
+        logger.warning(
             f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match."
         )
         return False
 
     if len(coordinate_data.shape) != 0 and len(primary_data.shape) == 0:
-        print(
+        logger.warning(
             f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match."
         )
         return False
 
     if len(coordinate_data.shape) > 2:
-        print(
+        logger.warning(
             f"ISTP Compliance Warning: {coordinate_variable_name} has too many dimensions to be the DEPEND_{dimension_number} for variable {primary_variable_name}"
         )
         return False
     if len(coordinate_data.shape) == 2:
         if primary_data.shape[0] != coordinate_data.shape[0]:
-            print(
+            logger.warning(
                 f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the Epoch dimensions do not match."
             )
             return False
 
     if primary_variable_properties.Rec_Vary and primary_variable_properties.Last_Rec > 0:
         if len(primary_data.shape) <= dimension_number:
-            print(
+            logger.warning(
                 f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but {primary_variable_name} does not have that many dimensions"
             )
             return False
 
         if primary_data.shape[dimension_number] != coordinate_data.shape[-1]:
-            print(
+            logger.warning(
                 f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match."
             )
             return False
     else:
         if len(primary_data.shape) <= dimension_number - 1:
-            print(
+            logger.warning(
                 f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but {primary_variable_name} does not have that many dimensions"
             )
             return False
@@ -184,7 +185,7 @@ def _verify_depend_dimensions(
             # So we require both the first and second dimensions don't match the coordinate size before we definitely
             # reject it.
             if len(primary_data.shape) > dimension_number and primary_data.shape[dimension_number] != coordinate_data.shape[-1]:
-                print(
+                logger.warning(
                     f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match."
                 )
                 return False
@@ -256,8 +257,10 @@ def _discover_label_variables(
                 continue
 
             if varatts[v][lab] not in varatts:
-                print(f"Warning, variable {v} points to {varatts[v][lab]} as label {lab}, but {varatts[v][lab]} does not exist.")
-                print(f"Setting {varatts[v][lab]} as long_name instead.")
+                logger.warning(
+                    f"Warning, variable {v} points to {varatts[v][lab]} as label {lab}, but {varatts[v][lab]} does not exist\n."
+                    f"Setting {varatts[v][lab]} as long_name instead."
+                )
                 varatts[v]["LABLAXIS"] = varatts[v][lab]
                 varatts[v]["long_name"] = varatts[v][lab]
                 continue
@@ -324,7 +327,7 @@ def _determine_record_dimensions(
         if "DEPEND_0" in var_atts:
             depend_0_variable_name = var_atts["DEPEND_0"]
             if depend_0_variable_name not in all_variable_properties:
-                print(
+                logger.warning(
                     f"Warning: Variable {var_name} listed DEPEND_0 as {depend_0_variable_name}, but no"
                     f" variable by that name was found."
                 )
@@ -332,7 +335,7 @@ def _determine_record_dimensions(
                 if len(all_variable_data[depend_0_variable_name]) == len(var_data):
                     return depend_0_variable_name, True, False
                 else:
-                    print(
+                    logger.warning(
                         f"Warning: Variable {var_name} listed DEPEND_0 as {depend_0_variable_name}, but they have different dimension lengths."
                     )
 
@@ -358,7 +361,7 @@ def _determine_record_dimensions(
         # Check if the dimension is already defined within the attribute section
         depend_0_variable_name = var_atts["DEPEND_0"]
         if depend_0_variable_name not in all_variable_properties:
-            print(
+            logger.warning(
                 f"Warning: Variable {var_name} listed DEPEND_0 as {depend_0_variable_name}, but no"
                 f" variable by that name was found."
             )
@@ -366,7 +369,7 @@ def _determine_record_dimensions(
             if len(all_variable_data[depend_0_variable_name]) == len(var_data) and len(var_data) != 0:
                 return depend_0_variable_name, True, False
             else:
-                print(
+                logger.warning(
                     f"Warning: Variable {var_name} listed DEPEND_0 as {depend_0_variable_name}, but they have different dimension lengths."
                 )
 
@@ -400,8 +403,10 @@ def _determine_dimension_names(
 
     if len(var_props.Dim_Sizes) != 0 and var_props.Last_Rec >= 0:
         i = 0
+        skip_first_dim = bool(record_name_found)
         for dim_size in var_data.shape:
-            if record_name_found:
+            if skip_first_dim:
+                skip_first_dim = False
                 continue
 
             i += 1
@@ -410,7 +415,7 @@ def _determine_dimension_names(
             if "DEPEND_" + str(i) in var_atts:
                 depend_i_variable_name = var_atts["DEPEND_" + str(i)]
                 if depend_i_variable_name not in all_variable_properties:
-                    print(
+                    logger.warning(
                         f"Warning: Variable {var_name} listed DEPEND_{str(i)} as {depend_i_variable_name}, but no"
                         f" variable by that name was found."
                     )
@@ -439,7 +444,7 @@ def _determine_dimension_names(
                         return_list.append((depend_i_variable_name + "_dim", dim_size, True, False))
                         continue
                     else:
-                        print(
+                        logger.warning(
                             f"Warning: Variable {var_name} listed DEPEND_{str(i)} as {depend_i_variable_name}"
                             f", but that variable's dimensions do not match {var_name}'s dimensions."
                         )
@@ -456,7 +461,7 @@ def _determine_dimension_names(
                         and len(var_data.shape) > i - 1
                         and (depend_i_variable_data.shape[0] == var_data.shape[i - 1])
                     ):
-                        print(
+                        logger.warning(
                             f"Warning: Variable {var_name} has no determined time-varying component, but  "
                             f"{depend_i_variable_name} was determined to match closely with one of the dimensions."
                             f"  It will be set automatically for convenience."
@@ -469,7 +474,7 @@ def _determine_dimension_names(
                         and len(var_data.shape) > i - 1
                         and (depend_i_variable_data.shape[1] == var_data.shape[i - 1])
                     ):
-                        print(
+                        logger.warning(
                             f"Warning: Variable {var_name} has no determined time-varying component, but  "
                             f"{depend_i_variable_name} was determined to match closely with one of the dimensions."
                             f"  It will be set automatically for convenience."
@@ -611,10 +616,7 @@ def _generate_xarray_data_variables(
             var_data = _convert_fillvals_to_nan(var_data, var_atts, var_props)
 
         # Finally, create the new variable
-        try:
-            created_vars[var_name] = xr.Variable(var_dims, var_data, attrs=var_atts)  # type: ignore[no-untyped-call]
-        except Exception as e:
-            print(f"ERROR: Creating Variable {var_name} ran into exception: {e}")
+        created_vars[var_name] = xr.Variable(var_dims, var_data, attrs=var_atts)  # type: ignore[no-untyped-call]
 
     return created_vars, depend_dimensions
 
@@ -692,7 +694,6 @@ def cdf_to_xarray(filename: str, to_datetime: bool = False, to_unixtime: bool = 
 
         >>> # Load in and display the CDF file
         >>> mms_data = cdflib.cdf_to_xarray("mms2_fgm_srvy_l2_20160809_v4.47.0.cdf", to_unixtime=True, fillval_to_nan=True)
-        >>> print(mms_data)
 
         >>> # Show off XArray functionality
         >>>
@@ -720,7 +721,6 @@ def cdf_to_xarray(filename: str, to_datetime: bool = False, to_unixtime: bool = 
 
         >>> # Load in and display the CDF file
         >>> thg_data = cdflib.cdf_to_xarray(fname, to_unixtime=True, fillval_to_nan=True)
-        >>> print(thg_data)
 
     Processing Steps:
         1. For each variable in the CDF file
@@ -771,7 +771,9 @@ def cdf_to_xarray(filename: str, to_datetime: bool = False, to_unixtime: bool = 
                 if label_variables[lab] == var_name:  # Found one!
                     if len(created_vars[lab].dims) == len(created_vars[var_name].dims):
                         if created_vars[lab].size != created_vars[var_name].size:
-                            print(f"Warning, label variable {lab} does not match the expected dimension sizes of {var_name}")
+                            logger.warning(
+                                f"Warning, label variable {lab} does not match the expected dimension sizes of {var_name}"
+                            )
                         else:
                             created_vars[lab].dims = created_vars[var_name].dims
                     else:

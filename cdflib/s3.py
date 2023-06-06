@@ -18,7 +18,6 @@ class S3object:
         if isize == -1:
             isize = self.content_length
         myrange = "bytes=%d-%d" % (self.pos, (self.pos + isize - 1))
-        # print("debug: byte range ",myrange)
         self.pos += isize  # advance the pointer
         stream = self.fhandle.get(Range=myrange)["Body"]
         rawdata = stream.read()

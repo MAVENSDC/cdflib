@@ -2031,7 +2031,6 @@ class CDF:
     ) -> Union["S3object", io.BufferedReader, io.BytesIO]:
         bdata: Union["S3object", io.BufferedReader, io.BytesIO]
         if filetype == "url":
-            # print("debug, opening url")
             req = urllib.request.Request(filename)
             response = urllib.request.urlopen(req)
             bdata = io.BytesIO(response.read())
@@ -2048,16 +2047,13 @@ class CDF:
                 s3c = boto3.resource("s3")
                 obj = s3c.Object(bucket_name=mybucket, key=mykey)
                 bdata = S3object(obj)  # type: ignore
-                # print("Debug, using S3 read-in-place, flag ",s3_flag)
             else:
                 # for store in memory or as temp copy
                 s3c = boto3.client("s3")
                 obj = s3c.get_object(Bucket=mybucket, Key=mykey)
                 bdata = s3_fetchall(obj)
-                # print("Debug, using S3 copy, flag ",s3_flag)
             return bdata
         else:
-            # print("debug, opening ",fname)
             bdata = open(filename, "rb")
 
         return bdata
@@ -2070,7 +2066,6 @@ class CDF:
         """
         raw_data = f.read(-1)
         self.temp_file = Path(tempfile.NamedTemporaryFile(suffix=".cdf").name)
-        # print("debug, using temp file: ",self.temp_file)
         with self.temp_file.open("wb") as g:
             g.write(raw_data)
         self.original_stream = self.file
