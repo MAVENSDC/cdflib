@@ -2,9 +2,10 @@
 Changelog
 =========
 
-1.0.3
+1.0.4
 =====
-Fixed issue where multi-dimensional variables were dropped when converting to xarray.
+- Fixed issue where multi-dimensional variables were dropped when converting to xarray.
+- Replaced all print and warning statements with a logger, ``cdflib.logger``.
 
 1.0.3
 =====

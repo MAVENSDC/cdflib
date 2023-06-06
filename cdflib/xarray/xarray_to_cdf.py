@@ -7,6 +7,7 @@ import numpy as np
 import numpy.typing as npt
 import xarray as xr
 
+from cdflib import logger
 from cdflib.cdfwrite import CDF
 from cdflib.epochs import CDFepoch as cdfepoch
 
@@ -35,14 +36,14 @@ def _dtype_to_cdf_type(var: xr.Dataset) -> Tuple[int, int]:
                     longest_string = len(str(x))
             return 51, longest_string
         except Exception as e:
-            print(
+            logger.warning(
                 f"NOT SUPPORTED: Data in variable {var.name} has data type {var.dtype}.  Attempting to convert it to strings ran into the error: {str(e)}"
             )
             return 51, 1
     elif var.dtype.type == np.datetime64:
         return 33, 1
     else:
-        print(f"NOT SUPPORTED: Data in variable {var.name} has data type of {var.dtype}.")
+        logger.warning(f"NOT SUPPORTED: Data in variable {var.name} has data type of {var.dtype}.")
         return 51, 1
 
 
@@ -56,7 +57,7 @@ def _dtype_to_fillval(dtype: np.dtype) -> Union[float, int, str, None]:
     elif dtype.type == np.str_:
         return " "  # Default FILLVAL of 'CDF_CHAR'
     else:
-        print(f"Data type of {dtype} not supported")
+        logger.warning(f"Data type of {dtype} not supported")
         return None
 
 
@@ -67,37 +68,37 @@ def _verify_depend_dimensions(
     coordinate_data = np.array(dataset[coordinate_variable_name])
 
     if len(primary_data.shape) != 0 and len(coordinate_data.shape) == 0:
-        print(
+        logger.warning(
             f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match."
         )
         return False
 
     if len(coordinate_data.shape) != 0 and len(primary_data.shape) == 0:
-        print(
+        logger.warning(
             f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match."
         )
         return False
 
     if len(coordinate_data.shape) > 2:
-        print(
+        logger.warning(
             f"ISTP Compliance Warning: {coordinate_variable_name} has too many dimensions to be the DEPEND_{dimension_number} for variable {primary_variable_name}"
         )
         return False
     if len(coordinate_data.shape) == 2:
         if primary_data.shape[0] != coordinate_data.shape[0]:
-            print(
+            logger.warning(
                 f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the Epoch dimensions do not match."
             )
             return False
 
     if len(primary_data.shape) <= dimension_number:
-        print(
+        logger.warning(
             f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but {primary_variable_name} does not have that many dimensions"
         )
         return False
 
     if primary_data.shape[dimension_number] != coordinate_data.shape[-1]:
-        print(
+        logger.warning(
             f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match."
         )
         return False
@@ -124,14 +125,14 @@ def _dimension_checker(dataset: xr.Dataset) -> List[str]:
             var = cast(str, var)
             # Determine the variable type (data, support_data, metadata, ignore_data)
             if "VAR_TYPE" not in dataset[var].attrs:
-                print(
+                logger.warning(
                     f"ISTP Compliance Warning: Variable {var} does not have an attribute VAR_TYPE to describe the variable.  Attributes must be either data, support_data, metadata, or ignore_data."
                 )
                 var_type = None
             else:
                 var_type = dataset[var].attrs["VAR_TYPE"]
                 if var_type.lower() not in ("data", "support_data", "metadata", "ignore_data"):
-                    print(
+                    logger.warning(
                         f"ISTP Compliance Warning: Variable {var} attribute VAR_TYPE is not set to either data, support_data, metadata, or ignore_data."
                     )
                     var_type = None
@@ -144,7 +145,7 @@ def _dimension_checker(dataset: xr.Dataset) -> List[str]:
                         if _verify_depend_dimensions(dataset, int(att[-1]), var, depend_i):
                             istp_depend_dimension_list.append(dataset[var].attrs[att])
                     else:
-                        print(
+                        logger.warning(
                             f"ISTP Compliance Warning: variable {var} listed {dataset[var].attrs[att]} as its {att}.  However, it was not found in the dataset."
                         )
 
@@ -157,7 +158,7 @@ def _dimension_checker(dataset: xr.Dataset) -> List[str]:
                 if dim not in dataset:  # Check if the dimension is in the coordinates themselves
                     if var_type is not None and var_type.lower() == "data":
                         if f"DEPEND_{i}" not in dataset[var].attrs:
-                            print(
+                            logger.warning(
                                 f"ISTP Compliance Warning: variable {var} contains a dimension {d} that is not defined in xarray.  "
                                 f"Specify one of the other xarray DataArrays as the DEPEND_{i} attribute."
                             )
@@ -236,21 +237,21 @@ def _epoch_checker(dataset: xr.Dataset, dim_vars: List[str]) -> Tuple[List[str],
                     depend_0_list.append(potential_depend_0)
                     time_varying_dimensions.append(var)
                 else:
-                    print(
+                    logger.warning(
                         f'ISTP Compliance Warning: variable {var} contained a "record" dimension {potential_depend_0}, but they have different dimensions.'
                     )
             elif epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
                 depend_0_list.append(potential_depend_0)
                 time_varying_dimensions.append(var)
             else:
-                print(
+                logger.warning(
                     f'ISTP Compliance Warning: variable {var} contained an "record" dimension {potential_depend_0}, but it was not found in the data set.'
                 )
 
     depend_0_list = list(set(depend_0_list))
 
     if not depend_0_list:
-        print(f"ISTP Compliance Warning: No variable for the time dimension could be found.")
+        logger.warning(f"ISTP Compliance Warning: No variable for the time dimension could be found.")
 
     epoch_found = False
     for d in depend_0_list:
@@ -258,7 +259,9 @@ def _epoch_checker(dataset: xr.Dataset, dim_vars: List[str]) -> Tuple[List[str],
             epoch_found = True
 
     if not epoch_found:
-        print(f"ISTP Compliance Warning: There is no variable named Epoch.  Epoch is the required name of a DEPEND_0 attribute.")
+        logger.warning(
+            f"ISTP Compliance Warning: There is no variable named Epoch.  Epoch is the required name of a DEPEND_0 attribute."
+        )
 
     return depend_0_list, time_varying_dimensions
 
@@ -284,7 +287,7 @@ def _add_depend_variables_to_dataset(
 
                     if depend_0 is not None and depend_0 in depend_0_vars and var != depend_0:
                         dataset[var].attrs["DEPEND_0"] = depend_0
-                        print(f"ISTP Compliance Action: Adding attribute DEPEND_0={depend_0} to {var}")
+                        logger.warning(f"ISTP Compliance Action: Adding attribute DEPEND_0={depend_0} to {var}")
 
                 potential_depend_dims = dataset[var].dims[1:]
 
@@ -296,7 +299,7 @@ def _add_depend_variables_to_dataset(
             for dim in potential_depend_dims:
                 if dim in dataset and dim in dim_vars:
                     if not f"DEPEND_{i}" in dataset[var].attrs and var != dim:
-                        print(f"ISTP Compliance Action: Adding attribute DEPEND_{i}={dim} to {var}")
+                        logger.warning(f"ISTP Compliance Action: Adding attribute DEPEND_{i}={dim} to {var}")
                         dataset[var].attrs[f"DEPEND_{i}"] = dim
                 i += 1
 
@@ -322,7 +325,7 @@ def _global_attribute_checker(dataset: xr.Dataset) -> None:
     ]
     for ga in required_global_attributes:
         if ga not in dataset.attrs:
-            print(f"ISTP Compliance_Warning: Missing dataset attribute {ga}.")
+            logger.warning(f"ISTP Compliance_Warning: Missing dataset attribute {ga}.")
 
 
 def _variable_attribute_checker(dataset: xr.Dataset, epoch_list: List[str]) -> None:
@@ -332,35 +335,39 @@ def _variable_attribute_checker(dataset: xr.Dataset, epoch_list: List[str]) -> N
         for var in d:
             # Check for VAR_TYPE
             if "VAR_TYPE" not in d[var].attrs:
-                print(f"ISTP Compliance Warning: VAR_TYPE is not defined for variable {var}.")
+                logger.warning(f"ISTP Compliance Warning: VAR_TYPE is not defined for variable {var}.")
                 var_type = ""
             else:
                 var_type = d[var].attrs["VAR_TYPE"]
                 if var_type.lower() not in ("data", "support_data", "metadata", "ignore_data"):
-                    print(f"ISTP Complaince Warning: VAR_TYPE for variable {var} is given a non-compliant value of {var_type}")
+                    logger.warning(
+                        f"ISTP Complaince Warning: VAR_TYPE for variable {var} is given a non-compliant value of {var_type}"
+                    )
                     var_type = ""
 
             # Check for CATDESC
             if "CATDESC" not in d[var].attrs:
-                print(f"ISTP Compliance Warning: CATDESC attribute is required for variable {var}")
+                logger.warning(f"ISTP Compliance Warning: CATDESC attribute is required for variable {var}")
 
             if "DISPLAY_TYPE" not in d[var].attrs:
                 if var_type.lower() == "data":
-                    print(f"ISTP Compliance Warning: DISPLAY_TYPE not set for variable {var}")
+                    logger.warning(f"ISTP Compliance Warning: DISPLAY_TYPE not set for variable {var}")
 
             if "FIELDNAM" not in d[var].attrs:
-                print(f"ISTP Compliance Warning: FIELDNAM attribute is required for variable {var}")
+                logger.warning(f"ISTP Compliance Warning: FIELDNAM attribute is required for variable {var}")
 
             if "FORMAT" not in d[var].attrs:
                 if "FORM_PTR" in d[var].attrs:
                     if d[var].attrs["FORM_PTR"] in dataset or d[var].attrs["FORM_PTR"] in dataset.coords:
                         pass
                     else:
-                        print(f"ISTP Compliance Warning: FORM_PTR for variable {var} does not point to an existing variable.")
+                        logger.warning(
+                            f"ISTP Compliance Warning: FORM_PTR for variable {var} does not point to an existing variable."
+                        )
                 else:
-                    print(f"ISTP Compliance Warning: FORMAT or FORM_PTR attribute is required for variable {var}")
+                    logger.warning(f"ISTP Compliance Warning: FORMAT or FORM_PTR attribute is required for variable {var}")
             else:
-                print(f"ISTP Compliance Warning: FORMAT or FORM_PTR attribute is required for variable {var}")
+                logger.warning(f"ISTP Compliance Warning: FORMAT or FORM_PTR attribute is required for variable {var}")
 
             if "LABLAXIS" not in d[var].attrs:
                 if var_type.lower() == "data":
@@ -368,51 +375,51 @@ def _variable_attribute_checker(dataset: xr.Dataset, epoch_list: List[str]) -> N
                         if d[var].attrs["LABL_PTR_1"] in dataset or d[var].attrs["LABL_PTR_1"] in dataset.coords:
                             pass
                         else:
-                            print(
+                            logger.warning(
                                 f"ISTP Compliance Warning: LABL_PTR_1 attribute for variable {var} does not point to an existing variable."
                             )
                     else:
-                        print(f"ISTP Compliance Warning: LABLAXIS or LABL_PTR_1 attribute is required for variable {var}")
+                        logger.warning(f"ISTP Compliance Warning: LABLAXIS or LABL_PTR_1 attribute is required for variable {var}")
 
             if "UNITS" not in d[var].attrs:
                 if var_type.lower() == "data" or var_type.lower() == "support_data":
                     if "UNIT_PTR" not in d[var].attrs:
-                        print(f"ISTP Compliance Warning: UNITS or UNIT_PTR attribute is required for variable {var}")
+                        logger.warning(f"ISTP Compliance Warning: UNITS or UNIT_PTR attribute is required for variable {var}")
                     else:
                         if d[var].attrs["UNIT_PTR"] not in dataset:
-                            print(
+                            logger.warning(
                                 f"ISTP Compliance Warning: UNIT_PTR attribute for variable {var} does not point to an existing variable."
                             )
 
             if "VALIDMIN" not in d[var].attrs:
                 if var_type.lower() == "data":
-                    print(f"ISTP Compliance Warning: VALIDMIN required for variable {var}")
+                    logger.warning(f"ISTP Compliance Warning: VALIDMIN required for variable {var}")
                 elif var_type.lower() == "support_data":
                     if len(dataset[var].dims) > 0:
                         if dataset[var].dims[0] in epoch_list:
-                            print(f"ISTP Compliance Warning: VALIDMIN required for variable {var}")
+                            logger.warning(f"ISTP Compliance Warning: VALIDMIN required for variable {var}")
 
             if "VALIDMAX" not in d[var].attrs:
                 if var_type.lower() == "data":
-                    print(f"ISTP Compliance Warning: VALIDMAX required for variable {var}")
+                    logger.warning(f"ISTP Compliance Warning: VALIDMAX required for variable {var}")
                 elif var_type.lower() == "support_data":
                     if len(dataset[var].dims) > 0:
                         if d[var].dims[0] in epoch_list:
-                            print(f"ISTP Compliance Warning: VALIDMAX required for variable {var}")
+                            logger.warning(f"ISTP Compliance Warning: VALIDMAX required for variable {var}")
 
             if "FILLVAL" not in d[var].attrs:
                 if var_type.lower() == "data":
-                    print(f"ISTP Compliance Warning: FILLVAL required for variable {var}")
+                    logger.warning(f"ISTP Compliance Warning: FILLVAL required for variable {var}")
                     fillval = _dtype_to_fillval(d[var].dtype)
                     d[var].attrs["FILLVAL"] = fillval
-                    print(f"ISTP Compliance Action: Automatically set FILLVAL to {fillval} for variable {var}")
+                    logger.warning(f"ISTP Compliance Action: Automatically set FILLVAL to {fillval} for variable {var}")
                 elif var_type.lower() == "support_data":
                     if len(dataset[var].dims) > 0:
                         if d[var].dims[0] in epoch_list:
-                            print(f"ISTP Compliance Warning: FILLVAL required for variable {var}")
+                            logger.warning(f"ISTP Compliance Warning: FILLVAL required for variable {var}")
                             fillval = _dtype_to_fillval(d[var].dtype)
                             d[var].attrs["FILLVAL"] = fillval
-                            print(f"ISTP Compliance Action: Automatically set FILLVAL to {fillval} for variable {var}")
+                            logger.warning(f"ISTP Compliance Action: Automatically set FILLVAL to {fillval} for variable {var}")
 
 
 def _label_checker(dataset: xr.Dataset) -> List[str]:
@@ -429,7 +436,7 @@ def _label_checker(dataset: xr.Dataset) -> List[str]:
                 if (dataset[var].attrs[att] in dataset) or (dataset[var].attrs[att] in dataset.coords):
                     istp_label_list.append(dataset[var].attrs[att])
                 else:
-                    print(
+                    logger.warning(
                         f"ISTP Compliance Warning: variable {var} listed {dataset[var].attrs[att]} as its {att}.  However, it was not found in the dataset."
                     )
 
@@ -611,7 +618,7 @@ def xarray_to_cdf(
 
     """
     if os.path.isfile(file_name):
-        print(f"{file_name} already exists, cannot create CDF file.  Returning...")
+        logger.warning(f"{file_name} already exists, cannot create CDF file.  Returning...")
         return
 
     x = CDF(file_name)

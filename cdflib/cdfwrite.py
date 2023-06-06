@@ -9,7 +9,6 @@ import pathlib
 import platform as pf
 import struct
 import sys
-import warnings
 from functools import wraps
 from numbers import Number
 from pathlib import Path
@@ -18,6 +17,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 import cdflib.epochs as cdfepoch
+from cdflib import logger
 
 __all__ = ["CDF"]
 
@@ -393,7 +393,7 @@ class CDF:
                                 data = value[0]
                                 if dataType == self.CDF_CHAR or dataType == self.CDF_UCHAR:
                                     if isinstance(data, list) or isinstance(data, tuple):
-                                        warnings.warn("Invalid global attribute value")
+                                        logger.warning("Invalid global attribute value")
                                         return
                                     numElems = len(data)
                                 elif dataType == self.CDF_EPOCH or dataType == self.CDF_EPOCH16 or dataType == self.CDF_TIME_TT2000:
@@ -430,7 +430,7 @@ class CDF:
                         data = value
                         numElems, dataType = self._datatype_define(value)
                         if numElems is None:
-                            warnings.warn("Unknown data")
+                            logger.warning("Unknown data")
                             return
 
                     offset = self._write_aedr(f, True, attrNum, entryNum, data, dataType, numElems, None)
@@ -583,7 +583,7 @@ class CDF:
                         data = value
                         numElems, dataType = self._datatype_define(value)
                         if numElems is None:
-                            warnings.warn("Unknown data")
+                            logger.warning("Unknown data")
                             return
                     offset = self._write_aedr(f, False, attrNum, entryNum, data, dataType, numElems, zVar)
                     if entries == 0:
@@ -800,9 +800,11 @@ class CDF:
                         notsupport = True
 
                     if notsupport or len(var_data) != 2:
-                        print("Sparse record #s and data are not of list/tuple form:")
-                        print(" [ [rec_#1, rec_#2, rec_#3,    ],")
-                        print("   [data_#1, data_#2, data_#3, ....] ]")
+                        logger.warning(
+                            "Sparse record #s and data are not of list/tuple form:\n"
+                            " [ [rec_#1, rec_#2, rec_#3,    ],\n"
+                            "   [data_#1, data_#2, data_#3, ....] ]"
+                        )
                         return
 
                     # Format data into: [[recstart1, recend1, data1],
@@ -841,7 +843,7 @@ class CDF:
 
         for attr, entry in var_attrs.items():
             if attr in self.gattrs:
-                warnings.warn(f"Attribute: {attr}" + " already defined as a global attribute... Skip")
+                logger.warning(f"Attribute: {attr}" + " already defined as a global attribute... Skip")
                 continue
 
             if not (attr in self.attrs):
@@ -1326,7 +1328,7 @@ class CDF:
         try:
             return majors[major.upper()]
         except Exception:
-            warnings.warn(f"bad major.... {major}")
+            logger.warning(f"bad major.... {major}")
             return 0
 
     @staticmethod
@@ -1356,7 +1358,7 @@ class CDF:
         try:
             return encodings[encoding.upper()]
         except Exception:
-            warnings.warn(f"bad encoding.... {encoding}")
+            logger.warning(f"bad encoding.... {encoding}")
             return 0
 
     @staticmethod
@@ -1412,10 +1414,10 @@ class CDF:
                 elif value.dtype.type == np.str_:
                     return numElems, self.CDF_CHAR
                 else:
-                    warnings.warn("Invalid data type for data.... Skip")
+                    logger.warning("Invalid data type for data.... Skip")
                     return None, None
             else:
-                warnings.warn("Invalid data type for data.... Skip")
+                logger.warning("Invalid data type for data.... Skip")
                 return None, None
 
     @staticmethod
@@ -2622,7 +2624,7 @@ class CDF:
             try:
                 data = data["Data"]
             except Exception:
-                warnings.warn("Unknown dictionary.... Skip")
+                logger.warning("Unknown dictionary.... Skip")
                 return None
         if isinstance(data, np.ndarray):
             if len(records) == len(data):
@@ -2632,7 +2634,7 @@ class CDF:
                 # There are some virtual data
                 return self._make_sparse_blocks_with_virtual(variable, records, data)
             else:
-                warnings.warn("Invalid sparse data... " "Less data than the specified records... Skip")
+                logger.warning("Invalid sparse data... " "Less data than the specified records... Skip")
         elif isinstance(data, bytes):
             record_length = len(records)
             for z in range(0, variable["Num_Dims"]):
@@ -2644,16 +2646,14 @@ class CDF:
                 # There are some virtual data
                 return self._make_sparse_blocks_with_virtual(variable, records, data)
             else:
-                warnings.warn("Invalid sparse data... " "Less data than the specified records... Skip")
+                logger.warning("Invalid sparse data... " "Less data than the specified records... Skip")
         elif isinstance(data, list):
             if isinstance(data[0], list):
                 if not (all(isinstance(el, str) for el in data[0])):
-                    print("Can not handle list data.... ", "Only support list of str... Skip")
-                    return
+                    raise RuntimeError("Can not handle list data.... ", "Only support list of str...")
             else:
                 if not (all(isinstance(el, str) for el in data)):
-                    print("Can not handle list data.... ", "Only support list of str... Skip")
-                    return
+                    raise RuntimeError("Can not handle list data.... ", "Only support list of str...")
             record_length = len(records)
             # for z in range(0, variable['Num_Dims']):
             #    record_length = record_length * variable['Dim_Sizes'][z]
@@ -2664,9 +2664,9 @@ class CDF:
                 # There are some virtual data
                 return self._make_sparse_blocks_with_virtual(variable, records, data)
             else:
-                print("Invalid sparse data... ", "Less data than the specified records... Skip")
+                logger.warning("Invalid sparse data... ", "Less data than the specified records... Skip")
         else:
-            print("Invalid sparse data... ", "Less data than the specified records... Skip")
+            logger.warning("Invalid sparse data... ", "Less data than the specified records... Skip")
         return
 
     def _make_sparse_blocks_with_virtual(self, variable, records, data) -> List[Tuple[int, int, np.ndarray]]:  # type: ignore[no-untyped-def]
@@ -2722,7 +2722,7 @@ class CDF:
                 sparse_data.append((sblock[0], sblock[1], np.array(datax)))
             return sparse_data
         else:
-            print("Can not handle data... Skip")
+            logger.warning("Can not handle data... Skip")
             return None
 
     def _make_sparse_blocks_with_physical(self, variable, records, data) -> List[Tuple[int, int, np.ndarray]]:  # type: ignore[no-untyped-def]
