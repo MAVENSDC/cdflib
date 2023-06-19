@@ -2,6 +2,12 @@
 Changelog
 =========
 
+1.0.5
+=====
+- Fixed the output of :meth:`cdflib.epochs.CDFepoch.compute_tt2000` to
+  be squeezed if a single input is given.
+- Fixed warnings with numpy 1.25.
+
 1.0.4
 =====
 - Fixed issue where multi-dimensional variables were dropped when converting to xarray.
