@@ -638,7 +638,7 @@ class CDFepoch:
 
             nanoSecSinceJ2000s.append(int(nanoSecSinceJ2000))
 
-        return np.array(nanoSecSinceJ2000s)
+        return np.squeeze(nanoSecSinceJ2000s)
 
     @staticmethod
     def _LeapSecondsfromYMD(year: int, month: int, day: int) -> float:
