@@ -182,7 +182,7 @@ class CDF:
 
     def cdf_info(self) -> CDFInfo:
         """
-        Returns a dictionary that shows the basic CDF information.
+        Returns basic CDF information.
 
         Returns
         -------
