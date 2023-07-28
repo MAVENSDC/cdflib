@@ -2,6 +2,12 @@
 Changelog
 =========
 
+1.1.0
+=====
+- If the `deflate <https://github.com/dcwatson/deflate>`_ library is installed
+  it is now used to decompress data, which can lead to around 2x speedups over
+  the native gzip Python library.
+
 1.0.5
 =====
 - Fixed the output of :meth:`cdflib.epochs.CDFepoch.compute_tt2000` to

@@ -21,7 +21,8 @@ cdflib requires python 3 and numpy. To install run
 What is cdflib?
 ------------------
 
-cdflib is an effort to replicate the CDF libraries using a pure python implementation.  This means users do not need to install the `CDF NASA libraries <https://cdf.gsfc.nasa.gov/>`_.
+cdflib is an effort to replicate the CDF libraries using a pure python implementation.
+This means users do not need to install the `CDF NASA libraries <https://cdf.gsfc.nasa.gov/>`_.
 
 The only module you need to install is ``numpy``, but there are a few things you can do with ``astropy`` and ``xarray``.
 
