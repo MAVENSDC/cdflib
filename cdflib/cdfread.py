@@ -1,4 +1,3 @@
-from .gzip_wrapper import gzip_inflate
 import hashlib
 import io
 import os
@@ -12,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 import cdflib.epochs as epoch
+from cdflib._gzip_wrapper import gzip_inflate
 from cdflib.dataclasses import (
     AEDR,
     VDR,
