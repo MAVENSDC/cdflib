@@ -1,5 +1,5 @@
 import binascii
-import gzip
+from .gzip_wrapper import  gzip_deflate
 import hashlib
 import io
 import logging
@@ -1031,7 +1031,7 @@ class CDF:
                     endrec = recs - 1
                     endloc = len(data)
                 bdata = data[startloc:endloc]
-                cdata = gzip.compress(bdata, compression)
+                cdata = gzip_deflate(bdata, compression)
                 if len(cdata) < len(bdata):
                     n1offset = self._write_cvvr(f, cdata)
                 else:
@@ -2065,7 +2065,7 @@ class CDF:
         uSize = len(data)
         section_type = self.CCR_
         rfuA = 0
-        cData = gzip.compress(data, level)
+        cData = gzip_deflate(data, level)
         block_size = self.CCR_BASE_SIZE64 + len(cData)
         cprOffset = 0
         ccr1 = bytearray(32)
