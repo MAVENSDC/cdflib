@@ -1,4 +1,4 @@
-import gzip
+from .gzip_wrapper import gzip_inflate
 import hashlib
 import io
 import os
@@ -579,7 +579,7 @@ class CDF:
 
         if cType == 5:
             self._f.seek(data_start)
-            decompressed_data = gzip.decompress(self._f.read(data_size))
+            decompressed_data = gzip_inflate(self._f.read(data_size))
         elif cType == 1:
             self._f.seek(data_start)
             decompressed_data = self._uncompress_rle(self._f.read(data_size))
@@ -1982,7 +1982,7 @@ class CDF:
         if section_type == 13:
             # a CVVR
             compressed_size = int.from_bytes(block[8:16], "big")
-            return gzip.decompress(block[16 : 16 + compressed_size])
+            return gzip_inflate(block[16 : 16 + compressed_size])
         elif section_type == 7:
             # a VVR
             return block[4:]
@@ -2001,7 +2001,7 @@ class CDF:
         if section_type == 13:
             # a CVVR
             compressed_size = int.from_bytes(block[8:12], "big")
-            return gzip.decompress(block[12 : 12 + compressed_size])
+            return gzip_inflate(block[12 : 12 + compressed_size])
         elif section_type == 7:
             # a VVR
             return block[4:]
