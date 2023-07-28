@@ -23,7 +23,6 @@ from cdflib.dataclasses import (
     VDRInfo,
 )
 from cdflib.s3 import S3object
-from .gzip_wrapper import gzip_inflate
 
 __all__ = ["CDF"]
 
