@@ -511,6 +511,7 @@ class CDF:
                         entryData = entryData[0]
 
                 entries.append(entryData)
+                aedr_byte_loc = aedr_info.next_aedr
 
             return_dict[adr_info.name] = entries
             byte_loc = adr_info.next_adr_loc
