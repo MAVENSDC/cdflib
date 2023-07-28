@@ -1,5 +1,4 @@
 import binascii
-from .gzip_wrapper import  gzip_deflate
 import hashlib
 import io
 import logging
@@ -17,6 +16,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 import cdflib.epochs as cdfepoch
+from cdflib._gzip_wrapper import gzip_deflate
 from cdflib.logging import logger
 
 __all__ = ["CDF"]
