@@ -23,6 +23,7 @@ from cdflib.dataclasses import (
     VDRInfo,
 )
 from cdflib.s3 import S3object
+from .gzip_wrapper import gzip_inflate
 
 __all__ = ["CDF"]
 
@@ -511,6 +512,7 @@ class CDF:
                         entryData = entryData[0]
 
                 entries.append(entryData)
+                aedr_byte_loc = aedr_info.next_aedr
 
             return_dict[adr_info.name] = entries
             byte_loc = adr_info.next_adr_loc
