@@ -69,7 +69,7 @@ def _convert_cdf_time_types(
     for att in atts:
         data_type = atts[att].Data_Type
         data = atts[att].Data
-        if len(data) == 0 or data_type not in ("CDF_EPOCH", "CDF_EPOCH16", "CDF_TIME_TT2000"):
+        if data_type not in ("CDF_EPOCH", "CDF_EPOCH16", "CDF_TIME_TT2000"):
             new_atts[att] = data
         else:
             if to_datetime:
