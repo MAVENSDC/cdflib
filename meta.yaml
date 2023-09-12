@@ -1,5 +1,5 @@
 {% set name = "cdflib" %}
-{% set version = "0.4.4" %}
+{% set version = "1.1.1" %}
 
 package:
   name: "{{ name|lower }}"
