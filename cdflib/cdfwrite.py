@@ -2286,7 +2286,7 @@ class CDF:
                 odata = ""
                 if size >= 1:
                     for x in range(0, size):
-                        if hasattr(indata, "len"):
+                        if hasattr(indata, "__len__"):
                             adata = indata[x]
                         else:
                             adata = indata
@@ -2297,7 +2297,7 @@ class CDF:
                         elif isinstance(adata, np.ndarray):
                             size2 = adata.size
                             for y in range(0, size2):
-                                if hasattr(adata, "len"):
+                                if hasattr(adata, "__len__"):
                                     bdata = adata[y]
                                 else:
                                     bdata = adata
