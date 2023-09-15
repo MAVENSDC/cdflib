@@ -2,8 +2,10 @@
 Changelog
 =========
 
-Unreleased
-==========
+1.2.0
+=====
+- Attribute data with a single value is now returned as a Python scalar instead of
+  a numpy array.
 - Added missing changelog entries for 1.1.1 and 1.1.2.
 
 1.1.2

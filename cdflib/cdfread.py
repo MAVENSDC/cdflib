@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+import numpy.typing as npt
 
 import cdflib.epochs as epoch
 from cdflib._gzip_wrapper import gzip_inflate
@@ -23,6 +24,7 @@ from cdflib.dataclasses import (
     VDRInfo,
 )
 from cdflib.s3 import S3object
+from cdflib.utils import _squeeze_or_scalar
 
 __all__ = ["CDF"]
 
@@ -1770,14 +1772,16 @@ class CDF:
                 data_type = self._datatype_token(aedr_info.data_type)
 
                 num_items = aedr_info.num_elements
-                data = aedr_info.entry
+                data: Union[str, npt.NDArray] = aedr_info.entry
                 if isinstance(data, str):
                     if aedr_info.num_strings is not None:
                         num_strings = aedr_info.num_strings
                         num_items = num_strings
                         if num_strings > 1 and isinstance(aedr_info.entry, str):
                             data = np.array(aedr_info.entry.split("\\N "))
-                return AttData(item_size, data_type, num_items, data)
+                    return AttData(item_size, data_type, num_items, data)
+                else:
+                    return AttData(item_size, data_type, num_items, _squeeze_or_scalar(data))
             else:
                 position = next_aedr
 
