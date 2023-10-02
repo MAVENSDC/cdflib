@@ -672,7 +672,7 @@ def cdf_to_xarray(filename: str, to_datetime: bool = False, to_unixtime: bool = 
 
     Parameters:
         filename (str):  The path to the CDF file to read
-        to_datetime (bool, optional): Whether or not to convert CDF_EPOCH/EPOCH_16/TT2000 to datetime, or leave them as is
+        to_datetime (bool, optional): Whether or not to convert CDF_EPOCH/EPOCH_16/TT2000 to datetime64, or leave them as is
         to_unixtime (bool, optional): Whether or not to convert CDF_EPOCH/EPOCH_16/TT2000 to unixtime, or leave them as is
         fillval_to_nan (bool, optional): If True, any data values that match the FILLVAL attribute for a variable will be set to NaN
 

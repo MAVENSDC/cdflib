@@ -2,6 +2,7 @@ import os
 import re
 from datetime import datetime
 from typing import Any, Dict, List, Tuple, Union, cast
+from warnings import warn
 
 import numpy as np
 import numpy.typing as npt
@@ -513,7 +514,7 @@ def _unixtime_to_tt2000(unixtime_data) -> npt.NDArray:  # type: ignore[no-untype
         if unixtime_data.size <= 1:
             unixtime_data = [unixtime_data]
 
-    tt2000_data = np.zeros(len(unixtime_data))
+    tt2000_data = np.zeros(len(unixtime_data), dtype=np.int64)
     i = 0
     for ud in unixtime_data:
         if not np.isnan(ud):
@@ -560,13 +561,16 @@ def _datetime_to_tt2000(datetime_data) -> npt.NDArray:  # type: ignore[no-untype
 def xarray_to_cdf(
     xarray_dataset: xr.Dataset,
     file_name: str,
-    from_unixtime: bool = False,
-    from_datetime: bool = False,
+    unixtime_to_cdftt2000: bool = False,
+    datetime_to_cdftt2000: bool = False,
+    datetime64_to_cdftt2000: bool = False,
     istp: bool = True,
     terminate_on_warning: bool = False,
     auto_fix_depends: bool = True,
     record_dimensions: List[str] = [],
     compression: int = 0,
+    from_unixtime: bool = False,
+    from_datetime: bool = False,
 ) -> None:
     """
     This function converts XArray Dataset objects into CDF files.
@@ -574,13 +578,16 @@ def xarray_to_cdf(
     Parameters:
         xarray_dataset (xarray.Dataset): The XArray Dataset object that you'd like to convert into a CDF file
         file_name (str):  The path to the place the newly created CDF file
-        to_datetime (bool, optional): Whether or not to convert variables named "epoch" or "epoch_X" to CDF_TT2000 from datetime objects
-        to_unixtime (bool, optional): Whether or not to convert variables named "epoch" or "epoch_X" to CDF_TT2000 from unixtime
+        datetime_to_cdftt2000 (bool, optional): Whether or not to convert variables named "epoch" or "epoch_X" to CDF_TT2000 from datetime objects
+        datetime64_to_cdftt2000 (bool, optional): Whether or not to convert variables named "epoch" or "epoch_X" to CDF_TT2000 from the numpy datetime64
+        unixtime_to_cdftt2000 (bool, optional): Whether or not to convert variables named "epoch" or "epoch_X" to CDF_TT2000 from unixtime
         istp (bool, optional): Whether or not to do checks on the Dataset object to attempt to enforce CDF compliance
         terminate_on_warning (bool, optional): Whether or not to throw an error when given warnings or to continue trying to make the file
         auto_fix_depends (bool, optional): Whether or not to automatically add dependencies
         record_dimensions (list of str, optional): If the code cannot determine which dimensions should be made into CDF records, you may provide a list of them here
         compression (int, optional): The level of compression to gzip the data in the variables.  Default is no compression, standard is 6.
+        from_datetime (bool, optional, deprecated): Same as the datetime_to_cdftt2000 option
+        from_unixtime (bool, optional, deprecated): Same as the unixtime_to_cdftt2000 option
 
     Returns:
         None, but generates a CDF file
@@ -677,6 +684,13 @@ def xarray_to_cdf(
 
 
     """
+    if from_datetime or from_unixtime:
+        warn(
+            "The from_datetime and from_unixtime parameters will eventually be phased out. Instead, use the more descriptive datetime_to_cdftt2000 and unixtime_to_cdftt2000 parameters.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
     if os.path.isfile(file_name):
         logger.warning(f"{file_name} already exists, cannot create CDF file.  Returning...")
         return
@@ -767,12 +781,18 @@ def xarray_to_cdf(
                 epoch_regex_1 = re.compile("epoch$")
                 epoch_regex_2 = re.compile("epoch_[0-9]+$")
                 if epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
-                    if from_unixtime:
+                    if from_unixtime or unixtime_to_cdftt2000:
                         var_data = _unixtime_to_tt2000(d[var].data)
-                    elif from_datetime:
+                    elif from_datetime or datetime_to_cdftt2000:
                         var_data = _datetime_to_tt2000(d[var].data)
+                    elif datetime64_to_cdftt2000:
+                        if d[var].dtype.type != np.datetime64:
+                            logger.warning(f"from_datetime64 is set, but datetime64 is not used in the {var} variable")
+                        else:
+                            unixtime_from_datetime64 = d[var].data.astype("datetime64[ns]").astype("int64") / 1000000000
+                            var_data = _unixtime_to_tt2000(unixtime_from_datetime64)
                 elif cdf_data_type == 33:
-                    unixtime_from_datetime64 = d[var].data.astype("int64") / 1000000000.0
+                    unixtime_from_datetime64 = d[var].data.astype("datetime64[ns]").astype("int64") / 1000000000
                     var_data = _unixtime_to_tt2000(unixtime_from_datetime64)
 
             x.write_var(var_spec, var_attrs=var_att_dict, var_data=var_data)

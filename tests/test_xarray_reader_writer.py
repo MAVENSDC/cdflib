@@ -1,6 +1,7 @@
 import os
 import urllib.request
 
+import numpy as np
 import pytest
 import xarray as xr
 
@@ -352,3 +353,72 @@ def test_build_from_scratch():
 def test_smoke(cdf_path, tmp_path):
     a = cdf_to_xarray(cdf_path, to_unixtime=True, fillval_to_nan=True)
     xarray_to_cdf(a, tmp_path / cdf_path.name, from_unixtime=True)
+
+
+def test_datetime64_conversion():
+    # This tests out the datetime64_to_cdftt2000 conversion and then back again,
+    # verifying that everything writes correctly
+    pytest.importorskip("xarray")
+    var_data = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
+    var_dims = ["epoch", "direction"]
+    data = xr.Variable(var_dims, var_data)  # type: ignore[no-untyped-call]
+    epoch_data = [np.datetime64(1, "s"), np.datetime64(2, "s"), np.datetime64(3, "s")]
+    epoch_dims = ["epoch"]
+    epoch = xr.Variable(epoch_dims, epoch_data)  # type: ignore[no-untyped-call]
+    ds = xr.Dataset(data_vars={"data": data, "epoch": epoch})
+    xarray_to_cdf(ds, "hello.cdf", datetime64_to_cdftt2000=True)
+    x = cdf_to_xarray("hello.cdf", to_datetime=True)
+    assert x["epoch"][0] == np.datetime64("1970-01-01T00:00:01")
+    os.remove("hello.cdf")
+
+
+def test_datetime64_no_conversion():
+    # This tests out the expected behavior when no datetime conversion is used,
+    # even though datetime64 variables are being read into the CDF file
+    pytest.importorskip("xarray")
+    var_data = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
+    var_dims = ["epoch", "direction"]
+    data = xr.Variable(var_dims, var_data)  # type: ignore[no-untyped-call]
+    epoch_data = [np.datetime64(1, "s"), np.datetime64(2, "s"), np.datetime64(3, "s")]
+    epoch_dims = ["epoch"]
+    epoch = xr.Variable(epoch_dims, epoch_data)  # type: ignore[no-untyped-call]
+    ds = xr.Dataset(data_vars={"data": data, "epoch": epoch})
+    xarray_to_cdf(ds, "hello.cdf")
+    x = cdf_to_xarray("hello.cdf")
+    assert x["epoch"][0] == 1000000000  # Seconds is converted to nanoseconds in the file, but otherwise left untouched
+    os.remove("hello.cdf")
+
+
+def test_datetime64_conversion_odd_units():
+    # This tests out the datetime64_to_cdftt2000 conversion and then back again,
+    # verifying that everything writes correctly.
+    # This time, it uses days as the base unit, and verifies that it comes back out again as days.
+    pytest.importorskip("xarray")
+    var_data = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
+    var_dims = ["epoch", "direction"]
+    data = xr.Variable(var_dims, var_data)  # type: ignore[no-untyped-call]
+    epoch_data = [np.datetime64("2000-01-01"), np.datetime64("2000-01-02"), np.datetime64("2000-01-03")]
+    epoch_dims = ["epoch"]
+    epoch = xr.Variable(epoch_dims, epoch_data)  # type: ignore[no-untyped-call]
+    ds = xr.Dataset(data_vars={"data": data, "epoch": epoch})
+    xarray_to_cdf(ds, "hello.cdf", datetime64_to_cdftt2000=True)
+    x = cdf_to_xarray("hello.cdf", to_datetime=True)
+    assert x["epoch"][1] == np.datetime64("2000-01-02")
+    os.remove("hello.cdf")
+
+
+def test_numpy_string_array():
+    # There was odd bahavior with the xarray_to_cdf function with regards to arrays of strings.
+    # We want to verify that arrays of strings can be written and read back out correctly.
+    pytest.importorskip("xarray")
+    var_data = ["a", "b", "c"]
+    var_dims = ["epoch"]
+    data = xr.Variable(var_dims, var_data)  # type: ignore[no-untyped-call]
+    epoch_data = [np.datetime64("2000-01-01"), np.datetime64("2000-01-02"), np.datetime64("2000-01-03")]
+    epoch_dims = ["epoch"]
+    epoch = xr.Variable(epoch_dims, epoch_data)  # type: ignore[no-untyped-call]
+    ds = xr.Dataset(data_vars={"data": data, "epoch": epoch})
+    xarray_to_cdf(ds, "hello.cdf", datetime64_to_cdftt2000=True)
+    x = cdf_to_xarray("hello.cdf", to_datetime=True)
+    assert x["data"][2] == "c"
+    os.remove("hello.cdf")
