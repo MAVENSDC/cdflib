@@ -82,7 +82,7 @@ def test_checksum_compressed(tmp_path):
     np.testing.assert_equal(var, v)
 
     att = reader.attget("Attribute1", entry=0)
-    assert att.Data == [1]
+    assert att.Data == 1
 
     att = reader.attget("Attribute2", entry=0)
     assert att.Data == "500"
@@ -265,7 +265,7 @@ def test_create_zvariables_with_attributes(tmp_path):
 
     # Test CDF info
     att = reader.attget("Attribute1", entry=0)
-    assert att.Data == [1]
+    assert att.Data == 1
 
     att = reader.attget("Attribute2", entry=1)
     assert att.Data == "1000"
@@ -300,7 +300,7 @@ def test_create_zvariables_then_attributes(tmp_path):
 
     # Test CDF info
     att = reader.attget("Attribute1", entry=0)
-    assert att.Data == [1]
+    assert att.Data == 1
 
     att = reader.attget("Attribute2", entry=1)
     att.Data == "1000"
@@ -567,7 +567,7 @@ def test_create_2d_r_and_z_variables(tmp_path):
     np.testing.assert_equal(var, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
     att = reader.attget("Attribute1", entry="Variable2")
-    assert att.Data == [2]
+    assert att.Data == 2
 
     att = reader.attget("Attribute2", entry="Variable2")
     assert att.Data == "1000"

@@ -2,6 +2,22 @@
 Changelog
 =========
 
+1.2.0
+=====
+- Attribute data with a single value is now returned as a Python scalar instead of
+  a numpy array.
+- Added missing changelog entries for 1.1.1 and 1.1.2.
+
+1.1.2
+=====
+- Fixed a minor bug when writing CDF files.
+
+1.1.1
+=====
+- Added ``terminate_on_warning`` and ``auto_fix_depends`` options to
+  `~cdflib.xarray.xarray_to_cdf.xarray_to_cdf`.
+  See the docstring for more info.
+
 1.1.0
 =====
 - If the `deflate <https://github.com/dcwatson/deflate>`_ library is installed
