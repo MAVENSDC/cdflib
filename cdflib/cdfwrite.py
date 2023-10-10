@@ -63,7 +63,7 @@ class CDF:
     """
 
     version = 3
-    release = 7
+    release = 9
     increment = 0
 
     CDF_VAR_NAME_LEN256 = 256

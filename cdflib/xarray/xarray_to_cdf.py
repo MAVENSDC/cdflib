@@ -747,9 +747,6 @@ def xarray_to_cdf(
     for d in datasets:
         for var in d:
             var = cast(str, var)
-            var_att_dict = {}
-            for att in d[var].attrs:
-                var_att_dict[att] = d[var].attrs[att]
 
             cdf_data_type, cdf_num_elements = _dtype_to_cdf_type(d[var])
             if cdf_data_type is None or cdf_num_elements is None:
@@ -794,6 +791,14 @@ def xarray_to_cdf(
                 elif cdf_data_type == 33:
                     unixtime_from_datetime64 = d[var].data.astype("datetime64[ns]").astype("int64") / 1000000000
                     var_data = _unixtime_to_tt2000(unixtime_from_datetime64)
+
+            # Grab the attributes from xarray, and attempt to convert VALIDMIN and VALIDMAX to the same data type as the variable
+            var_att_dict = {}
+            for att in d[var].attrs:
+                if (att == "VALIDMIN" or att == "VALIDMAX") and istp:
+                    var_att_dict[att] = [d[var].attrs[att], cdf_data_type]
+                else:
+                    var_att_dict[att] = d[var].attrs[att]
 
             x.write_var(var_spec, var_attrs=var_att_dict, var_data=var_data)
 
