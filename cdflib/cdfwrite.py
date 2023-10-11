@@ -2508,7 +2508,7 @@ class CDF:
     @staticmethod
     def _checklistofNums(obj: Any) -> bool:
         if hasattr(obj, "__len__"):
-            return bool(obj) and all(isinstance(elem, numbers.Number) for elem in obj)
+            return bool(all(obj)) and all(isinstance(elem, numbers.Number) for elem in obj)
         else:
             return isinstance(obj, numbers.Number)
 

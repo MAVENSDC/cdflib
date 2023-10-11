@@ -22,6 +22,32 @@ class ISTPError(Exception):
         super().__init__(message)
 
 
+def _datatype_to_string(datatype: int) -> str:
+    """
+    Returns the string version of a CDF data type
+    """
+    datatypes = {
+        52: "CDF_UCHAR",
+        51: "CDF_CHAR",
+        45: "CDF_DOUBLE",
+        44: "CDF_FLOAT",
+        41: "CDF_BYTE",
+        33: "CDF_TIME_TT2000",
+        32: "CDF_EPOCH16",
+        31: "CDF_EPOCH",
+        22: "CDF_REAL8",
+        21: "CDF_REAL4",
+        14: "CDF_UINT4",
+        12: "CDF_UINT2",
+        11: "CDF_UINT1",
+        8: "CDF_INT8",
+        4: "CDF_INT4",
+        2: "CDF_INT2",
+        1: "CDF_INT1",
+    }
+    return datatypes[datatype]
+
+
 def _warn_or_except(message: str, exception: bool = False) -> None:
     if exception:
         if "ISTP" in message:
@@ -796,7 +822,7 @@ def xarray_to_cdf(
             var_att_dict = {}
             for att in d[var].attrs:
                 if (att == "VALIDMIN" or att == "VALIDMAX") and istp:
-                    var_att_dict[att] = [d[var].attrs[att], cdf_data_type]
+                    var_att_dict[att] = [d[var].attrs[att], _datatype_to_string(cdf_data_type)]
                 else:
                     var_att_dict[att] = d[var].attrs[att]
 
