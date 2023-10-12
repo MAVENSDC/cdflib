@@ -2330,30 +2330,48 @@ class CDF:
         elif isinstance(indata, str):
             return 1, indata.ljust(num_elems, "\x00").encode()
         else:
-            tofrom = self._convert_option()
-            dt_string = self._convert_type(data_type)
-            if data_type == self.CDF_EPOCH16:
-                num_elems = 2 * num_elems
             try:
-                recs = int(len(indata) / recSize)
-            except Exception:
-                recs = 1
-            if data_type == self.CDF_EPOCH16:
-                complex_data = []
-                if recs > 1:
-                    for x in range(0, recs):
-                        acomplex = indata[x]
-                        complex_data.append(acomplex.real)
-                        complex_data.append(acomplex.imag)
+                indata_numpy = np.array(indata)
+                tofrom = self._convert_option()
+                npdata = self._convert_nptype(data_type, indata_numpy)
+                if indata_numpy.size == 0:  # Check if the data being read in is zero size
+                    recs = 0
+                elif indata_numpy.size == num_values * num_elems:  # Check if only one record is being read in
+                    recs = 1
                 else:
-                    complex_data.append(indata.real)
-                    complex_data.append(indata.imag)
-                indata = complex_data
-            form = tofrom + str(recs * num_values * num_elems) + dt_string
-            if recs * num_values * num_elems > 1:
-                return recs, struct.pack(form, *indata)
-            else:
-                return recs, struct.pack(form, indata)
+                    recs = len(indata_numpy)
+                dt_string = self._convert_type(data_type)
+                if data_type == self.CDF_EPOCH16:
+                    num_elems = 2 * num_elems
+                form = str(recs * num_values * num_elems) + dt_string
+                form2 = tofrom + str(recs * num_values * num_elems) + dt_string
+                datau = struct.unpack(form, npdata)
+                return recs, struct.pack(form2, *datau)
+            except:
+                tofrom = self._convert_option()
+                dt_string = self._convert_type(data_type)
+                if data_type == self.CDF_EPOCH16:
+                    num_elems = 2 * num_elems
+                try:
+                    recs = int(len(indata) / recSize)
+                except Exception:
+                    recs = 1
+                if data_type == self.CDF_EPOCH16:
+                    complex_data = []
+                    if recs > 1:
+                        for x in range(0, recs):
+                            acomplex = indata[x]
+                            complex_data.append(acomplex.real)
+                            complex_data.append(acomplex.imag)
+                    else:
+                        complex_data.append(indata.real)
+                        complex_data.append(indata.imag)
+                    indata = complex_data
+                form = tofrom + str(recs * num_values * num_elems) + dt_string
+                if recs * num_values * num_elems > 1:
+                    return recs, struct.pack(form, *indata)
+                else:
+                    return recs, struct.pack(form, indata)
 
     def _num_values(self, zVar: bool, varNum: int) -> int:
         """
