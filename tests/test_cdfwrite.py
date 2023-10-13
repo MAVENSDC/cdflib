@@ -571,3 +571,81 @@ def test_create_2d_r_and_z_variables(tmp_path):
 
     att = reader.attget("Attribute2", entry="Variable2")
     assert att.Data == "1000"
+
+
+def test_create_zvariables_with_attributes_to_convert(tmp_path):
+    # This unit test verify that attributes will be cast to the appropriate type
+    # Setup the test_file
+    fn = tmp_path / fnbasic
+
+    var_spec: Dict[str, Any] = {}
+    var_spec["Variable"] = "Variable1"
+    var_spec["Data_Type"] = 8
+    var_spec["Num_Elements"] = 1
+    var_spec["Rec_Vary"] = True
+    var_spec["Dim_Sizes"] = []
+    varatts: Dict[str, Any] = {}
+    varatts["Attribute1"] = [1, "CDF_REAL8"]
+    varatts["Attribute2"] = [[500.1, "CDF_INT8"]]
+    varatts["Attribute3"] = [[700, "CDF_INT8"]]
+
+    tfile = cdf_create(fn, {"rDim_sizes": [1]})
+    tfile.write_var(var_spec, var_attrs=varatts, var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+
+    var_spec["Variable"] = "Variable2"
+    varatts2: Dict[str, Any] = {}
+    varatts2["Attribute1"] = 2
+    varatts2["Attribute2"] = "1000"
+    tfile.write_var(var_spec, var_attrs=varatts2, var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+
+    tfile.close()
+
+    # Open the file to read
+    reader = cdf_read(fn)
+
+    # Test CDF info
+    att = reader.attget("Attribute1", entry=0)
+    assert att.Data == 1
+
+    att = reader.attget("Attribute2", entry=1)
+    assert att.Data == "1000"
+
+
+def test_create_zvariables_with_data_to_convert(tmp_path):
+    # This unit test verify that data given to write_var will be cast to the appropriate type
+    # i.e. if CDF_INT8 is specified, then the data will be cast to an int before writing to the file
+
+    # Setup the test_file
+    fn = tmp_path / fnbasic
+
+    var_spec: Dict[str, Any] = {}
+    var_spec["Variable"] = "Variable1"
+    var_spec["Data_Type"] = 8
+    var_spec["Num_Elements"] = 1
+    var_spec["Rec_Vary"] = True
+    var_spec["Dim_Sizes"] = []
+    varatts: Dict[str, Any] = {}
+    varatts["Attribute1"] = [[1, "CDF_REAL8"]]
+    varatts["Attribute2"] = [[500.1, "CDF_INT8"]]
+    varatts["Attribute3"] = [[700, "CDF_INT8"]]
+
+    tfile = cdf_create(fn, {"rDim_sizes": [1]})
+    tfile.write_var(var_spec, var_attrs=varatts, var_data=[0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
+
+    var_spec["Variable"] = "Variable2"
+    varatts2: Dict[str, Any] = {}
+    varatts2["Attribute1"] = 2
+    varatts2["Attribute2"] = "1000"
+    tfile.write_var(var_spec, var_attrs=varatts2, var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+
+    tfile.close()
+
+    # Open the file to read
+    reader = cdf_read(fn)
+
+    # Test CDF info
+    att = reader.attget("Attribute1", entry=0)
+    assert att.Data == 1
+
+    att = reader.attget("Attribute2", entry=1)
+    assert att.Data == "1000"
