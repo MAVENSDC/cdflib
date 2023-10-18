@@ -821,7 +821,7 @@ def xarray_to_cdf(
             # Grab the attributes from xarray, and attempt to convert VALIDMIN and VALIDMAX to the same data type as the variable
             var_att_dict = {}
             for att in d[var].attrs:
-                if (att == "VALIDMIN" or att == "VALIDMAX") and istp:
+                if (att == "VALIDMIN" or att == "VALIDMAX" or att == "FILLVAL") and istp:
                     var_att_dict[att] = [d[var].attrs[att], _datatype_to_string(cdf_data_type)]
                 else:
                     var_att_dict[att] = d[var].attrs[att]
