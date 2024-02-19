@@ -399,6 +399,12 @@ def _variable_attribute_checker(dataset: xr.Dataset, epoch_list: List[str], term
 
     for d in data:
         for var in d:
+            # Ensure None of the attributes are given a type of "None"
+            for key, value in d[var].attrs.items():
+                if value is None:
+                    _warn_or_except(f"CDF Warning: {key} was given a type of None for variable {var}. CDF does not allow None types, so {key} will be skipped.", terminate_on_warning)
+
+
             # Check for VAR_TYPE
             if "VAR_TYPE" not in d[var].attrs:
                 _warn_or_except(f"ISTP Compliance Warning: VAR_TYPE is not defined for variable {var}.", terminate_on_warning)
@@ -718,7 +724,7 @@ def xarray_to_cdf(
         )
 
     if os.path.isfile(file_name):
-        logger.warning(f"{file_name} already exists, cannot create CDF file.  Returning...")
+        _warn_or_except(f"{file_name} already exists, cannot create CDF file.  Returning...", terminate_on_warning)
         return
 
     # Make a deep copy of the data before continuing
@@ -810,7 +816,7 @@ def xarray_to_cdf(
                         var_data = _datetime_to_tt2000(d[var].data)
                     elif datetime64_to_cdftt2000:
                         if d[var].dtype.type != np.datetime64:
-                            logger.warning(f"from_datetime64 is set, but datetime64 is not used in the {var} variable")
+                            _warn_or_except(f"from_datetime64 is set, but datetime64 is not used in the {var} variable", terminate_on_warning)
                         else:
                             unixtime_from_datetime64 = d[var].data.astype("datetime64[ns]").astype("int64") / 1000000000
                             var_data = _unixtime_to_tt2000(unixtime_from_datetime64)

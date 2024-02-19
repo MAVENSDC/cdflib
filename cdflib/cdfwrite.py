@@ -844,7 +844,7 @@ class CDF:
 
         for attr, entry in var_attrs.items():
             if attr in self.gattrs:
-                logger.warning(f"Attribute: {attr}" + " already defined as a global attribute... Skip")
+                logger.warning(f"Attribute: {attr}" + " already defined as a global attribute... Skipping attribute.")
                 continue
 
             if not (attr in self.attrs):
@@ -858,6 +858,7 @@ class CDF:
                 offset = self.attrsinfo[attrNum][2]
 
             if entry is None:
+                logger.warning(f"Attribute: {attr}" + " is None type, which does not have an equivalent in CDF... Skipping attribute.")
                 continue
 
             # Check if dataType was provided
