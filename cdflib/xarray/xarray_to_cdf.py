@@ -543,7 +543,8 @@ def _unixtime_to_tt2000(unixtime_data) -> npt.NDArray:  # type: ignore[no-untype
     if not hasattr(unixtime_data, "__len__"):
         unixtime_data = [unixtime_data]
     elif isinstance(unixtime_data, np.ndarray):
-        if unixtime_data.size <= 1:
+        # Sometimes a np array has a length, but a dimension of 0
+        if unixtime_data.ndim == 0:
             unixtime_data = [unixtime_data]
 
     tt2000_data = np.zeros(len(unixtime_data), dtype=np.int64)
