@@ -817,7 +817,7 @@ def xarray_to_cdf(
                         var_data = _datetime_to_tt2000(d[var].data)
                     elif datetime64_to_cdftt2000:
                         if d[var].dtype.type != np.datetime64:
-                            _warn_or_except(f"from_datetime64 is set, but datetime64 is not used in the {var} variable", terminate_on_warning)
+                            _warn_or_except(f"datetime64_to_cdftt2000 is set, but datetime64 is not used in the {var} variable", terminate_on_warning)
                         else:
                             unixtime_from_datetime64 = d[var].data.astype("datetime64[ns]").astype("int64") / 1000000000
                             var_data = _unixtime_to_tt2000(unixtime_from_datetime64)
