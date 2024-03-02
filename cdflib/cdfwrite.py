@@ -2542,10 +2542,14 @@ class CDF:
 
     @staticmethod
     def _checklistofNums(obj: Any) -> bool:
+        '''
+        This method checks if a list is ready to be immediately converted to binary format,
+        or if any pre-processing needs to occur. Numbers and datetime64 objects can be immediately converted.  
+        '''
         if hasattr(obj, "__len__"):
-            return bool(all(obj)) and all(isinstance(elem, numbers.Number) for elem in obj)
+            return bool(all(obj)) and all((isinstance(elem, numbers.Number) or isinstance(elem, np.datetime64))  for elem in obj)
         else:
-            return isinstance(obj, numbers.Number)
+            return (isinstance(obj, numbers.Number) or isinstance(obj, np.datetime64))
 
     def _md5_compute(self, f: io.BufferedWriter) -> bytes:
         """
