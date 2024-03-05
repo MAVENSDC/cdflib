@@ -307,10 +307,10 @@ def _determine_record_dimensions(
     created_unlimited_dims: Dict[str, int],
 ) -> Tuple[str, bool, bool]:
     """
-    Determines the name of the
+    Determines the name of the dimensions that the variables span
     """
 
-    if var_props.Rec_Vary and var_props.Last_Rec > 0:
+    if var_props.Rec_Vary and var_props.Last_Rec >= 0:
         # Check if this variable is itself the dimension
         if var_name in depend_variables and (len(var_props.Dim_Sizes) == 0 or var_props.Last_Rec >= 0):
             if not (len(var_props.Dim_Sizes) > 0 and var_props.Last_Rec > 0):
