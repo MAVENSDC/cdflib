@@ -1,0 +1,24 @@
+{
+	"name": "imap_processing",
+ 	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"features": {
+		"ghcr.io/devcontainers/features/desktop-lite:1": {
+			"version": "latest"
+		}
+	},
+	"forwardPorts": [6080],
+	//Pip install the requriements, and then install the pre-commit hooks 
+	"postCreateCommand": "pip install -e .[tests,dev] && pre-commit install",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python"
+			],
+			"settings": {
+				"python.defaultInterpreterPath": "/usr/local/bin/python"
+			}
+		}
+	}
+}
