@@ -69,7 +69,7 @@ def _dtype_to_cdf_type(var: xr.Dataset, terminate_on_warning: bool = False) -> T
     elif var.dtype == np.float64 or var.dtype == np.float32 or var.dtype == np.float16:
         return 45, 1  # 'CDF_DOUBLE'
     elif var.dtype == np.uint8 or var.dtype == np.uint16 or var.dtype == np.uint32 or var.dtype == np.uint64:
-        return 14, 1  # 'CDF_UNIT4'
+        return 14, 1  # 'CDF_UINT4'
     elif var.dtype.type == np.str_:
         return 51, int(var.dtype.str[2:])  # CDF_CHAR, and the length of the longest string in the numpy array
     elif var.dtype.type == np.bytes_:  # Bytes are usually strings
