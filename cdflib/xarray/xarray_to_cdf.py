@@ -319,7 +319,14 @@ def _epoch_checker(dataset: xr.Dataset, dim_vars: List[str], terminate_on_warnin
     epoch_found = False
     for d in depend_0_list:
         if d.lower().startswith("epoch"):
-            epoch_found = True
+            monotonically_increasing = _verify_monotonically_increasing(dataset[d].data)
+            if monotonically_increasing:
+                epoch_found = True
+            else:
+                _warn_or_except(
+                    f"Variable {d} was determined to be an ISTP 'Epoch' variable, but it is not monotonically increasing.",
+                    terminate_on_warning,
+                )
 
     if not epoch_found:
         _warn_or_except(
@@ -328,6 +335,10 @@ def _epoch_checker(dataset: xr.Dataset, dim_vars: List[str], terminate_on_warnin
         )
 
     return depend_0_list, time_varying_dimensions
+
+
+def _verify_monotonically_increasing(epoch_data: npt.NDArray) -> np.bool_:
+    return np.all(epoch_data[1:] > epoch_data[:-1])
 
 
 def _add_depend_variables_to_dataset(
@@ -402,8 +413,10 @@ def _variable_attribute_checker(dataset: xr.Dataset, epoch_list: List[str], term
             # Ensure None of the attributes are given a type of "None"
             for key, value in d[var].attrs.items():
                 if value is None:
-                    _warn_or_except(f"CDF Warning: {key} was given a type of None for variable {var}. CDF does not allow None types, so {key} will be skipped.", terminate_on_warning)
-
+                    _warn_or_except(
+                        f"CDF Warning: {key} was given a type of None for variable {var}. CDF does not allow None types, so {key} will be skipped.",
+                        terminate_on_warning,
+                    )
 
             # Check for VAR_TYPE
             if "VAR_TYPE" not in d[var].attrs:
@@ -817,7 +830,10 @@ def xarray_to_cdf(
                         var_data = _datetime_to_tt2000(d[var].data)
                     elif datetime64_to_cdftt2000:
                         if d[var].dtype.type != np.datetime64:
-                            _warn_or_except(f"datetime64_to_cdftt2000 is set, but datetime64 is not used in the {var} variable", terminate_on_warning)
+                            _warn_or_except(
+                                f"datetime64_to_cdftt2000 is set, but datetime64 is not used in the {var} variable",
+                                terminate_on_warning,
+                            )
                         else:
                             unixtime_from_datetime64 = d[var].data.astype("datetime64[ns]").astype("int64") / 1000000000
                             var_data = _unixtime_to_tt2000(unixtime_from_datetime64)

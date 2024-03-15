@@ -616,7 +616,7 @@ def _generate_xarray_data_variables(
             var_data = _convert_fillvals_to_nan(var_data, var_atts, var_props)
 
         # Finally, create the new variable
-        created_vars[var_name] = xr.Variable(var_dims, var_data, attrs=var_atts)  # type: ignore[no-untyped-call]
+        created_vars[var_name] = xr.Variable(var_dims, var_data, attrs=var_atts)
 
     return created_vars, depend_dimensions
 
