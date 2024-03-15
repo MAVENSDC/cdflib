@@ -314,10 +314,10 @@ def test_build_from_scratch():
     pytest.importorskip("xarray")
     var_data = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
     var_dims = ["epoch", "direction"]
-    data = xr.Variable(var_dims, var_data)  # type: ignore[no-untyped-call]
+    data = xr.Variable(var_dims, var_data)
     epoch_data = [1, 2, 3]
     epoch_dims = ["epoch"]
-    epoch = xr.Variable(epoch_dims, epoch_data)  # type: ignore[no-untyped-call]
+    epoch = xr.Variable(epoch_dims, epoch_data)
     ds = xr.Dataset(data_vars={"data": data, "epoch": epoch})
     xarray_to_cdf(ds, "hello.cdf")
     os.remove("hello.cdf")
@@ -337,14 +337,14 @@ def test_build_from_scratch():
         "Logical_source": ":)",
         "Logical_source_description": ":(",
     }
-    data = xr.Variable(var_dims, var_data)  # type: ignore[no-untyped-call]
-    epoch = xr.Variable(epoch_dims, epoch_data)  # type: ignore[no-untyped-call]
+    data = xr.Variable(var_dims, var_data)
+    epoch = xr.Variable(epoch_dims, epoch_data)
     ds = xr.Dataset(data_vars={"data": data, "epoch": epoch}, attrs=global_attributes)
     xarray_to_cdf(ds, "hello.cdf")
     os.remove("hello.cdf")
     dir_data = [1, 2, 3]
     dir_dims = ["direction"]
-    direction = xr.Variable(dir_dims, dir_data)  # type: ignore[no-untyped-call]
+    direction = xr.Variable(dir_dims, dir_data)
     ds = xr.Dataset(data_vars={"data": data, "epoch": epoch, "direction": direction}, attrs=global_attributes)
     xarray_to_cdf(ds, "hello.cdf")
     os.remove("hello.cdf")
@@ -361,10 +361,10 @@ def test_datetime64_conversion():
     pytest.importorskip("xarray")
     var_data = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
     var_dims = ["epoch", "direction"]
-    data = xr.Variable(var_dims, var_data)  # type: ignore[no-untyped-call]
+    data = xr.Variable(var_dims, var_data)
     epoch_data = [np.datetime64(1, "s"), np.datetime64(2, "s"), np.datetime64(3, "s")]
     epoch_dims = ["epoch"]
-    epoch = xr.Variable(epoch_dims, epoch_data)  # type: ignore[no-untyped-call]
+    epoch = xr.Variable(epoch_dims, epoch_data)
     ds = xr.Dataset(data_vars={"data": data, "epoch": epoch})
     xarray_to_cdf(ds, "hello.cdf", datetime64_to_cdftt2000=True)
     x = cdf_to_xarray("hello.cdf", to_datetime=True)
@@ -378,10 +378,10 @@ def test_datetime64_no_conversion():
     pytest.importorskip("xarray")
     var_data = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
     var_dims = ["epoch", "direction"]
-    data = xr.Variable(var_dims, var_data)  # type: ignore[no-untyped-call]
+    data = xr.Variable(var_dims, var_data)
     epoch_data = [np.datetime64(1, "s"), np.datetime64(2, "s"), np.datetime64(3, "s")]
     epoch_dims = ["epoch"]
-    epoch = xr.Variable(epoch_dims, epoch_data)  # type: ignore[no-untyped-call]
+    epoch = xr.Variable(epoch_dims, epoch_data)
     ds = xr.Dataset(data_vars={"data": data, "epoch": epoch})
     xarray_to_cdf(ds, "hello.cdf")
     x = cdf_to_xarray("hello.cdf")
@@ -396,10 +396,10 @@ def test_datetime64_conversion_odd_units():
     pytest.importorskip("xarray")
     var_data = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
     var_dims = ["epoch", "direction"]
-    data = xr.Variable(var_dims, var_data)  # type: ignore[no-untyped-call]
+    data = xr.Variable(var_dims, var_data)
     epoch_data = [np.datetime64("2000-01-01"), np.datetime64("2000-01-02"), np.datetime64("2000-01-03")]
     epoch_dims = ["epoch"]
-    epoch = xr.Variable(epoch_dims, epoch_data)  # type: ignore[no-untyped-call]
+    epoch = xr.Variable(epoch_dims, epoch_data)
     ds = xr.Dataset(data_vars={"data": data, "epoch": epoch})
     xarray_to_cdf(ds, "hello.cdf", datetime64_to_cdftt2000=True)
     x = cdf_to_xarray("hello.cdf", to_datetime=True)
@@ -413,10 +413,10 @@ def test_numpy_string_array():
     pytest.importorskip("xarray")
     var_data = ["a", "b", "c"]
     var_dims = ["epoch"]
-    data = xr.Variable(var_dims, var_data)  # type: ignore[no-untyped-call]
+    data = xr.Variable(var_dims, var_data)
     epoch_data = [np.datetime64("2000-01-01"), np.datetime64("2000-01-02"), np.datetime64("2000-01-03")]
     epoch_dims = ["epoch"]
-    epoch = xr.Variable(epoch_dims, epoch_data)  # type: ignore[no-untyped-call]
+    epoch = xr.Variable(epoch_dims, epoch_data)
     ds = xr.Dataset(data_vars={"data": data, "epoch": epoch})
     xarray_to_cdf(ds, "hello.cdf", datetime64_to_cdftt2000=True)
     x = cdf_to_xarray("hello.cdf", to_datetime=True)
