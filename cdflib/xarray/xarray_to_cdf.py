@@ -426,21 +426,72 @@ def _variable_attribute_checker(dataset: xr.Dataset, epoch_list: List[str], term
                 var_type = d[var].attrs["VAR_TYPE"]
                 if var_type.lower() not in ("data", "support_data", "metadata", "ignore_data"):
                     _warn_or_except(
-                        f"ISTP Compliance Warning: VAR_TYPE for variable {var} is given a non-compliant value of {var_type}",
+                        f"ISTP Compliance Warning: VAR_TYPE for variable {var} is given a non-compliant value of {var_type}.",
                         terminate_on_warning,
                     )
                     var_type = ""
 
             # Check for CATDESC
             if "CATDESC" not in d[var].attrs:
-                _warn_or_except(f"ISTP Compliance Warning: CATDESC attribute is required for variable {var}", terminate_on_warning)
+                _warn_or_except(f"ISTP Compliance Warning: CATDESC attribute is required for variable {var}.", terminate_on_warning)
 
-            if "DISPLAY_TYPE" not in d[var].attrs:
-                if var_type.lower() == "data":
-                    _warn_or_except(f"ISTP Compliance Warning: DISPLAY_TYPE not set for variable {var}", terminate_on_warning)
+            # All "data" needs to have a DISPLAY_TYPE
+            # DISPLAY_TYPE determines the LABLAXIS
+            if var_type.lower() == "data":
+                if "DISPLAY_TYPE" not in d[var].attrs:
+                    _warn_or_except(f"ISTP Compliance Warning: DISPLAY_TYPE not set for variable {var}.", terminate_on_warning)
+                elif d[var].attrs["DISPLAY_TYPE"].lower() == "image":
+                    if "LABLAXIS" not in d[var].attrs:
+                        _warn_or_except(
+                            f"ISTP Compliance Warning: LABLAXIS attribute is required for variable {var} when DISPLAY_TYPE=image and VAR_TYPE=data.",
+                            terminate_on_warning,
+                        )
+                else:
+                    depend_pattern = re.compile(r"^DEPEND_([1-9])$")
+                    for key in d[var].attrs:
+                        match = depend_pattern.match(key)
+                        if match:
+                            corresponding_label_key = None
+                            depend_number = int(match.group(1))
+                            if d[var].attrs["DISPLAY_TYPE"].lower() in ("time_series", "stack_plot"):
+                                corresponding_label_key = f"LABL_PTR_{depend_number}"
+                            elif d[var].attrs["DISPLAY_TYPE"].lower() == "spectrogram":
+                                if depend_number != 1:
+                                    corresponding_label_key = f"LABL_PTR_{int(depend_number)-1}"
+                            if corresponding_label_key:
+                                if corresponding_label_key not in d[var].attrs:
+                                    _warn_or_except(
+                                        f"ISTP Compliance Warning: {corresponding_label_key} attribute is required for variable {var} with its current DISPLAY_TYPE and VAR_TYPE, and there is {depend_number} or more dimensions.",
+                                        terminate_on_warning,
+                                    )
+                                else:
+                                    if (
+                                        d[var].attrs[corresponding_label_key] in dataset
+                                        or d[var].attrs[corresponding_label_key] in dataset.coords
+                                    ):
+                                        pass
+                                    else:
+                                        _warn_or_except(
+                                            f"ISTP Compliance Warning: {corresponding_label_key} attribute for variable {var} does not point to an existing variable.",
+                                            terminate_on_warning,
+                                        )
+                            else:
+                                if "LABLAXIS" in d[var].attrs:
+                                    _warn_or_except(
+                                        f"Cannot include both LABLAXIS and {corresponding_label_key} in the attributes to variable {var}.",
+                                        terminate_on_warning,
+                                    )
+                if "LABLAXIS" not in d[var].attrs and "LABL_PTR_1" not in d[var].attrs:
+                    _warn_or_except(
+                        f"ISTP Compliance Warning: LABLAXIS or LABL_PTR_1 attribute is required for variable {var} because VAR_TYPE=data.",
+                        terminate_on_warning,
+                    )
 
+            # Every variable must have a FIELDNAM
             if "FIELDNAM" not in d[var].attrs:
-                _warn_or_except(f"ISTP Compliance Warning: FIELDNAM attribute is required for variable {var}", terminate_on_warning)
+                _warn_or_except(
+                    f"ISTP Compliance Warning: FIELDNAM attribute is required for variable {var}.", terminate_on_warning
+                )
 
             if "FORMAT" not in d[var].attrs:
                 if "FORM_PTR" in d[var].attrs:
@@ -457,22 +508,7 @@ def _variable_attribute_checker(dataset: xr.Dataset, epoch_list: List[str], term
                         terminate_on_warning,
                     )
 
-            if "LABLAXIS" not in d[var].attrs:
-                if var_type.lower() == "data":
-                    if "LABL_PTR_1" in d[var].attrs:
-                        if d[var].attrs["LABL_PTR_1"] in dataset or d[var].attrs["LABL_PTR_1"] in dataset.coords:
-                            pass
-                        else:
-                            _warn_or_except(
-                                f"ISTP Compliance Warning: LABL_PTR_1 attribute for variable {var} does not point to an existing variable.",
-                                terminate_on_warning,
-                            )
-                    else:
-                        _warn_or_except(
-                            f"ISTP Compliance Warning: LABLAXIS or LABL_PTR_1 attribute is required for variable {var}",
-                            terminate_on_warning,
-                        )
-
+            # Every variable needs a units
             if "UNITS" not in d[var].attrs:
                 if var_type.lower() == "data" or var_type.lower() == "support_data":
                     if "UNIT_PTR" not in d[var].attrs:
