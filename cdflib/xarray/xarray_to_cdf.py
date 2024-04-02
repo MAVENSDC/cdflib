@@ -457,11 +457,11 @@ def _variable_attribute_checker(dataset: xr.Dataset, epoch_list: List[str], term
                                 corresponding_label_key = f"LABL_PTR_{depend_number}"
                             elif d[var].attrs["DISPLAY_TYPE"].lower() == "spectrogram":
                                 if depend_number != 1:
-                                    corresponding_label_key = f"LABL_PTR_{int(depend_number)-1}"
+                                    corresponding_label_key = f"LABL_PTR_{depend_number}"
                             if corresponding_label_key:
                                 if corresponding_label_key not in d[var].attrs:
                                     _warn_or_except(
-                                        f"ISTP Compliance Warning: {corresponding_label_key} attribute is required for variable {var} with its current DISPLAY_TYPE and VAR_TYPE, and there is {depend_number} or more dimensions.",
+                                        f"ISTP Compliance Warning: {corresponding_label_key} attribute is required for variable {var} with its current DISPLAY_TYPE and VAR_TYPE, because there are {depend_number} or more dimensions.",
                                         terminate_on_warning,
                                     )
                                 else:
@@ -475,12 +475,11 @@ def _variable_attribute_checker(dataset: xr.Dataset, epoch_list: List[str], term
                                             f"ISTP Compliance Warning: {corresponding_label_key} attribute for variable {var} does not point to an existing variable.",
                                             terminate_on_warning,
                                         )
-                            else:
-                                if "LABLAXIS" in d[var].attrs:
-                                    _warn_or_except(
-                                        f"Cannot include both LABLAXIS and {corresponding_label_key} in the attributes to variable {var}.",
-                                        terminate_on_warning,
-                                    )
+                                    if "LABLAXIS" in d[var].attrs:
+                                        _warn_or_except(
+                                            f"Cannot include both LABLAXIS and {corresponding_label_key} in the attributes to variable {var}.",
+                                            terminate_on_warning,
+                                        )
                 if "LABLAXIS" not in d[var].attrs and "LABL_PTR_1" not in d[var].attrs:
                     _warn_or_except(
                         f"ISTP Compliance Warning: LABLAXIS or LABL_PTR_1 attribute is required for variable {var} because VAR_TYPE=data.",
