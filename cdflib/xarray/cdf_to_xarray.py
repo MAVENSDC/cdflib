@@ -67,9 +67,9 @@ def _convert_cdf_time_types(
     # Convert all the attributes in the "atts" dictionary to unixtime or datetime if needed
     new_atts = {}
     for att in atts:
-        data_type = atts[att].Data_Type
+        attr_data_type = atts[att].Data_Type
         data = atts[att].Data
-        if data_type not in ("CDF_EPOCH", "CDF_EPOCH16", "CDF_TIME_TT2000"):
+        if attr_data_type not in ("CDF_EPOCH", "CDF_EPOCH16", "CDF_TIME_TT2000"):
             new_atts[att] = data
         else:
             if to_datetime:
@@ -77,10 +77,15 @@ def _convert_cdf_time_types(
             elif to_unixtime:
                 new_atts[att] = cdfepoch.unixtime(data)
             else:
-                if data_type == "CDF_EPOCH16":
+                if attr_data_type == "CDF_EPOCH16":
                     new_atts[att] = cdfepoch.compute(cdfepoch.breakdown(data)[0:7])
                 else:
                     new_atts[att] = data
+
+    # This is a bit of a hack, these data types are ambiguous
+    # Lets add an attribute so at least we retain some information about what these numbers represent
+    if data_type in ("CDF_EPOCH", "CDF_REAL4", "CDF_REAL8"):
+        new_atts["CDF_DATA_TYPE"] = data_type
 
     return new_data, new_atts
 

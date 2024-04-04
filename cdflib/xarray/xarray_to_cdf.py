@@ -112,6 +112,8 @@ def _dtype_to_cdf_type(var: xr.Dataset, terminate_on_warning: bool = False) -> T
         cdf_data_type = "CDF_UINT4"
     elif numpy_data_type == np.uint64:
         cdf_data_type = "CDF_UINT8"
+    elif numpy_data_type == np.complex_:
+        cdf_data_type = "CDF_EPOCH16"
     elif numpy_data_type.type in (np.str_, np.bytes_):
         element_size = int(numpy_data_type.str[2:])  # The length of the longest string in the numpy array
     elif var.dtype == object:  # This commonly means we have multidimensional arrays of strings
@@ -787,6 +789,7 @@ def xarray_to_cdf(
         np.uint16      CDF_UINT2
         np.uint32      CDF_UINT4
         np.uint64      CDF_UINT8
+        np.complex_    CDF_EPOCH16
         np.str_        CDF_CHAR
         np.bytes_      CDF_CHAR
         object         CDF_CHAR
