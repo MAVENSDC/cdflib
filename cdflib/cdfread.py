@@ -1739,7 +1739,7 @@ class CDF:
 
         # Put the data into system byte order
         if self._convert_option() != "=":
-            ret = ret.byteswap().newbyteorder()
+            ret = ret.view(ret.dtype.newbyteorder()).byteswap()
 
         if self._majority == "Column_major":
             if dimensions is not None:
