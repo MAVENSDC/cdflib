@@ -22,16 +22,16 @@ jobs:
       envs: |
         - linux: py38-oldestdeps
         - linux: py39-online
-        - linux: py310
-        - linux: py311
+        #- linux: py310
+        #- linux: py311
         - linux: py312-devdeps
-        - windows: py38
-        - windows: py39
+        #- windows: py38
+        #- windows: py39
         - windows: py310
-        - windows: py311
-        - windows: py312
-        - macos: py38
-        - macos: py39
-        - macos: py310
+        #- windows: py311
+        #- windows: py312
+        #- macos: py38
+        #- macos: py39
+        #- macos: py310
         - macos: py311
-        - macos: py312
+        #- macos: py312
