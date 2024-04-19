@@ -681,7 +681,7 @@ def cdf_to_xarray(filename: str, to_datetime: bool = False, to_unixtime: bool = 
 
     Example MMS:
         >>> # Import necessary libraries
-        >>> import cdflib
+        >>> import cdflib.xarray
         >>> import xarray as xr
         >>> import os
         >>> import urllib.request
@@ -693,7 +693,7 @@ def cdf_to_xarray(filename: str, to_datetime: bool = False, to_unixtime: bool = 
         >>>     urllib.request.urlretrieve(url, fname)
 
         >>> # Load in and display the CDF file
-        >>> mms_data = cdflib.cdf_to_xarray("mms2_fgm_srvy_l2_20160809_v4.47.0.cdf", to_unixtime=True, fillval_to_nan=True)
+        >>> mms_data = cdflib.xarray.cdf_to_xarray("mms2_fgm_srvy_l2_20160809_v4.47.0.cdf", to_unixtime=True, fillval_to_nan=True)
 
         >>> # Show off XArray functionality
         >>>
@@ -708,7 +708,7 @@ def cdf_to_xarray(filename: str, to_datetime: bool = False, to_unixtime: bool = 
 
     Example THEMIS:
         >>> # Import necessary libraries
-        >>> import cdflib
+        >>> import cdflib.xarray
         >>> import xarray as xr
         >>> import os
         >>> import urllib.request
@@ -720,7 +720,7 @@ def cdf_to_xarray(filename: str, to_datetime: bool = False, to_unixtime: bool = 
         >>>     urllib.request.urlretrieve(url, fname)
 
         >>> # Load in and display the CDF file
-        >>> thg_data = cdflib.cdf_to_xarray(fname, to_unixtime=True, fillval_to_nan=True)
+        >>> thg_data = cdflib.xarray.cdf_to_xarray(fname, to_unixtime=True, fillval_to_nan=True)
 
     Processing Steps:
         1. For each variable in the CDF file
