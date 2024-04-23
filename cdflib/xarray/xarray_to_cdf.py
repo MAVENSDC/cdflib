@@ -12,6 +12,46 @@ from cdflib.cdfwrite import CDF
 from cdflib.epochs import CDFepoch as cdfepoch
 from cdflib.logging import logger
 
+DATATYPES_TO_STRINGS = {
+    1: "CDF_INT1",
+    2: "CDF_INT2",
+    4: "CDF_INT4",
+    8: "CDF_INT8",
+    11: "CDF_UINT1",
+    12: "CDF_UINT2",
+    14: "CDF_UINT4",
+    21: "CDF_REAL4",
+    22: "CDF_REAL8",
+    31: "CDF_EPOCH",
+    32: "CDF_EPOCH16",
+    33: "CDF_TIME_TT2000",
+    41: "CDF_BYTE",
+    44: "CDF_FLOAT",
+    45: "CDF_DOUBLE",
+    51: "CDF_CHAR",
+    52: "CDF_UCHAR",
+}
+
+STRINGS_TO_DATATYPES = {
+    "CDF_INT1": 1,
+    "CDF_INT2": 2,
+    "CDF_INT4": 4,
+    "CDF_INT8": 8,
+    "CDF_UINT1": 11,
+    "CDF_UINT2": 12,
+    "CDF_UINT4": 14,
+    "CDF_REAL4": 21,
+    "CDF_REAL8": 22,
+    "CDF_EPOCH": 31,
+    "CDF_EPOCH16": 32,
+    "CDF_TIME_TT2000": 33,
+    "CDF_BYTE": 41,
+    "CDF_FLOAT": 44,
+    "CDF_DOUBLE": 45,
+    "CDF_CHAR": 51,
+    "CDF_UCHAR": 52,
+}
+
 
 class ISTPError(Exception):
     """
@@ -20,32 +60,6 @@ class ISTPError(Exception):
 
     def __init__(self, message: str = ""):
         super().__init__(message)
-
-
-def _datatype_to_string(datatype: int) -> str:
-    """
-    Returns the string version of a CDF data type
-    """
-    datatypes = {
-        52: "CDF_UCHAR",
-        51: "CDF_CHAR",
-        45: "CDF_DOUBLE",
-        44: "CDF_FLOAT",
-        41: "CDF_BYTE",
-        33: "CDF_TIME_TT2000",
-        32: "CDF_EPOCH16",
-        31: "CDF_EPOCH",
-        22: "CDF_REAL8",
-        21: "CDF_REAL4",
-        14: "CDF_UINT4",
-        12: "CDF_UINT2",
-        11: "CDF_UINT1",
-        8: "CDF_INT8",
-        4: "CDF_INT4",
-        2: "CDF_INT2",
-        1: "CDF_INT1",
-    }
-    return datatypes[datatype]
 
 
 def _warn_or_except(message: str, exception: bool = False) -> None:
@@ -59,39 +73,67 @@ def _warn_or_except(message: str, exception: bool = False) -> None:
 
 
 def _dtype_to_cdf_type(var: xr.Dataset, terminate_on_warning: bool = False) -> Tuple[int, int]:
+    # Determines which CDF types to cast the xarray.Dataset to
+
+    # Set some defaults
+    cdf_data_type = "CDF_CHAR"
+    element_size = 1
+
+    # First, lets check for overrides to this default behavior
+    if "CDF_DATA_TYPE" in var.attrs:
+        if var.attrs["CDF_DATA_TYPE"] in STRINGS_TO_DATATYPES:
+            cdf_data_type = var.attrs["CDF_DATA_TYPE"]
+            return STRINGS_TO_DATATYPES[cdf_data_type], element_size
+
+    # Everything named "epoch" should be cast to a CDF_TIME_TT2000
     epoch_regex_1 = re.compile("epoch$")
     epoch_regex_2 = re.compile("epoch_[0-9]+$")
     if epoch_regex_1.match(var.name.lower()) or epoch_regex_2.match(var.name.lower()):
-        return 33, 1  # CDF_EPOCH_TT2000
+        cdf_data_type = "CDF_TIME_TT2000"
 
-    if var.dtype == np.int8 or var.dtype == np.int16 or var.dtype == np.int32 or var.dtype == np.int64:
-        return 8, 1  # 'CDF_INT8'
-    elif var.dtype == np.float64 or var.dtype == np.float32 or var.dtype == np.float16:
-        return 45, 1  # 'CDF_DOUBLE'
-    elif var.dtype == np.uint8 or var.dtype == np.uint16 or var.dtype == np.uint32 or var.dtype == np.uint64:
-        return 14, 1  # 'CDF_UINT4'
-    elif var.dtype.type == np.str_:
-        return 51, int(var.dtype.str[2:])  # CDF_CHAR, and the length of the longest string in the numpy array
-    elif var.dtype.type == np.bytes_:  # Bytes are usually strings
-        return 51, int(var.dtype.str[2:])  # CDF_CHAR, and the length of the longest string in the numpy array
+    numpy_data_type = var.dtype
+    if numpy_data_type == np.int8:
+        cdf_data_type = "CDF_INT1"
+    elif numpy_data_type == np.int16:
+        cdf_data_type = "CDF_INT2"
+    elif numpy_data_type == np.int32:
+        cdf_data_type = "CDF_INT4"
+    elif numpy_data_type == np.int64:
+        cdf_data_type = "CDF_INT8"
+    elif numpy_data_type in (np.float32, np.float16):
+        cdf_data_type = "CDF_FLOAT"
+    elif numpy_data_type == np.float64:
+        cdf_data_type = "CDF_DOUBLE"
+    elif numpy_data_type == np.uint8:
+        cdf_data_type = "CDF_UINT1"
+    elif numpy_data_type == np.uint16:
+        cdf_data_type = "CDF_UINT2"
+    elif numpy_data_type == np.uint32:
+        cdf_data_type = "CDF_UINT4"
+    elif numpy_data_type == np.uint64:
+        cdf_data_type = "CDF_UINT8"
+    elif numpy_data_type == np.complex_:
+        cdf_data_type = "CDF_EPOCH16"
+    elif numpy_data_type.type in (np.str_, np.bytes_):
+        element_size = int(numpy_data_type.str[2:])  # The length of the longest string in the numpy array
     elif var.dtype == object:  # This commonly means we have multidimensional arrays of strings
         try:
             longest_string = 0
             for x in np.nditer(var.data, flags=["refs_ok"]):
                 if len(str(x)) > longest_string:
                     longest_string = len(str(x))
-            return 51, longest_string
+            element_size = longest_string
         except Exception as e:
             _warn_or_except(
                 f"NOT SUPPORTED: Data in variable {var.name} has data type {var.dtype}.  Attempting to convert it to strings ran into the error: {str(e)}",
                 terminate_on_warning,
             )
-            return 51, 1
     elif var.dtype.type == np.datetime64:
-        return 33, 1
+        cdf_data_type = "CDF_TIME_TT2000"
     else:
         _warn_or_except(f"NOT SUPPORTED: Data in variable {var.name} has data type of {var.dtype}.", terminate_on_warning)
-        return 51, 1
+
+    return STRINGS_TO_DATATYPES[cdf_data_type], element_size
 
 
 def _dtype_to_fillval(dtype: np.dtype, terminate_on_warning: bool = False) -> Union[float, int, str, None]:
@@ -760,11 +802,44 @@ def xarray_to_cdf(
         - DEPEND_N missing from variables
         - DEPEND_N/LABL_PTR/UNIT_PTR/FORM_PTR are pointing to missing variables
         - Missing required global attributes
+        - Conflicting global attributes
         - Missing an "epoch" dimension
-        - DEPEND_N attribute pointing to a variable with oncompatible dimensions
+        - DEPEND_N attribute pointing to a variable with uncompatible dimensions
 
+    CDF Data Types:
+        All variable data is automatically converted to one of the following CDF types, based on the type of data in the xarray Dataset:
+
+        =============  ===============
+        Numpy type     CDF Data Type
+        =============  ===============
+        np.datetime64  CDF_TIME_TT2000
+        np.int8        CDF_INT1
+        np.int16       CDF_INT2
+        np.int32       CDF_INT4
+        np.int64       CDF_INT8
+        np.float16     CDF_FLOAT
+        np.float32     CDF_FLOAT
+        np.float64     CDF_DOUBLE
+        np.uint8       CDF_UINT1
+        np.uint16      CDF_UINT2
+        np.uint32      CDF_UINT4
+        np.uint64      CDF_UINT8
+        np.complex_    CDF_EPOCH16
+        np.str_        CDF_CHAR
+        np.bytes_      CDF_CHAR
+        object         CDF_CHAR
+        =============  ===============
+
+        If you want to attempt to cast your data to a different type, you need to add an attribute to your variable called "CDF_DATA_TYPE".
+        xarray_to_cdf will read this attribute and override the default conversions.  Valid choices are:
+
+        - Integers: CDF_INT1, CDF_INT2, CDF_INT4, CDF_INT8
+        - Unsigned Integers: CDF_UINT1, CDF_UINT2, CDF_UINT4
+        - Floating Point: CDF_REAL4, CDF_FLOAT, CDF_DOUBLE, CDF_REAL8
+        - Time: CDF_EPOCH, CDF_EPOCH16, CDF_TIME_TT2000
 
     """
+
     if from_datetime or from_unixtime:
         warn(
             "The from_datetime and from_unixtime parameters will eventually be phased out. Instead, use the more descriptive datetime_to_cdftt2000 and unixtime_to_cdftt2000 parameters.",
@@ -811,11 +886,11 @@ def xarray_to_cdf(
     # Gather the global attributes, write them into the file
     glob_att_dict: Dict[str, Dict[int, Any]] = {}
     for ga in dataset.attrs:
-        if hasattr(dataset.attrs[ga], "__len__") and not isinstance(dataset.attrs[ga], str):
+        if hasattr(dataset.attrs[ga], "__iter__") and not isinstance(dataset.attrs[ga], str):
             i = 0
             glob_att_dict[ga] = {}
-            for _ in dataset.attrs[ga]:
-                glob_att_dict[ga][i] = dataset.attrs[ga][i]
+            for entry in dataset.attrs[ga]:
+                glob_att_dict[ga][i] = entry
                 i += 1
         else:
             glob_att_dict[ga] = {0: dataset.attrs[ga]}
@@ -880,7 +955,7 @@ def xarray_to_cdf(
             var_att_dict = {}
             for att in d[var].attrs:
                 if (att == "VALIDMIN" or att == "VALIDMAX" or att == "FILLVAL") and istp:
-                    var_att_dict[att] = [d[var].attrs[att], _datatype_to_string(cdf_data_type)]
+                    var_att_dict[att] = [d[var].attrs[att], DATATYPES_TO_STRINGS[cdf_data_type]]
                 else:
                     var_att_dict[att] = d[var].attrs[att]
 
