@@ -2555,7 +2555,7 @@ class CDF:
         or if any pre-processing needs to occur. Numbers and datetime64 objects can be immediately converted.
         """
         if hasattr(obj, "__len__"):
-            return bool(all(obj)) and all((isinstance(elem, numbers.Number) or isinstance(elem, np.datetime64)) for elem in obj)
+            return all((isinstance(elem, numbers.Number) or isinstance(elem, np.datetime64)) for elem in obj)
         else:
             return isinstance(obj, numbers.Number) or isinstance(obj, np.datetime64)
 

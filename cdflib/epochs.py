@@ -216,7 +216,96 @@ class CDFepoch:
         return _squeeze_or_scalar_real(unixtime)
 
     @staticmethod
-    def compute(datetimes: npt.ArrayLike) -> Union[float, complex, npt.NDArray]:
+    def timestamp_to_cdfepoch(unixtime_data: npt.ArrayLike) -> np.ndarray:
+        """
+        Converts a unix timestamp to CDF_EPOCH, the number of milliseconds since the year 0.
+        """
+        # Make sure the object is iterable.  Sometimes numpy arrays claim to be iterable when they aren't.
+        times = np.atleast_1d(unixtime_data)
+
+        cdf_time_data = []
+        for ud in times:
+            if not np.isnan(ud):
+                dt = np.datetime64(int(ud * 1000), "ms")
+                dt_to_convert = [
+                    dt.item().year,
+                    dt.item().month,
+                    dt.item().day,
+                    dt.item().hour,
+                    dt.item().minute,
+                    dt.item().second,
+                    int(dt.item().microsecond / 1000),
+                ]
+                converted_data = CDFepoch.compute(dt_to_convert)
+            else:
+                converted_data = np.nan
+            cdf_time_data.append(converted_data)
+
+        return np.array(cdf_time_data)
+
+    @staticmethod
+    def timestamp_to_cdfepoch16(unixtime_data: npt.ArrayLike) -> np.ndarray:
+        """
+        Converts a unix timestamp to CDF_EPOCH16
+        """
+        # Make sure the object is iterable.  Sometimes numpy arrays claim to be iterable when they aren't.
+        times = np.atleast_1d(unixtime_data)
+
+        cdf_time_data = []
+        for ud in times:
+            if not np.isnan(ud):
+                dt = np.datetime64(int(ud * 1000000), "us")
+                dt_to_convert = [
+                    dt.item().year,
+                    dt.item().month,
+                    dt.item().day,
+                    dt.item().hour,
+                    dt.item().minute,
+                    dt.item().second,
+                    int(dt.item().microsecond / 1000),
+                    int(dt.item().microsecond % 1000),
+                    0,
+                    0,
+                ]
+                converted_data = CDFepoch.compute(dt_to_convert)
+            else:
+                converted_data = np.nan
+            cdf_time_data.append(converted_data)
+
+        return np.array(cdf_time_data)
+
+    @staticmethod
+    def timestamp_to_tt2000(unixtime_data: npt.ArrayLike) -> np.ndarray:
+        """
+        Converts a unix timestamp to CDF_TIME_TT2000
+        """
+        # Make sure the object is iterable.  Sometimes numpy arrays claim to be iterable when they aren't.
+        times = np.atleast_1d(unixtime_data)
+
+        cdf_time_data = []
+        for ud in times:
+            if not np.isnan(ud):
+                dt = np.datetime64(int(ud * 1000000), "us")
+                dt_to_convert = [
+                    dt.item().year,
+                    dt.item().month,
+                    dt.item().day,
+                    dt.item().hour,
+                    dt.item().minute,
+                    dt.item().second,
+                    int(dt.item().microsecond / 1000),
+                    int(dt.item().microsecond % 1000),
+                    0,
+                ]
+                converted_data = CDFepoch.compute(dt_to_convert)
+            else:
+                converted_data = np.nan
+            cdf_time_data.append(converted_data)
+
+        return np.array(cdf_time_data)
+
+    @staticmethod
+    def compute(datetimes: npt.ArrayLike) -> Union[int, float, complex, npt.NDArray]:
         """
         Computes the provided date/time components into CDF epoch value(s).
 
