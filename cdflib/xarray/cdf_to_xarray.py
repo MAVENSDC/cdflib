@@ -67,9 +67,9 @@ def _convert_cdf_time_types(
     # Convert all the attributes in the "atts" dictionary to unixtime or datetime if needed
     new_atts = {}
     for att in atts:
-        data_type = atts[att].Data_Type
+        attr_data_type = atts[att].Data_Type
         data = atts[att].Data
-        if data_type not in ("CDF_EPOCH", "CDF_EPOCH16", "CDF_TIME_TT2000"):
+        if attr_data_type not in ("CDF_EPOCH", "CDF_EPOCH16", "CDF_TIME_TT2000"):
             new_atts[att] = data
         else:
             if to_datetime:
@@ -77,10 +77,15 @@ def _convert_cdf_time_types(
             elif to_unixtime:
                 new_atts[att] = cdfepoch.unixtime(data)
             else:
-                if data_type == "CDF_EPOCH16":
+                if attr_data_type == "CDF_EPOCH16":
                     new_atts[att] = cdfepoch.compute(cdfepoch.breakdown(data)[0:7])
                 else:
                     new_atts[att] = data
+
+    # This is a bit of a hack, these data types are ambiguous
+    # Lets add an attribute so at least we retain some information about what these numbers represent
+    if data_type in ("CDF_EPOCH", "CDF_REAL4", "CDF_REAL8"):
+        new_atts["CDF_DATA_TYPE"] = data_type
 
     return new_data, new_atts
 
@@ -681,7 +686,7 @@ def cdf_to_xarray(filename: str, to_datetime: bool = False, to_unixtime: bool = 
 
     Example MMS:
         >>> # Import necessary libraries
-        >>> import cdflib
+        >>> import cdflib.xarray
         >>> import xarray as xr
         >>> import os
         >>> import urllib.request
@@ -693,7 +698,7 @@ def cdf_to_xarray(filename: str, to_datetime: bool = False, to_unixtime: bool = 
         >>>     urllib.request.urlretrieve(url, fname)
 
         >>> # Load in and display the CDF file
-        >>> mms_data = cdflib.cdf_to_xarray("mms2_fgm_srvy_l2_20160809_v4.47.0.cdf", to_unixtime=True, fillval_to_nan=True)
+        >>> mms_data = cdflib.xarray.cdf_to_xarray("mms2_fgm_srvy_l2_20160809_v4.47.0.cdf", to_unixtime=True, fillval_to_nan=True)
 
         >>> # Show off XArray functionality
         >>>
@@ -708,7 +713,7 @@ def cdf_to_xarray(filename: str, to_datetime: bool = False, to_unixtime: bool = 
 
     Example THEMIS:
         >>> # Import necessary libraries
-        >>> import cdflib
+        >>> import cdflib.xarray
         >>> import xarray as xr
         >>> import os
         >>> import urllib.request
@@ -720,7 +725,7 @@ def cdf_to_xarray(filename: str, to_datetime: bool = False, to_unixtime: bool = 
         >>>     urllib.request.urlretrieve(url, fname)
 
         >>> # Load in and display the CDF file
-        >>> thg_data = cdflib.cdf_to_xarray(fname, to_unixtime=True, fillval_to_nan=True)
+        >>> thg_data = cdflib.xarray.cdf_to_xarray(fname, to_unixtime=True, fillval_to_nan=True)
 
     Processing Steps:
         1. For each variable in the CDF file
