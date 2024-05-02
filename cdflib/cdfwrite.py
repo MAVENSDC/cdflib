@@ -978,12 +978,18 @@ class CDF:
             epoch16 = []
             if hasattr(indata, "__len__") and not isinstance(indata, str):
                 adata = indata[0]
-                if isinstance(adata, complex):
-                    recs = len(indata)
-                    for x in range(0, recs):
-                        epoch16.append(indata[x].real)
-                        epoch16.append(indata[x].imag)
-                    indata = np.array(epoch16)
+                if not isinstance(adata, complex):
+                    try:
+                        indata = np.asarray(indata).astype(np.complex128)
+                    except:
+                        raise ValueError(
+                            f"Data for variable {var} must be castable to a 128-bit complex number when data type is CDF_EPOCH16."
+                        )
+                recs = len(indata)
+                for x in range(0, recs):
+                    epoch16.append(indata[x].real)
+                    epoch16.append(indata[x].imag)
+                indata = np.array(epoch16)
             else:
                 if isinstance(indata, complex):
                     epoch16.append(indata.real)

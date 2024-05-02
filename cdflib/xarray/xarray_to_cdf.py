@@ -690,7 +690,7 @@ def xarray_to_cdf(
     istp: bool = True,
     terminate_on_warning: bool = False,
     auto_fix_depends: bool = True,
-    record_dimensions: List[str] = [],
+    record_dimensions: List[str] = ["record0"],
     compression: int = 0,
     from_unixtime: bool = False,
     from_datetime: bool = False,
