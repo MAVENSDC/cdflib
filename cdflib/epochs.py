@@ -150,7 +150,7 @@ class CDFepoch:
         elif epochs.dtype.type == np.complex128:
             return CDFepoch.breakdown_epoch16(epochs)
         else:
-            raise TypeError("Not sure how to handle type {}".format(type(epochs)))
+            raise TypeError(f"Not sure how to handle type {epochs.dtype}")
 
     @staticmethod
     def _compose_date(
