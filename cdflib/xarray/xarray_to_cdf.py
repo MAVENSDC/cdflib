@@ -90,6 +90,13 @@ def _is_datetime_array(data: Union[npt.ArrayLike, datetime]) -> bool:
         return False
 
 
+def _is_istp_epoch_variable(var_name: str) -> Union[re.Match, None]:
+    # Checks if the variable is given the name of the ISTP Epoch variable standard
+    epoch_regex_1 = re.compile("epoch$")
+    epoch_regex_2 = re.compile("epoch_[0-9]+$")
+    return epoch_regex_1.match(var_name.lower()) or epoch_regex_2.match(var_name.lower())
+
+
 def _dtype_to_cdf_type(var: xr.Dataset, terminate_on_warning: bool = False) -> Tuple[int, int]:
     # Determines which CDF types to cast the xarray.Dataset to
 
@@ -97,17 +104,15 @@ def _dtype_to_cdf_type(var: xr.Dataset, terminate_on_warning: bool = False) -> T
     cdf_data_type = "CDF_CHAR"
     element_size = 1
 
-    # First, lets check for overrides to this default behavior
+    # Check for overrides of datatype
     if "CDF_DATA_TYPE" in var.attrs:
         if var.attrs["CDF_DATA_TYPE"] in STRINGS_TO_DATATYPES:
             cdf_data_type = var.attrs["CDF_DATA_TYPE"]
             return STRINGS_TO_DATATYPES[cdf_data_type], element_size
 
     # Everything named "epoch" should be cast to a CDF_TIME_TT2000
-    epoch_regex_1 = re.compile("epoch$")
-    epoch_regex_2 = re.compile("epoch_[0-9]+$")
-    if epoch_regex_1.match(var.name.lower()) or epoch_regex_2.match(var.name.lower()):
-        cdf_data_type = "CDF_TIME_TT2000"
+    if _is_istp_epoch_variable(var.name.lower()):
+        return STRINGS_TO_DATATYPES["CDF_TIME_TT2000"], element_size
 
     numpy_data_type = var.dtype
     if numpy_data_type == np.int8:
@@ -329,16 +334,14 @@ def _epoch_checker(dataset: xr.Dataset, dim_vars: List[str], terminate_on_warnin
             if len(dataset[var].dims) == 0:
                 continue
 
-            epoch_regex_1 = re.compile("epoch$")
-            epoch_regex_2 = re.compile("epoch_[0-9]+$")
             first_dim_name = cast(str, dataset[var].dims[0])
 
             # Look at the first dimension of each data
             if "DEPEND_0" in dataset[var].attrs:
                 potential_depend_0 = dataset[var].attrs["DEPEND_0"]
-            elif epoch_regex_1.match(first_dim_name.lower()) or epoch_regex_2.match(first_dim_name.lower()):
+            elif _is_istp_epoch_variable(first_dim_name):
                 potential_depend_0 = first_dim_name
-            elif epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
+            elif _is_istp_epoch_variable(var):
                 potential_depend_0 = var
             elif "VAR_TYPE" in dataset[var].attrs and dataset[var].attrs["VAR_TYPE"].lower() == "data":
                 potential_depend_0 = first_dim_name
@@ -365,7 +368,7 @@ def _epoch_checker(dataset: xr.Dataset, dim_vars: List[str], terminate_on_warnin
                         f'ISTP Compliance Warning: variable {var} contained a "record" dimension {potential_depend_0}, but they have different dimensions.',
                         terminate_on_warning,
                     )
-            elif epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
+            elif _is_istp_epoch_variable(var):
                 depend_0_list.append(potential_depend_0)
                 time_varying_dimensions.append(var)
             else:
@@ -976,9 +979,7 @@ def xarray_to_cdf(
                 elif d[var].attrs["CDF_DATA_TYPE"] == "CDF_EPOCH16":
                     cdf_epoch16 = True
 
-            epoch_regex_1 = re.compile("epoch$")
-            epoch_regex_2 = re.compile("epoch_[0-9]+$")
-            if epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
+            if _is_istp_epoch_variable(var):
                 if from_unixtime or unixtime_to_cdftt2000:
                     var_data = _unixtime_to_tt2000(d[var].data)
                 elif from_datetime or datetime_to_cdftt2000:
