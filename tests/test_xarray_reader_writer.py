@@ -366,7 +366,7 @@ def test_datetime64_conversion():
     epoch_dims = ["epoch"]
     epoch = xr.Variable(epoch_dims, epoch_data)
     ds = xr.Dataset(data_vars={"data": data, "epoch": epoch})
-    xarray_to_cdf(ds, "hello.cdf", datetime64_to_cdftt2000=True)
+    xarray_to_cdf(ds, "hello.cdf")
     x = cdf_to_xarray("hello.cdf", to_datetime=True)
     assert x["epoch"][0] == np.datetime64("1970-01-01T00:00:01")
     os.remove("hello.cdf")
@@ -383,7 +383,7 @@ def test_datetime64_no_conversion():
     epoch_dims = ["epoch"]
     epoch = xr.Variable(epoch_dims, epoch_data)
     ds = xr.Dataset(data_vars={"data": data, "epoch": epoch})
-    xarray_to_cdf(ds, "hello.cdf")
+    xarray_to_cdf(ds, "hello.cdf", datetime64_to_cdftt2000=False)
     x = cdf_to_xarray("hello.cdf")
     assert x["epoch"][0] == 1000000000  # Seconds is converted to nanoseconds in the file, but otherwise left untouched
     os.remove("hello.cdf")
