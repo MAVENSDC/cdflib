@@ -41,10 +41,6 @@ def _convert_cdf_time_types(
 
     data = np.atleast_1d(np.squeeze(data))
 
-    if to_datetime and to_unixtime:
-        logger.info("Cannot convert to both unixtime and datetime.  Continuing with conversion to unixtime.")
-        to_datetime = False
-
     # Convert all data in the "data" variable to unixtime or datetime if needed
     data_type = properties.Data_Type_Description
     if len(data) == 0 or data_type not in ("CDF_EPOCH", "CDF_EPOCH16", "CDF_TIME_TT2000"):
@@ -66,6 +62,7 @@ def _convert_cdf_time_types(
 
     # Convert all the attributes in the "atts" dictionary to unixtime or datetime if needed
     new_atts = {}
+    time_converted_attrs = []
     for att in atts:
         attr_data_type = atts[att].Data_Type
         data = atts[att].Data
@@ -73,8 +70,10 @@ def _convert_cdf_time_types(
             new_atts[att] = data
         else:
             if to_datetime:
+                time_converted_attrs.append(att)
                 new_atts[att] = cdfepoch.to_datetime(data)
             elif to_unixtime:
+                time_converted_attrs.append(att)
                 new_atts[att] = cdfepoch.unixtime(data)
             else:
                 if attr_data_type == "CDF_EPOCH16":
@@ -86,6 +85,16 @@ def _convert_cdf_time_types(
     # Lets add an attribute so at least we retain some information about what these numbers represent
     if data_type in ("CDF_EPOCH", "CDF_REAL4", "CDF_REAL8"):
         new_atts["CDF_DATA_TYPE"] = data_type
+
+    # Another hack for now, if we convert the data to datetime or unixtime we want to have a memory of what it was before
+    if data_type in ("CDF_EPOCH", "CDF_EPOCH16") and (to_datetime or to_unixtime):
+        new_atts["CDF_DATA_TYPE"] = data_type
+    elif data_type == "CDF_TIME_TT2000" and to_unixtime:
+        new_atts["CDF_DATA_TYPE"] = data_type
+
+    # Yet another hack, if we convert the attributes too we need to somehow keep track of what was converted
+    if time_converted_attrs:
+        new_atts["TIME_ATTRS"] = time_converted_attrs
 
     return new_data, new_atts
 
@@ -747,6 +756,10 @@ def cdf_to_xarray(filename: str, to_datetime: bool = False, to_unixtime: bool = 
         3. Gather all global scope attributes in the CDF file
         4. Create an XArray Dataset objects with the data variables, coordinate variables, and global attributes.
     """
+
+    if to_datetime and to_unixtime:
+        to_datetime = False
+
     # Convert the CDF file into a series of dicts, so we don't need to keep reading the file
     global_attributes, all_variable_attributes, all_variable_data, all_variable_properties = _convert_cdf_to_dicts(
         filename, to_datetime=to_datetime, to_unixtime=to_unixtime

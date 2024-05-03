@@ -886,7 +886,7 @@ def xarray_to_cdf(
         )
 
     if unixtime_to_cdftt2000 or from_unixtime:
-        pass
+        unix_time_to_cdf_time = True
 
     if os.path.isfile(file_name):
         _warn_or_except(f"{file_name} already exists, cannot create CDF file.  Returning...", terminate_on_warning)
@@ -975,7 +975,7 @@ def xarray_to_cdf(
             elif _is_datetime64_array(d[var].data) and datetime64_to_cdftt2000:
                 unixtime_from_datetime64 = d[var].data.astype("datetime64[ns]").astype("int64") / 1000000000
                 var_data = _unixtime_to_cdf_time(unixtime_from_datetime64, cdf_epoch=cdf_epoch, cdf_epoch16=cdf_epoch16)
-            elif from_unixtime:
+            elif unix_time_to_cdf_time:
                 if _is_istp_epoch_variable(var) or (
                     DATATYPES_TO_STRINGS[cdf_data_type] in ("CDF_EPOCH", "CDF_EPOCH16", "CDF_TIME_TT2000")
                 ):
@@ -984,6 +984,19 @@ def xarray_to_cdf(
             # Grab the attributes from xarray, and attempt to convert VALIDMIN and VALIDMAX to the same data type as the variable
             var_att_dict = {}
             for att in d[var].attrs:
+                if _is_datetime_array(d[var].attrs[att]):
+                    att_data = _datetime_to_cdf_time(d[var].attrs[att], cdf_epoch=cdf_epoch, cdf_epoch16=cdf_epoch16)
+                    var_att_dict[att] = [att_data, DATATYPES_TO_STRINGS[cdf_data_type]]
+                elif _is_datetime64_array(d[var].attrs[att]):
+                    unixtime_from_datetime64 = d[var].attrs[att].astype("datetime64[ns]").astype("int64") / 1000000000
+                    att_data = _unixtime_to_cdf_time(unixtime_from_datetime64, cdf_epoch=cdf_epoch, cdf_epoch16=cdf_epoch16)
+                    var_att_dict[att] = [att_data, DATATYPES_TO_STRINGS[cdf_data_type]]
+                elif unix_time_to_cdf_time:
+                    if "TIME_ATTRS" in d[var].attrs:
+                        if att in d[var].attrs["TIME_ATTRS"]:
+                            if DATATYPES_TO_STRINGS[cdf_data_type] in ("CDF_EPOCH", "CDF_EPOCH16", "CDF_TIME_TT2000"):
+                                att_data = _unixtime_to_cdf_time(d[var].attrs[att], cdf_epoch=cdf_epoch, cdf_epoch16=cdf_epoch16)
+                                var_att_dict[att] = [att_data, DATATYPES_TO_STRINGS[cdf_data_type]]
                 if (att == "VALIDMIN" or att == "VALIDMAX" or att == "FILLVAL") and istp:
                     var_att_dict[att] = [d[var].attrs[att], DATATYPES_TO_STRINGS[cdf_data_type]]
                 else:
