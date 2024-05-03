@@ -72,6 +72,24 @@ def _warn_or_except(message: str, exception: bool = False) -> None:
         logger.warning(message)
 
 
+def _is_datetime_array(data: Union[npt.ArrayLike, datetime]) -> bool:
+    try:
+        if isinstance(data, datetime):
+            return True
+        elif isinstance(data, np.ndarray):
+            if data.ndim == 0:
+                return isinstance(data.item(), datetime)
+            else:
+                return all(isinstance(x, datetime) for x in data)
+        elif hasattr(data, "__iter__"):
+            return all(isinstance(x, datetime) for x in data)
+        else:
+            iterable_data = np.atleast_1d(data)
+            return all(isinstance(x, datetime) for x in iterable_data)
+    except:
+        return False
+
+
 def _dtype_to_cdf_type(var: xr.Dataset, terminate_on_warning: bool = False) -> Tuple[int, int]:
     # Determines which CDF types to cast the xarray.Dataset to
 
@@ -116,18 +134,21 @@ def _dtype_to_cdf_type(var: xr.Dataset, terminate_on_warning: bool = False) -> T
         cdf_data_type = "CDF_EPOCH16"
     elif numpy_data_type.type in (np.str_, np.bytes_):
         element_size = int(numpy_data_type.str[2:])  # The length of the longest string in the numpy array
-    elif var.dtype == object:  # This commonly means we have multidimensional arrays of strings
-        try:
-            longest_string = 0
-            for x in np.nditer(var.data, flags=["refs_ok"]):
-                if len(str(x)) > longest_string:
-                    longest_string = len(str(x))
-            element_size = longest_string
-        except Exception as e:
-            _warn_or_except(
-                f"NOT SUPPORTED: Data in variable {var.name} has data type {var.dtype}.  Attempting to convert it to strings ran into the error: {str(e)}",
-                terminate_on_warning,
-            )
+    elif var.dtype == object:  # This commonly means we either have multidimensional arrays of strings or datetime objects
+        if _is_datetime_array(var.data):
+            cdf_data_type = "CDF_TIME_TT2000"
+        else:
+            try:
+                longest_string = 0
+                for x in np.nditer(var.data, flags=["refs_ok"]):
+                    if len(str(x)) > longest_string:
+                        longest_string = len(str(x))
+                element_size = longest_string
+            except Exception as e:
+                _warn_or_except(
+                    f"NOT SUPPORTED: Data in variable {var.name} has data type {var.dtype}.  Attempting to convert it to strings ran into the error: {str(e)}",
+                    terminate_on_warning,
+                )
     elif var.dtype.type == np.datetime64:
         cdf_data_type = "CDF_TIME_TT2000"
     else:
@@ -663,8 +684,17 @@ def _unixtime_to_tt2000(unixtime_data) -> npt.NDArray:  # type: ignore[no-untype
     return tt2000_data
 
 
-def _datetime_to_tt2000(datetime_data) -> npt.NDArray:  # type: ignore[no-untyped-def]
-    tt2000_data = np.array([])
+def _datetime_to_cdf_time(datetime_array: xr.DataArray, cdf_epoch: bool = False, cdf_epoch16: bool = False) -> npt.NDArray:
+    datetime_data = datetime_array.data
+    cdf_epoch = False
+    cdf_epoch16 = False
+    if "CDF_DATA_TYPE" in datetime_array.attrs:
+        if datetime_array.attrs["CDF_DATA_TYPE"] == "CDF_EPOCH":
+            cdf_epoch = True
+        elif datetime_array.attrs["CDF_DATA_TYPE"] == "CDF_EPOCH16":
+            cdf_epoch16 = True
+
+    cdf_time_data = np.array([])
     for dd in datetime_data:
         dd_to_convert = [
             dd.year,
@@ -676,9 +706,16 @@ def _datetime_to_tt2000(datetime_data) -> npt.NDArray:  # type: ignore[no-untype
             int(dd.microsecond / 1000),
             int(dd.microsecond % 1000),
             0,
+            0,
         ]
-        np.append(tt2000_data, cdfepoch.compute(dd_to_convert))
-    return tt2000_data
+        if cdf_epoch16:
+            converted_data = cdfepoch.compute(dd_to_convert)
+        elif cdf_epoch:
+            converted_data = cdfepoch.compute(dd_to_convert[0:7])
+        else:
+            converted_data = cdfepoch.compute(dd_to_convert[0:9])
+        np.append(cdf_time_data, converted_data)
+    return cdf_time_data
 
 
 def xarray_to_cdf(
@@ -828,6 +865,7 @@ def xarray_to_cdf(
         np.str_        CDF_CHAR
         np.bytes_      CDF_CHAR
         object         CDF_CHAR
+        datetime       CDF_TIME_TT2000
         =============  ===============
 
         If you want to attempt to cast your data to a different type, you need to add an attribute to your variable called "CDF_DATA_TYPE".
@@ -930,26 +968,35 @@ def xarray_to_cdf(
 
             var_data = d[var].data
 
-            if istp:
-                epoch_regex_1 = re.compile("epoch$")
-                epoch_regex_2 = re.compile("epoch_[0-9]+$")
-                if epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
-                    if from_unixtime or unixtime_to_cdftt2000:
-                        var_data = _unixtime_to_tt2000(d[var].data)
-                    elif from_datetime or datetime_to_cdftt2000:
-                        var_data = _datetime_to_tt2000(d[var].data)
-                    elif datetime64_to_cdftt2000:
-                        if d[var].dtype.type != np.datetime64:
-                            _warn_or_except(
-                                f"datetime64_to_cdftt2000 is set, but datetime64 is not used in the {var} variable",
-                                terminate_on_warning,
-                            )
-                        else:
-                            unixtime_from_datetime64 = d[var].data.astype("datetime64[ns]").astype("int64") / 1000000000
-                            var_data = _unixtime_to_tt2000(unixtime_from_datetime64)
-                elif cdf_data_type == 33:
-                    unixtime_from_datetime64 = d[var].data.astype("datetime64[ns]").astype("int64") / 1000000000
-                    var_data = _unixtime_to_tt2000(unixtime_from_datetime64)
+            cdf_epoch = False
+            cdf_epoch16 = False
+            if "CDF_DATA_TYPE" in d[var].attrs:
+                if d[var].attrs["CDF_DATA_TYPE"] == "CDF_EPOCH":
+                    cdf_epoch = True
+                elif d[var].attrs["CDF_DATA_TYPE"] == "CDF_EPOCH16":
+                    cdf_epoch16 = True
+
+            epoch_regex_1 = re.compile("epoch$")
+            epoch_regex_2 = re.compile("epoch_[0-9]+$")
+            if epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
+                if from_unixtime or unixtime_to_cdftt2000:
+                    var_data = _unixtime_to_tt2000(d[var].data)
+                elif from_datetime or datetime_to_cdftt2000:
+                    var_data = _datetime_to_cdf_time(d[var].data)
+                elif datetime64_to_cdftt2000:
+                    if d[var].dtype.type != np.datetime64:
+                        _warn_or_except(
+                            f"datetime64_to_cdftt2000 is set, but datetime64 is not used in the {var} variable",
+                            terminate_on_warning,
+                        )
+                    else:
+                        unixtime_from_datetime64 = d[var].data.astype("datetime64[ns]").astype("int64") / 1000000000
+                        var_data = _unixtime_to_tt2000(unixtime_from_datetime64)
+            elif _is_datetime_array(d[var].data):
+                var_data = _datetime_to_cdf_time(d[var].data, cdf_epoch=cdf_epoch, cdf_epoch16=cdf_epoch16)
+            elif cdf_data_type == 33:
+                unixtime_from_datetime64 = d[var].data.astype("datetime64[ns]").astype("int64") / 1000000000
+                var_data = _unixtime_to_tt2000(unixtime_from_datetime64)
 
             # Grab the attributes from xarray, and attempt to convert VALIDMIN and VALIDMAX to the same data type as the variable
             var_att_dict = {}
