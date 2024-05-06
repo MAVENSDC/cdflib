@@ -52,6 +52,26 @@ STRINGS_TO_DATATYPES = {
     "CDF_UCHAR": 52,
 }
 
+DATATYPE_FILLVALS = {
+    1: np.int8(-128),
+    2: np.int16(-32768),
+    4: np.int32(-2147483648),
+    8: np.int64(-9223372036854775808),
+    11: np.uint8(255),
+    12: np.uint16(65535),
+    14: np.uint32(4294967295),
+    21: np.float32(-1e30),
+    22: np.float64(-1e30),
+    31: np.float64(-1e30),
+    32: np.complex128(complex(-1e30, -1e30)),
+    33: np.datetime64(-9223372036854775808, "ns"),
+    41: np.int8(-128),
+    44: np.float32(-1e30),
+    45: np.float64(-1e30),
+    51: np.str_(" "),
+    52: np.str_(" "),
+}
+
 
 class ISTPError(Exception):
     """
@@ -171,18 +191,12 @@ def _dtype_to_cdf_type(var: xr.Dataset, terminate_on_warning: bool = False) -> T
     return STRINGS_TO_DATATYPES[cdf_data_type], element_size
 
 
-def _dtype_to_fillval(dtype: np.dtype, terminate_on_warning: bool = False) -> Union[float, int, str, None]:
-    if dtype == np.int8 or dtype == np.int16 or dtype == np.int32 or dtype == np.int64:
-        return -9223372036854775808  # Default FILLVAL of 'CDF_INT8'
-    elif dtype == np.float64 or dtype == np.float32 or dtype == np.float16:
-        return -1e30  # Default FILLVAL of 'CDF_DOUBLE'
-    elif dtype == np.uint8 or dtype == np.uint16 or dtype == np.uint32 or dtype == np.uint64:
-        return 4294967294  # Default FILLVAL of 'CDF_UNIT4'
-    elif dtype.type == np.str_:
-        return " "  # Default FILLVAL of 'CDF_CHAR'
+def _dtype_to_fillval(var: xr.Dataset, terminate_on_warning: bool = False) -> Union[np.number, np.str_, np.datetime64, object]:
+    datatype, _ = _dtype_to_cdf_type(var, terminate_on_warning=terminate_on_warning)
+    if datatype in DATATYPE_FILLVALS:
+        return DATATYPE_FILLVALS[datatype]
     else:
-        _warn_or_except(f"Data type of {dtype} not supported", terminate_on_warning)
-        return None
+        return np.str_(" ")
 
 
 def _verify_depend_dimensions(
