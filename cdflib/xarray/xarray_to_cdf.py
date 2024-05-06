@@ -630,7 +630,7 @@ def _variable_attribute_checker(dataset: xr.Dataset, epoch_list: List[str], term
             if "FILLVAL" not in d[var].attrs:
                 if var_type.lower() == "data":
                     _warn_or_except(f"ISTP Compliance Warning: FILLVAL required for variable {var}", terminate_on_warning)
-                    fillval = _dtype_to_fillval(d[var].dtype)
+                    fillval = _dtype_to_fillval(d[var])
                     d[var].attrs["FILLVAL"] = fillval
                     _warn_or_except(
                         f"ISTP Compliance Action: Automatically set FILLVAL to {fillval} for variable {var}", terminate_on_warning
@@ -639,7 +639,7 @@ def _variable_attribute_checker(dataset: xr.Dataset, epoch_list: List[str], term
                     if len(dataset[var].dims) > 0:
                         if d[var].dims[0] in epoch_list:
                             _warn_or_except(f"ISTP Compliance Warning: FILLVAL required for variable {var}", terminate_on_warning)
-                            fillval = _dtype_to_fillval(d[var].dtype)
+                            fillval = _dtype_to_fillval(d[var])
                             d[var].attrs["FILLVAL"] = fillval
                             _warn_or_except(
                                 f"ISTP Compliance Action: Automatically set FILLVAL to {fillval} for variable {var}",
