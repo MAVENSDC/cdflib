@@ -680,7 +680,7 @@ def _verify_dimension_sizes(created_data_vars: Dict[str, xr.Variable], created_c
                     )
 
 
-def cdf_to_xarray(filename: str, to_datetime: bool = False, to_unixtime: bool = False, fillval_to_nan: bool = False) -> xr.Dataset:
+def cdf_to_xarray(filename: str, to_datetime: bool = True, to_unixtime: bool = False, fillval_to_nan: bool = False) -> xr.Dataset:
     """
     This function converts CDF files into XArray Dataset Objects.
 

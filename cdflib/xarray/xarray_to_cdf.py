@@ -685,12 +685,12 @@ def _unixtime_to_cdf_time(unixtime_data: xr.DataArray, cdf_epoch: bool = False, 
 
 def _datetime_to_cdf_time(
     datetime_array: xr.DataArray, cdf_epoch: bool = False, cdf_epoch16: bool = False, attribute_name: str = ""
-) -> npt.NDArray:
+) -> object:
     if attribute_name:
         datetime_data = datetime_array.attrs[attribute_name]
     else:
         datetime_data = datetime_array.data
-    datetime_data = datetime_array.data
+    datetime64_data = np.array(datetime_data, dtype="datetime64[ns]")
     cdf_epoch = False
     cdf_epoch16 = False
     if "CDF_DATA_TYPE" in datetime_array.attrs:
@@ -699,18 +699,25 @@ def _datetime_to_cdf_time(
         elif datetime_array.attrs["CDF_DATA_TYPE"] == "CDF_EPOCH16":
             cdf_epoch16 = True
 
-    cdf_time_data = np.array([])
-    for dd in datetime_data:
+    if cdf_epoch16 or cdf_epoch:
+        dtype_for_time_data = np.float64
+    else:
+        dtype_for_time_data = np.int64  # type: ignore
+
+    cdf_time_data = np.array([], dtype=dtype_for_time_data)
+    for dd in datetime64_data:
+        year = dd.astype("datetime64[Y]").astype(int) + 1970
+        month = dd.astype("datetime64[M]").astype(int) % 12 + 1
         dd_to_convert = [
-            dd.year,
-            dd.month,
-            dd.day,
-            dd.hour,
-            dd.minute,
-            dd.second,
-            int(dd.microsecond / 1000),
-            int(dd.microsecond % 1000),
-            0,
+            dd.astype("datetime64[Y]").astype(int) + 1970,
+            dd.astype("datetime64[M]").astype(int) % 12 + 1,
+            ((dd - np.datetime64(f"{year}-{month:02d}", "M")) / 86400000000000).astype(int) + 1,
+            dd.astype("datetime64[h]").astype(int) % 24,
+            dd.astype("datetime64[m]").astype(int) % 60,
+            dd.astype("datetime64[s]").astype(int) % 60,
+            dd.astype("datetime64[ms]").astype(int) % 1000,
+            dd.astype("datetime64[us]").astype(int) % 1000,
+            dd.astype("datetime64[ns]").astype(int) % 1000,
             0,
         ]
         if cdf_epoch16:
@@ -719,7 +726,7 @@ def _datetime_to_cdf_time(
             converted_data = cdfepoch.compute(dd_to_convert[0:7])
         else:
             converted_data = cdfepoch.compute(dd_to_convert[0:9])
-        np.append(cdf_time_data, converted_data)
+        cdf_time_data = np.append(cdf_time_data, converted_data)
     return cdf_time_data
 
 
@@ -990,11 +997,10 @@ def xarray_to_cdf(
                 elif d[var].attrs["CDF_DATA_TYPE"] == "CDF_EPOCH16":
                     cdf_epoch16 = True
 
-            if _is_datetime_array(d[var].data) and datetime_to_cdftt2000:
-                var_data = _datetime_to_cdf_time(d[var].data, cdf_epoch=cdf_epoch, cdf_epoch16=cdf_epoch16)
-            elif _is_datetime64_array(d[var].data) and datetime64_to_cdftt2000:
-                unixtime_from_datetime64 = d[var].data.astype("datetime64[ns]").astype("int64") / 1000000000
-                var_data = _unixtime_to_cdf_time(unixtime_from_datetime64, cdf_epoch=cdf_epoch, cdf_epoch16=cdf_epoch16)
+            if (_is_datetime_array(d[var].data) and datetime_to_cdftt2000) or (
+                _is_datetime64_array(d[var].data) and datetime64_to_cdftt2000
+            ):
+                var_data = _datetime_to_cdf_time(d[var], cdf_epoch=cdf_epoch, cdf_epoch16=cdf_epoch16)
             elif unix_time_to_cdf_time:
                 if _is_istp_epoch_variable(var) or (
                     DATATYPES_TO_STRINGS[cdf_data_type] in ("CDF_EPOCH", "CDF_EPOCH16", "CDF_TIME_TT2000")
@@ -1005,14 +1011,10 @@ def xarray_to_cdf(
             var_att_dict = {}
             for att in d[var].attrs:
                 var_att_dict[att] = d[var].attrs[att]
-                if _is_datetime_array(d[var].attrs[att]):
-                    att_data = _datetime_to_cdf_time(
-                        d[var].attrs[att], cdf_epoch=cdf_epoch, cdf_epoch16=cdf_epoch16, attribute_name=att
-                    )
-                    var_att_dict[att] = [att_data, DATATYPES_TO_STRINGS[cdf_data_type]]
-                elif _is_datetime64_array(d[var].attrs[att]):
-                    unixtime_from_datetime64 = d[var].attrs[att].astype("datetime64[ns]").astype("int64") / 1000000000
-                    att_data = _unixtime_to_cdf_time(unixtime_from_datetime64, cdf_epoch=cdf_epoch, cdf_epoch16=cdf_epoch16)
+                if (_is_datetime_array(d[var].attrs[att]) and datetime_to_cdftt2000) or (
+                    _is_datetime64_array(d[var].attrs[att]) and datetime64_to_cdftt2000
+                ):
+                    att_data = _datetime_to_cdf_time(d[var], cdf_epoch=cdf_epoch, cdf_epoch16=cdf_epoch16, attribute_name=att)
                     var_att_dict[att] = [att_data, DATATYPES_TO_STRINGS[cdf_data_type]]
                 elif unix_time_to_cdf_time:
                     if "TIME_ATTRS" in d[var].attrs:

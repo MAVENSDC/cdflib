@@ -181,11 +181,11 @@ class CDFepoch:
         """
         Converts CDF epoch argument to numpy.datetime64. This method
         converts a scalar, or array-like. Precision is only kept to the
-        nearest microsecond.
+        nearest nanosecond.
         """
         times = cls.breakdown(cdf_time)
         times = np.atleast_2d(times)
-        return cls._compose_date(*times.T[:9]).astype("datetime64[us]")
+        return cls._compose_date(*times.T[:9]).astype("datetime64[ns]")
 
     @staticmethod
     def unixtime(cdf_time: npt.ArrayLike) -> Union[float, npt.NDArray]:
