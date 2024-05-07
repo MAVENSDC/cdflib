@@ -683,7 +683,13 @@ def _unixtime_to_cdf_time(unixtime_data: xr.DataArray, cdf_epoch: bool = False, 
     return cdfepoch.timestamp_to_tt2000(unixtime_data)
 
 
-def _datetime_to_cdf_time(datetime_array: xr.DataArray, cdf_epoch: bool = False, cdf_epoch16: bool = False) -> npt.NDArray:
+def _datetime_to_cdf_time(
+    datetime_array: xr.DataArray, cdf_epoch: bool = False, cdf_epoch16: bool = False, attribute_name: str = ""
+) -> npt.NDArray:
+    if attribute_name:
+        datetime_data = datetime_array.attrs[attribute_name]
+    else:
+        datetime_data = datetime_array.data
     datetime_data = datetime_array.data
     cdf_epoch = False
     cdf_epoch16 = False
@@ -998,8 +1004,11 @@ def xarray_to_cdf(
             # Grab the attributes from xarray, and attempt to convert VALIDMIN and VALIDMAX to the same data type as the variable
             var_att_dict = {}
             for att in d[var].attrs:
+                var_att_dict[att] = d[var].attrs[att]
                 if _is_datetime_array(d[var].attrs[att]):
-                    att_data = _datetime_to_cdf_time(d[var].attrs[att], cdf_epoch=cdf_epoch, cdf_epoch16=cdf_epoch16)
+                    att_data = _datetime_to_cdf_time(
+                        d[var].attrs[att], cdf_epoch=cdf_epoch, cdf_epoch16=cdf_epoch16, attribute_name=att
+                    )
                     var_att_dict[att] = [att_data, DATATYPES_TO_STRINGS[cdf_data_type]]
                 elif _is_datetime64_array(d[var].attrs[att]):
                     unixtime_from_datetime64 = d[var].attrs[att].astype("datetime64[ns]").astype("int64") / 1000000000
@@ -1011,10 +1020,8 @@ def xarray_to_cdf(
                             if DATATYPES_TO_STRINGS[cdf_data_type] in ("CDF_EPOCH", "CDF_EPOCH16", "CDF_TIME_TT2000"):
                                 att_data = _unixtime_to_cdf_time(d[var].attrs[att], cdf_epoch=cdf_epoch, cdf_epoch16=cdf_epoch16)
                                 var_att_dict[att] = [att_data, DATATYPES_TO_STRINGS[cdf_data_type]]
-                if (att == "VALIDMIN" or att == "VALIDMAX" or att == "FILLVAL") and istp:
+                elif (att == "VALIDMIN" or att == "VALIDMAX" or att == "FILLVAL") and istp:
                     var_att_dict[att] = [d[var].attrs[att], DATATYPES_TO_STRINGS[cdf_data_type]]
-                else:
-                    var_att_dict[att] = d[var].attrs[att]
 
             var_spec = {
                 "Variable": var,
