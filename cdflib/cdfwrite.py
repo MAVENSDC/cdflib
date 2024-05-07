@@ -2285,7 +2285,6 @@ class CDF:
         odata : byte stream
             The stream of bytes to write to the CDF file
         """
-        print(f"Datatype: {data_type}, num_elems: {num_elems}, num_values: {num_values}, indata: {indata}")
         recSize = self._datatype_size(data_type, num_elems) * num_values
         # List or Tuple data
         if isinstance(indata, list) or isinstance(indata, tuple):
