@@ -2285,7 +2285,7 @@ class CDF:
         odata : byte stream
             The stream of bytes to write to the CDF file
         """
-
+        print(f"Datatype: {data_type}, num_elems: {num_elems}, num_values: {num_values}, indata: {indata}")
         recSize = self._datatype_size(data_type, num_elems) * num_values
         # List or Tuple data
         if isinstance(indata, list) or isinstance(indata, tuple):
@@ -2393,10 +2393,14 @@ class CDF:
                         complex_data.append(indata.imag)
                     indata = complex_data
                 form = tofrom + str(recs * num_values * num_elems) + dt_string
-                if recs * num_values * num_elems > 1:
-                    return recs, struct.pack(form, *indata)
-                else:
-                    return recs, struct.pack(form, indata)
+                try:
+                    if recs * num_values * num_elems > 1:
+                        return recs, struct.pack(form, *indata)
+                    else:
+                        return recs, struct.pack(form, indata)
+                except struct.error:
+                    raise ValueError("Unable to convert data to CDF format, data "
+                                     "object cannot be of type string.")
 
     def _num_values(self, zVar: bool, varNum: int) -> int:
         """
