@@ -709,15 +709,15 @@ def _datetime_to_cdf_time(
         year = dd.astype("datetime64[Y]").astype(int) + 1970
         month = dd.astype("datetime64[M]").astype(int) % 12 + 1
         dd_to_convert = [
-            dd.astype("datetime64[Y]").astype(int) + 1970,
-            dd.astype("datetime64[M]").astype(int) % 12 + 1,
-            ((dd - np.datetime64(f"{year}-{month:02d}", "M")) / 86400000000000).astype(int) + 1,
-            dd.astype("datetime64[h]").astype(int) % 24,
-            dd.astype("datetime64[m]").astype(int) % 60,
-            dd.astype("datetime64[s]").astype(int) % 60,
-            dd.astype("datetime64[ms]").astype(int) % 1000,
-            dd.astype("datetime64[us]").astype(int) % 1000,
-            dd.astype("datetime64[ns]").astype(int) % 1000,
+            dd.astype("datetime64[Y]").astype("int64") + 1970,
+            dd.astype("datetime64[M]").astype("int64") % 12 + 1,
+            ((dd - np.datetime64(f"{year}-{month:02d}", "M")) / 86400000000000).astype("int64") + 1,
+            dd.astype("datetime64[h]").astype("int64") % 24,
+            dd.astype("datetime64[m]").astype("int64") % 60,
+            dd.astype("datetime64[s]").astype("int64") % 60,
+            dd.astype("datetime64[ms]").astype("int64") % 1000,
+            dd.astype("datetime64[us]").astype("int64") % 1000,
+            dd.astype("datetime64[ns]").astype("int64") % 1000,
             0,
         ]
         if cdf_epoch16:
