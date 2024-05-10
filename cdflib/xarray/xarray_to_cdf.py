@@ -60,14 +60,14 @@ DATATYPE_FILLVALS = {
     11: np.uint8(255),
     12: np.uint16(65535),
     14: np.uint32(4294967295),
-    21: np.float32(-1e30),
-    22: np.float64(-1e30),
-    31: np.float64(-1e30),
-    32: np.complex128(complex(-1e30, -1e30)),
+    21: np.float32(-1e31),
+    22: np.float64(-1e31),
+    31: np.float64(-1e31),
+    32: np.complex128(complex(-1e31, -1e31)),
     33: np.datetime64(-9223372036854775808, "ns"),
     41: np.int8(-128),
-    44: np.float32(-1e30),
-    45: np.float64(-1e30),
+    44: np.float32(-1e31),
+    45: np.float64(-1e31),
     51: np.str_(" "),
     52: np.str_(" "),
 }
@@ -126,7 +126,7 @@ def _is_istp_epoch_variable(var_name: str) -> Union[re.Match, None]:
     return epoch_regex_1.match(var_name.lower()) or epoch_regex_2.match(var_name.lower())
 
 
-def _dtype_to_cdf_type(var: xr.Dataset, terminate_on_warning: bool = False) -> Tuple[int, int]:
+def _dtype_to_cdf_type(var: xr.DataArray, terminate_on_warning: bool = False) -> Tuple[int, int]:
     # Determines which CDF types to cast the xarray.Dataset to
 
     # Set some defaults
@@ -140,7 +140,7 @@ def _dtype_to_cdf_type(var: xr.Dataset, terminate_on_warning: bool = False) -> T
             return STRINGS_TO_DATATYPES[cdf_data_type], element_size
 
     # Everything named "epoch" should be cast to a CDF_TIME_TT2000
-    if _is_istp_epoch_variable(var.name.lower()):
+    if _is_istp_epoch_variable(var.name.lower()):  # type: ignore
         return STRINGS_TO_DATATYPES["CDF_TIME_TT2000"], element_size
 
     numpy_data_type = var.dtype
@@ -191,12 +191,50 @@ def _dtype_to_cdf_type(var: xr.Dataset, terminate_on_warning: bool = False) -> T
     return STRINGS_TO_DATATYPES[cdf_data_type], element_size
 
 
-def _dtype_to_fillval(var: xr.Dataset, terminate_on_warning: bool = False) -> Union[np.number, np.str_, np.datetime64, object]:
+def _dtype_to_fillval(var: xr.DataArray, terminate_on_warning: bool = False) -> Union[np.number, np.str_, np.datetime64]:
     datatype, _ = _dtype_to_cdf_type(var, terminate_on_warning=terminate_on_warning)
     if datatype in DATATYPE_FILLVALS:
-        return DATATYPE_FILLVALS[datatype]
+        return DATATYPE_FILLVALS[datatype]  # type: ignore
     else:
         return np.str_(" ")
+
+
+def _convert_nans_to_fillval(var_data: xr.Dataset, terminate_on_warning: bool = False) -> xr.Dataset:
+    new_data = var_data
+
+    for var_name in new_data.data_vars:
+        data_array = new_data[var_name]
+        fill_value = _dtype_to_fillval(data_array)
+        if fill_value.dtype.type != np.datetime64:
+            try:
+                new_data[var_name] = new_data[var_name].fillna(fill_value)
+            except:
+                pass
+        var_att_dict = {}
+        for att in data_array.attrs:
+            try:
+                var_att_dict[att] = np.nan_to_num(data_array.attrs[att], -1e31)  # type: ignore
+            except:
+                var_att_dict[att] = data_array.attrs[att]
+        new_data[var_name].attrs = var_att_dict
+
+    for var_name in new_data.coords:
+        data_array = new_data[var_name]
+        fill_value = _dtype_to_fillval(data_array)
+        if fill_value.dtype.type != np.datetime64:
+            try:
+                new_data[var_name] = new_data[var_name].fillna(fill_value)
+            except:
+                pass
+        var_att_dict = {}
+        for att in data_array.attrs:
+            try:
+                var_att_dict[att] = np.nan_to_num(data_array.attrs[att], -1e31)  # type: ignore
+            except:
+                var_att_dict[att] = data_array.attrs[att]
+        new_data[var_name].attrs = var_att_dict
+
+    return new_data
 
 
 def _verify_depend_dimensions(
@@ -684,13 +722,16 @@ def _unixtime_to_cdf_time(unixtime_data: xr.DataArray, cdf_epoch: bool = False, 
 
 
 def _datetime_to_cdf_time(
-    datetime_array: xr.DataArray, cdf_epoch: bool = False, cdf_epoch16: bool = False, attribute_name: str = ""
+    datetime_array: xr.DataArray,
+    cdf_epoch: bool = False,
+    cdf_epoch16: bool = False,
+    attribute_name: str = "",
 ) -> object:
     if attribute_name:
         datetime_data = datetime_array.attrs[attribute_name]
     else:
         datetime_data = datetime_array.data
-    datetime64_data = np.array(datetime_data, dtype="datetime64[ns]")
+    datetime64_data = np.atleast_1d(np.array(datetime_data, dtype="datetime64[ns]"))
     cdf_epoch = False
     cdf_epoch16 = False
     if "CDF_DATA_TYPE" in datetime_array.attrs:
@@ -704,29 +745,52 @@ def _datetime_to_cdf_time(
     else:
         dtype_for_time_data = np.int64  # type: ignore
 
-    cdf_time_data = np.array([], dtype=dtype_for_time_data)
-    for dd in datetime64_data:
-        year = dd.astype("datetime64[Y]").astype(int) + 1970
-        month = dd.astype("datetime64[M]").astype(int) % 12 + 1
+    years = datetime64_data.astype("datetime64[Y]").astype("int64") + 1970
+    months = datetime64_data.astype("datetime64[M]").astype("int64") % 12 + 1
+    days = np.zeros(len(datetime64_data), dtype=np.int64)
+    i = 0
+    for i in range(len(datetime64_data)):
+        day = ((datetime64_data[i] - np.datetime64(f"{years[i]}-{months[i]:02d}", "M")) / 86400000000000).astype("int64") + 1
+        days[i] = day.item()
+        i += 1
+    hours = datetime64_data.astype("datetime64[h]").astype("int64") % 24
+    minutes = datetime64_data.astype("datetime64[m]").astype("int64") % 60
+    seconds = datetime64_data.astype("datetime64[s]").astype("int64") % 60
+    milliseconds = datetime64_data.astype("datetime64[ms]").astype("int64") % 1000
+    microseconds = datetime64_data.astype("datetime64[us]").astype("int64") % 1000
+    nanoseconds = datetime64_data.astype("datetime64[ns]").astype("int64") % 1000
+    picoseconds = 0
+
+    cdf_time_data = np.zeros(len(datetime64_data), dtype=dtype_for_time_data)
+    for i in range(len(datetime64_data)):
         dd_to_convert = [
-            dd.astype("datetime64[Y]").astype("int64") + 1970,
-            dd.astype("datetime64[M]").astype("int64") % 12 + 1,
-            ((dd - np.datetime64(f"{year}-{month:02d}", "M")) / 86400000000000).astype("int64") + 1,
-            dd.astype("datetime64[h]").astype("int64") % 24,
-            dd.astype("datetime64[m]").astype("int64") % 60,
-            dd.astype("datetime64[s]").astype("int64") % 60,
-            dd.astype("datetime64[ms]").astype("int64") % 1000,
-            dd.astype("datetime64[us]").astype("int64") % 1000,
-            dd.astype("datetime64[ns]").astype("int64") % 1000,
-            0,
+            years[i],
+            months[i],
+            days[i],
+            hours[i],
+            minutes[i],
+            seconds[i],
+            milliseconds[i],
+            microseconds[i],
+            nanoseconds[i],
+            picoseconds,
         ]
-        if cdf_epoch16:
-            converted_data = cdfepoch.compute(dd_to_convert)
-        elif cdf_epoch:
-            converted_data = cdfepoch.compute(dd_to_convert[0:7])
+        if np.isnat(datetime64_data[i]):
+            if cdf_epoch16:
+                cdf_time_data[i] == np.complex128(complex(-1e30, -1e30))
+            elif cdf_epoch:
+                cdf_time_data[i] == np.float64(-1e30)
+            else:
+                cdf_time_data[i] == np.int64(-9223372036854775808)
         else:
-            converted_data = cdfepoch.compute(dd_to_convert[0:9])
-        cdf_time_data = np.append(cdf_time_data, converted_data)
+            if cdf_epoch16:
+                converted_data = cdfepoch.compute(dd_to_convert)
+            elif cdf_epoch:
+                converted_data = cdfepoch.compute(dd_to_convert[0:7])
+            else:
+                converted_data = cdfepoch.compute(dd_to_convert[0:9])
+            cdf_time_data[i] = converted_data
+
     return cdf_time_data
 
 
@@ -739,6 +803,7 @@ def xarray_to_cdf(
     auto_fix_depends: bool = True,
     record_dimensions: List[str] = ["record0"],
     compression: int = 0,
+    nan_to_fillval: bool = True,
     from_unixtime: bool = False,
     from_datetime: bool = False,
     unixtime_to_cdftt2000: bool = False,
@@ -757,6 +822,7 @@ def xarray_to_cdf(
         auto_fix_depends (bool, optional): Whether or not to automatically add dependencies
         record_dimensions (list of str, optional): If the code cannot determine which dimensions should be made into CDF records, you may provide a list of them here
         compression (int, optional): The level of compression to gzip the data in the variables.  Default is no compression, standard is 6.
+        nan_to_fillval (bool, optional): Convert all np.nan and np.datetime64('NaT') to the standard CDF FILLVALs.
         from_datetime (bool, optional, deprecated): Same as the datetime_to_cdftt2000 option
         from_unixtime (bool, optional, deprecated): Same as the unixtime_to_cdftt2000 option
         datetime_to_cdftt2000 (bool, optional, deprecated): Whether or not to convert variables named "epoch" or "epoch_X" to CDF_TT2000 from datetime objects
@@ -921,6 +987,9 @@ def xarray_to_cdf(
 
     # Make a deep copy of the data before continuing
     dataset = xarray_dataset.copy()
+
+    if nan_to_fillval:
+        _convert_nans_to_fillval(dataset)
 
     if istp:
         # This creates a list of suspected or confirmed label variables

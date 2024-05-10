@@ -154,6 +154,7 @@ class CDFepoch:
 
     @staticmethod
     def _compose_date(
+        nat_positions: npt.NDArray,
         years: npt.NDArray,
         months: npt.NDArray,
         days: npt.NDArray,
@@ -174,18 +175,29 @@ class CDFepoch:
         vals = (v for v in (years, months, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) if v is not None)
 
         arrays: List[npt.NDArray[np.datetime64]] = [np.array(v, dtype=t) for t, v in zip(types, vals)]
-        return np.array(sum(arrays))
+        total_datetime = np.array(sum(arrays))
+        total_datetime = np.where(nat_positions, np.datetime64("NaT"), total_datetime)
+        return total_datetime
 
     @classmethod
     def to_datetime(cls, cdf_time: epoch_types) -> npt.NDArray[np.datetime64]:
         """
-        Converts CDF epoch argument to numpy.datetime64. This method
-        converts a scalar, or array-like. Precision is only kept to the
-        nearest nanosecond.
+        Converts CDF epoch argument to numpy.datetime64.
+
+        Parameters:
+            cdf_time: NumPy scalar/arrays to convert. np.int64 will be converted to cdf_tt2000, np.complex128 will be converted to cdf_epoch16, and floats will be converted to cdf_epoch.
+
+        Notes:
+            Because of datetime64 limitations, CDF_EPOCH16 precision is only kept to the nearest nanosecond.
+
         """
         times = cls.breakdown(cdf_time)
         times = np.atleast_2d(times)
-        return cls._compose_date(*times.T[:9]).astype("datetime64[ns]")
+
+        fillval_locations = np.all((times[:, 0:7] == [9999, 12, 31, 23, 59, 59, 999]), axis=1)
+        padval_locations = np.all((times[:, 0:7] == [0, 1, 1, 0, 0, 0, 0]), axis=1)
+        nan_locations = np.logical_or(fillval_locations, padval_locations)
+        return cls._compose_date(nan_locations, *times.T[:9]).astype("datetime64[ns]")
 
     @staticmethod
     def unixtime(cdf_time: npt.ArrayLike) -> Union[float, npt.NDArray]:
@@ -455,18 +467,26 @@ class CDFepoch:
         """
         Breaks down the epoch(s) into UTC components.
 
-        For CDF_EPOCH:
-                they are 7 date/time components: year, month, day,
-                hour, minute, second, and millisecond
-        For CDF_EPOCH16:
-                they are 10 date/time components: year, month, day,
-                hour, minute, second, and millisecond, microsecond,
-                nanosecond, and picosecond.
-        For TT2000:
-                they are 9 date/time components: year, month, day,
-                hour, minute, second, millisecond, microsecond,
-                nanosecond.
+        Calculate date and time from cdf_time_tt2000 integers
+
+        Parameters
+        ----------
+        epochs : array-like
+            Single, list, tuple, or np.array of tt2000 values
+
+        Returns
+        -------
+        components : ndarray
+            List or array of date and time values.  The last axis contains
+            (in order): year, month, day, hour, minute, second, millisecond,
+            microsecond, and nanosecond
+
+        Notes
+        -----
+        If a bad epoch is supplied, a fill date of 9999-12-31 23:59:59 and 999 ms, 999 us, and
+        999 ns is returned.
         """
+
         new_tt2000 = np.atleast_1d(tt2000).astype(np.longlong)
         count = len(new_tt2000)
         toutcs = np.zeros((9, count), dtype=int)
@@ -576,7 +596,14 @@ class CDFepoch:
         toutcs[7, :] = ma1
         toutcs[8, :] = na1
 
-        return np.squeeze(toutcs.T)
+        # Check standard fill and pad values
+        cdf_epoch_time_tt2000 = np.atleast_2d(toutcs.T)
+        fillval_locations = np.all(cdf_epoch_time_tt2000 == [1707, 9, 22, 12, 12, 10, 961, 224, 192], axis=1)
+        cdf_epoch_time_tt2000[fillval_locations] = [9999, 12, 31, 23, 59, 59, 999, 999, 999]
+        padval_locations = np.all(cdf_epoch_time_tt2000 == [1707, 9, 22, 12, 12, 10, 961, 224, 193], axis=1)
+        cdf_epoch_time_tt2000[padval_locations] = [0, 1, 1, 0, 0, 0, 0, 0, 0]
+
+        return np.squeeze(cdf_epoch_time_tt2000)
 
     @staticmethod
     def compute_tt2000(datetimes: npt.ArrayLike) -> Union[int, npt.NDArray[np.int64]]:
@@ -1187,7 +1214,10 @@ class CDFepoch:
         components = np.full(shape=cshape, fill_value=[9999, 12, 31, 23, 59, 59, 999, 999, 999, 999])
         for i, epoch16 in enumerate(new_epochs):
             # Ignore fill values
-            if (epoch16.real != -1.0e31) or (epoch16.imag != -1.0e31):
+            if (epoch16.real != -1.0e31) or (epoch16.imag != -1.0e31) or np.isnan(epoch16):
+                if (epoch16.imag == -1.0e30) or (epoch16.imag == -1.0e30):
+                    components[i] = [0, 1, 1, 0, 0, 0, 0, 0, 0, 0]
+                    continue
                 esec = -epoch16.real if epoch16.real < 0.0 else epoch16.real
                 efra = -epoch16.imag if epoch16.imag < 0.0 else epoch16.imag
 
@@ -1518,8 +1548,8 @@ class CDFepoch:
         cshape.append(7)
         components = np.full(shape=cshape, fill_value=[9999, 12, 31, 23, 59, 59, 999])
         for i, epoch in enumerate(new_epochs):
-            # Ignore fill values
-            if epoch != -1.0e31:
+            # Ignore fill values and NaNs
+            if (epoch != -1.0e31) and not np.isnan(epoch):
                 esec = -epoch / 1000.0 if epoch < 0.0 else epoch / 1000.0
                 date_time = CDFepoch._calc_from_julian(esec, 0.0)
 
@@ -1530,6 +1560,8 @@ class CDFepoch:
                     components = date_time[..., :7]
                 else:
                     components[i] = date_time[..., :7]
+            elif epoch == 0:
+                components[i] = [0, 1, 1, 0, 0, 0, 0]
 
         return np.squeeze(components)
 
