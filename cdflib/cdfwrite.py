@@ -2336,7 +2336,7 @@ class CDF:
             return recs, struct.pack(form2, *datau)
         elif isinstance(indata, np.ndarray):
             if data_type == self.CDF_CHAR or data_type == self.CDF_UCHAR:
-                size = indata.size
+                size = len(np.atleast_1d(indata))
                 odata = ""
                 if size >= 1:
                     for x in range(0, size):
