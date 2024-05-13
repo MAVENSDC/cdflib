@@ -8,30 +8,10 @@ on:
   # Allow manual runs through the web UI
   workflow_dispatch:
 
-<<<<<<< numpy2-and-tox
 # Only allow one run per git ref at a time
 concurrency:
   group: '${{ github.workflow }}-${{ github.ref }}'
   cancel-in-progress: true
-=======
-jobs:
-  tests:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ['3.9', '3.10', '3.11']
-    steps:
-    - uses: actions/checkout@v3
-
-    - uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install package and test requirements
-      run: |
-        pip install -e .[tests]
-        pip check
->>>>>>> main
 
 jobs:
   core:
