@@ -978,12 +978,18 @@ class CDF:
             epoch16 = []
             if hasattr(indata, "__len__") and not isinstance(indata, str):
                 adata = indata[0]
-                if isinstance(adata, complex):
-                    recs = len(indata)
-                    for x in range(0, recs):
-                        epoch16.append(indata[x].real)
-                        epoch16.append(indata[x].imag)
-                    indata = np.array(epoch16)
+                if not isinstance(adata, complex):
+                    try:
+                        indata = np.asarray(indata).astype(np.complex128)
+                    except:
+                        raise ValueError(
+                            f"Data for variable {var} must be castable to a 128-bit complex number when data type is CDF_EPOCH16."
+                        )
+                recs = len(indata)
+                for x in range(0, recs):
+                    epoch16.append(indata[x].real)
+                    epoch16.append(indata[x].imag)
+                indata = np.array(epoch16)
             else:
                 if isinstance(indata, complex):
                     epoch16.append(indata.real)
@@ -2330,11 +2336,11 @@ class CDF:
             return recs, struct.pack(form2, *datau)
         elif isinstance(indata, np.ndarray):
             if data_type == self.CDF_CHAR or data_type == self.CDF_UCHAR:
-                size = indata.size
+                size = len(np.atleast_1d(indata))
                 odata = ""
                 if size >= 1:
                     for x in range(0, size):
-                        if hasattr(indata, "__len__"):
+                        if indata.ndim > 0:
                             adata = indata[x]
                         else:
                             adata = indata
@@ -2345,7 +2351,7 @@ class CDF:
                         elif isinstance(adata, np.ndarray):
                             size2 = adata.size
                             for y in range(0, size2):
-                                if hasattr(adata, "__len__"):
+                                if adata.ndim > 0:
                                     bdata = adata[y]
                                 else:
                                     bdata = adata
@@ -2549,7 +2555,7 @@ class CDF:
         or if any pre-processing needs to occur. Numbers and datetime64 objects can be immediately converted.
         """
         if hasattr(obj, "__len__"):
-            return bool(all(obj)) and all((isinstance(elem, numbers.Number) or isinstance(elem, np.datetime64)) for elem in obj)
+            return all((isinstance(elem, numbers.Number) or isinstance(elem, np.datetime64)) for elem in obj)
         else:
             return isinstance(obj, numbers.Number) or isinstance(obj, np.datetime64)
 

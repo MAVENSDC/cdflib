@@ -2,6 +2,63 @@
 Changelog
 =========
 
+1.3.0
+=====
+General Updates
+---------------
+- Added .devcontainer to support development of cdflib on github
+- Renamed the master branch to "main"
+- Added netcdf4 to the test dependencies
+- unit tests no longer test to_unixtime and from_unixtime conversions.  The loss in the decimal place that occurs from floating point arithmetic causes too many issues.  It may be deprecated functionality in the future.
+
+xarray_to_cdf
+-------------
+- In general, numpy types now have a 1-to-1 correspondence with CDF data types in xarray_to_cdf and cdf_to_xarray. See the documentation for more details
+- Added an ISTP check in xarray_to_cdf to verify that epochs are monotonically increasing
+- Added an ISTP check in xarray_to_cdf to determine if we need a LABL_PTR_1 or LABLAXIS
+- Added ability to manually set the CDF data type of a variable in xarray_to_cdf
+- Added checks in xarray_to_cdf to ensure all CDF_EPOCH16 variables can be cast to a complex128 data type
+- Added automatic conversion of python datetime objects to CDF time variables in xarray_to_cdf, deprecating the from_datetime and datetime_to_cdftt2000 flags
+- Added automatic conversion of numpy datetime64 arrays to CDF time variables in xarray_to_cdf, deprecating the datetime64_to_cdftt2000
+- Automatically populates the FILLVAL attribute with the appropriate ISTP compliant fillvals
+- Ignores variables attributes named "TIME_ATTRS" and "CDF_DATA_TYPE" from being written to the CDF.  While these are used to modify the function's behavior, they will no longer show up in the CDF file.
+- NaNs and NaTs will automatically be converted to the appropriate FILLVAL.  To keep NaNs in the cdf file, use "nan_to_fillval=False"
+
+cdf_to_xarray
+-------------
+- To help avoid some "lossy" conversion from CDF files, cdf_to_xarray will append 2 attributes to the variables in the object created. CDF_DATA_TYPE will hold the type of CDF data the variable was if it was not obvious.  TIME_ATTRS contains a list of attributes that represeted time.  These attributes enable better conversion of the xarray object back to a CDF file.  These attributes are also automatically ignored when writing to the CDF file.
+- fillval_to_nan will now automatically convert CDF time variables to datetime64('NaT')
+
+epochs
+------
+- to_datetime will now give nano-second precision
+- to_datetime will return all FILLVAL, PAD VALUES, and NaNs to datetime64('NaT')
+- compute(_epoch/_epoch16/_tt2000) returns 0000-01-01T00:00:00.000 for PAD VALUES, keeping with CDF standards
+
+1.2.6
+=====
+- Fixed a bug in cdf_to_xarray that couldn't find dimensions for a variable if there was only one record
+
+1.2.5
+=====
+- Fixed bugs in the xarray conversion code that occured when handling numpy arrays with a length but a dimension of 0.
+
+1.2.4
+=====
+- Added in more logging/error statements to behavior in xarray_to_cdf
+
+1.2.3
+=====
+- xarray_to_cdf now automatically converts FILLVAL attributes to the same type of the primary variable
+
+1.2.2
+=====
+- xarray_to_cdf now automatically converts VALIDMIN/VALIDMAX attributes to the same type of the primary variable
+
+1.2.1
+=====
+- xarray_to_cdf now supports xarrays with datetime64 arrays
+
 1.2.0
 =====
 - Attribute data with a single value is now returned as a Python scalar instead of

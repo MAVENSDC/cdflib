@@ -12,6 +12,66 @@ from cdflib.cdfwrite import CDF
 from cdflib.epochs import CDFepoch as cdfepoch
 from cdflib.logging import logger
 
+DATATYPES_TO_STRINGS = {
+    1: "CDF_INT1",
+    2: "CDF_INT2",
+    4: "CDF_INT4",
+    8: "CDF_INT8",
+    11: "CDF_UINT1",
+    12: "CDF_UINT2",
+    14: "CDF_UINT4",
+    21: "CDF_REAL4",
+    22: "CDF_REAL8",
+    31: "CDF_EPOCH",
+    32: "CDF_EPOCH16",
+    33: "CDF_TIME_TT2000",
+    41: "CDF_BYTE",
+    44: "CDF_FLOAT",
+    45: "CDF_DOUBLE",
+    51: "CDF_CHAR",
+    52: "CDF_UCHAR",
+}
+
+STRINGS_TO_DATATYPES = {
+    "CDF_INT1": 1,
+    "CDF_INT2": 2,
+    "CDF_INT4": 4,
+    "CDF_INT8": 8,
+    "CDF_UINT1": 11,
+    "CDF_UINT2": 12,
+    "CDF_UINT4": 14,
+    "CDF_REAL4": 21,
+    "CDF_REAL8": 22,
+    "CDF_EPOCH": 31,
+    "CDF_EPOCH16": 32,
+    "CDF_TIME_TT2000": 33,
+    "CDF_BYTE": 41,
+    "CDF_FLOAT": 44,
+    "CDF_DOUBLE": 45,
+    "CDF_CHAR": 51,
+    "CDF_UCHAR": 52,
+}
+
+DATATYPE_FILLVALS = {
+    1: np.int8(-128),
+    2: np.int16(-32768),
+    4: np.int32(-2147483648),
+    8: np.int64(-9223372036854775808),
+    11: np.uint8(255),
+    12: np.uint16(65535),
+    14: np.uint32(4294967295),
+    21: np.float32(-1e31),
+    22: np.float64(-1e31),
+    31: np.float64(-1e31),
+    32: np.complex128(complex(-1e31, -1e31)),
+    33: np.datetime64(-9223372036854775808, "ns"),
+    41: np.int8(-128),
+    44: np.float32(-1e31),
+    45: np.float64(-1e31),
+    51: np.str_(" "),
+    52: np.str_(" "),
+}
+
 
 class ISTPError(Exception):
     """
@@ -20,32 +80,6 @@ class ISTPError(Exception):
 
     def __init__(self, message: str = ""):
         super().__init__(message)
-
-
-def _datatype_to_string(datatype: int) -> str:
-    """
-    Returns the string version of a CDF data type
-    """
-    datatypes = {
-        52: "CDF_UCHAR",
-        51: "CDF_CHAR",
-        45: "CDF_DOUBLE",
-        44: "CDF_FLOAT",
-        41: "CDF_BYTE",
-        33: "CDF_TIME_TT2000",
-        32: "CDF_EPOCH16",
-        31: "CDF_EPOCH",
-        22: "CDF_REAL8",
-        21: "CDF_REAL4",
-        14: "CDF_UINT4",
-        12: "CDF_UINT2",
-        11: "CDF_UINT1",
-        8: "CDF_INT8",
-        4: "CDF_INT4",
-        2: "CDF_INT2",
-        1: "CDF_INT1",
-    }
-    return datatypes[datatype]
 
 
 def _warn_or_except(message: str, exception: bool = False) -> None:
@@ -58,54 +92,149 @@ def _warn_or_except(message: str, exception: bool = False) -> None:
         logger.warning(message)
 
 
-def _dtype_to_cdf_type(var: xr.Dataset, terminate_on_warning: bool = False) -> Tuple[int, int]:
+def _is_datetime_array(data: Union[npt.ArrayLike, datetime]) -> bool:
+    try:
+        if isinstance(data, datetime):
+            return True
+        elif isinstance(data, np.ndarray):
+            if data.ndim == 0:
+                return isinstance(data.item(), datetime)
+            else:
+                return all(isinstance(x, datetime) for x in data)
+        elif hasattr(data, "__iter__"):
+            return all(isinstance(x, datetime) for x in data)
+        else:
+            iterable_data = np.atleast_1d(data)
+            return all(isinstance(x, datetime) for x in iterable_data)
+    except:
+        return False
+
+
+def _is_datetime64_array(data: Any) -> bool:
+    # Returns true if the input has a type of np.datetime64
+    try:
+        x = np.array(data)
+        return x.dtype.type == np.datetime64
+    except:
+        return False
+
+
+def _is_istp_epoch_variable(var_name: str) -> Union[re.Match, None]:
+    # Checks if the variable is given the name of the ISTP Epoch variable standard
     epoch_regex_1 = re.compile("epoch$")
     epoch_regex_2 = re.compile("epoch_[0-9]+$")
-    if epoch_regex_1.match(var.name.lower()) or epoch_regex_2.match(var.name.lower()):
-        return 33, 1  # CDF_EPOCH_TT2000
+    return epoch_regex_1.match(var_name.lower()) or epoch_regex_2.match(var_name.lower())
 
-    if var.dtype == np.int8 or var.dtype == np.int16 or var.dtype == np.int32 or var.dtype == np.int64:
-        return 8, 1  # 'CDF_INT8'
-    elif var.dtype == np.float64 or var.dtype == np.float32 or var.dtype == np.float16:
-        return 45, 1  # 'CDF_DOUBLE'
-    elif var.dtype == np.uint8 or var.dtype == np.uint16 or var.dtype == np.uint32 or var.dtype == np.uint64:
-        return 14, 1  # 'CDF_UINT4'
-    elif var.dtype.type == np.str_:
-        return 51, int(var.dtype.str[2:])  # CDF_CHAR, and the length of the longest string in the numpy array
-    elif var.dtype.type == np.bytes_:  # Bytes are usually strings
-        return 51, int(var.dtype.str[2:])  # CDF_CHAR, and the length of the longest string in the numpy array
-    elif var.dtype == object:  # This commonly means we have multidimensional arrays of strings
-        try:
-            longest_string = 0
-            for x in np.nditer(var.data, flags=["refs_ok"]):
-                if len(str(x)) > longest_string:
-                    longest_string = len(str(x))
-            return 51, longest_string
-        except Exception as e:
-            _warn_or_except(
-                f"NOT SUPPORTED: Data in variable {var.name} has data type {var.dtype}.  Attempting to convert it to strings ran into the error: {str(e)}",
-                terminate_on_warning,
-            )
-            return 51, 1
+
+def _dtype_to_cdf_type(var: xr.DataArray, terminate_on_warning: bool = False) -> Tuple[int, int]:
+    # Determines which CDF types to cast the xarray.Dataset to
+
+    # Set some defaults
+    cdf_data_type = "CDF_CHAR"
+    element_size = 1
+
+    # Check for overrides of datatype
+    if "CDF_DATA_TYPE" in var.attrs:
+        if var.attrs["CDF_DATA_TYPE"] in STRINGS_TO_DATATYPES:
+            cdf_data_type = var.attrs["CDF_DATA_TYPE"]
+            return STRINGS_TO_DATATYPES[cdf_data_type], element_size
+
+    # Everything named "epoch" should be cast to a CDF_TIME_TT2000
+    if _is_istp_epoch_variable(var.name.lower()):  # type: ignore
+        return STRINGS_TO_DATATYPES["CDF_TIME_TT2000"], element_size
+
+    numpy_data_type = var.dtype
+    if numpy_data_type == np.int8:
+        cdf_data_type = "CDF_INT1"
+    elif numpy_data_type == np.int16:
+        cdf_data_type = "CDF_INT2"
+    elif numpy_data_type == np.int32:
+        cdf_data_type = "CDF_INT4"
+    elif numpy_data_type == np.int64:
+        cdf_data_type = "CDF_INT8"
+    elif numpy_data_type in (np.float32, np.float16):
+        cdf_data_type = "CDF_FLOAT"
+    elif numpy_data_type == np.float64:
+        cdf_data_type = "CDF_DOUBLE"
+    elif numpy_data_type == np.uint8:
+        cdf_data_type = "CDF_UINT1"
+    elif numpy_data_type == np.uint16:
+        cdf_data_type = "CDF_UINT2"
+    elif numpy_data_type == np.uint32:
+        cdf_data_type = "CDF_UINT4"
+    elif numpy_data_type == np.uint64:
+        cdf_data_type = "CDF_UINT8"
+    elif numpy_data_type == np.complex_:
+        cdf_data_type = "CDF_EPOCH16"
+    elif numpy_data_type.type in (np.str_, np.bytes_):
+        element_size = int(numpy_data_type.str[2:])  # The length of the longest string in the numpy array
+    elif var.dtype == object:  # This commonly means we either have multidimensional arrays of strings or datetime objects
+        if _is_datetime_array(var.data):
+            cdf_data_type = "CDF_TIME_TT2000"
+        else:
+            try:
+                longest_string = 0
+                for x in np.nditer(var.data, flags=["refs_ok"]):
+                    if len(str(x)) > longest_string:
+                        longest_string = len(str(x))
+                element_size = longest_string
+            except Exception as e:
+                _warn_or_except(
+                    f"NOT SUPPORTED: Data in variable {var.name} has data type {var.dtype}.  Attempting to convert it to strings ran into the error: {str(e)}",
+                    terminate_on_warning,
+                )
     elif var.dtype.type == np.datetime64:
-        return 33, 1
+        cdf_data_type = "CDF_TIME_TT2000"
     else:
         _warn_or_except(f"NOT SUPPORTED: Data in variable {var.name} has data type of {var.dtype}.", terminate_on_warning)
-        return 51, 1
+
+    return STRINGS_TO_DATATYPES[cdf_data_type], element_size
 
 
-def _dtype_to_fillval(dtype: np.dtype, terminate_on_warning: bool = False) -> Union[float, int, str, None]:
-    if dtype == np.int8 or dtype == np.int16 or dtype == np.int32 or dtype == np.int64:
-        return -9223372036854775808  # Default FILLVAL of 'CDF_INT8'
-    elif dtype == np.float64 or dtype == np.float32 or dtype == np.float16:
-        return -1e30  # Default FILLVAL of 'CDF_DOUBLE'
-    elif dtype == np.uint8 or dtype == np.uint16 or dtype == np.uint32 or dtype == np.uint64:
-        return 4294967294  # Default FILLVAL of 'CDF_UNIT4'
-    elif dtype.type == np.str_:
-        return " "  # Default FILLVAL of 'CDF_CHAR'
+def _dtype_to_fillval(var: xr.DataArray, terminate_on_warning: bool = False) -> Union[np.number, np.str_, np.datetime64]:
+    datatype, _ = _dtype_to_cdf_type(var, terminate_on_warning=terminate_on_warning)
+    if datatype in DATATYPE_FILLVALS:
+        return DATATYPE_FILLVALS[datatype]  # type: ignore
     else:
-        _warn_or_except(f"Data type of {dtype} not supported", terminate_on_warning)
-        return None
+        return np.str_(" ")
+
+
+def _convert_nans_to_fillval(var_data: xr.Dataset, terminate_on_warning: bool = False) -> xr.Dataset:
+    new_data = var_data
+
+    for var_name in new_data.data_vars:
+        data_array = new_data[var_name]
+        fill_value = _dtype_to_fillval(data_array)
+        if fill_value.dtype.type != np.datetime64:
+            try:
+                new_data[var_name] = new_data[var_name].fillna(fill_value)
+            except:
+                pass
+        var_att_dict = {}
+        for att in data_array.attrs:
+            try:
+                var_att_dict[att] = np.nan_to_num(data_array.attrs[att], -1e31)  # type: ignore
+            except:
+                var_att_dict[att] = data_array.attrs[att]
+        new_data[var_name].attrs = var_att_dict
+
+    for var_name in new_data.coords:
+        data_array = new_data[var_name]
+        fill_value = _dtype_to_fillval(data_array)
+        if fill_value.dtype.type != np.datetime64:
+            try:
+                new_data[var_name] = new_data[var_name].fillna(fill_value)
+            except:
+                pass
+        var_att_dict = {}
+        for att in data_array.attrs:
+            try:
+                var_att_dict[att] = np.nan_to_num(data_array.attrs[att], -1e31)  # type: ignore
+            except:
+                var_att_dict[att] = data_array.attrs[att]
+        new_data[var_name].attrs = var_att_dict
+
+    return new_data
 
 
 def _verify_depend_dimensions(
@@ -266,16 +395,14 @@ def _epoch_checker(dataset: xr.Dataset, dim_vars: List[str], terminate_on_warnin
             if len(dataset[var].dims) == 0:
                 continue
 
-            epoch_regex_1 = re.compile("epoch$")
-            epoch_regex_2 = re.compile("epoch_[0-9]+$")
             first_dim_name = cast(str, dataset[var].dims[0])
 
             # Look at the first dimension of each data
             if "DEPEND_0" in dataset[var].attrs:
                 potential_depend_0 = dataset[var].attrs["DEPEND_0"]
-            elif epoch_regex_1.match(first_dim_name.lower()) or epoch_regex_2.match(first_dim_name.lower()):
+            elif _is_istp_epoch_variable(first_dim_name):
                 potential_depend_0 = first_dim_name
-            elif epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
+            elif _is_istp_epoch_variable(var):
                 potential_depend_0 = var
             elif "VAR_TYPE" in dataset[var].attrs and dataset[var].attrs["VAR_TYPE"].lower() == "data":
                 potential_depend_0 = first_dim_name
@@ -302,7 +429,7 @@ def _epoch_checker(dataset: xr.Dataset, dim_vars: List[str], terminate_on_warnin
                         f'ISTP Compliance Warning: variable {var} contained a "record" dimension {potential_depend_0}, but they have different dimensions.',
                         terminate_on_warning,
                     )
-            elif epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
+            elif _is_istp_epoch_variable(var):
                 depend_0_list.append(potential_depend_0)
                 time_varying_dimensions.append(var)
             else:
@@ -426,21 +553,71 @@ def _variable_attribute_checker(dataset: xr.Dataset, epoch_list: List[str], term
                 var_type = d[var].attrs["VAR_TYPE"]
                 if var_type.lower() not in ("data", "support_data", "metadata", "ignore_data"):
                     _warn_or_except(
-                        f"ISTP Compliance Warning: VAR_TYPE for variable {var} is given a non-compliant value of {var_type}",
+                        f"ISTP Compliance Warning: VAR_TYPE for variable {var} is given a non-compliant value of {var_type}.",
                         terminate_on_warning,
                     )
                     var_type = ""
 
             # Check for CATDESC
             if "CATDESC" not in d[var].attrs:
-                _warn_or_except(f"ISTP Compliance Warning: CATDESC attribute is required for variable {var}", terminate_on_warning)
+                _warn_or_except(f"ISTP Compliance Warning: CATDESC attribute is required for variable {var}.", terminate_on_warning)
 
-            if "DISPLAY_TYPE" not in d[var].attrs:
-                if var_type.lower() == "data":
-                    _warn_or_except(f"ISTP Compliance Warning: DISPLAY_TYPE not set for variable {var}", terminate_on_warning)
+            # All "data" needs to have a DISPLAY_TYPE
+            # DISPLAY_TYPE determines the LABLAXIS
+            if var_type.lower() == "data":
+                if "DISPLAY_TYPE" not in d[var].attrs:
+                    _warn_or_except(f"ISTP Compliance Warning: DISPLAY_TYPE not set for variable {var}.", terminate_on_warning)
+                elif d[var].attrs["DISPLAY_TYPE"].lower() == "image":
+                    if "LABLAXIS" not in d[var].attrs:
+                        _warn_or_except(
+                            f"ISTP Compliance Warning: LABLAXIS attribute is required for variable {var} when DISPLAY_TYPE=image and VAR_TYPE=data.",
+                            terminate_on_warning,
+                        )
+                else:
+                    depend_pattern = re.compile(r"^DEPEND_([1-9])$")
+                    for key in d[var].attrs:
+                        match = depend_pattern.match(key)
+                        if match:
+                            corresponding_label_key = None
+                            depend_number = int(match.group(1))
+                            if d[var].attrs["DISPLAY_TYPE"].lower() in ("time_series", "stack_plot"):
+                                corresponding_label_key = f"LABL_PTR_{depend_number}"
+                            elif d[var].attrs["DISPLAY_TYPE"].lower() == "spectrogram":
+                                if depend_number != 1:
+                                    corresponding_label_key = f"LABL_PTR_{depend_number}"
+                            if corresponding_label_key:
+                                if corresponding_label_key not in d[var].attrs:
+                                    _warn_or_except(
+                                        f"ISTP Compliance Warning: {corresponding_label_key} attribute is required for variable {var} with its current DISPLAY_TYPE and VAR_TYPE, because there are {depend_number} or more dimensions.",
+                                        terminate_on_warning,
+                                    )
+                                else:
+                                    if (
+                                        d[var].attrs[corresponding_label_key] in dataset
+                                        or d[var].attrs[corresponding_label_key] in dataset.coords
+                                    ):
+                                        pass
+                                    else:
+                                        _warn_or_except(
+                                            f"ISTP Compliance Warning: {corresponding_label_key} attribute for variable {var} does not point to an existing variable.",
+                                            terminate_on_warning,
+                                        )
+                                    if "LABLAXIS" in d[var].attrs:
+                                        _warn_or_except(
+                                            f"Cannot include both LABLAXIS and {corresponding_label_key} in the attributes to variable {var}.",
+                                            terminate_on_warning,
+                                        )
+                if "LABLAXIS" not in d[var].attrs and "LABL_PTR_1" not in d[var].attrs:
+                    _warn_or_except(
+                        f"ISTP Compliance Warning: LABLAXIS or LABL_PTR_1 attribute is required for variable {var} because VAR_TYPE=data.",
+                        terminate_on_warning,
+                    )
 
+            # Every variable must have a FIELDNAM
             if "FIELDNAM" not in d[var].attrs:
-                _warn_or_except(f"ISTP Compliance Warning: FIELDNAM attribute is required for variable {var}", terminate_on_warning)
+                _warn_or_except(
+                    f"ISTP Compliance Warning: FIELDNAM attribute is required for variable {var}.", terminate_on_warning
+                )
 
             if "FORMAT" not in d[var].attrs:
                 if "FORM_PTR" in d[var].attrs:
@@ -457,22 +634,7 @@ def _variable_attribute_checker(dataset: xr.Dataset, epoch_list: List[str], term
                         terminate_on_warning,
                     )
 
-            if "LABLAXIS" not in d[var].attrs:
-                if var_type.lower() == "data":
-                    if "LABL_PTR_1" in d[var].attrs:
-                        if d[var].attrs["LABL_PTR_1"] in dataset or d[var].attrs["LABL_PTR_1"] in dataset.coords:
-                            pass
-                        else:
-                            _warn_or_except(
-                                f"ISTP Compliance Warning: LABL_PTR_1 attribute for variable {var} does not point to an existing variable.",
-                                terminate_on_warning,
-                            )
-                    else:
-                        _warn_or_except(
-                            f"ISTP Compliance Warning: LABLAXIS or LABL_PTR_1 attribute is required for variable {var}",
-                            terminate_on_warning,
-                        )
-
+            # Every variable needs a units
             if "UNITS" not in d[var].attrs:
                 if var_type.lower() == "data" or var_type.lower() == "support_data":
                     if "UNIT_PTR" not in d[var].attrs:
@@ -506,7 +668,7 @@ def _variable_attribute_checker(dataset: xr.Dataset, epoch_list: List[str], term
             if "FILLVAL" not in d[var].attrs:
                 if var_type.lower() == "data":
                     _warn_or_except(f"ISTP Compliance Warning: FILLVAL required for variable {var}", terminate_on_warning)
-                    fillval = _dtype_to_fillval(d[var].dtype)
+                    fillval = _dtype_to_fillval(d[var])
                     d[var].attrs["FILLVAL"] = fillval
                     _warn_or_except(
                         f"ISTP Compliance Action: Automatically set FILLVAL to {fillval} for variable {var}", terminate_on_warning
@@ -515,7 +677,7 @@ def _variable_attribute_checker(dataset: xr.Dataset, epoch_list: List[str], term
                     if len(dataset[var].dims) > 0:
                         if d[var].dims[0] in epoch_list:
                             _warn_or_except(f"ISTP Compliance Warning: FILLVAL required for variable {var}", terminate_on_warning)
-                            fillval = _dtype_to_fillval(d[var].dtype)
+                            fillval = _dtype_to_fillval(d[var])
                             d[var].attrs["FILLVAL"] = fillval
                             _warn_or_except(
                                 f"ISTP Compliance Action: Automatically set FILLVAL to {fillval} for variable {var}",
@@ -551,72 +713,102 @@ def _label_checker(dataset: xr.Dataset, terminate_on_warning: bool = False) -> L
     return istp_label_list
 
 
-def _unixtime_to_tt2000(unixtime_data) -> npt.NDArray:  # type: ignore[no-untyped-def]
-    # Make sure the object is iterable.  Sometimes numpy arrays claim to be iterable when they aren't.
-    if not hasattr(unixtime_data, "__len__"):
-        unixtime_data = [unixtime_data]
-    elif isinstance(unixtime_data, np.ndarray):
-        # Sometimes a np array has a length, but a dimension of 0
-        if unixtime_data.ndim == 0:
-            unixtime_data = [unixtime_data]
+def _unixtime_to_cdf_time(unixtime_data: xr.DataArray, cdf_epoch: bool = False, cdf_epoch16: bool = False) -> npt.NDArray:
+    if cdf_epoch:
+        return cdfepoch.timestamp_to_cdfepoch(unixtime_data)
+    if cdf_epoch16:
+        return cdfepoch.timestamp_to_cdfepoch16(unixtime_data)
+    return cdfepoch.timestamp_to_tt2000(unixtime_data)
 
-    tt2000_data = np.zeros(len(unixtime_data), dtype=np.int64)
+
+def _datetime_to_cdf_time(
+    datetime_array: xr.DataArray,
+    cdf_epoch: bool = False,
+    cdf_epoch16: bool = False,
+    attribute_name: str = "",
+) -> object:
+    if attribute_name:
+        datetime_data = datetime_array.attrs[attribute_name]
+    else:
+        datetime_data = datetime_array.data
+    datetime64_data = np.atleast_1d(np.array(datetime_data, dtype="datetime64[ns]"))
+    cdf_epoch = False
+    cdf_epoch16 = False
+    if "CDF_DATA_TYPE" in datetime_array.attrs:
+        if datetime_array.attrs["CDF_DATA_TYPE"] == "CDF_EPOCH":
+            cdf_epoch = True
+        elif datetime_array.attrs["CDF_DATA_TYPE"] == "CDF_EPOCH16":
+            cdf_epoch16 = True
+
+    if cdf_epoch16 or cdf_epoch:
+        dtype_for_time_data = np.float64
+    else:
+        dtype_for_time_data = np.int64  # type: ignore
+
+    years = datetime64_data.astype("datetime64[Y]").astype("int64") + 1970
+    months = datetime64_data.astype("datetime64[M]").astype("int64") % 12 + 1
+    days = np.zeros(len(datetime64_data), dtype=np.int64)
     i = 0
-    for ud in unixtime_data:
-        if not np.isnan(ud):
-            dt = datetime.utcfromtimestamp(ud)
-            dt_to_convert = [
-                dt.year,
-                dt.month,
-                dt.day,
-                dt.hour,
-                dt.minute,
-                dt.second,
-                int(dt.microsecond / 1000),
-                int(dt.microsecond % 1000),
-                0,
-            ]
-            converted_data = cdfepoch.compute(dt_to_convert)
-        else:
-            converted_data = np.nan
-
-        tt2000_data[i] = converted_data
+    for i in range(len(datetime64_data)):
+        day = ((datetime64_data[i] - np.datetime64(f"{years[i]}-{months[i]:02d}", "M")) / 86400000000000).astype("int64") + 1
+        days[i] = day.item()
         i += 1
+    hours = datetime64_data.astype("datetime64[h]").astype("int64") % 24
+    minutes = datetime64_data.astype("datetime64[m]").astype("int64") % 60
+    seconds = datetime64_data.astype("datetime64[s]").astype("int64") % 60
+    milliseconds = datetime64_data.astype("datetime64[ms]").astype("int64") % 1000
+    microseconds = datetime64_data.astype("datetime64[us]").astype("int64") % 1000
+    nanoseconds = datetime64_data.astype("datetime64[ns]").astype("int64") % 1000
+    picoseconds = 0
 
-    return tt2000_data
-
-
-def _datetime_to_tt2000(datetime_data) -> npt.NDArray:  # type: ignore[no-untyped-def]
-    tt2000_data = np.array([])
-    for dd in datetime_data:
+    cdf_time_data = np.zeros(len(datetime64_data), dtype=dtype_for_time_data)
+    for i in range(len(datetime64_data)):
         dd_to_convert = [
-            dd.year,
-            dd.month,
-            dd.day,
-            dd.hour,
-            dd.minute,
-            dd.second,
-            int(dd.microsecond / 1000),
-            int(dd.microsecond % 1000),
-            0,
+            years[i],
+            months[i],
+            days[i],
+            hours[i],
+            minutes[i],
+            seconds[i],
+            milliseconds[i],
+            microseconds[i],
+            nanoseconds[i],
+            picoseconds,
         ]
-        np.append(tt2000_data, cdfepoch.compute(dd_to_convert))
-    return tt2000_data
+        if np.isnat(datetime64_data[i]):
+            if cdf_epoch16:
+                cdf_time_data[i] == np.complex128(complex(-1e30, -1e30))
+            elif cdf_epoch:
+                cdf_time_data[i] == np.float64(-1e30)
+            else:
+                cdf_time_data[i] == np.int64(-9223372036854775808)
+        else:
+            if cdf_epoch16:
+                converted_data = cdfepoch.compute(dd_to_convert)
+            elif cdf_epoch:
+                converted_data = cdfepoch.compute(dd_to_convert[0:7])
+            else:
+                converted_data = cdfepoch.compute(dd_to_convert[0:9])
+            cdf_time_data[i] = converted_data
+
+    return cdf_time_data
 
 
 def xarray_to_cdf(
     xarray_dataset: xr.Dataset,
     file_name: str,
-    unixtime_to_cdftt2000: bool = False,
-    datetime_to_cdftt2000: bool = False,
-    datetime64_to_cdftt2000: bool = False,
+    unix_time_to_cdf_time: bool = False,
     istp: bool = True,
     terminate_on_warning: bool = False,
     auto_fix_depends: bool = True,
-    record_dimensions: List[str] = [],
+    record_dimensions: List[str] = ["record0"],
     compression: int = 0,
+    nan_to_fillval: bool = True,
     from_unixtime: bool = False,
     from_datetime: bool = False,
+    unixtime_to_cdftt2000: bool = False,
+    datetime_to_cdftt2000: bool = True,
+    datetime64_to_cdftt2000: bool = True,
 ) -> None:
     """
     This function converts XArray Dataset objects into CDF files.
@@ -624,17 +816,18 @@ def xarray_to_cdf(
     Parameters:
         xarray_dataset (xarray.Dataset): The XArray Dataset object that you'd like to convert into a CDF file
         file_name (str):  The path to the place the newly created CDF file
-        datetime_to_cdftt2000 (bool, optional): Whether or not to convert variables named "epoch" or "epoch_X" to CDF_TT2000 from datetime objects
-        datetime64_to_cdftt2000 (bool, optional): Whether or not to convert variables named "epoch" or "epoch_X" to CDF_TT2000 from the numpy datetime64
-        unixtime_to_cdftt2000 (bool, optional): Whether or not to convert variables named "epoch" or "epoch_X" to CDF_TT2000 from unixtime
+        unix_time_to_cdf_time (bool, optional): Whether or not to assume variables that will become a CDF_EPOCH/EPOCH16/TT2000 are a unix timestamp
         istp (bool, optional): Whether or not to do checks on the Dataset object to attempt to enforce CDF compliance
         terminate_on_warning (bool, optional): Whether or not to throw an error when given warnings or to continue trying to make the file
         auto_fix_depends (bool, optional): Whether or not to automatically add dependencies
         record_dimensions (list of str, optional): If the code cannot determine which dimensions should be made into CDF records, you may provide a list of them here
         compression (int, optional): The level of compression to gzip the data in the variables.  Default is no compression, standard is 6.
+        nan_to_fillval (bool, optional): Convert all np.nan and np.datetime64('NaT') to the standard CDF FILLVALs.
         from_datetime (bool, optional, deprecated): Same as the datetime_to_cdftt2000 option
         from_unixtime (bool, optional, deprecated): Same as the unixtime_to_cdftt2000 option
-
+        datetime_to_cdftt2000 (bool, optional, deprecated): Whether or not to convert variables named "epoch" or "epoch_X" to CDF_TT2000 from datetime objects
+        datetime64_to_cdftt2000 (bool, optional, deprecated): Whether or not to convert variables named "epoch" or "epoch_X" to CDF_TT2000 from the numpy datetime64
+        unixtime_to_cdftt2000 (bool, optional, deprecated): Whether or not to convert variables named "epoch" or "epoch_X" to CDF_TT2000 from unixtime
     Returns:
         None, but generates a CDF file
 
@@ -725,17 +918,68 @@ def xarray_to_cdf(
         - DEPEND_N missing from variables
         - DEPEND_N/LABL_PTR/UNIT_PTR/FORM_PTR are pointing to missing variables
         - Missing required global attributes
+        - Conflicting global attributes
         - Missing an "epoch" dimension
-        - DEPEND_N attribute pointing to a variable with oncompatible dimensions
+        - DEPEND_N attribute pointing to a variable with uncompatible dimensions
 
+    CDF Data Types:
+        All variable data is automatically converted to one of the following CDF types, based on the type of data in the xarray Dataset:
+
+        =============  ===============
+        Numpy type     CDF Data Type
+        =============  ===============
+        np.datetime64  CDF_TIME_TT2000
+        np.int8        CDF_INT1
+        np.int16       CDF_INT2
+        np.int32       CDF_INT4
+        np.int64       CDF_INT8
+        np.float16     CDF_FLOAT
+        np.float32     CDF_FLOAT
+        np.float64     CDF_DOUBLE
+        np.uint8       CDF_UINT1
+        np.uint16      CDF_UINT2
+        np.uint32      CDF_UINT4
+        np.uint64      CDF_UINT8
+        np.complex_    CDF_EPOCH16
+        np.str_        CDF_CHAR
+        np.bytes_      CDF_CHAR
+        object         CDF_CHAR
+        datetime       CDF_TIME_TT2000
+        =============  ===============
+
+        If you want to attempt to cast your data to a different type, you need to add an attribute to your variable called "CDF_DATA_TYPE".
+        xarray_to_cdf will read this attribute and override the default conversions.  Valid choices are:
+
+        - Integers: CDF_INT1, CDF_INT2, CDF_INT4, CDF_INT8
+        - Unsigned Integers: CDF_UINT1, CDF_UINT2, CDF_UINT4
+        - Floating Point: CDF_REAL4, CDF_FLOAT, CDF_DOUBLE, CDF_REAL8
+        - Time: CDF_EPOCH, CDF_EPOCH16, CDF_TIME_TT2000
 
     """
-    if from_datetime or from_unixtime:
+
+    if from_unixtime or unixtime_to_cdftt2000:
         warn(
-            "The from_datetime and from_unixtime parameters will eventually be phased out. Instead, use the more descriptive datetime_to_cdftt2000 and unixtime_to_cdftt2000 parameters.",
+            "from_unixtime and unixtime_to_cdftt2000 will eventually be phased out. Instead, use the more descriptive unix_time_to_cdf_time.",
             DeprecationWarning,
             stacklevel=2,
         )
+
+    if from_datetime or datetime_to_cdftt2000:
+        warn(
+            "The from_datetime and datetime_to_cdftt2000 are obsolete. Python datetime objects are automatically converted to a CDF time. If you do not wish datetime objects to be converted, cast them to a different type prior to calling xarray_to_cdf()",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+    if datetime64_to_cdftt2000:
+        warn(
+            "datetime64_to_cdftt2000 will eventually be phased out. Instead, datetime64 types will automatically be converted into a CDF time type. If you do not wish datetime64 arrays to be converted, cast them to a different type prior to calling xarray_to_cdf()",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+    if unixtime_to_cdftt2000 or from_unixtime:
+        unix_time_to_cdf_time = True
 
     if os.path.isfile(file_name):
         _warn_or_except(f"{file_name} already exists, cannot create CDF file.  Returning...", terminate_on_warning)
@@ -743,6 +987,9 @@ def xarray_to_cdf(
 
     # Make a deep copy of the data before continuing
     dataset = xarray_dataset.copy()
+
+    if nan_to_fillval:
+        _convert_nans_to_fillval(dataset)
 
     if istp:
         # This creates a list of suspected or confirmed label variables
@@ -776,11 +1023,11 @@ def xarray_to_cdf(
     # Gather the global attributes, write them into the file
     glob_att_dict: Dict[str, Dict[int, Any]] = {}
     for ga in dataset.attrs:
-        if hasattr(dataset.attrs[ga], "__len__") and not isinstance(dataset.attrs[ga], str):
+        if hasattr(dataset.attrs[ga], "__iter__") and not isinstance(dataset.attrs[ga], str):
             i = 0
             glob_att_dict[ga] = {}
-            for _ in dataset.attrs[ga]:
-                glob_att_dict[ga][i] = dataset.attrs[ga][i]
+            for entry in dataset.attrs[ga]:
+                glob_att_dict[ga][i] = entry
                 i += 1
         else:
             glob_att_dict[ga] = {0: dataset.attrs[ga]}
@@ -809,6 +1056,44 @@ def xarray_to_cdf(
                 dim_sizes = []
                 record_vary = True
 
+            var_data = d[var].data
+
+            cdf_epoch = False
+            cdf_epoch16 = False
+            if "CDF_DATA_TYPE" in d[var].attrs:
+                if d[var].attrs["CDF_DATA_TYPE"] == "CDF_EPOCH":
+                    cdf_epoch = True
+                elif d[var].attrs["CDF_DATA_TYPE"] == "CDF_EPOCH16":
+                    cdf_epoch16 = True
+
+            if (_is_datetime_array(d[var].data) and datetime_to_cdftt2000) or (
+                _is_datetime64_array(d[var].data) and datetime64_to_cdftt2000
+            ):
+                var_data = _datetime_to_cdf_time(d[var], cdf_epoch=cdf_epoch, cdf_epoch16=cdf_epoch16)
+            elif unix_time_to_cdf_time:
+                if _is_istp_epoch_variable(var) or (
+                    DATATYPES_TO_STRINGS[cdf_data_type] in ("CDF_EPOCH", "CDF_EPOCH16", "CDF_TIME_TT2000")
+                ):
+                    var_data = _unixtime_to_cdf_time(d[var].data, cdf_epoch=cdf_epoch, cdf_epoch16=cdf_epoch16)
+
+            # Grab the attributes from xarray, and attempt to convert VALIDMIN and VALIDMAX to the same data type as the variable
+            var_att_dict = {}
+            for att in d[var].attrs:
+                var_att_dict[att] = d[var].attrs[att]
+                if (_is_datetime_array(d[var].attrs[att]) and datetime_to_cdftt2000) or (
+                    _is_datetime64_array(d[var].attrs[att]) and datetime64_to_cdftt2000
+                ):
+                    att_data = _datetime_to_cdf_time(d[var], cdf_epoch=cdf_epoch, cdf_epoch16=cdf_epoch16, attribute_name=att)
+                    var_att_dict[att] = [att_data, DATATYPES_TO_STRINGS[cdf_data_type]]
+                elif unix_time_to_cdf_time:
+                    if "TIME_ATTRS" in d[var].attrs:
+                        if att in d[var].attrs["TIME_ATTRS"]:
+                            if DATATYPES_TO_STRINGS[cdf_data_type] in ("CDF_EPOCH", "CDF_EPOCH16", "CDF_TIME_TT2000"):
+                                att_data = _unixtime_to_cdf_time(d[var].attrs[att], cdf_epoch=cdf_epoch, cdf_epoch16=cdf_epoch16)
+                                var_att_dict[att] = [att_data, DATATYPES_TO_STRINGS[cdf_data_type]]
+                elif (att == "VALIDMIN" or att == "VALIDMAX" or att == "FILLVAL") and istp:
+                    var_att_dict[att] = [d[var].attrs[att], DATATYPES_TO_STRINGS[cdf_data_type]]
+
             var_spec = {
                 "Variable": var,
                 "Data_Type": cdf_data_type,
@@ -817,37 +1102,6 @@ def xarray_to_cdf(
                 "Dim_Sizes": list(dim_sizes),
                 "Compress": compression,
             }
-
-            var_data = d[var].data
-
-            if istp:
-                epoch_regex_1 = re.compile("epoch$")
-                epoch_regex_2 = re.compile("epoch_[0-9]+$")
-                if epoch_regex_1.match(var.lower()) or epoch_regex_2.match(var.lower()):
-                    if from_unixtime or unixtime_to_cdftt2000:
-                        var_data = _unixtime_to_tt2000(d[var].data)
-                    elif from_datetime or datetime_to_cdftt2000:
-                        var_data = _datetime_to_tt2000(d[var].data)
-                    elif datetime64_to_cdftt2000:
-                        if d[var].dtype.type != np.datetime64:
-                            _warn_or_except(
-                                f"datetime64_to_cdftt2000 is set, but datetime64 is not used in the {var} variable",
-                                terminate_on_warning,
-                            )
-                        else:
-                            unixtime_from_datetime64 = d[var].data.astype("datetime64[ns]").astype("int64") / 1000000000
-                            var_data = _unixtime_to_tt2000(unixtime_from_datetime64)
-                elif cdf_data_type == 33:
-                    unixtime_from_datetime64 = d[var].data.astype("datetime64[ns]").astype("int64") / 1000000000
-                    var_data = _unixtime_to_tt2000(unixtime_from_datetime64)
-
-            # Grab the attributes from xarray, and attempt to convert VALIDMIN and VALIDMAX to the same data type as the variable
-            var_att_dict = {}
-            for att in d[var].attrs:
-                if (att == "VALIDMIN" or att == "VALIDMAX" or att == "FILLVAL") and istp:
-                    var_att_dict[att] = [d[var].attrs[att], _datatype_to_string(cdf_data_type)]
-                else:
-                    var_att_dict[att] = d[var].attrs[att]
 
             x.write_var(var_spec, var_attrs=var_att_dict, var_data=var_data)
 
