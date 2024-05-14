@@ -2,30 +2,36 @@ name: Run tests
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - 'main'
   pull_request:
-    branches: [ main ]
+  # Allow manual runs through the web UI
+  workflow_dispatch:
+
+# Only allow one run per git ref at a time
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
 
 jobs:
-  tests:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ['3.9', '3.10', '3.11']
-    steps:
-    - uses: actions/checkout@v3
-
-    - uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install package and test requirements
-      run: |
-        pip install -e .[tests]
-        pip check
-
-    - name: Run tests
-      run: pytest --cov=cdflib
-
-    - name: Upload code coverage
-      uses: codecov/codecov-action@v3
+  core:
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v1
+    with:
+      submodules: false
+      coverage: codecov
+      envs: |
+        - linux: py38-oldestdeps
+        - linux: py39-online
+        #- linux: py310
+        #- linux: py311
+        - linux: py312-devdeps
+        #- windows: py38
+        #- windows: py39
+        - windows: py310
+        #- windows: py311
+        #- windows: py312
+        #- macos: py38
+        #- macos: py39
+        #- macos: py310
+        - macos: py311
+        #- macos: py312
