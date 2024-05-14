@@ -2398,8 +2398,7 @@ class CDF:
                     else:
                         return recs, struct.pack(form, indata)
                 except struct.error:
-                    raise ValueError("Unable to convert data to CDF format, data "
-                                     "object cannot be of type string.")
+                    raise ValueError("Unable to convert data to CDF format, data " "object cannot be of type string.")
 
     def _num_values(self, zVar: bool, varNum: int) -> int:
         """

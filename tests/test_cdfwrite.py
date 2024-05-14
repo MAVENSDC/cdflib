@@ -44,8 +44,7 @@ def test_checksum(tmp_path):
     varatts["Attribute1"] = 1
     varatts["Attribute2"] = "500"
 
-    tfile.write_var(var_spec, var_attrs=varatts,
-                    var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+    tfile.write_var(var_spec, var_attrs=varatts, var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
 
     tfile.close()
 
@@ -252,15 +251,13 @@ def test_create_zvariables_with_attributes(tmp_path):
     varatts["Attribute2"] = "500"
 
     tfile = cdf_create(fn, {"rDim_sizes": [1]})
-    tfile.write_var(var_spec, var_attrs=varatts,
-                    var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+    tfile.write_var(var_spec, var_attrs=varatts, var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
 
     var_spec["Variable"] = "Variable2"
     varatts2: Dict[str, Any] = {}
     varatts2["Attribute1"] = 2
     varatts2["Attribute2"] = "1000"
-    tfile.write_var(var_spec, var_attrs=varatts2,
-                    var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+    tfile.write_var(var_spec, var_attrs=varatts2, var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
 
     tfile.close()
 
@@ -352,9 +349,7 @@ def test_sparse_virtual_zvariable_blocking(tmp_path):
     physical_records2 = np.linspace(20001, 30000, num=10000)
     physical_records3 = np.linspace(50001, 60000, num=10000)
     physical_records4 = np.linspace(70001, 140000, num=70000)
-    physical_records = np.concatenate((physical_records1, physical_records2,
-                                       physical_records3, physical_records4)).astype(
-        int)
+    physical_records = np.concatenate((physical_records1, physical_records2, physical_records3, physical_records4)).astype(int)
     sparse_data = [physical_records, data]
 
     tfile = cdf_create(fn, {"rDim_sizes": [1]})
@@ -390,9 +385,7 @@ def test_sparse_zvariable_blocking(tmp_path):
     physical_records2 = np.linspace(20001, 30000, num=10000)
     physical_records3 = np.linspace(50001, 60000, num=10000)
     physical_records4 = np.linspace(70001, 140000, num=70000)
-    physical_records = np.concatenate((physical_records1, physical_records2,
-                                       physical_records3, physical_records4)).astype(
-        int)
+    physical_records = np.concatenate((physical_records1, physical_records2, physical_records3, physical_records4)).astype(int)
     sparse_data = [physical_records, data]
 
     tfile = cdf_create(fn, {"rDim_sizes": [1]})
@@ -422,8 +415,7 @@ def test_sparse_zvariable_pad(tmp_path):
     var_spec["Rec_Vary"] = True
     var_spec["Dim_Sizes"] = []
     var_spec["Sparse"] = "pad_sparse"
-    data = [[200, 3000, 3100, 3500, 4000, 5000, 6000, 10000, 10001, 10002, 20000],
-            np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])]
+    data = [[200, 3000, 3100, 3500, 4000, 5000, 6000, 10000, 10001, 10002, 20000], np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])]
 
     tfile = cdf_create(fn, {"rDim_sizes": [1]})
     tfile.write_var(var_spec, var_data=data)
@@ -452,8 +444,7 @@ def test_sparse_zvariable_previous(tmp_path):
     var_spec["Rec_Vary"] = True
     var_spec["Dim_Sizes"] = []
     var_spec["Sparse"] = "prev_sparse"
-    data = [[200, 3000, 3100, 3500, 4000, 5000, 6000, 10000, 10001, 10002, 20000],
-            np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])]
+    data = [[200, 3000, 3100, 3500, 4000, 5000, 6000, 10000, 10001, 10002, 20000], np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])]
 
     tfile = cdf_create(fn, {"rDim_sizes": [1]})
     tfile.write_var(var_spec, var_data=data)
@@ -486,9 +477,7 @@ def test_create_2d_rvariable(tmp_path):
 
     tfile = cdf_create(fn, {"rDim_sizes": [2, 2]})
     tfile.write_var(
-        var_spec, var_data=np.array(
-            [[[0, 1], [1, 2]], [[2, 3], [3, 4]], [[4, 5], [5, 6]], [[6, 7], [7, 8]],
-             [[8, 9], [9, 10]]])
+        var_spec, var_data=np.array([[[0, 1], [1, 2]], [[2, 3], [3, 4]], [[4, 5], [5, 6]], [[6, 7], [7, 8]], [[8, 9], [9, 10]]])
     )
     tfile.close()
 
@@ -522,8 +511,7 @@ def test_create_2d_rvariable_dimvary(tmp_path):
 
     tfile = cdf_create(fn, {"rDim_sizes": [2, 20]})
 
-    tfile.write_var(var_spec,
-                    var_data=np.array([[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]]))
+    tfile.write_var(var_spec, var_data=np.array([[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]]))
 
     tfile.close()
 
@@ -554,16 +542,14 @@ def test_create_2d_r_and_z_variables(tmp_path):
     var_spec["Dim_Vary"] = [True, False]
 
     tfile = cdf_create(fn, {"rDim_sizes": [2, 20]})
-    tfile.write_var(var_spec,
-                    var_data=np.array([[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]]))
+    tfile.write_var(var_spec, var_data=np.array([[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]]))
 
     var_spec["Variable"] = "Variable2"
     var_spec["Var_Type"] = "zvariable"
     varatts: Dict[str, Any] = {}
     varatts["Attribute1"] = 2
     varatts["Attribute2"] = "1000"
-    tfile.write_var(var_spec, var_attrs=varatts,
-                    var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+    tfile.write_var(var_spec, var_attrs=varatts, var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
 
     tfile.close()
     # Open the file to read
@@ -605,8 +591,7 @@ def test_create_zvariables_with_attributes_to_convert(tmp_path):
     varatts["Attribute3"] = [700, "CDF_INT8"]
 
     tfile = cdf_create(fn, {"rDim_sizes": [1]})
-    tfile.write_var(var_spec, var_attrs=varatts,
-                    var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+    tfile.write_var(var_spec, var_attrs=varatts, var_data=np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
 
     tfile.close()
 
@@ -636,8 +621,7 @@ def test_create_zvariables_with_data_to_convert(tmp_path):
     var_spec["Dim_Sizes"] = []
 
     tfile = cdf_create(fn, {"rDim_sizes": [1]})
-    tfile.write_var(var_spec,
-                    var_data=[0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
+    tfile.write_var(var_spec, var_data=[0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
 
     tfile.close()
 
@@ -654,4 +638,4 @@ def test_convert_data_error(tmp_path):
     cdf = cdfwrite.CDF(tmp_path / "test.cdf", cdf_spec={"rDim_sizes": [1]})
     with pytest.raises(ValueError):
         # Data from list of strings with dimension "epoch"
-        output = cdf._convert_data(51, 1, 1, indata)
+        cdf._convert_data(51, 1, 1, indata)

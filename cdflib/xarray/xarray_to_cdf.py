@@ -164,7 +164,7 @@ def _dtype_to_cdf_type(var: xr.DataArray, terminate_on_warning: bool = False) ->
         cdf_data_type = "CDF_UINT4"
     elif numpy_data_type == np.uint64:
         cdf_data_type = "CDF_UINT8"
-    elif numpy_data_type == np.complex_:
+    elif numpy_data_type == np.complex128:
         cdf_data_type = "CDF_EPOCH16"
     elif numpy_data_type.type in (np.str_, np.bytes_):
         element_size = int(numpy_data_type.str[2:])  # The length of the longest string in the numpy array
