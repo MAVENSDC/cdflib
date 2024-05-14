@@ -2,6 +2,22 @@
 Changelog
 =========
 
+1.3.1
+=====
+General Updates
+---------------
+- Added tox to serve as the unit testing infrastructure, and changed which unit tests were run (see the github actions to see what exactly is running)
+- Added tests to check future versions of numpy and astropy
+- Added back in the remote data unit tests
+
+xarray_to_cdf
+-------------
+- Added an ISTP check to determine is attribute and variable names are compliant
+
+cdfwrite
+---------
+- Clearer error message surrounding data type conversions to CDF data types
+
 1.3.0
 =====
 General Updates
