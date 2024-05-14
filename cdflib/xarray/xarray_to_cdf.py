@@ -72,6 +72,9 @@ DATATYPE_FILLVALS = {
     52: np.str_(" "),
 }
 
+# Regular expression to match valid ISTP variable/attribute names
+ISTP_COMPLIANT_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
+
 
 class ISTPError(Exception):
     """
@@ -466,6 +469,32 @@ def _epoch_checker(dataset: xr.Dataset, dim_vars: List[str], terminate_on_warnin
 
 def _verify_monotonically_increasing(epoch_data: npt.NDArray) -> np.bool_:
     return np.all(epoch_data[1:] > epoch_data[:-1])
+
+
+def _validate_varatt_names(dataset: xr.Dataset, terminate_on_warning: bool) -> None:
+    for var_name in dataset.variables:
+        if not ISTP_COMPLIANT_NAME.match(str(var_name)):
+            _warn_or_except(
+                f"Invalid ISTP variable name: {str(var_name)}",
+                terminate_on_warning,
+            )
+
+    # Check attributes in the dataset
+    for attr_name in dataset.attrs:
+        if not ISTP_COMPLIANT_NAME.match(str(attr_name)):
+            _warn_or_except(
+                f"Invalid ISTP global attribute name: {str(attr_name)}",
+                terminate_on_warning,
+            )
+
+    # Check attributes of each variable
+    for var in dataset.variables:
+        for attr_name in dataset[var].attrs:
+            if not ISTP_COMPLIANT_NAME.match(str(attr_name)):
+                _warn_or_except(
+                    f"Invalid ISTP variable attribute name: {str(attr_name)}",
+                    terminate_on_warning,
+                )
 
 
 def _add_depend_variables_to_dataset(
@@ -992,6 +1021,9 @@ def xarray_to_cdf(
         _convert_nans_to_fillval(dataset)
 
     if istp:
+        # This checks all the variable and attribute names to ensure they are ISTP compliant.
+        _validate_varatt_names(dataset, terminate_on_warning)
+
         # This creates a list of suspected or confirmed label variables
         _label_checker(dataset, terminate_on_warning)
 
