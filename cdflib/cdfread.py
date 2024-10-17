@@ -2042,9 +2042,9 @@ class CDF:
         elif filetype == "s3":
             try:
                 import boto3
-                from botocore.handlers import disable_signing
-                from botocore.client import Config
                 from botocore import UNSIGNED
+                from botocore.client import Config
+                from botocore.handlers import disable_signing
             except:
                 raise ImportError("boto3/botocore package not installed")
             s3parts = filename.split("/")  # 0-1=s3://, 2=bucket, 3+=key
