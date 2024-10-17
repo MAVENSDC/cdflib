@@ -2056,7 +2056,7 @@ class CDF:
                 try:
                     obj = s3c.Object(bucket_name=mybucket, key=mykey)
                 except:
-                    s3c.meta.client.meta.events.register('choose-signer.s3.*',disable_signing)
+                    s3c.meta.client.meta.events.register("choose-signer.s3.*", disable_signing)
                     obj = s3c.Object(bucket_name=mybucket, key=mykey)
                 bdata = S3object(obj)  # type: ignore
             else:
@@ -2065,7 +2065,7 @@ class CDF:
                 try:
                     obj = s3c.get_object(Bucket=mybucket, Key=mykey)
                 except:
-                    s3c = boto3.client('s3', config=Config(signature_version=UNSIGNED))
+                    s3c = boto3.client("s3", config=Config(signature_version=UNSIGNED))
                     obj = s3c.get_object(Bucket=mybucket, Key=mykey)
                 bdata = s3_fetchall(obj)
             return bdata
