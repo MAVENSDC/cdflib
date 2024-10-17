@@ -2042,20 +2042,31 @@ class CDF:
         elif filetype == "s3":
             try:
                 import boto3
+                from botocore.handlers import disable_signing
+                from botocore.client import Config
+                from botocore import UNSIGNED
             except:
-                raise ImportError("boto3 package not installed")
+                raise ImportError("boto3/botocore package not installed")
             s3parts = filename.split("/")  # 0-1=s3://, 2=bucket, 3+=key
             mybucket = s3parts[2]
             mykey = "/".join(s3parts[3:])
             if s3_read_method == 3:
                 # read in-place
                 s3c = boto3.resource("s3")
-                obj = s3c.Object(bucket_name=mybucket, key=mykey)
+                try:
+                    obj = s3c.Object(bucket_name=mybucket, key=mykey)
+                except:
+                    s3c.meta.client.meta.events.register('choose-signer.s3.*',disable_signing)
+                    obj = s3c.Object(bucket_name=mybucket, key=mykey)
                 bdata = S3object(obj)  # type: ignore
             else:
                 # for store in memory or as temp copy
                 s3c = boto3.client("s3")
-                obj = s3c.get_object(Bucket=mybucket, Key=mykey)
+                try:
+                    obj = s3c.get_object(Bucket=mybucket, Key=mykey)
+                except:
+                    s3c = boto3.client('s3', config=Config(signature_version=UNSIGNED))
+                    obj = s3c.get_object(Bucket=mybucket, Key=mykey)
                 bdata = s3_fetchall(obj)
             return bdata
         else:
