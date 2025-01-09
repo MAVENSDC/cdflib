@@ -199,7 +199,7 @@ def _dtype_to_fillval(
 ) -> Union[np.number, np.str_, np.datetime64, np.complex128]:
     datatype, _ = _dtype_to_cdf_type(var, terminate_on_warning=terminate_on_warning)
     if datatype in DATATYPE_FILLVALS:
-        return DATATYPE_FILLVALS[datatype]
+        return DATATYPE_FILLVALS[datatype]  # type: ignore[return-value]
     else:
         return np.str_(" ")
 
