@@ -994,7 +994,7 @@ class CDF:
                 if isinstance(indata, complex):
                     epoch16.append(indata.real)
                     epoch16.append(indata.imag)
-                    indata = epoch16
+                    indata = np.array(epoch16)
 
         # Convert to byte stream
         recs, data = self._convert_data(dataType, numElems, numValues, indata)

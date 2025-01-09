@@ -239,14 +239,15 @@ class CDFepoch:
         for ud in times:
             if not np.isnan(ud):
                 dt = np.datetime64(int(ud * 1000), "ms")
+                dt_item: datetime.datetime = dt.item()
                 dt_to_convert = [
-                    dt.item().year,
-                    dt.item().month,
-                    dt.item().day,
-                    dt.item().hour,
-                    dt.item().minute,
-                    dt.item().second,
-                    int(dt.item().microsecond / 1000),
+                    dt_item.year,
+                    dt_item.month,
+                    dt_item.day,
+                    dt_item.hour,
+                    dt_item.minute,
+                    dt_item.second,
+                    int(dt_item.microsecond / 1000),
                 ]
                 converted_data = CDFepoch.compute(dt_to_convert)
             else:
@@ -267,15 +268,16 @@ class CDFepoch:
         for ud in times:
             if not np.isnan(ud):
                 dt = np.datetime64(int(ud * 1000000), "us")
+                dt_item: datetime.datetime = dt.item()
                 dt_to_convert = [
-                    dt.item().year,
-                    dt.item().month,
-                    dt.item().day,
-                    dt.item().hour,
-                    dt.item().minute,
-                    dt.item().second,
-                    int(dt.item().microsecond / 1000),
-                    int(dt.item().microsecond % 1000),
+                    dt_item.year,
+                    dt_item.month,
+                    dt_item.day,
+                    dt_item.hour,
+                    dt_item.minute,
+                    dt_item.second,
+                    int(dt_item.microsecond / 1000),
+                    int(dt_item.microsecond % 1000),
                     0,
                     0,
                 ]
@@ -298,15 +300,16 @@ class CDFepoch:
         for ud in times:
             if not np.isnan(ud):
                 dt = np.datetime64(int(ud * 1000000), "us")
+                dt_item: datetime.datetime = dt.item()
                 dt_to_convert = [
-                    dt.item().year,
-                    dt.item().month,
-                    dt.item().day,
-                    dt.item().hour,
-                    dt.item().minute,
-                    dt.item().second,
-                    int(dt.item().microsecond / 1000),
-                    int(dt.item().microsecond % 1000),
+                    dt_item.year,
+                    dt_item.month,
+                    dt_item.day,
+                    dt_item.hour,
+                    dt_item.minute,
+                    dt_item.second,
+                    int(dt_item.microsecond / 1000),
+                    int(dt_item.microsecond % 1000),
                     0,
                 ]
                 converted_data = CDFepoch.compute(dt_to_convert)
@@ -487,7 +490,7 @@ class CDFepoch:
         999 ns is returned.
         """
 
-        new_tt2000 = np.atleast_1d(tt2000).astype(np.longlong)
+        new_tt2000 = np.atleast_1d(tt2000).astype(np.int64)
         count = len(new_tt2000)
         toutcs = np.zeros((9, count), dtype=int)
         datxs = CDFepoch._LeapSecondsfromJ2000(new_tt2000)
@@ -498,8 +501,8 @@ class CDFepoch:
         nanoSecsSinceJ2000[~post2000] += CDFepoch.T12hinNanoSecs
         nanoSecsSinceJ2000[~post2000] -= CDFepoch.dTinNanoSecs
 
-        secsSinceJ2000 = (nanoSecsSinceJ2000 / CDFepoch.SECinNanoSecsD).astype(np.longlong)
-        nansecs = (nanoSecsSinceJ2000 - secsSinceJ2000 * CDFepoch.SECinNanoSecs).astype(np.longlong)
+        secsSinceJ2000 = (nanoSecsSinceJ2000 / CDFepoch.SECinNanoSecsD).astype(np.int64)
+        nansecs = (nanoSecsSinceJ2000 - (secsSinceJ2000 * CDFepoch.SECinNanoSecs)).astype(np.int64)  # type: ignore
 
         posNanoSecs = new_tt2000 > 0
         secsSinceJ2000[posNanoSecs] -= 32
@@ -512,7 +515,7 @@ class CDFepoch:
 
         t2s = secsSinceJ2000 * CDFepoch.SECinNanoSecs + nansecs
 
-        post72 = datxs[:, 0] > 0
+        post72: np.ndarray = datxs[:, 0] > 0
         secsSinceJ2000[post72] -= datxs[post72, 0].astype(int)
         epochs = CDFepoch.J2000Since0AD12hSec + secsSinceJ2000
 
