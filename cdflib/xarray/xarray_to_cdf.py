@@ -194,7 +194,9 @@ def _dtype_to_cdf_type(var: xr.DataArray, terminate_on_warning: bool = False) ->
     return STRINGS_TO_DATATYPES[cdf_data_type], element_size
 
 
-def _dtype_to_fillval(var: xr.DataArray, terminate_on_warning: bool = False) -> Union[np.number, np.str_, np.datetime64]:
+def _dtype_to_fillval(
+    var: xr.DataArray, terminate_on_warning: bool = False
+) -> Union[np.number, np.str_, np.datetime64, np.complex128]:
     datatype, _ = _dtype_to_cdf_type(var, terminate_on_warning=terminate_on_warning)
     if datatype in DATATYPE_FILLVALS:
         return DATATYPE_FILLVALS[datatype]
