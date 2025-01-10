@@ -194,10 +194,12 @@ def _dtype_to_cdf_type(var: xr.DataArray, terminate_on_warning: bool = False) ->
     return STRINGS_TO_DATATYPES[cdf_data_type], element_size
 
 
-def _dtype_to_fillval(var: xr.DataArray, terminate_on_warning: bool = False) -> Union[np.number, np.str_, np.datetime64]:
+def _dtype_to_fillval(
+    var: xr.DataArray, terminate_on_warning: bool = False
+) -> Union[np.number, np.str_, np.datetime64, np.complex128]:
     datatype, _ = _dtype_to_cdf_type(var, terminate_on_warning=terminate_on_warning)
     if datatype in DATATYPE_FILLVALS:
-        return DATATYPE_FILLVALS[datatype]  # type: ignore
+        return DATATYPE_FILLVALS[datatype]  # type: ignore[return-value]
     else:
         return np.str_(" ")
 
@@ -247,50 +249,98 @@ def _verify_depend_dimensions(
     coordinate_variable_name: str,
     terminate_on_warning: bool = False,
 ) -> bool:
-    primary_data = np.array(dataset[primary_variable_name])
-    coordinate_data = np.array(dataset[coordinate_variable_name])
+    try:
+        primary_data = np.array(dataset[primary_variable_name])
+        coordinate_data = np.array(dataset[coordinate_variable_name])
 
-    if len(primary_data.shape) != 0 and len(coordinate_data.shape) == 0:
-        _warn_or_except(
-            f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match.",
-            terminate_on_warning,
-        )
-        return False
-
-    if len(coordinate_data.shape) != 0 and len(primary_data.shape) == 0:
-        _warn_or_except(
-            f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match.",
-            terminate_on_warning,
-        )
-        return False
-
-    if len(coordinate_data.shape) > 2:
-        _warn_or_except(
-            f"ISTP Compliance Warning: {coordinate_variable_name} has too many dimensions to be the DEPEND_{dimension_number} for variable {primary_variable_name}",
-            terminate_on_warning,
-        )
-        return False
-    if len(coordinate_data.shape) == 2:
-        if primary_data.shape[0] != coordinate_data.shape[0]:
+        if len(primary_data.shape) != 0 and len(coordinate_data.shape) == 0:
             _warn_or_except(
-                f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the Epoch dimensions do not match.",
+                f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match.",
                 terminate_on_warning,
             )
             return False
 
-    if len(primary_data.shape) <= dimension_number:
-        _warn_or_except(
-            f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but {primary_variable_name} does not have that many dimensions",
-            terminate_on_warning,
-        )
-        return False
+        if len(coordinate_data.shape) != 0 and len(primary_data.shape) == 0:
+            _warn_or_except(
+                f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match.",
+                terminate_on_warning,
+            )
+            return False
 
-    if primary_data.shape[dimension_number] != coordinate_data.shape[-1]:
-        _warn_or_except(
-            f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match.",
-            terminate_on_warning,
-        )
-        return False
+        if len(coordinate_data.shape) > 2:
+            _warn_or_except(
+                f"ISTP Compliance Warning: {coordinate_variable_name} has too many dimensions to be the DEPEND_{dimension_number} for variable {primary_variable_name}",
+                terminate_on_warning,
+            )
+            return False
+
+        if len(coordinate_data.shape) == 2:
+            if primary_data.shape[0] != coordinate_data.shape[0]:
+                _warn_or_except(
+                    f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the Epoch dimensions do not match.",
+                    terminate_on_warning,
+                )
+                return False
+
+        # All variables should have at the very least a size of dimension_number
+        # (i.e. a variable with a DEPEND_2 should have 2 dimensions)
+        if len(primary_data.shape) < dimension_number:
+            _warn_or_except(
+                f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but {primary_variable_name} does not have that many dimensions",
+                terminate_on_warning,
+            )
+            return False
+
+        # All variables with a DEPEND_0 should always have a shape size of at least dimension_number + 1
+        # (i.e. a variable with a DEPEND_2 should have 2 dimensions, 2 for DEPEND_1 and DEPEND_2, and 1 for DEPEND_0)
+        if len(primary_data.shape) < dimension_number + 1:
+            if "VAR_TYPE" in dataset[primary_variable_name].attrs:
+                if dataset[primary_variable_name].attrs["VAR_TYPE"] == "data":
+                    # Data variables should always have as many dimensions as their are DEPENDS
+                    _warn_or_except(
+                        f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but {primary_variable_name} does not have that many dimensions",
+                        terminate_on_warning,
+                    )
+                    return False
+                else:
+                    for key in dataset[primary_variable_name].attrs:
+                        if key.lower() == "depend_0":
+                            # support_data variables with a DEPEND_0 should always match the dimension number
+                            _warn_or_except(
+                                f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but {primary_variable_name} does not have that many dimensions",
+                                terminate_on_warning,
+                            )
+                            return False
+
+        # Check that the size of the dimension that DEPEND_{i} is refering to is
+        # also the same size of the DEPEND_{i}'s last dimension
+        for key in dataset[primary_variable_name].attrs:
+            if key.lower() == "depend_0":
+                if primary_data.shape[dimension_number] != coordinate_data.shape[-1]:
+                    _warn_or_except(
+                        f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match.",
+                        terminate_on_warning,
+                    )
+                    return False
+            else:
+                if primary_data.shape[dimension_number - 1] != coordinate_data.shape[-1]:
+                    _warn_or_except(
+                        f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match.",
+                        terminate_on_warning,
+                    )
+                    return False
+    except ISTPError as istp_e:
+        raise istp_e
+    except Exception as e:
+        if terminate_on_warning:
+            raise Exception(
+                f"Unknown error occured verifying {primary_variable_name}'s DEPEND_{dimension_number}, which is pointed to {coordinate_variable_name}. Error message: {e}"
+            )
+        else:
+            print(
+                f"Unknown error occured verifying {primary_variable_name}'s DEPEND_{dimension_number}, which is pointed to {coordinate_variable_name}"
+            )
+            return False
 
     return True
 
@@ -333,7 +383,9 @@ def _dimension_checker(dataset: xr.Dataset, terminate_on_warning: bool = False) 
                 if depend_regex.match(att.lower()) and att != "DEPEND_0":
                     if (dataset[var].attrs[att] in dataset) or (dataset[var].attrs[att] in dataset.coords):
                         depend_i = dataset[var].attrs[att]
-                        if _verify_depend_dimensions(dataset, int(att[-1]), var, depend_i):
+                        if _verify_depend_dimensions(
+                            dataset, int(att[-1]), var, depend_i, terminate_on_warning=terminate_on_warning
+                        ):
                             istp_depend_dimension_list.append(dataset[var].attrs[att])
                     else:
                         _warn_or_except(
@@ -424,7 +476,7 @@ def _epoch_checker(dataset: xr.Dataset, dim_vars: List[str], terminate_on_warnin
 
             # Ensure that the dimension is listed somewhere else in the dataset
             if potential_depend_0 in dataset or potential_depend_0 in dataset.coords:
-                if _verify_depend_dimensions(dataset, 0, var, potential_depend_0):
+                if _verify_depend_dimensions(dataset, 0, var, potential_depend_0, terminate_on_warning=terminate_on_warning):
                     depend_0_list.append(potential_depend_0)
                     time_varying_dimensions.append(var)
                 else:

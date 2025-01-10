@@ -20,12 +20,10 @@ jobs:
       submodules: false
       coverage: codecov
       envs: |
-        - linux: py38-oldestdeps
-        - linux: py39-online
+        - linux: py39
         #- linux: py310
         #- linux: py311
-        - linux: py312-devdeps
-        #- windows: py38
+        - linux: py312
         #- windows: py39
         - windows: py310
         #- windows: py311
@@ -33,5 +31,6 @@ jobs:
         #- macos: py38
         #- macos: py39
         #- macos: py310
-        - macos: py311
-        #- macos: py312
+        - macos: py311-online
+        - macos: py312
+        - windows: py313-devdeps
