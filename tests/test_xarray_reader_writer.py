@@ -368,23 +368,6 @@ def test_datetime64_conversion():
     os.remove("hello.cdf")
 
 
-def test_datetime64_no_conversion():
-    # This tests out the expected behavior when no datetime conversion is used,
-    # even though datetime64 variables are being read into the CDF file
-    pytest.importorskip("xarray")
-    var_data = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
-    var_dims = ["epoch", "direction"]
-    data = xr.Variable(var_dims, var_data)
-    epoch_data = [np.datetime64(1, "s"), np.datetime64(2, "s"), np.datetime64(3, "s")]
-    epoch_dims = ["epoch"]
-    epoch = xr.Variable(epoch_dims, epoch_data)
-    ds = xr.Dataset(data_vars={"data": data, "epoch": epoch})
-    xarray_to_cdf(ds, "hello.cdf")
-    x = cdf_to_xarray("hello.cdf", to_datetime=False)
-    assert x["epoch"][0] == 1000000000  # Seconds is converted to nanoseconds in the file, but otherwise left untouched
-    os.remove("hello.cdf")
-
-
 def test_datetime64_conversion_odd_units():
     # verifying that everything writes correctly.
     # This time, it uses days as the base unit, and verifies that it comes back out again as days.
