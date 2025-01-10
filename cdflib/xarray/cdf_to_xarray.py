@@ -307,7 +307,7 @@ def _convert_fillvals_to_nan(var_data: npt.NDArray, var_atts: Dict[str, Any], va
                         new_data[new_data == var_atts["FILLVAL"]] = np.datetime64("nat")
                     else:
                         new_data[new_data == var_atts["FILLVAL"]] = np.nan
-            else:
+            elif new_data.size == 1:
                 if new_data == var_atts["FILLVAL"]:
                     if new_data.dtype.type == np.datetime64:
                         new_data[new_data == var_atts["FILLVAL"]] = np.array(np.datetime64("nat"))
