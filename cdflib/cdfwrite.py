@@ -1750,7 +1750,7 @@ class CDF:
             value_size = 1
             cdata = "\x00".encode()
         else:
-            value_size = len(cdata)
+            value_size = recs * self._datatype_size(dataType, numElems)
         block_size = value_size + 56
         aedr = bytearray(block_size)
         aedr[0:8] = struct.pack(">q", block_size)
