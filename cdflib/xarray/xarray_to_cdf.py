@@ -166,7 +166,11 @@ def _dtype_to_cdf_type(var: xr.DataArray, terminate_on_warning: bool = False) ->
     elif numpy_data_type == np.uint32:
         cdf_data_type = "CDF_UINT4"
     elif numpy_data_type == np.uint64:
-        cdf_data_type = "CDF_UINT8"
+        _warn_or_except(
+            f"CONVERSION ERROR: Data in variable {var.name} is a 64bit unsigned integer. CDF does not currently support this data type. See documentation for supported xarray/numpy data types.",
+            terminate_on_warning,
+        )
+        cdf_data_type = "CDF_UINT4"
     elif numpy_data_type == np.complex128:
         cdf_data_type = "CDF_EPOCH16"
     elif numpy_data_type.type in (np.str_, np.bytes_):
@@ -1020,7 +1024,6 @@ def xarray_to_cdf(
         np.uint8       CDF_UINT1
         np.uint16      CDF_UINT2
         np.uint32      CDF_UINT4
-        np.uint64      CDF_UINT8
         np.complex_    CDF_EPOCH16
         np.str_        CDF_CHAR
         np.bytes_      CDF_CHAR

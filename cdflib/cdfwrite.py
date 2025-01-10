@@ -1417,14 +1417,14 @@ class CDF:
                     return numElems, self.CDF_INT8
                 elif value.dtype.type == np.complex128:
                     return numElems, self.CDF_EPOCH16
-                elif value.dtype.type in (np.uint8, np.uint16, np.uint32, np.uint64):
+                elif value.dtype.type in (np.uint8, np.uint16, np.uint32):
                     return numElems, self.CDF_UINT4
                 elif value.dtype.type in (np.float16, np.float32, np.float64):
                     return numElems, self.CDF_DOUBLE
                 elif value.dtype.type == np.str_:
                     return numElems, self.CDF_CHAR
                 else:
-                    logger.warning("Invalid data type for data.... Skip")
+                    logger.warning(f"Invalid data type for data {value.dtype.type}.... Skip")
                     return None, None
             else:
                 logger.warning("Invalid data type for data.... Skip")
