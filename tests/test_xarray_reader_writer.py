@@ -353,7 +353,6 @@ def test_smoke(cdf_path, tmp_path):
 
 
 def test_datetime64_conversion():
-    # This tests out the datetime64_to_cdftt2000 conversion and then back again,
     # verifying that everything writes correctly
     pytest.importorskip("xarray")
     var_data = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
@@ -380,14 +379,13 @@ def test_datetime64_no_conversion():
     epoch_dims = ["epoch"]
     epoch = xr.Variable(epoch_dims, epoch_data)
     ds = xr.Dataset(data_vars={"data": data, "epoch": epoch})
-    xarray_to_cdf(ds, "hello.cdf", datetime64_to_cdftt2000=False)
+    xarray_to_cdf(ds, "hello.cdf")
     x = cdf_to_xarray("hello.cdf", to_datetime=False)
     assert x["epoch"][0] == 1000000000  # Seconds is converted to nanoseconds in the file, but otherwise left untouched
     os.remove("hello.cdf")
 
 
 def test_datetime64_conversion_odd_units():
-    # This tests out the datetime64_to_cdftt2000 conversion and then back again,
     # verifying that everything writes correctly.
     # This time, it uses days as the base unit, and verifies that it comes back out again as days.
     pytest.importorskip("xarray")
@@ -398,7 +396,7 @@ def test_datetime64_conversion_odd_units():
     epoch_dims = ["epoch"]
     epoch = xr.Variable(epoch_dims, epoch_data)
     ds = xr.Dataset(data_vars={"data": data, "epoch": epoch})
-    xarray_to_cdf(ds, "hello.cdf", datetime64_to_cdftt2000=True)
+    xarray_to_cdf(ds, "hello.cdf")
     x = cdf_to_xarray("hello.cdf", to_datetime=True)
     assert x["epoch"][1] == np.datetime64("2000-01-02")
     os.remove("hello.cdf")
@@ -415,7 +413,7 @@ def test_numpy_string_array():
     epoch_dims = ["epoch"]
     epoch = xr.Variable(epoch_dims, epoch_data)
     ds = xr.Dataset(data_vars={"data": data, "epoch": epoch})
-    xarray_to_cdf(ds, "hello.cdf", datetime64_to_cdftt2000=True)
+    xarray_to_cdf(ds, "hello.cdf")
     x = cdf_to_xarray("hello.cdf", to_datetime=True)
     assert x["data"][2] == "c"
     os.remove("hello.cdf")
