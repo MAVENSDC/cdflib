@@ -870,19 +870,21 @@ class CDF:
                 if items == 2:
                     dataType = self._datatype_token(entry[1])
 
+            # Handle user setting datatype
             if dataType > 0:
                 # CDF data type defined in entry
                 data = entry[0]
                 if self._checklistofNums(data):
-                    # All are numbers
+                    # Data needs no pre-processing and is good to go
                     if hasattr(data, "__len__") and not isinstance(data, str):
                         numElems = len(data)
                     else:
                         numElems = 1
                 else:
-                    # Then string(s) -- either in CDF_type or epoch in string(s)
+                    # Data needs some sort of pre-processing to proceed
                     if dataType == self.CDF_CHAR or dataType == self.CDF_UCHAR:
                         if hasattr(data, "__len__") and not isinstance(data, str):
+                            # Reformat strings
                             items = len(data)
                             odata = data
                             data = ""
@@ -894,6 +896,7 @@ class CDF:
                                     data = odata[x]
                         numElems = len(data)
                     elif dataType == self.CDF_EPOCH or dataType == self.CDF_EPOCH16 or dataType == self.CDF_TIME_TT2000:
+                        # Convert data to CDF time
                         cvalue = []
                         if hasattr(data, "__len__") and not isinstance(data, str):
                             numElems = len(data)
@@ -903,7 +906,22 @@ class CDF:
                         else:
                             data = cdfepoch.CDFepoch.parse(data)
                             numElems = 1
-            else:
+                    elif isinstance(data, str):
+                        # One possibility is that the user wants to convert a string to a number
+                        numElems = 1
+                        data = np.array(float(data))
+                    else:
+                        # The final possibility I can think of is that the user wants to convert a list of strings to a list of numbers
+                        try:
+                            numElems = 1
+                            data = np.array([float(item) for item in data])
+                        except:
+                            logger.warning(
+                                f"Cannot determine how to convert {str(data)} to specified type of {dataType}. Ignoring the specified datatype, and continuing."
+                            )
+                        dataType = 0
+
+            if dataType == 0:
                 # No data type defined...
                 data = entry
                 if hasattr(data, "__len__") and not isinstance(data, str):
