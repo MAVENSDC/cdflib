@@ -891,9 +891,9 @@ class CDF:
                             for x in range(0, items):
                                 if x > 0:
                                     data += "\\N "
-                                    data += odata[x]
+                                    data += str(odata[x])
                                 else:
-                                    data = odata[x]
+                                    data = str(odata[x])
                         numElems = len(data)
                     elif dataType == self.CDF_EPOCH or dataType == self.CDF_EPOCH16 or dataType == self.CDF_TIME_TT2000:
                         # Convert data to CDF time
@@ -931,9 +931,9 @@ class CDF:
                         for x in range(0, len(entry)):
                             if x > 0:
                                 data += "\\N "
-                                data += entry[x]
+                                data += str(entry[x])
                             else:
-                                data = entry[x]
+                                data = str(entry[x])
                     numElems = len(data)
                 else:
                     numElems, dataType = self._datatype_define(entry)
