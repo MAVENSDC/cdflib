@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 from cdflib import cdfread, cdfwrite
+from cdflib.xarray import cdf_to_xarray
 
 R = Path(__file__).parent
 fnbasic = "testing.cdf"
@@ -639,3 +640,45 @@ def test_convert_data_error(tmp_path):
     with pytest.raises(ValueError):
         # Data from list of strings with dimension "epoch"
         cdf._convert_data(51, 1, 1, indata)
+
+
+def test_string_input_but_number_type(tmp_path):
+    # This small example used to create a corrupted CDF file.
+    # Because the FILLVAL was input as a string, but it is told to be a double
+    cdf = cdfwrite.CDF(tmp_path / "test.cdf")
+    var_data = np.random.rand(5, 3) * 30
+    var_spec = {
+        "Variable": "temperature",
+        "Data_Type": 45,
+        "Num_Elements": 1,
+        "Rec_Vary": False,
+        "Dim_Sizes": [5, 3],
+        "Compress": 0,
+    }
+    var_att_dict = {"FILLVAL": [np.str_("12"), "CDF_DOUBLE"]}
+    cdf.write_var(var_spec, var_attrs=var_att_dict, var_data=var_data)
+    cdf.close()
+
+    # Reading it back in would cause an error
+    cdf_to_xarray(tmp_path / "test.cdf")
+
+
+def test_array_string_input_but_number_type(tmp_path):
+    # This small example used to create a corrupted CDF file.
+    # Because the FILLVAL was input as a string, but it is told to be a double
+    cdf = cdfwrite.CDF(tmp_path / "test.cdf")
+    var_data = np.random.rand(5, 3) * 30
+    var_spec = {
+        "Variable": "temperature",
+        "Data_Type": 45,
+        "Num_Elements": 1,
+        "Rec_Vary": False,
+        "Dim_Sizes": [5, 3],
+        "Compress": 0,
+    }
+    var_att_dict = {"FILLVAL": [np.array([np.str_("12"), np.str_("13")]), "CDF_DOUBLE"]}
+    cdf.write_var(var_spec, var_attrs=var_att_dict, var_data=var_data)
+    cdf.close()
+
+    # Reading it back in would cause an error
+    cdf_to_xarray(tmp_path / "test.cdf")

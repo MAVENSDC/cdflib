@@ -870,30 +870,33 @@ class CDF:
                 if items == 2:
                     dataType = self._datatype_token(entry[1])
 
+            # Handle user setting datatype
             if dataType > 0:
                 # CDF data type defined in entry
                 data = entry[0]
                 if self._checklistofNums(data):
-                    # All are numbers
+                    # Data needs no pre-processing and is good to go
                     if hasattr(data, "__len__") and not isinstance(data, str):
                         numElems = len(data)
                     else:
                         numElems = 1
                 else:
-                    # Then string(s) -- either in CDF_type or epoch in string(s)
+                    # Data needs some sort of pre-processing to proceed
                     if dataType == self.CDF_CHAR or dataType == self.CDF_UCHAR:
                         if hasattr(data, "__len__") and not isinstance(data, str):
+                            # Reformat strings
                             items = len(data)
                             odata = data
                             data = ""
                             for x in range(0, items):
                                 if x > 0:
                                     data += "\\N "
-                                    data += odata[x]
+                                    data += str(odata[x])
                                 else:
-                                    data = odata[x]
+                                    data = str(odata[x])
                         numElems = len(data)
                     elif dataType == self.CDF_EPOCH or dataType == self.CDF_EPOCH16 or dataType == self.CDF_TIME_TT2000:
+                        # Convert data to CDF time
                         cvalue = []
                         if hasattr(data, "__len__") and not isinstance(data, str):
                             numElems = len(data)
@@ -903,7 +906,22 @@ class CDF:
                         else:
                             data = cdfepoch.CDFepoch.parse(data)
                             numElems = 1
-            else:
+                    elif isinstance(data, str):
+                        # One possibility is that the user wants to convert a string to a number
+                        numElems = 1
+                        data = np.array(float(data))
+                    else:
+                        # The final possibility I can think of is that the user wants to convert a list of strings to a list of numbers
+                        try:
+                            numElems = 1
+                            data = np.array([float(item) for item in data])
+                        except:
+                            logger.warning(
+                                f"Cannot determine how to convert {str(data)} to specified type of {dataType}. Ignoring the specified datatype, and continuing."
+                            )
+                        dataType = 0
+
+            if dataType == 0:
                 # No data type defined...
                 data = entry
                 if hasattr(data, "__len__") and not isinstance(data, str):
@@ -913,9 +931,9 @@ class CDF:
                         for x in range(0, len(entry)):
                             if x > 0:
                                 data += "\\N "
-                                data += entry[x]
+                                data += str(entry[x])
                             else:
-                                data = entry[x]
+                                data = str(entry[x])
                     numElems = len(data)
                 else:
                     numElems, dataType = self._datatype_define(entry)
@@ -1750,7 +1768,7 @@ class CDF:
             value_size = 1
             cdata = "\x00".encode()
         else:
-            value_size = len(cdata)
+            value_size = recs * self._datatype_size(dataType, numElems)
         block_size = value_size + 56
         aedr = bytearray(block_size)
         aedr[0:8] = struct.pack(">q", block_size)
@@ -2304,6 +2322,17 @@ class CDF:
                         odata += adata.ljust(num_elems, "\x00")
                 recs = int((size * size2) / num_values)
                 return recs, odata.encode()
+            elif all(isinstance(item, str) for item in indata):
+                # Attempt to convert to a numpy array of numbers
+                try:
+                    return self._numpy_to_bytes(data_type, num_values, num_elems, np.array([float(item) for item in indata]))
+                except:
+                    # Do the best we can, create bytes from the string.
+                    # It will probably come out to be jibberish
+                    outdata = ("".join(indata)).ljust(num_elems, "\x00").encode()
+                    recs = int(len(outdata) / recSize)
+                    return recs, outdata
+
             else:
                 try:
                     return self._numpy_to_bytes(data_type, num_values, num_elems, np.array(indata))
@@ -2366,8 +2395,19 @@ class CDF:
                 return recs, odata.encode()
             else:
                 return self._numpy_to_bytes(data_type, num_values, num_elems, indata)
-        elif isinstance(indata, str):
+        elif isinstance(indata, str) and (data_type == self.CDF_CHAR or data_type == self.CDF_UCHAR):
+            # Just convert the string directly to bytes
             return 1, indata.ljust(num_elems, "\x00").encode()
+        elif isinstance(indata, str) and data_type != self.CDF_CHAR and data_type == self.CDF_UCHAR:
+            # Try to convert the single string to a numerical type.
+            try:
+                return self._numpy_to_bytes(data_type, num_values, num_elems, np.array([float(indata)]))
+            except:
+                # Do the best we can, create bytes from the string.
+                # It will probably come out to be jibberish
+                outdata = indata.ljust(num_elems, "\x00").encode()
+                recs = int(len(outdata) / recSize)
+                return recs, outdata
         else:
             try:
                 # Try converting the data to numpy
@@ -2398,7 +2438,7 @@ class CDF:
                     else:
                         return recs, struct.pack(form, indata)
                 except struct.error:
-                    raise ValueError("Unable to convert data to CDF format, data " "object cannot be of type string.")
+                    raise ValueError("Unable to convert data to CDF format, data object cannot be of type string.")
 
     def _num_values(self, zVar: bool, varNum: int) -> int:
         """
