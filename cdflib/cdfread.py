@@ -1699,9 +1699,14 @@ class CDF:
                             onerec.append(string1)
                         strings.extend(onerec)
                 ret = np.array(strings).reshape((num_recs,) + tuple(dimensions))
+                if squeeze_needed:
+                    ret = np.squeeze(ret, axis=(ret.ndim - 1))
+                    if dimensions is not None:
+                        dimensions.pop()
                 if self._majority == "Column_major":
                     axes = [0] + list(range(len(dimensions), 0, -1))
                     ret = np.transpose(ret, axes=axes)
+
             return ret
         else:
             if (data_type == 1) or (data_type == 41):
