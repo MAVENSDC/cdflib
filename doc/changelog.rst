@@ -2,6 +2,39 @@
 Changelog
 =========
 
+1.3.3
+=====
+Worked through a backlog of bugs
+
+xarray_to_cdf
+-------------
+- Fixed errors that come up with ISTP compliance when a support_data variable has no time variance and depends on another support_data variable
+- Fully remove the deprecated flags of from_unixtime, from_datetime, unixtime_to_cdftt2000, datetime_to_cdftt2000, datetime64_to_cdftt2000
+- Added a check to verify that LABLAXIS/LABL_PTR variables have the same dimensions as the data they need to label
+
+cdfwrite
+--------
+- Now throw an error when np.uint64 data is given, as it is not a supported data type
+- Fixed a bug that wrote a record's length incorrectly for certain string inputs, causing corrupt CDF files to be generated
+
+cdfread
+--------
+- Fixed a bug where string data was given an extra dimension once read
+
+cdf_to_xarray
+--------------
+- Fixed a bug that caused all data to be squeezed, removing dimensions of size 1
+
+epochs
+------
+- Fixed a bug that occured in CDF_TT2000 to np.datetime64 conversion code, which caused all "minutes" to be dropped from the dates if the array contained any dates from before 1972 (which includes all FILLVALs)
+
+1.3.2
+=====
+cdfread
+-------
+- Updated cdfread to allow anon access from AWS S3
+
 1.3.1
 =====
 General Updates
