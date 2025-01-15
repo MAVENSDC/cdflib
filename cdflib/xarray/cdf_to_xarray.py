@@ -38,48 +38,47 @@ def _convert_cdf_time_types(
     # Converts CDF time types into either datetime objects, unixtime, or nothing
     # If nothing, ALL CDF_EPOCH16 types are converted to CDF_EPOCH, because xarray can't handle int64s
     """
-
-    data = np.atleast_1d(np.squeeze(data))
-
+    data = np.atleast_1d(data)
     # Convert all data in the "data" variable to unixtime or datetime if needed
     data_type = properties.Data_Type_Description
     if len(data) == 0 or data_type not in ("CDF_EPOCH", "CDF_EPOCH16", "CDF_TIME_TT2000"):
         new_data = data
     else:
+        data = np.atleast_1d(np.squeeze(data))
         if to_datetime:
-            new_data = cdfepoch.to_datetime(data)
+            new_data = np.atleast_1d(cdfepoch.to_datetime(data))
             if "UNITS" in atts:
                 atts["UNITS"].Data = "Datetime (UTC)"
         elif to_unixtime:
-            new_data = cdfepoch.unixtime(data)
+            new_data = np.atleast_1d(cdfepoch.unixtime(data))
             if "UNITS" in atts:
                 atts["UNITS"].Data = "seconds"
         else:
             if data_type == "CDF_EPOCH16":
-                new_data = cdfepoch.compute(cdfepoch.breakdown(data)[0:7])
+                new_data = np.atleast_1d(cdfepoch.compute(cdfepoch.breakdown(data)[0:7]))
             else:
                 new_data = data
 
     # Convert all the attributes in the "atts" dictionary to unixtime or datetime if needed
-    new_atts = {}
+    new_atts: Dict[str, Any] = {}
     time_converted_attrs = []
     for att in atts:
         attr_data_type = atts[att].Data_Type
-        data = atts[att].Data
+        attr_data = atts[att].Data
         if attr_data_type not in ("CDF_EPOCH", "CDF_EPOCH16", "CDF_TIME_TT2000"):
-            new_atts[att] = data
+            new_atts[att] = attr_data
         else:
             if to_datetime:
                 time_converted_attrs.append(att)
-                new_atts[att] = cdfepoch.to_datetime(data)
+                new_atts[att] = cdfepoch.to_datetime(np.array(attr_data))
             elif to_unixtime:
                 time_converted_attrs.append(att)
-                new_atts[att] = cdfepoch.unixtime(data)
+                new_atts[att] = cdfepoch.unixtime(np.array(attr_data))
             else:
                 if attr_data_type == "CDF_EPOCH16":
-                    new_atts[att] = cdfepoch.compute(cdfepoch.breakdown(data)[0:7])
+                    new_atts[att] = cdfepoch.compute(cdfepoch.breakdown(np.array(attr_data))[0:7])
                 else:
-                    new_atts[att] = data
+                    new_atts[att] = attr_data
 
     # This is a bit of a hack, these data types are ambiguous
     # Lets add an attribute so at least we retain some information about what these numbers represent
@@ -792,7 +791,7 @@ def cdf_to_xarray(filename: str, to_datetime: bool = True, to_unixtime: bool = F
             created_coord_vars[var_name] = created_vars[var_name]
             # Check if these coordinate variable have associated labels
             for lab in label_variables:
-                if label_variables[lab] == var_name:  # Found one!
+                if label_variables[lab] == var_name:  # Found one! Label "lab" covers the dimension "var_name"
                     if len(created_vars[lab].dims) == len(created_vars[var_name].dims):
                         if created_vars[lab].size != created_vars[var_name].size:
                             logger.warning(
@@ -801,7 +800,12 @@ def cdf_to_xarray(filename: str, to_datetime: bool = True, to_unixtime: bool = F
                         else:
                             created_vars[lab].dims = created_vars[var_name].dims
                     else:
-                        created_vars[lab].dims = (created_vars[var_name].dims[-1],)
+                        if created_vars[lab].shape[0] != created_vars[var_name].shape[-1]:
+                            logger.warning(
+                                f"Warning, label variable {lab} does not match the expected dimension sizes of {var_name}"
+                            )
+                        else:
+                            created_vars[lab].dims = (created_vars[var_name].dims[-1],)
                     # Add the labels to the coordinates as well
                     created_coord_vars[lab] = created_vars[lab]
         elif var_name in uncertainty_variables:

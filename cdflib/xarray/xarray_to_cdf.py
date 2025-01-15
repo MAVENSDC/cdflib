@@ -317,21 +317,20 @@ def _verify_depend_dimensions(
 
         # Check that the size of the dimension that DEPEND_{i} is refering to is
         # also the same size of the DEPEND_{i}'s last dimension
-        for key in dataset[primary_variable_name].attrs:
-            if key.lower() == "depend_0":
-                if primary_data.shape[dimension_number] != coordinate_data.shape[-1]:
-                    _warn_or_except(
-                        f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match.",
-                        terminate_on_warning,
-                    )
-                    return False
-            else:
-                if primary_data.shape[dimension_number - 1] != coordinate_data.shape[-1]:
-                    _warn_or_except(
-                        f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match.",
-                        terminate_on_warning,
-                    )
-                    return False
+        if any(k.lower() == "depend_0" for k in dataset[primary_variable_name].attrs):
+            if primary_data.shape[dimension_number] != coordinate_data.shape[-1]:
+                _warn_or_except(
+                    f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match.",
+                    terminate_on_warning,
+                )
+                return False
+        else:
+            if primary_data.shape[dimension_number - 1] != coordinate_data.shape[-1]:
+                _warn_or_except(
+                    f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but the dimensions do not match.",
+                    terminate_on_warning,
+                )
+                return False
     except ISTPError as istp_e:
         raise istp_e
     except Exception as e:
