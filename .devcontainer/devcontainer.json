@@ -1,5 +1,5 @@
 {
-	"name": "imap_processing",
+	"name": "cdflib_development",
  	"build": {
 		"dockerfile": "Dockerfile"
 	},
