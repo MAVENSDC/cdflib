@@ -526,7 +526,7 @@ class CDFepoch:
         # If 1 second was subtracted, add 1 second back in
         # Be careful not to go 60 or above
         xdates[5, post72 & ~datxzero] += 1
-        xdates[4, post72 & ~datxzero] = np.rint(xdates[5, post72 & ~datxzero] / 60.0)
+        xdates[4, post72 & ~datxzero] += np.floor(xdates[5, post72 & ~datxzero] / 60.0)
         xdates[5, post72 & ~datxzero] = xdates[5, post72 & ~datxzero] % 60
 
         # Set toutcs, then loop through and correct for pre-1972
