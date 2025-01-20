@@ -301,7 +301,7 @@ def _verify_depend_dimensions(
                 if dataset[primary_variable_name].attrs["VAR_TYPE"] == "data":
                     # Data variables should always have as many dimensions as their are DEPENDS
                     _warn_or_except(
-                        f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but {primary_variable_name} does not have that many dimensions",
+                        f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but {primary_variable_name} does not have that many dimensions. Variables with attribute VAR_TYPE=Data should always have the same number of DEPEND attributes and dimensions.",
                         terminate_on_warning,
                     )
                     return False
@@ -310,7 +310,7 @@ def _verify_depend_dimensions(
                         if key.lower() == "depend_0":
                             # support_data variables with a DEPEND_0 should always match the dimension number
                             _warn_or_except(
-                                f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but {primary_variable_name} does not have that many dimensions",
+                                f"ISTP Compliance Warning: {coordinate_variable_name} is listed as the DEPEND_{dimension_number} for variable {primary_variable_name}, but {primary_variable_name} does not have that many dimensions (DEPEND_0 attribute detected in {primary_variable_name}'s attributes).",
                                 terminate_on_warning,
                             )
                             return False

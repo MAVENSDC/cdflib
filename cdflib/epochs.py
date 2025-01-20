@@ -581,7 +581,7 @@ class CDFepoch:
                             tmpy = tmpy - 1
                         epoch = tmpy + CDFepoch.J2000Since0AD12hSec
                         # One more determination
-                        xdate = CDFepoch._EPOCHbreakdownTT2000(epoch)
+                        xdate = CDFepoch._EPOCHbreakdownTT2000(epoch).astype(np.float64).ravel()
                 nansecs[x] = nansec
                 toutcs[:6, x] = xdate[:6]
 
@@ -814,7 +814,7 @@ class CDFepoch:
             )
 
     @staticmethod
-    def _EPOCHbreakdownTT2000(epoch: npt.ArrayLike) -> npt.NDArray:
+    def _EPOCHbreakdownTT2000(epoch: npt.ArrayLike) -> npt.NDArray[np.int64]:
         epoch = np.atleast_1d(epoch)
 
         minute_AD, second_AD = np.divmod(epoch, 60)
@@ -835,7 +835,7 @@ class CDFepoch:
         j = j + 2 - 12 * l
         i = 100 * (n - 49) + i + l
 
-        date = np.array([i, j, k, hour_AD, minute_AD, second_AD])
+        date = np.array([i, j, k, hour_AD, minute_AD, second_AD], dtype=np.int64)
         return date
 
     @staticmethod
