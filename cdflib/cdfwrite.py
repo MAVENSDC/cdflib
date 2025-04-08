@@ -2174,35 +2174,36 @@ class CDF:
         return dt_string
 
     @staticmethod
-    def _convert_nptype(data_type: int, data: Any) -> bytes:
+    def _convert_nptype(data_type: int, data: Any) -> npt.NDArray:
         """
-        Converts "data" of CDF type "data_type" into a numpy array
+        Converts "data" of CDF type "data_type" into the appropriate numpy type
         """
         if data_type in (1, 41):
-            return np.int8(data).tobytes()
+            return np.array(np.int8(data))
         elif data_type == 2:
-            return np.int16(data).tobytes()
+            return np.array(np.int16(data))
         elif data_type == 4:
-            return np.int32(data).tobytes()
+            return np.array(np.int32(data))
         elif (data_type == 8) or (data_type == 33):
-            return np.int64(data).tobytes()
+            return np.array(np.int64(data))
         elif data_type == 11:
-            return np.uint8(data).tobytes()
+            return np.array(np.uint8(data))
         elif data_type == 12:
-            return np.uint16(data).tobytes()
+            return np.array(np.uint16(data))
         elif data_type == 14:
-            return np.uint32(data).tobytes()
+            return np.array(np.uint32(data))
         elif (data_type == 21) or (data_type == 44):
-            return np.float32(data).tobytes()
+            return np.array(np.float32(data))
         elif (data_type == 22) or (data_type == 45) or (data_type == 31):
-            return np.float64(data).tobytes()
+            return np.array(np.float64(data))
         elif data_type == 32:
-            return np.complex128(data).tobytes()
+            return np.array(np.complex128(data))
         elif ((data_type) == 51) or ((data_type) == 52):
-            utf8_bytes = np.asarray(data).astype("U").tobytes()
-            return utf8_bytes.decode().replace("\x00", "").encode("ASCII")
+            arr = np.asarray(data, dtype="U")
+            cleaned_arr = np.char.replace(arr, "\x00", "")
+            return cleaned_arr
         else:
-            return data
+            return np.array(data)
 
     def _default_pad(self, data_type: int, numElems: int) -> bytes:
         """
@@ -2262,6 +2263,7 @@ class CDF:
         odata : byte stream
             The stream of bytes to write to the CDF file
         """
+        # Determine the desired endianness: "<" (little), ">" (big), or "=" (native).
         tofrom = self._convert_option()
         npdata = self._convert_nptype(data_type, indata)
         if indata.size == 0:  # Check if the data being read in is zero size
@@ -2270,13 +2272,25 @@ class CDF:
             recs = 1
         else:
             recs = len(indata)
-        dt_string = self._convert_type(data_type)
-        if data_type == self.CDF_EPOCH16:
-            num_elems = 2 * num_elems
-        form = str(recs * num_values * num_elems) + dt_string
-        form2 = tofrom + str(recs * num_values * num_elems) + dt_string
-        datau = struct.unpack(form, npdata)
-        return recs, struct.pack(form2, *datau)
+
+        if npdata.dtype.kind in ("S", "U"):
+            dt_string = self._convert_type(data_type)
+            form = str(recs * num_values * num_elems) + dt_string
+            form2 = tofrom + str(recs * num_values * num_elems) + dt_string
+            datau = struct.unpack(form, npdata.tobytes())
+            return recs, struct.pack(form2, *datau)
+        else:
+            # If the library wants strictly big-endian or little-endian, ensure the array is swapped as needed.
+            # Flatten the array so the bytes can be written out as a single contiguous block.
+            npdata = npdata.ravel()
+            if tofrom in ("<", ">"):
+                # Only swap if our current endianness is not already correct.
+                # Note: '|' means not applicable (e.g., for strings) or already in a “neutral” byte order.
+                if npdata.dtype.byteorder not in (tofrom, "|"):
+                    # byteswap + newbyteorder will produce a correctly endianness-tagged array.
+                    npdata.byteswap(inplace=True).newbyteorder()  # type: ignore
+
+        return recs, npdata.tobytes()
 
     def _convert_data(self, data_type: int, num_elems: int, num_values: int, indata: Any) -> Tuple[int, bytes]:
         """
