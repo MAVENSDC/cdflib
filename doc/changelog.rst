@@ -2,6 +2,14 @@
 Changelog
 =========
 
+1.3.4
+=====
+Performance improvements in cdfwrite
+
+cdfwrite
+--------
+- Endian conversions were using a lot of memory overhead, so we now default to using the built-in numpy array tools
+
 1.3.3
 =====
 Worked through a backlog of bugs
